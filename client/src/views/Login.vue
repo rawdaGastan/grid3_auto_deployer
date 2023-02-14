@@ -12,7 +12,7 @@
 
             <v-col>
                 <div class="text-body-2 mb-n1 text-center font-weight-light">Welcome to</div>
-                <h1 class="text-h2 font-weight-bold text-center">Deployer</h1>
+                <h1 class="text-h2 font-weight-bold text-center">Cloud for students</h1>
                 <div class="py-10" />
 
                 <v-form v-model="verify" @submit.prevent="onSubmit">

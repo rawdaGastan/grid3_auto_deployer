@@ -8,12 +8,16 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "hello user")
-	})
+	db, err := models.ConnectDB("./database.db")
+	if err != nil {
+		fmt.Printf("err: %v\n", err)
+	}
 
+	app := newApp(db)
+	http.HandleFunc("/signup", app.CreateUserHandler)
+	http.HandleFunc("/signin", app.SignInHandler)
 	fmt.Println("Server is listening on 3000")
-	err := http.ListenAndServe(":3000", nil)
+	err = http.ListenAndServe(":3000", nil)
 
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Print("server closed\n")
@@ -21,4 +25,5 @@ func main() {
 		fmt.Print("error starting server: \n", err)
 		os.Exit(1)
 	}
+
 }

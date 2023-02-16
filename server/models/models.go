@@ -1,15 +1,20 @@
-package models
+package main
 
 import (
+	"time"
+
 	"github.com/threefoldtech/grid3-go/workloads"
 )
 
 type User struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Mail     string `json:"mail"`
-	Password string `json:"password"`
-	Voucher  string `json:"voucher"`
+	ID        uint64    `json:"id" gorm:"unique;primaryKey;type:uuid;not null"`
+	Name      string    `json:"name" binding:"required"`
+	Email     string    `json:"email" gorm:"unique" binding:"required"`
+	Password  string    `json:"password" binding:"required"`
+	Voucher   string    `json:"voucher"`
+	Verified  bool      `json:"verified" gorm:"not null"`
+	CreatedAt time.Time `json:"createdat" gorm:"not null"`
+	UpdatedAt time.Time `json:"updatedat" gorm:"not null"`
 }
 
 type Quota struct {

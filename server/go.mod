@@ -4,7 +4,10 @@ go 1.16
 
 require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/jellydator/ttlcache/v3 v3.0.1
 	github.com/mattn/go-sqlite3 v1.14.16 // indirect
+	github.com/patrickmn/go-cache v2.1.0+incompatible
+	github.com/pkg/errors v0.9.1
 	github.com/threefoldtech/grid3-go v0.0.0-20230214163319-124637fb2909
 	golang.org/x/crypto v0.6.0
 	gorm.io/driver/sqlite v1.4.4

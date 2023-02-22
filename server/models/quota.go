@@ -1,7 +1,9 @@
 package models
 
+import "github.com/google/uuid"
+
 type Quota struct {
-	UserID uint64 `json:"userID"`
-	Vms    int    `json:"vms"`
-	K8s    int    `json:"k8s"`
+	UserID uuid.UUID `json:"userID"`
+	Vms    int       `json:"vms"`
+	K8s    int       `json:"k8s"`
 }

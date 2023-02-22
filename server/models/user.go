@@ -1,9 +1,13 @@
 package models
 
-import "time"
+import (
+	"time"
 
-type User struct {
-	ID        uint64    `json:"id" gorm:"unique;primaryKey`
+	"github.com/google/uuid"
+)
+
+type User struct { 
+	ID        uuid.UUID `uuid.UUID gorm:"type:uuid;primary_key;"`
 	Name      string    `json:"name" binding:"required"`
 	Email     string    `json:"email" gorm:"unique" binding:"required"`
 	Password  string    `json:"password" binding:"required"`

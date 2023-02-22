@@ -1,20 +1,18 @@
 package models
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
-	"github.com/golang-jwt/jwt"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/bcrypt"
 
 	"gorm.io/driver/sqlite"
+
 	"gorm.io/gorm"
 )
 
-const TimeOut = 5 * time.Minute
+const expirationTimeout = 5 * time.Minute
 
 type DB struct {
 	db    *gorm.DB
@@ -22,7 +20,7 @@ type DB struct {
 }
 
 func NewDB() DB {
-	c := cache.New(TimeOut, TimeOut)
+	c := cache.New(expirationTimeout, expirationTimeout)
 	return DB{cache: c}
 }
 
@@ -40,10 +38,10 @@ func (d *DB) Migrate() error {
 	if err != nil {
 		return err
 	}
-	err = d.db.AutoMigrate(&Token{})
-	if err != nil {
-		return err
-	}
+	// err = d.db.AutoMigrate(&Token{})
+	// if err != nil {
+	// 	return err
+	// }
 	// err = d.db.AutoMigrate(&Quota{})
 	// if err != nil {
 	// 	return err
@@ -60,8 +58,8 @@ func (d *DB) Migrate() error {
 
 }
 
-func (d *DB) SetCache(key string, value interface{}) {
-	d.cache.Set(key, value, TimeOut)
+func (d *DB) SetCache(key string, data interface{}) {
+	d.cache.Set(key, data, expirationTimeout)
 }
 
 func (d *DB) GetCache(key string) (User, error) {
@@ -69,88 +67,30 @@ func (d *DB) GetCache(key string) (User, error) {
 	if !found {
 		return User{}, errors.New("Time out")
 	}
-	fmt.Printf("data: %v\n", data)
-
 	value, ok := data.(User)
 	if !ok {
 		return User{}, errors.New("Failed to get data")
 	}
-	fmt.Printf("value: %v\n", value)
 	return value, nil
-
 }
 
-func (d *DB) SignUp(u *User) (*User, error) {
-	err := d.Connect("./database.db")
-	if err != nil {
-		return nil, err
-	}
-
-	err = d.Migrate()
-	if err != nil {
-		return nil, err
-	}
-
+func (d *DB) CreateUser(u *User) (*User, error) {
 	result := d.db.Create(&u)
 	return u, result.Error
 }
 
-func (d *DB) SignIn(u *User) ([]byte, error) {
+func (d *DB) GetUserByEmail(email string, secret string) (User, error) {
 	var res User
-	var data []byte
-	err := d.Connect("./database.db")
-	if err != nil {
-		return nil, err
-	}
-
-	err = d.Migrate()
-	if err != nil {
-		return nil, err
-	}
-
-	query := d.db.First(&res, "email = ?", u.Email)
+	query := d.db.First(&res, "email = ?", email)
 	if query.Error != nil {
-		return nil, query.Error
-	} else {
-		data, _ = json.Marshal(res)
+		fmt.Printf("query.Error: %v\n", query.Error)
+		return User{}, query.Error
 	}
 
-	expiresAt := time.Now().Add(TimeOut).Unix()
-
-	err = VerifyPassword(res.Password, u.Password)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Password is not correct")
-	}
-
-	tk := Token{
-		UserID: u.ID,
-		Email:  u.Email,
-		StandardClaims: &jwt.StandardClaims{
-			ExpiresAt: expiresAt,
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.GetSigningMethod("HS256"), tk)
-	tokenStr, err := token.SignedString([]byte("secret"))
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	print(tokenStr)
-
-	return data, err
+	return res, nil
 }
 
-func (d *DB) ChangePassword(email string, password string) error {
-	err := d.Connect("./database.db")
-	if err != nil {
-		return err
-	}
-
-	err = d.Migrate()
-	if err != nil {
-		return err
-	}
+func (d *DB) UpdatePassword(email string, password string) error {
 	var res User
 	d.db.Model(&res).Where("email = ?", email).Update("password", password)
 
@@ -158,25 +98,10 @@ func (d *DB) ChangePassword(email string, password string) error {
 }
 
 func (d *DB) UpdateData(u *User) (*User, error) {
-	err := d.Connect("./database.db")
-	if err != nil {
-		return nil, err
-	}
-
-	err = d.Migrate()
-	if err != nil {
-		return nil, err
-	}
 	var res *User
 	d.db.Model(&res).Where("email = ?", u.Email).Update("password", u.Password)
 	d.db.Model(&res).Where("name = ?", u.Email).Update("password", u.Name)
 	d.db.Model(&res).Where("voucher = ?", u.Email).Update("password", u.Voucher)
 
 	return res, nil
-
-}
-
-// TODO: its place should be outside this folder
-func VerifyPassword(hashedPassword string, password string) error {
-	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/rawdaGastan/grid3_auto_deployer/internal"
 	"github.com/rawdaGastan/grid3_auto_deployer/models"
 	"github.com/rawdaGastan/grid3_auto_deployer/routes"
 )
@@ -15,6 +16,16 @@ type Server struct {
 }
 
 func NewServer(dbFile string) (server Server, err error) {
+	content, err := internal.ReadFile("./.env")
+	if err != nil {
+		return
+	}
+
+	secret, err := internal.ParseEnv(content)
+	if err != nil {
+		return
+	}
+
 	db := models.NewDB()
 	err = db.Connect(dbFile)
 	if err != nil {
@@ -24,12 +35,17 @@ func NewServer(dbFile string) (server Server, err error) {
 	if err != nil {
 		return
 	}
-	router := routes.NewRouter(db) //TODO: Add rest of routers
+	router := routes.NewRouter(secret, db) //TODO: Add rest of routers
 	http.HandleFunc("/signup", router.SignUpHandler)
-	http.HandleFunc("/signin", router.SignInHandler)
 	http.HandleFunc("/verify", router.VerifyUser)
+	http.HandleFunc("/signin", router.SignInHandler)
+	http.HandleFunc("/home", router.Home)
+	http.HandleFunc("/refresh", router.RefreshJWT)
+	http.HandleFunc("/logout", router.Logout)
 	http.HandleFunc("/forgotPassword", router.ForgotPasswordHandler)
-	http.HandleFunc("/changePassword",router.ChangePassword)
+	http.HandleFunc("/changePassword", router.ChangePassword)
+	http.HandleFunc("/updateUser", router.UpdateAccount)
+	
 
 	return Server{}, nil
 }

@@ -1,8 +1,11 @@
 package models
 
-import "github.com/threefoldtech/grid3-go/workloads"
+import (
+	"github.com/google/uuid"
+	"github.com/threefoldtech/grid3-go/workloads"
+)
 
 type VM struct {
-	UserID uint64       `json:"userID"`
+	UserID uuid.UUID    `json:"userID"`
 	VM     workloads.VM `json:"vm"`
 }

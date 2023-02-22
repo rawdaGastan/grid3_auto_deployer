@@ -1,10 +1,11 @@
 package main
 
+import "log"
 
 func main() {
 	server, err := NewServer("./database.db")
 	if err != nil {
-		print(err)
+		log.Fatal(err)
 	}
 
 	err = server.Start()

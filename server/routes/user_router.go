@@ -54,8 +54,8 @@ func (router *Router) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
 	// check if user already exists
 	_, err = router.db.GetUserByEmail(u.Email, router.secret)
-	if err != nil {
-		router.WriteErrResponse(w, fmt.Errorf("user already exists"))
+	if err == nil {
+		router.WriteMsgResponse(w, fmt.Errorf("user already exists"))
 	}
 
 	// password should be ACII , min 5 , max 10
@@ -162,7 +162,9 @@ func (router *Router) SignInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	router.WriteMsgResponse(w, "Token :"+token)
+	json.NewEncoder(w).Encode("Token :" + token)
+
+	// router.WriteMsgResponse(w, []byte("Token :"+token))
 }
 
 func (router *Router) Home(w http.ResponseWriter, r *http.Request) {
@@ -274,12 +276,9 @@ func (router *Router) ForgotPasswordHandler(w http.ResponseWriter, r *http.Reque
 	fmt.Printf("code: %v\n", code)
 
 	msg := "Verfification Code has been sent to " + email
-	msgBytes, err := json.Marshal(msg)
-	if err != nil {
-		router.WriteErrResponse(w, err)
-	}
+
 	router.db.SetCache(email, code)
-	router.WriteMsgResponse(w, msgBytes)
+	router.WriteMsgResponse(w, msg)
 }
 
 func (router *Router) VerifyCode(w http.ResponseWriter, r *http.Request) {

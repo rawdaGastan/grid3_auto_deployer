@@ -3,14 +3,15 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/rawdaGastan/grid3_auto_deployer/internal"
+	"github.com/rawdaGastan/grid3_auto_deployer/middlewares"
 	"github.com/rawdaGastan/grid3_auto_deployer/models"
 	"github.com/rawdaGastan/grid3_auto_deployer/routes"
 )
-
-//TODO: add middleware
 
 type Server struct {
 }
@@ -35,18 +36,24 @@ func NewServer(dbFile string) (server Server, err error) {
 	if err != nil {
 		return
 	}
-	router := routes.NewRouter(secret, db) //TODO: Add rest of routers
-	http.HandleFunc("/signup", router.SignUpHandler)
-	http.HandleFunc("/verify", router.VerifyUser)
-	http.HandleFunc("/signin", router.SignInHandler)
-	http.HandleFunc("/home", router.Home)
-	http.HandleFunc("/refresh", router.RefreshJWT)
-	http.HandleFunc("/logout", router.Logout)
-	http.HandleFunc("/forgotPassword", router.ForgotPasswordHandler)
-	http.HandleFunc("/changePassword", router.ChangePassword)
-	http.HandleFunc("/updateUser", router.UpdateAccount)
-	
 
+	router := routes.NewRouter(secret, db)
+	r := mux.NewRouter()
+	r.Use(middlewares.Middleware)
+	r.HandleFunc("/signup", router.SignUpHandler).Methods("POST")
+	r.HandleFunc("/verify", router.VerifyUser).Methods("POST")
+	r.HandleFunc("/signin", router.SignInHandler).Methods("GET")
+	r.HandleFunc("/home", router.Home).Methods("GET")
+	r.HandleFunc("/refresh", router.RefreshJWT).Methods("GET")
+	r.HandleFunc("/logout", router.Logout).Methods("GET")
+	r.HandleFunc("/forgotPassword", router.ForgotPasswordHandler).Methods("GET")
+	r.HandleFunc("/changePassword", router.ChangePassword).Methods("POST")
+	r.HandleFunc("/updateUser", router.UpdateAccount).Methods("POST")
+
+	err = http.ListenAndServe(":3000", r)
+	if err != nil {
+		log.Fatalln("There's an error with the server,", err)
+	}
 	return Server{}, nil
 }
 

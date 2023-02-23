@@ -89,13 +89,8 @@ func (router *Router) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	u.Code = code
 	fmt.Printf("code: %v\n", code)
 	msg := "Verfification Code has been sent to " + u.Email
-	msgBytes, err := json.Marshal(msg)
-	if err != nil {
-		router.WriteErrResponse(w, fmt.Errorf("error: %v", err))
-	}
-
 	router.db.SetCache(u.Email, u)
-	router.WriteMsgResponse(w, msgBytes)
+	router.WriteMsgResponse(w, msg)
 
 }
 
@@ -124,12 +119,7 @@ func (router *Router) VerifyUser(w http.ResponseWriter, r *http.Request) {
 		router.WriteErrResponse(w, err)
 		return
 	}
-
-	userBytes, err := json.Marshal(u)
-	if err != nil {
-		router.WriteErrResponse(w, err)
-	}
-	router.WriteMsgResponse(w, userBytes)
+	router.WriteMsgResponse(w, u)
 }
 
 func (router *Router) SignInHandler(w http.ResponseWriter, r *http.Request) {
@@ -163,8 +153,6 @@ func (router *Router) SignInHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode("Token :" + token)
-
-	// router.WriteMsgResponse(w, []byte("Token :"+token))
 }
 
 func (router *Router) Home(w http.ResponseWriter, r *http.Request) {
@@ -227,7 +215,7 @@ func (router *Router) RefreshJWT(w http.ResponseWriter, r *http.Request) {
 		router.WriteErrResponse(w, err)
 		return
 	}
-	router.WriteMsgResponse(w, "Old Token: "+reqToken+"/n New Token: "+newToken)
+	router.WriteMsgResponse(w, "Old Token: "+reqToken+"\n New Token: "+newToken)
 }
 
 func (router *Router) Logout(w http.ResponseWriter, r *http.Request) {
@@ -336,13 +324,8 @@ func (router *Router) UpdateAccount(w http.ResponseWriter, r *http.Request) {
 		router.WriteErrResponse(w, err)
 		return
 	}
-
-	userBytes, err := json.Marshal(updatedUser)
-	if err != nil {
-		router.WriteErrResponse(w, err)
-	}
 	w.WriteHeader(http.StatusCreated)
-	router.WriteMsgResponse(w, userBytes)
+	router.WriteMsgResponse(w, updatedUser)
 }
 
 func (router *Router) GetUser(w http.ResponseWriter, r *http.Request) {

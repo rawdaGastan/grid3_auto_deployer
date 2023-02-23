@@ -47,8 +47,10 @@ func NewServer(dbFile string) (server Server, err error) {
 	r.HandleFunc("/refresh", router.RefreshJWT).Methods("GET")
 	r.HandleFunc("/logout", router.Logout).Methods("GET")
 	r.HandleFunc("/forgotPassword", router.ForgotPasswordHandler).Methods("GET")
+	r.HandleFunc("/verifycode", router.VerifyCode).Methods("POST")
 	r.HandleFunc("/changePassword", router.ChangePassword).Methods("POST")
-	r.HandleFunc("/updateUser", router.UpdateAccount).Methods("POST")
+	r.HandleFunc("/updateAccount", router.UpdateAccount).Methods("POST")
+	r.HandleFunc("/getUser", router.GetUser).Methods("GET")
 
 	err = http.ListenAndServe(":3000", r)
 	if err != nil {

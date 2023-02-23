@@ -1,13 +1,14 @@
 package middlewares
 
 import (
-	"fmt"
+	"log"
 	"net/http"
+	"time"
 )
 
 func Middleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.Method)
+		log.Printf("%v: %v\n%v", r.Method, r.RequestURI, time.Now().Format(time.RFC850))
 		h.ServeHTTP(w, r)
 	})
 }

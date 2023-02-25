@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -72,7 +73,9 @@ func (d *DB) GetCache(key string) (User, error) {
 }
 
 func (d *DB) CreateUser(u *User) (*User, error) {
+	fmt.Printf("u: %v\n", u)
 	result := d.db.Create(&u)
+	fmt.Printf("result.Error: %v\n", result.Error)
 	return u, result.Error
 }
 

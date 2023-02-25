@@ -100,7 +100,7 @@ func (router *Router) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("code: %v\n", code)
 	msg := "Verfification Code has been sent to " + u.Email
 	router.db.SetCache(u.Email, u)
-	router.WriteMsgResponse(w, msg)
+	router.WriteMsgResponse(w, msg, "") //TODO:
 
 }
 
@@ -129,7 +129,8 @@ func (router *Router) VerifySignUpCodeHandler(w http.ResponseWriter, r *http.Req
 		router.WriteErrResponse(w, err)
 		return
 	}
-	router.WriteMsgResponse(w, "Account Created Successfully", u.ID.String())
+	fmt.Printf("u: %v\n", u)
+	router.WriteMsgResponse(w, "Account Created Successfully", u.Email)
 }
 
 func (router *Router) SignInHandler(w http.ResponseWriter, r *http.Request) {
@@ -183,7 +184,7 @@ func (router *Router) Home(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	router.WriteMsgResponse(w, "Welcome Home "+claims.ID)
+	router.WriteMsgResponse(w, "Welcome Home "+claims.Email, "") //TODO: ID empty ??
 }
 
 func (router *Router) RefreshJWTHandler(w http.ResponseWriter, r *http.Request) {
@@ -250,7 +251,7 @@ func (router *Router) Logout(w http.ResponseWriter, r *http.Request) {
 
 	expirationTime := time.Now()
 	claims.ExpiresAt = jwt.NewNumericDate(expirationTime)
-	router.WriteMsgResponse(w, "Logged out successfully")
+	router.WriteMsgResponse(w, "Logged out successfully", "")
 
 }
 
@@ -273,10 +274,10 @@ func (router *Router) ForgotPasswordHandler(w http.ResponseWriter, r *http.Reque
 	msg := "Verfification Code has been sent to " + email.Email
 
 	router.db.SetCache(email.Email, code)
-	router.WriteMsgResponse(w, msg)
+	router.WriteMsgResponse(w, msg, "")
 }
 
-func (router *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, r *http.Request) {
+func (router *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, r *http.Request) { //TODO: Error
 	data := AuthDataInput{}
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
@@ -296,7 +297,8 @@ func (router *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, r *
 	}
 
 	msg := "Code Verified"
-	router.WriteMsgResponse(w, msg)
+	router.WriteMsgResponse(w, msg, "")
+	//TODO: should output msg
 }
 
 func (router *Router) ChangePasswordHandler(w http.ResponseWriter, r *http.Request) {
@@ -312,6 +314,8 @@ func (router *Router) ChangePasswordHandler(w http.ResponseWriter, r *http.Reque
 		router.WriteErrResponse(w, err)
 		return
 	}
+	//TODO: hash password before changing it
+	//TODO: should output msg
 }
 
 func (router *Router) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -345,31 +349,9 @@ func (router *Router) UpdateUserHandler(w http.ResponseWriter, r *http.Request) 
 	w.Write(userBytes)
 }
 
-func (router *Router) GetUserHandler(w http.ResponseWriter, r *http.Request) {
+func (router *Router) GetUserHandler(w http.ResponseWriter, r *http.Request) { //TODO: error
 	id := mux.Vars(r)["id"]
-
-	// reqToken := r.Header.Get("Authorization")
-	// splitToken := strings.Split(reqToken, "Bearer ")
-	// reqToken = splitToken[1]
-
-	// claims := &models.Claims{}
-	// token, err := jwt.ParseWithClaims(reqToken, claims, func(token *jwt.Token) (interface{}, error) {
-	// 	return []byte(router.secret), nil
-	// })
-	// if err != nil {
-	// 	if err == jwt.ErrSignatureInvalid {
-	// 		router.WriteErrResponse(w, err)
-	// 		return
-	// 	}
-	// 	router.WriteErrResponse(w, err)
-	// 	return
-	// }
-	// if !token.Valid {
-	// 	router.WriteErrResponse(w, fmt.Errorf("token is invalid"))
-	// 	w.WriteHeader(http.StatusUnauthorized)
-	// 	return
-	// }
-	user, err := router.db.GetUserByEmail(id)
+	user, err := router.db.GetUserById(id)
 	if err != nil {
 		router.WriteErrResponse(w, err)
 	}

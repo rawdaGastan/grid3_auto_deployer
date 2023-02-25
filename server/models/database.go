@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -12,15 +11,13 @@ import (
 	"gorm.io/gorm"
 )
 
-const expirationTimeout = 5 * time.Minute
-
 type DB struct {
 	db    *gorm.DB
 	cache *cache.Cache
 }
 
 func NewDB() DB {
-	c := cache.New(expirationTimeout, expirationTimeout)
+	c := cache.New(5*time.Minute, 5*time.Minute) //TODO:
 	return DB{cache: c}
 }
 
@@ -59,17 +56,17 @@ func (d *DB) Migrate() error {
 }
 
 func (d *DB) SetCache(key string, data interface{}) {
-	d.cache.Set(key, data, expirationTimeout)
+	d.cache.Set(key, data, 5*time.Minute)
 }
 
 func (d *DB) GetCache(key string) (User, error) {
 	data, found := d.cache.Get(key)
 	if !found {
-		return User{}, errors.New("Time out")
+		return User{}, errors.New("time out, data not found in cache")
 	}
 	value, ok := data.(User)
 	if !ok {
-		return User{}, errors.New("Failed to get data")
+		return User{}, errors.New("failed to get data from cache")
 	}
 	return value, nil
 }
@@ -79,15 +76,25 @@ func (d *DB) CreateUser(u *User) (*User, error) {
 	return u, result.Error
 }
 
-func (d *DB) GetUserByEmail(email string, secret string) (User, error) {
+func (d *DB) GetUserByEmail(email string) (User, error) {
 	var res User
 	query := d.db.First(&res, "email = ?", email)
 	if query.Error != nil {
-		fmt.Printf("query.Error: %v\n", query.Error)
-		return User{}, query.Error
+		return res, query.Error
 	}
 
 	return res, nil
+}
+
+func (d *DB) GetUserById(id string) (User, error) {
+	var res User
+	query := d.db.First(&res, "id = ?", id)
+	if query.Error != nil {
+		return res, query.Error
+	}
+
+	return res, nil
+
 }
 
 func (d *DB) UpdatePassword(email string, password string) error {
@@ -97,11 +104,16 @@ func (d *DB) UpdatePassword(email string, password string) error {
 	return nil
 }
 
-func (d *DB) UpdateData(u *User) (*User, error) {
+func (d *DB) UpdateUserById(id string, name string, password string, voucher string) (*User, error) {
 	var res *User
-	d.db.Model(&res).Where("email = ?", u.Email).Update("password", u.Password)
-	d.db.Model(&res).Where("name = ?", u.Email).Update("password", u.Name)
-	d.db.Model(&res).Where("voucher = ?", u.Email).Update("password", u.Voucher)
-
+	if name != "" {
+		d.db.Model(&res).Where("id = ?", id).Update("name", name)
+	}
+	if password != "" {
+		d.db.Model(&res).Where("id = ?", id).Update("password", password)
+	}
+	if voucher != "" {
+		d.db.Model(&res).Where("id = ?", id).Update("voucher", voucher)
+	}
 	return res, nil
 }

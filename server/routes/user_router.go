@@ -7,10 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/caitlin615/nist-password-validator/password"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/gorilla/mux"
 	"github.com/rawdaGastan/grid3_auto_deployer/internal"
 	"github.com/rawdaGastan/grid3_auto_deployer/models"
+	"github.com/rawdaGastan/grid3_auto_deployer/validator"
 )
 
 type SignUpInput struct {
@@ -31,6 +32,16 @@ type ChangePasswordInput struct {
 	ConfirmPassword string `json:"confirmPassword" binding:"required"`
 }
 
+type UpdateUserInput struct {
+	Name     string `json:"name" binding:"required"`
+	Password string `json:"password"`
+	Voucher  string `json:"voucher"`
+}
+
+type EmailInput struct {
+	Email string `json:"email" binding:"required"`
+}
+
 func (router *Router) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	var signUp SignUpInput
 	err := json.NewDecoder(r.Body).Decode(&signUp)
@@ -40,26 +51,13 @@ func (router *Router) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// validate mail
-	bool := internal.ValidateMail(signUp.Email)
-	if !bool {
+	valid := validator.ValidateMail(signUp.Email)
+	if !valid {
 		router.WriteErrResponse(w, fmt.Errorf("email isn't valid %v", err))
 		return
 	}
 
-	u := models.User{
-		Name:     signUp.Name,
-		Email:    signUp.Email,
-		Password: signUp.Password,
-	}
-
-	// check if user already exists
-	_, err = router.db.GetUserByEmail(u.Email, router.secret)
-	if err == nil {
-		router.WriteMsgResponse(w, fmt.Errorf("user already exists"))
-	}
-
-	// password should be ACII , min 5 , max 10
-	validator := password.NewValidator(true, 5, 10)
+	//validate password
 	err = validator.ValidatePassword(signUp.Password)
 	if err != nil {
 		router.WriteErrResponse(w, fmt.Errorf("error: %v password isn't valid", err))
@@ -70,6 +68,18 @@ func (router *Router) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	if signUp.Password != signUp.ConfirmPassword {
 		router.WriteErrResponse(w, fmt.Errorf("password and confirm password don't match"))
 		return
+	}
+
+	u := models.User{
+		Name:     signUp.Name,
+		Email:    signUp.Email,
+		Password: signUp.Password,
+	}
+
+	// check if user already exists
+	_, err = router.db.GetUserByEmail(u.Email)
+	if err == nil {
+		router.WriteMsgResponse(w, "user already exists", u.Email)
 	}
 
 	// hash password
@@ -95,7 +105,7 @@ func (router *Router) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // get verification code to create user
-func (router *Router) VerifyUser(w http.ResponseWriter, r *http.Request) {
+func (router *Router) VerifySignUpCodeHandler(w http.ResponseWriter, r *http.Request) {
 	data := AuthDataInput{}
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
@@ -119,7 +129,7 @@ func (router *Router) VerifyUser(w http.ResponseWriter, r *http.Request) {
 		router.WriteErrResponse(w, err)
 		return
 	}
-	router.WriteMsgResponse(w, u)
+	router.WriteMsgResponse(w, "Account Created Successfully", u.ID.String())
 }
 
 func (router *Router) SignInHandler(w http.ResponseWriter, r *http.Request) {
@@ -130,7 +140,7 @@ func (router *Router) SignInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := router.db.GetUserByEmail(u.Email, router.secret)
+	user, err := router.db.GetUserByEmail(u.Email)
 	if err != nil {
 		router.WriteErrResponse(w, err)
 	}
@@ -152,7 +162,7 @@ func (router *Router) SignInHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode("Token :" + token)
+	json.NewEncoder(w).Encode("token :" + token)
 }
 
 func (router *Router) Home(w http.ResponseWriter, r *http.Request) {
@@ -165,10 +175,6 @@ func (router *Router) Home(w http.ResponseWriter, r *http.Request) {
 		return []byte(router.secret), nil
 	})
 	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			router.WriteErrResponse(w, err)
-			return
-		}
 		router.WriteErrResponse(w, err)
 		return
 	}
@@ -177,10 +183,10 @@ func (router *Router) Home(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	router.WriteMsgResponse(w, "Welcome Home "+claims.Email)
+	router.WriteMsgResponse(w, "Welcome Home "+claims.ID)
 }
 
-func (router *Router) RefreshJWT(w http.ResponseWriter, r *http.Request) {
+func (router *Router) RefreshJWTHandler(w http.ResponseWriter, r *http.Request) {
 	reqToken := r.Header.Get("Authorization")
 	splitToken := strings.Split(reqToken, "Bearer ")
 	reqToken = splitToken[1]
@@ -215,7 +221,8 @@ func (router *Router) RefreshJWT(w http.ResponseWriter, r *http.Request) {
 		router.WriteErrResponse(w, err)
 		return
 	}
-	router.WriteMsgResponse(w, "Old Token: "+reqToken+"\n New Token: "+newToken)
+	router.WriteMsgResponse(w, "Old Token", reqToken)
+	router.WriteMsgResponse(w, "New Token", newToken)
 }
 
 func (router *Router) Logout(w http.ResponseWriter, r *http.Request) {
@@ -237,7 +244,7 @@ func (router *Router) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !tkn.Valid {
-		router.WriteErrResponse(w, fmt.Errorf("token is already invalid"))
+		router.WriteErrResponse(w, fmt.Errorf("token is invalid"))
 		return
 	}
 
@@ -248,7 +255,7 @@ func (router *Router) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (router *Router) ForgotPasswordHandler(w http.ResponseWriter, r *http.Request) {
-	var email string
+	var email EmailInput
 	err := json.NewDecoder(r.Body).Decode(&email)
 	if err != nil {
 		router.WriteErrResponse(w, err)
@@ -256,20 +263,20 @@ func (router *Router) ForgotPasswordHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// send verification code
-	code, err := internal.SendMail(email)
+	code, err := internal.SendMail(email.Email)
 	if err != nil {
 		router.WriteErrResponse(w, err)
 		return
 	}
 	fmt.Printf("code: %v\n", code)
 
-	msg := "Verfification Code has been sent to " + email
+	msg := "Verfification Code has been sent to " + email.Email
 
-	router.db.SetCache(email, code)
+	router.db.SetCache(email.Email, code)
 	router.WriteMsgResponse(w, msg)
 }
 
-func (router *Router) VerifyCode(w http.ResponseWriter, r *http.Request) {
+func (router *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, r *http.Request) {
 	data := AuthDataInput{}
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
@@ -289,14 +296,10 @@ func (router *Router) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := "Code Verified"
-	msgBytes, err := json.Marshal(msg)
-	if err != nil {
-		router.WriteErrResponse(w, err)
-	}
-	router.WriteMsgResponse(w, msgBytes)
+	router.WriteMsgResponse(w, msg)
 }
 
-func (router *Router) ChangePassword(w http.ResponseWriter, r *http.Request) {
+func (router *Router) ChangePasswordHandler(w http.ResponseWriter, r *http.Request) {
 	data := ChangePasswordInput{}
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
@@ -311,48 +314,68 @@ func (router *Router) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (router *Router) UpdateAccount(w http.ResponseWriter, r *http.Request) {
-	u := models.User{}
-	err := json.NewDecoder(r.Body).Decode(&u)
+func (router *Router) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
+	//TODO: will the user be able to update its email or not ??
+	id := mux.Vars(r)["id"]
+
+	input := UpdateUserInput{}
+	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
 		router.WriteErrResponse(w, err)
 		return
 	}
 
-	updatedUser, err := router.db.UpdateData(&u)
+	//validate password
+	err = validator.ValidatePassword(input.Password)
+	if err != nil {
+		router.WriteErrResponse(w, fmt.Errorf("error: %v password isn't valid", err))
+		return
+	}
+
+	updatedUser, err := router.db.UpdateUserById(id, input.Name, input.Password, input.Voucher)
 	if err != nil {
 		router.WriteErrResponse(w, err)
 		return
+	}
+	userBytes, err := json.Marshal(updatedUser)
+	if err != nil {
+		router.WriteErrResponse(w, err)
 	}
 	w.WriteHeader(http.StatusCreated)
-	router.WriteMsgResponse(w, updatedUser)
+	w.Write(userBytes)
 }
 
-func (router *Router) GetUser(w http.ResponseWriter, r *http.Request) {
-	reqToken := r.Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, "Bearer ")
-	reqToken = splitToken[1]
+func (router *Router) GetUserHandler(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
 
-	claims := &models.Claims{}
-	token, err := jwt.ParseWithClaims(reqToken, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(router.secret), nil
-	})
+	// reqToken := r.Header.Get("Authorization")
+	// splitToken := strings.Split(reqToken, "Bearer ")
+	// reqToken = splitToken[1]
+
+	// claims := &models.Claims{}
+	// token, err := jwt.ParseWithClaims(reqToken, claims, func(token *jwt.Token) (interface{}, error) {
+	// 	return []byte(router.secret), nil
+	// })
+	// if err != nil {
+	// 	if err == jwt.ErrSignatureInvalid {
+	// 		router.WriteErrResponse(w, err)
+	// 		return
+	// 	}
+	// 	router.WriteErrResponse(w, err)
+	// 	return
+	// }
+	// if !token.Valid {
+	// 	router.WriteErrResponse(w, fmt.Errorf("token is invalid"))
+	// 	w.WriteHeader(http.StatusUnauthorized)
+	// 	return
+	// }
+	user, err := router.db.GetUserByEmail(id)
 	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			router.WriteErrResponse(w, err)
-			return
-		}
 		router.WriteErrResponse(w, err)
-		return
 	}
-	if !token.Valid {
-		router.WriteErrResponse(w, fmt.Errorf("token is invalid"))
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	user, err := router.db.GetUserByEmail(claims.Email, router.secret)
+	userBytes, err := json.Marshal(user)
 	if err != nil {
 		router.WriteErrResponse(w, err)
 	}
-	router.WriteMsgResponse(w, user)
+	w.Write(userBytes)
 }

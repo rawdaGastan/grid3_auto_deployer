@@ -18,11 +18,11 @@ func CreateJWT(u *models.User, secret string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenStr, err := token.SignedString([]byte(secret))
+	signedToken, err := token.SignedString([]byte(secret))
 	if err != nil {
 		return "", err
 	}
 
-	return tokenStr, nil
+	return signedToken, nil
 
 }

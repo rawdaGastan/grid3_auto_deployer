@@ -6,14 +6,16 @@ import (
 	"net/smtp"
 	"strconv"
 	"time"
+
+	"github.com/rawdaGastan/grid3_auto_deployer/validator"
 )
 
 var email string = "alaamahmoud.1223@gmail.com" //TODO: will be changed
 
 func SendMail(reciever string) (int, error) {
-	bool := ValidateMail(reciever)
-	if !bool {
-		return 0, fmt.Errorf("email is not valid")
+	valid := validator.ValidateMail(reciever)
+	if !valid {
+		return 0, fmt.Errorf("email %v is not valid", reciever)
 	}
 	auth := smtp.PlainAuth(
 		"",

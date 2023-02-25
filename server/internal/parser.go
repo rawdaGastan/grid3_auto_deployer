@@ -17,15 +17,19 @@ func ReadFile(path string) ([]byte, error) {
 	return content, nil
 }
 
-func ParseEnv(content []byte) (string, error) {
+func ParseEnv(content []byte) (map[string]string, error) {
+	m := make(map[string]string)
 	envMap, err := env.Parse(strings.NewReader(string(content)))
 	if err != nil {
-		return "", err
+		return m, err
 	}
 
 	secret := envMap["JWT_SECRET"]
+	time := envMap["ExpirationTimeout"]
+	m["secret"] = secret
+	m["time"] = time
 	if secret == "" {
-		return "", fmt.Errorf("error, secret is missing")
+		return m, fmt.Errorf("error, secret is missing")
 	}
-	return secret, nil
+	return m, nil
 }

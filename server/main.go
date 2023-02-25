@@ -10,7 +10,7 @@ func main() {
 
 	err = server.Start()
 	if err != nil {
-		print(err)
+		log.Fatal(err)
 	}
 
 }

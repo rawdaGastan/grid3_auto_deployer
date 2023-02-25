@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type User struct { 
+type User struct {
 	ID        uuid.UUID `uuid.UUID gorm:"type:uuid;primary_key;"`
 	Name      string    `json:"name" binding:"required"`
 	Email     string    `json:"email" gorm:"unique" binding:"required"`

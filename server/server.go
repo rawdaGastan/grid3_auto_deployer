@@ -14,6 +14,7 @@ import (
 )
 
 type Server struct {
+	port string
 }
 
 func NewServer(dbFile string) (server Server, err error) {
@@ -21,8 +22,7 @@ func NewServer(dbFile string) (server Server, err error) {
 	if err != nil {
 		return
 	}
-
-	secret, err := internal.ParseEnv(content)
+	m, err := internal.ParseEnv(content)
 	if err != nil {
 		return
 	}
@@ -37,22 +37,22 @@ func NewServer(dbFile string) (server Server, err error) {
 		return
 	}
 
-	router := routes.NewRouter(secret, db)
+	router := routes.NewRouter(m, db)
 	r := mux.NewRouter()
 	r.Use(middlewares.Middleware)
-	r.HandleFunc("/signup", router.SignUpHandler).Methods("POST")
-	r.HandleFunc("/verify", router.VerifyUser).Methods("POST")
-	r.HandleFunc("/signin", router.SignInHandler).Methods("GET")
-	r.HandleFunc("/home", router.Home).Methods("GET")
-	r.HandleFunc("/refresh", router.RefreshJWT).Methods("GET")
-	r.HandleFunc("/logout", router.Logout).Methods("GET")
-	r.HandleFunc("/forgotPassword", router.ForgotPasswordHandler).Methods("GET")
-	r.HandleFunc("/verifycode", router.VerifyCode).Methods("POST")
-	r.HandleFunc("/changePassword", router.ChangePassword).Methods("POST")
-	r.HandleFunc("/updateAccount", router.UpdateAccount).Methods("POST")
-	r.HandleFunc("/getUser", router.GetUser).Methods("GET")
+	r.HandleFunc("/user/signup", router.SignUpHandler).Methods("POST")
+	r.HandleFunc("/user/verify", router.VerifySignUpCodeHandler).Methods("POST")
+	r.HandleFunc("/user/signin", router.SignInHandler).Methods("POST")
+	r.HandleFunc("/user/home", router.Home).Methods("GET")
+	r.HandleFunc("/user/refresh", router.RefreshJWTHandler).Methods("GET")
+	r.HandleFunc("/user/logout", router.Logout).Methods("GET")
+	r.HandleFunc("/user/forgotPassword", router.ForgotPasswordHandler).Methods("GET")
+	r.HandleFunc("/user/forgetpassword/verify", router.VerifyForgetPasswordCodeHandler).Methods("POST")
+	r.HandleFunc("/user/changePassword", router.ChangePasswordHandler).Methods("POST")
+	r.HandleFunc("/user/update/{id}", router.UpdateUserHandler).Methods("POST")
+	r.HandleFunc("/user/get/{id}", router.GetUserHandler).Methods("GET")
 
-	err = http.ListenAndServe(":3000", r)
+	err = http.ListenAndServe(server.port, r)
 	if err != nil {
 		log.Fatalln("There's an error with the server,", err)
 	}
@@ -61,8 +61,11 @@ func NewServer(dbFile string) (server Server, err error) {
 
 func (s *Server) Start() error {
 
-	fmt.Println("Server is listening on 3000")
-	err := http.ListenAndServe(":3000", nil)
+	fmt.Print("Enter the port: ")
+	fmt.Scan(&s.port)
+
+	fmt.Println("Server is listening on " + s.port)
+	err := http.ListenAndServe(s.port, nil)
 
 	if errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("server closed: %v", err)

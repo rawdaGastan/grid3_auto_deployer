@@ -42,6 +42,10 @@ type EmailInput struct {
 	Email string `json:"email" binding:"required"`
 }
 
+type AddVoucherInput struct {
+	Voucher string `json:"voucher" binding:"required"`
+}
+
 func (router *Router) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	var signUp SignUpInput
 	err := json.NewDecoder(r.Body).Decode(&signUp)
@@ -369,7 +373,7 @@ func (router *Router) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(userBytes)
 }
 
-func (router *Router) GetAllUsers(w http.ResponseWriter, r *http.Request) {
+func (router *Router) GetAllUsersHandlres(w http.ResponseWriter, r *http.Request) {
 	users, err := router.db.GetAllUsers()
 	if err != nil {
 		router.WriteErrResponse(w, err)
@@ -379,5 +383,17 @@ func (router *Router) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 		router.WriteErrResponse(w, err)
 	}
 	w.Write(userBytes)
+}
 
+func (router *Router) AddVoucherHandler(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	var voucher AddVoucherInput
+	err := json.NewDecoder(r.Body).Decode(&voucher)
+	if err != nil {
+		router.WriteErrResponse(w, err)
+		return
+	}
+
+	router.db.AddVoucher(id, voucher.Voucher)
+	router.WriteMsgResponse(w, "Voucher Applied Successfuly", "")
 }

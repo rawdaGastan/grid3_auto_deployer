@@ -131,3 +131,9 @@ func (d *DB) UpdateUserById(id string, name string, password string, voucher str
 	}
 	return res, nil
 }
+
+func (d *DB) AddVoucher(id string, voucher string) *User {
+	var res *User
+	d.db.Model(&res).Where("id = ?", id).Update("voucher", voucher)
+	return res
+}

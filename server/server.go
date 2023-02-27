@@ -51,7 +51,8 @@ func NewServer(dbFile string) (server Server, err error) {
 	r.HandleFunc("/user/changePassword", router.ChangePasswordHandler).Methods("POST")
 	r.HandleFunc("/user/update/{id}", router.UpdateUserHandler).Methods("POST")
 	r.HandleFunc("/user/get/{id}", router.GetUserHandler).Methods("GET")
-	r.HandleFunc("/user/get", router.GetAllUsers).Methods("GET")
+	r.HandleFunc("/user/get", router.GetAllUsersHandlres).Methods("GET")
+	r.HandleFunc("/user/addvoucher/{id}", router.AddVoucherHandler).Methods("POST")
 
 	// var port string
 	fmt.Print("Enter the port: ")

@@ -34,6 +34,7 @@ func (d *DB) Connect(file string) error {
 func (d *DB) Migrate() error {
 	err := d.db.AutoMigrate(&User{})
 	if err != nil {
+		fmt.Printf("err: %v\n", err)
 		return err
 	}
 	// err = d.db.AutoMigrate(&Token{})

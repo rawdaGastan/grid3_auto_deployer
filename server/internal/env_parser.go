@@ -26,8 +26,12 @@ func ParseEnv(content []byte) (map[string]string, error) {
 
 	secret := envMap["JWT_SECRET"]
 	time := envMap["ExpirationTimeout"]
+	sender := envMap["MAIL_SENDER"]
+	password := envMap["PASSWORD_SENDER"]
 	m["secret"] = secret
 	m["time"] = time
+	m["mailSender"] = sender
+	m["senderPassword"] = password
 	if secret == "" {
 		return m, fmt.Errorf("error, secret is missing")
 	}

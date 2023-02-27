@@ -10,9 +10,11 @@ import (
 )
 
 type Router struct {
-	secret string
-	time   int
-	db     models.DB
+	secret     string
+	time       int
+	mailSender string
+	password   string
+	db         models.DB
 }
 
 func NewRouter(m map[string]string, db models.DB) (r Router) {
@@ -21,7 +23,8 @@ func NewRouter(m map[string]string, db models.DB) (r Router) {
 	if err != nil {
 		log.Fatal("error in time", err)
 	}
-	return Router{m["secret"], t, db}
+
+	return Router{m["secret"], t, m["mailSender"], m["senderPassword"], db}
 }
 
 type ErrorMsg struct {
@@ -29,8 +32,8 @@ type ErrorMsg struct {
 }
 
 type ResponeMsg struct {
-	Message string `json:"msg"`
-	Data    string `json:"data"`
+	Message string      `json:"msg"`
+	Data    interface{} `json:"data","omitempty"`
 }
 
 func (router *Router) WriteErrResponse(w http.ResponseWriter, err error) {
@@ -40,8 +43,8 @@ func (router *Router) WriteErrResponse(w http.ResponseWriter, err error) {
 	w.Write(jsonErrRes)
 }
 
-func (router *Router) WriteMsgResponse(w http.ResponseWriter, message ...string) { //TODO:
-	contentJson, err := json.Marshal(ResponeMsg{Message: message[0], Data: message[1]})
+func (router *Router) WriteMsgResponse(w http.ResponseWriter, message string, data interface{}) {
+	contentJson, err := json.Marshal(ResponeMsg{Message: message, Data: data})
 	if err != nil {
 		router.WriteErrResponse(w, err)
 		return

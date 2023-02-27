@@ -3,6 +3,8 @@ GOPATH := $(shell go env GOPATH)
 
 all: verifiers test
 
+//TODO: add bild in makefile 
+
 test: 
 	@echo "Running Tests"
 	go test -v ./...

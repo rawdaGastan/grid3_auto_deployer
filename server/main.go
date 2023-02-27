@@ -1,16 +1,13 @@
+/*
+Copyright © 2023 NAME HERE <EMAIL ADDRESS>
+
+*/
 package main
 
-import "log"
+import (
+	"github.com/rawdaGastan/grid3_auto_deployer/cmd"
+)
 
 func main() {
-	server, err := NewServer("./database.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = server.Start()
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	cmd.Execute()
 }

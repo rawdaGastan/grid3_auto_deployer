@@ -14,7 +14,7 @@
             goals.
           </p>
           <v-expansion-panels class="my-3">
-            <v-expansion-panel bg-color="transparent">
+            <v-expansion-panel v-if="voucher" bg-color="transparent">
               <v-expansion-panel-title class="px-0">
                 <v-row>
                   <v-col cols="12" class="d-flex justify-start">
@@ -22,14 +22,22 @@
                       icon="fa-rocket"
                       class="mr-3 fa-2xl secondary"
                     />
-                    <h5
-                      class="text-h5 primary"
-                      @click="checkVoucher"
-                      v-if="!applied"
-                    >
+                    <h5 class="text-h5 primary">
                       Apply for Voucher
                     </h5>
-                    <h5 class="text-h5 primary" v-else>
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-title>
+            </v-expansion-panel>
+            <v-expansion-panel bg-color="transparent" v-else>
+              <v-expansion-panel-title class="px-0">
+                <v-row>
+                  <v-col cols="12" class="d-flex justify-start">
+                    <font-awesome-icon
+                      icon="fa-rocket"
+                      class="mr-3 fa-2xl secondary"
+                    />
+                    <h5 class="text-h5 primary">
                       Start your Deployments
                     </h5>
                   </v-col>
@@ -78,18 +86,15 @@
   </v-container>
 </template>
 <script>
+import { ref } from "vue";
 export default {
-  data: () => ({
-    applied: false,
-    items: [
+  setup() {
+    const items = ref([
       { name: "Virtual Machine", linkName: "VM" },
       { name: "Kubernetes", linkName: "K8s" },
-    ],
-  }),
-  methods: {
-    checkVoucher() {
-      this.applied = true;
-    },
+    ]);
+    const voucher = ref(false);
+    return { items, voucher };
   },
 };
 </script>

@@ -51,37 +51,34 @@
 </template>
 
 <script>
+import { ref } from "vue";
 export default {
-  data: () => ({
-    verify: false,
-    name: "",
-    vmImg: null,
-    images: ["Ubuntu-18.04", "Ubuntu-20.04", "Ubuntu-22.04", "Nixos-22.11"],
-    selectedResource: null,
-    recources: [
+  setup() {
+    const verify = ref(false);
+    const name = ref(null);
+    const vmImg = ref(null);
+    const images = ref([
+      "Ubuntu-18.04",
+      "Ubuntu-20.04",
+      "Ubuntu-22.04",
+      "Nixos-22.11",
+    ]);
+    const selectedResource = ref(null);
+    const recources = ref([
       "Small VM (1 CPU, 2 MB, 10 GB)",
       "Medium VM (2 CPU, 4 MB, 15 GB)",
       "Big VM (4 CPU, 5 MB, 20 GB)",
-    ],
-    nameRules: [
-      (value) => {
-        if (value) return true;
-        return "You must enter a name.";
-      },
-    ],
-    loading: false,
-  }),
-  methods: {
-    onSubmit() {
-      if (!this.verify) return;
-
-      this.loading = true;
-      setTimeout(() => (this.loading = false), 2000);
-      // this.$router.push({ name: "Home" });
-    },
-    required(v) {
-      return !!v || "Field is required";
-    },
+    ]);
+    const loading = ref(false);
+    return {
+      verify,
+      name,
+      vmImg,
+      images,
+      selectedResource,
+      recources,
+      loading,
+    };
   },
 };
 </script>

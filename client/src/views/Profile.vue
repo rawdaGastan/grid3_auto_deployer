@@ -1,6 +1,8 @@
 <template>
   <v-container>
-    <h5 class="text-h5 text-md-h4 text-center my-10 secondary">Account Settings</h5>
+    <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
+      Account Settings
+    </h5>
     <v-row align="center" justify="center">
       <v-col cols="12" sm="6">
         <v-text-field
@@ -39,12 +41,14 @@
 </template>
 
 <script>
+import { ref } from "vue";
 export default {
-  data: () => ({
-    email: "",
-    items: ["Male", "Female"],
-    select: null,
-    voucher: "",
-  }),
+  setup() {
+    const email = ref(null);
+    const items = ref(["Male", "Female"]);
+    const select = ref(null);
+    const voucher = ref(null);
+    return { email, items, select, voucher };
+  },
 };
 </script>

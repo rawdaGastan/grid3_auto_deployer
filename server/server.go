@@ -51,11 +51,12 @@ func NewServer(dbFile string) (server Server, err error) {
 	r.HandleFunc("/user/changePassword", router.ChangePasswordHandler).Methods("POST")
 	r.HandleFunc("/user/update/{id}", router.UpdateUserHandler).Methods("POST")
 	r.HandleFunc("/user/get/{id}", router.GetUserHandler).Methods("GET")
+	r.HandleFunc("/user/get", router.GetAllUsers).Methods("GET")
 
 	// var port string
 	fmt.Print("Enter the port: ")
 	fmt.Scan(&server.port)
-	
+
 	err = http.ListenAndServe(server.port, r)
 	if err != nil {
 		log.Fatalln("There's an error with the server,", err)

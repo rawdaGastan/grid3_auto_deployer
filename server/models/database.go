@@ -79,25 +79,36 @@ func (d *DB) CreateUser(u *User) (*User, error) {
 	return u, result.Error
 }
 
-func (d *DB) GetUserByEmail(email string) (User, error) {
+func (d *DB) GetUserByEmail(email string) (*User, error) {
 	var res User
 	query := d.db.First(&res, "email = ?", email)
 	if query.Error != nil {
-		return res, query.Error
+		return &res, query.Error
 	}
 
-	return res, nil
+	return &res, nil
 }
 
-func (d *DB) GetUserById(id string) (User, error) {
+func (d *DB) GetUserById(id string) (*User, error) {
 	var res User
 	query := d.db.First(&res, "id = ?", id)
 	if query.Error != nil {
-		return res, query.Error
+		return &res, query.Error
 	}
 
-	return res, nil
+	return &res, nil
 
+}
+
+func (d *DB) GetAllUsers() ([]User, error) {
+	var users []User
+	result := d.db.Find(&users)
+	len := result.RowsAffected
+	fmt.Printf("len: %v\n", len)
+	if result.Error != nil {
+		return users, result.Error
+	}
+	return users, nil
 }
 
 func (d *DB) UpdatePassword(email string, password string) error {

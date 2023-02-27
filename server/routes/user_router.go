@@ -21,7 +21,7 @@ type SignUpInput struct {
 	ConfirmPassword string `json:"confirmPassword" binding:"required"`
 }
 
-type AuthDataInput struct {
+type VerifyCodeInput struct {
 	Email string `json:"email"`
 	Code  int    `json:"code"`
 }
@@ -106,7 +106,7 @@ func (router *Router) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 
 // get verification code to create user
 func (router *Router) VerifySignUpCodeHandler(w http.ResponseWriter, r *http.Request) {
-	data := AuthDataInput{}
+	data := VerifyCodeInput{}
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
 		router.WriteErrResponse(w, err)
@@ -278,7 +278,7 @@ func (router *Router) ForgotPasswordHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (router *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, r *http.Request) { //TODO: Error
-	data := AuthDataInput{}
+	data := VerifyCodeInput{}
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
 		router.WriteErrResponse(w, err)
@@ -309,13 +309,20 @@ func (router *Router) ChangePasswordHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = router.db.UpdatePassword(data.Email, data.Password)
+	// hash password
+	hashedPassword, err := internal.HashPassword(data.Password)
 	if err != nil {
 		router.WriteErrResponse(w, err)
 		return
 	}
-	//TODO: hash password before changing it
-	//TODO: should output msg
+
+	err = router.db.UpdatePassword(data.Email, hashedPassword)
+	if err != nil {
+		router.WriteErrResponse(w, err)
+		return
+	}
+
+	router.WriteMsgResponse(w, "Password Changed", "")
 }
 
 func (router *Router) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -349,7 +356,7 @@ func (router *Router) UpdateUserHandler(w http.ResponseWriter, r *http.Request) 
 	w.Write(userBytes)
 }
 
-func (router *Router) GetUserHandler(w http.ResponseWriter, r *http.Request) { //TODO: error
+func (router *Router) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	user, err := router.db.GetUserById(id)
 	if err != nil {
@@ -360,4 +367,17 @@ func (router *Router) GetUserHandler(w http.ResponseWriter, r *http.Request) { /
 		router.WriteErrResponse(w, err)
 	}
 	w.Write(userBytes)
+}
+
+func (router *Router) GetAllUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := router.db.GetAllUsers()
+	if err != nil {
+		router.WriteErrResponse(w, err)
+	}
+	userBytes, err := json.Marshal(users)
+	if err != nil {
+		router.WriteErrResponse(w, err)
+	}
+	w.Write(userBytes)
+
 }

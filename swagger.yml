@@ -456,33 +456,6 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
 
-  /vm/get:
-    get:
-      description: get all vms for a user
-      security:
-        - Bearer: []
-      consumes:
-        - application/json
-      responses:
-        200:
-          description: OK
-          schema:
-                type: object
-                properties:
-                  msg:
-                    type: string
-                  data:
-                    type: object
-                    properties:
-                      vm:
-                        $ref: '#/definitions/Vms'
-
-        401:
-          $ref: '#/responses/UnauthorizedError'
-        500:
-          description: Unexpected error
-          schema:
-                $ref: '#/responses/ErrorResponse'
     delete:
       description: delete a vm
       security:
@@ -513,6 +486,34 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
 
+  /vm/get:
+    get:
+      description: get all vms for a user
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      responses:
+        200:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      vm:
+                        $ref: '#/definitions/Vms'
+
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+          
   /vm/delete:
     delete:
       description: delete all vms for a user

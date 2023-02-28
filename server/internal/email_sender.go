@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"math/rand"
 	"net/smtp"
+	"strconv"
 	"time"
 
 	"github.com/rawdaGastan/grid3_auto_deployer/validator"
 )
 
-func SendMail(sender string, password string, reciever string, subject string, body string) (int, error) {
+func SendMail(sender string, password string, reciever string) (int, error) {
 	valid := validator.ValidateMail(reciever)
 	if !valid {
 		return 0, fmt.Errorf("email %v is not valid", reciever)
@@ -17,7 +18,7 @@ func SendMail(sender string, password string, reciever string, subject string, b
 	auth := smtp.PlainAuth(
 		"",
 		sender,
-		password, 
+		password,
 		"smtp.gmail.com",
 	)
 
@@ -25,13 +26,14 @@ func SendMail(sender string, password string, reciever string, subject string, b
 	min := 1000
 	max := 9999
 	rand.Seed(time.Now().UnixNano())
-	code := rand.Intn(max-min) + min //TODO: body in ``
+	code := rand.Intn(max-min) + min
+
+	subject := "Welcome to Cloud4Students. \n"
+	body := `We are so glad to have you here
+your code is` + strconv.Itoa(code) +
+`The code will expire in 5 minutes
+Please don't share it with anyone.`
 	message := subject + body
-	// "Welcome to Cloude4Students,\n" +
-	// 	"we are so glad you are here,\n" +
-	// 	"Your code is " + strconv.Itoa(code) + "\n" +
-	// 	"The code will expire in 5 min\n" +
-	// 	"Please don't share the code with anyone"
 
 	err := smtp.SendMail(
 		"smtp.gmail.com:587",

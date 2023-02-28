@@ -2,29 +2,19 @@ package routes
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
-	"strconv"
 
+	"github.com/rawdaGastan/grid3_auto_deployer/internal"
 	"github.com/rawdaGastan/grid3_auto_deployer/models"
 )
 
 type Router struct {
-	secret     string
-	time       int
-	mailSender string
-	password   string
-	db         models.DB
+	config *internal.Configuration
+	db     models.DB
 }
 
-func NewRouter(m map[string]string, db models.DB) (r Router) {
-	time := m["time"]
-	t, err := strconv.Atoi(time)
-	if err != nil {
-		log.Fatal("error in time", err)
-	}
-
-	return Router{m["secret"], t, m["mailSender"], m["senderPassword"], db}
+func NewRouter(config internal.Configuration, db models.DB) (r Router) {
+	return Router{&config, db}
 }
 
 type ErrorMsg struct {

@@ -102,7 +102,9 @@ func (d *DB) GetUserById(id string) (*User, error) {
 }
 
 func (d *DB) GetAllUsers() ([]User, error) {
+	// var u User
 	var users []User
+	d.db.Delete(&users, []int{1,2,3,4,5})
 	result := d.db.Find(&users)
 	len := result.RowsAffected
 	fmt.Printf("len: %v\n", len)

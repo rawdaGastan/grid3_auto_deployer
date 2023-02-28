@@ -84,10 +84,11 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	_, err = r.db.GetUserByEmail(u.Email)
 	if err == nil {
 		r.WriteMsgResponse(w, "user already exists", u.Email)
+		return
 	}
 
 	// hash password
-	hashedPassword, err := internal.HashPassword(u.HashedPassword)
+	hashedPassword, err := internal.HashPassword(signUp.Password)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
@@ -95,7 +96,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	u.HashedPassword = hashedPassword
 
 	// send verification code
-	code, err := internal.SendMail(r.mailSender, r.password, u.Email, "Cloud4Students", "")
+	code, err := internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, u.Email)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
@@ -132,7 +133,7 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 		r.WriteErrResponse(w, err)
 		return
 	}
-	r.WriteMsgResponse(w, "Account Created Successfully", u.Email)
+	r.WriteMsgResponse(w, "Account Created Successfully", u)
 }
 
 func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
@@ -148,14 +149,13 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 		r.WriteErrResponse(w, err)
 	}
 
-	err = internal.VerifyPassword(user.HashedPassword, u.HashedPassword)
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
-		r.WriteErrResponse(w, fmt.Errorf("error %v, Password is not correct", err))
+	match := internal.VerifyPassword(user.HashedPassword, u.HashedPassword)
+	if !match{
+		r.WriteErrResponse(w, fmt.Errorf("Password is not correct"))
 		return
 	}
 
-	token, err := internal.CreateJWT(&u, r.secret)
+	token, err := internal.CreateJWT(&u, r.config.Token.Secret)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
@@ -196,7 +196,7 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 
 	claims := &models.Claims{}
 	tkn, err := jwt.ParseWithClaims(reqToken, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(r.secret), nil
+		return []byte(r.config.Token.Secret), nil
 	})
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
@@ -219,7 +219,7 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 	expirationTime := time.Now().Add(5 * time.Minute)
 	claims.ExpiresAt = jwt.NewNumericDate(expirationTime)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	newToken, err := token.SignedString([]byte(r.secret))
+	newToken, err := token.SignedString([]byte(r.config.Token.Secret))
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
@@ -235,7 +235,7 @@ func (r *Router) Logout(w http.ResponseWriter, req *http.Request) {
 
 	claims := &models.Claims{}
 	tkn, err := jwt.ParseWithClaims(reqToken, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(r.secret), nil
+		return []byte(r.config.Token.Secret), nil
 	})
 
 	if err != nil {
@@ -266,7 +266,7 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 	}
 
 	// send verification code
-	code, err := internal.SendMail(r.mailSender, r.password, email.Email, "Cloud4Students", "")
+	code, err := internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, email.Email)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return

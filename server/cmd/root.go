@@ -16,12 +16,12 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "cloud4Students",
 	Short: "Cloud helps students to deploy their projects",
-	Long: `A longer description that spans multiple lines and likely contains //TODO:
-		examples and usage of using your application. For example:
-
-		Cobra is a CLI library for Go that empowers applications.
-		This application is a tool to generate the needed files
-		to quickly create a Cobra application.`,
+	Long: `Cloud for students helps them to deploy their projects with 
+	applying for a voucher, For example :
+		They can deploy virtual machine that can be small, medium or large.
+		They can deploy kubernetess that can be small, meduim, or largde.
+		The Amout of resources available will depend on their voucher.
+		`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {

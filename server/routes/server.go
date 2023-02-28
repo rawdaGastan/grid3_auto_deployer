@@ -18,21 +18,22 @@ import (
 )
 
 type Server struct {
-	port string //TODO: env variable
+	port string
 }
 
-func NewServer(dbFile string) (server *Server, err error) { //TODO: graceful shutdown
-	content, err := internal.ReadFile("./.env") //TODO: pass ./.env and env variable
+func NewServer(file string) (server *Server, err error) {
+
+	data, err := internal.ReadConfFile("./config.json")
 	if err != nil {
 		return
 	}
-	m, err := internal.ParseEnv(content)
+	configuration, err := internal.ParseConf(data)
 	if err != nil {
 		return
 	}
 
 	db := models.NewDB()
-	err = db.Connect(dbFile)
+	err = db.Connect(file)
 	if err != nil {
 		return
 	}
@@ -41,12 +42,8 @@ func NewServer(dbFile string) (server *Server, err error) { //TODO: graceful shu
 		return
 	}
 
-	// port := os.Getenv("PORT")
-	// log.Printf("PORT: %s", port)
-
-	router := NewRouter(m, db)
+	router := NewRouter(*configuration, db)
 	r := mux.NewRouter()
-
 	r.Use(middlewares.LoggingMW)
 	r.HandleFunc("/user/signup", router.SignUpHandler).Methods("POST")
 	r.HandleFunc("/user/verify", router.VerifySignUpCodeHandler).Methods("POST")
@@ -61,16 +58,18 @@ func NewServer(dbFile string) (server *Server, err error) { //TODO: graceful shu
 	r.HandleFunc("/user/get/{id}", router.GetUserHandler).Methods("GET")
 	r.HandleFunc("/user/get", router.GetAllUsersHandlres).Methods("GET") //for testing only
 	r.HandleFunc("/user/addvoucher/{id}", router.AddVoucherHandler).Methods("POST")
+	http.Handle("/", r)
 
-	return &Server{port: ":3000"}, nil
+	return &Server{port: configuration.Server.Port}, nil
 }
 
-func (s *Server) Start() (err error) { //TODO:
+func (s *Server) Start() (err error) {
+
+	fmt.Println("Server is listening on " + s.port)
+
 	srv := &http.Server{
 		Addr: ":3000",
 	}
-	fmt.Println("Server is listening on " + ":3000")
-	err = http.ListenAndServe(":3000", nil)
 
 	go func() {
 		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
@@ -90,12 +89,6 @@ func (s *Server) Start() (err error) { //TODO:
 		log.Fatalf("HTTP shutdown error: %v", err)
 	}
 	log.Println("Graceful shutdown complete.")
-
-	if errors.Is(err, http.ErrServerClosed) {
-		return fmt.Errorf("server closed: %v", err)
-	} else if err != nil {
-		return fmt.Errorf("error starting server:  %v", err)
-	}
 
 	return nil
 }

@@ -150,7 +150,7 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	match := internal.VerifyPassword(user.HashedPassword, u.HashedPassword)
-	if !match{
+	if match {
 		r.WriteErrResponse(w, fmt.Errorf("Password is not correct"))
 		return
 	}
@@ -279,7 +279,7 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 	r.WriteMsgResponse(w, msg, "")
 }
 
-func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *http.Request) { //TODO: Error
+func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *http.Request) {
 	data := VerifyCodeInput{}
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {

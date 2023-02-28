@@ -18,7 +18,7 @@ type DB struct {
 }
 
 func NewDB() DB {
-	c := cache.New(5*time.Minute, 5*time.Minute) //TODO:
+	c := cache.New(5*time.Minute, 3*time.Minute) //TODO:
 	return DB{cache: c}
 }
 

@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// User struct holds data of users
 type User struct {
 	ID             string    `json:"id" gorm:"type:uuid;default:uuid_generate_v4()"`
 	Name           string    `json:"name" binding:"required"`

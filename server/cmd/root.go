@@ -1,3 +1,4 @@
+// Package cmd to make it cmd app
 /*
 Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 

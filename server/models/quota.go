@@ -1,5 +1,6 @@
 package models
 
+// Quota struct holds available vms && k8s for each user
 type Quota struct {
 	UserID string `json:"userID"`
 	Vms    int    `json:"vms"`

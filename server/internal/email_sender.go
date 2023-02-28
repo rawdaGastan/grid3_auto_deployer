@@ -10,6 +10,7 @@ import (
 	"github.com/rawdaGastan/grid3_auto_deployer/validator"
 )
 
+// SendMail sends verification mails
 func SendMail(sender string, password string, reciever string) (int, error) {
 	valid := validator.ValidateMail(reciever)
 	if !valid {
@@ -31,7 +32,7 @@ func SendMail(sender string, password string, reciever string) (int, error) {
 	subject := "Welcome to Cloud4Students. \n"
 	body := `We are so glad to have you here
 your code is` + strconv.Itoa(code) +
-`The code will expire in 5 minutes
+		`The code will expire in 5 minutes
 Please don't share it with anyone.`
 	message := subject + body
 

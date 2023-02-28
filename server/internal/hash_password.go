@@ -6,8 +6,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-//TODO: add salt of password (more encryption)
-func HashPassword(password string) (string, error) {
+// HashPassword hashes password of user 
+func HashPassword(password string) (string, error) { //TODO: add salt of password (more encryption)
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 
 	if err != nil {
@@ -16,6 +16,7 @@ func HashPassword(password string) (string, error) {
 	return string(hashedPassword), nil
 }
 
+// VerifyPassword checks if given password is same as hashed one
 func VerifyPassword(hashedPassword string, password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	return err == nil

@@ -7,6 +7,7 @@ import (
 	"github.com/rawdaGastan/grid3_auto_deployer/models"
 )
 
+// CreateJWT create token for user
 func CreateJWT(u *models.User, secret string, timeout int) (string, error) {
 	expirationTime := time.Now().Add(time.Duration(timeout) * time.Minute)
 	claims := &models.Claims{

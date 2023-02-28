@@ -17,10 +17,12 @@ import (
 	"github.com/rawdaGastan/grid3_auto_deployer/models"
 )
 
+// Server struct holds port of server
 type Server struct {
 	port string
 }
 
+// NewServer create new server with all configurations
 func NewServer(file string) (server *Server, err error) {
 
 	data, err := internal.ReadConfFile(file)
@@ -62,12 +64,13 @@ func NewServer(file string) (server *Server, err error) {
 	return &Server{port: configuration.Server.Port}, nil
 }
 
+// Start starts the server
 func (s *Server) Start() (err error) {
 
 	fmt.Println("Server is listening on " + s.port)
 
 	srv := &http.Server{
-		Addr: ":3000",
+		Addr: s.port,
 	}
 
 	go func() {

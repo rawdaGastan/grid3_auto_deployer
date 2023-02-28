@@ -1,0 +1,888 @@
+consumes:
+- application/json
+info:
+  description: HTTP server in Go with Swagger endpoints definition.
+  title: cloud4students
+  version: 0.1.0
+produces:
+- application/json
+schemes:
+- http
+securityDefinitions:
+  Bearer:
+    type: apiKey
+    name: Authorization
+    in: header
+    description: >-
+      Enter the token with the `Bearer: ` prefix, e.g. "Bearer abcde12345".
+swagger: "2.0"
+
+paths:
+  /user/signup:
+    post:
+      description: A user sign up
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: user
+          description: the user info to sign up.
+          schema:
+            $ref: '#/definitions/SingUp' 
+      responses:
+        201:
+          description: OK
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: Verification Code has been sent to email@email.com
+        500:
+          description: Unexpected error
+          schema:
+            $ref: '#/responses/ErrorResponse'
+
+  /user/signup/verify_email:
+    post:
+      description: Verifying sign up email
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: code
+          description: the code and mail of the user to verify
+          schema:
+            $ref: '#/definitions/VerifyCode' 
+      responses:
+        201:
+          description: OK
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: Account Created Successfully
+              data:
+                type: object
+                properties:
+                  id: 
+                    type: string
+
+        500:
+          description: Unexpected error
+          schema:
+            $ref: '#/responses/ErrorResponse'
+
+  /user/forget_password:
+    post:
+      description: A user forgets password
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: email
+          description: the mail of the user to change password
+          schema:
+            type: object
+            properties:
+              mail:
+                type: string
+      responses:
+        201:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: Verification Code has been sent to email@email.com
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+  /user/forget_password/verify_email:
+    post:
+      description: Verifying forget password email
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: code
+          description: the code and mail of the user to verify
+          schema:
+            $ref: '#/definitions/VerifyCode' 
+      responses:
+        201:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: Code is verified
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+  /user/signin:
+    post:
+      description: A user sign in
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: user
+          description: the user info to sign in.
+          schema:
+            $ref: '#/definitions/SingIn' 
+      responses:
+        201:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: User signed in successfully
+                  data: 
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+  /user/refresh_token:
+    post:
+      description: A token to refresh
+      security:
+        - Bearer: []
+      responses:
+        201:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: Token is refreshed successfully
+                  data: 
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+                      refresh_token:
+                        type: string
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+  /user/signout:
+    post:
+      description: A user to sign out 
+      security:
+        - Bearer: []
+      responses:
+        201:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: Signed out successfully
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+  /user/change_password/{id}:
+    put:
+      description: A user to change their password
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: id
+          description: user ID
+          required: true
+          type: string
+          format: uuid
+        - in: body
+          name: code
+          description: the user's password to update
+          schema:
+            $ref: '#/definitions/ChangePassword' 
+      responses:
+        203:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: Password is changed
+        404:
+          $ref: '#/responses/UnfoundError'
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+  /user/update/{id}:
+    put:
+      description: A user to update data
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: code
+          description: the user data to update
+          schema:
+            $ref: '#/definitions/UpdateData' 
+        - in: path
+          name: id
+          description: user ID
+          required: true
+          type: string
+          format: uuid
+      responses:
+        203:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: User is updated successfully
+        404:
+          $ref: '#/responses/UnfoundError'
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+  
+  /user/add_voucher/{id}:
+    put:
+      description: A user to add voucher
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: code
+          description: the voucher to add
+          schema:
+            type: object
+            properties:
+              voucher:
+                type: string
+        - in: path
+          name: id
+          description: user ID
+          required: true
+          type: string
+          format: uuid
+      responses:
+        203:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: Voucher is added successfully.
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        404:
+          $ref: '#/responses/UnfoundError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+  
+  /user/get/{id}:
+    get:
+      description: getting a user
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: id
+          description: user ID
+          required: true
+          type: string
+          format: uuid
+      responses:
+        200:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/definitions/User'
+
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        404:
+          $ref: '#/responses/UnfoundError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+  /quota/get:
+    get:
+      description: getting a quota
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      responses:
+        200:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      quota:
+                        $ref: '#/definitions/Quota'
+
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+            $ref: '#/responses/ErrorResponse'
+
+  /vm/deploy:
+    post:
+      description: deploy a vm
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: code
+          description: the vm to deploy
+          schema:
+            $ref: '#/definitions/DeployVM'
+      responses:
+        201:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+  /vm/get/{id}:
+    get:
+      description: get a vm
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: id
+          description: vm ID
+          required: true
+          type: string
+          format: integer
+      responses:
+        200:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      vm:
+                        $ref: '#/definitions/Vm'
+
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        404:
+          $ref: '#/responses/UnfoundError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+  /vm/get:
+    get:
+      description: get all vms for a user
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      responses:
+        200:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      vm:
+                        $ref: '#/definitions/Vms'
+
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+  
+  /vm/delete/{id}:
+    delete:
+      description: delete a vm
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: id
+          description: vm ID
+          required: true
+          type: string
+          format: integer
+      responses:
+        204:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        404:
+          $ref: '#/responses/UnfoundError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+  /vm/delete:
+    delete:
+      description: delete all vms for a user
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      responses:
+        204:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+  
+  /k8s/deploy:
+    post:
+      description: deploy a k8s
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: code
+          description: the k8s to deploy
+          schema:
+            $ref: '#/definitions/DeployK8s'
+      responses:
+        201:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+  /k8s/get/{id}:
+    get:
+      description: get a k8s
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: id
+          description: k8s ID
+          required: true
+          type: string
+          format: integer
+      responses:
+        200:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      k8s:
+                        $ref: '#/definitions/Kubernetes'
+
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        404:
+          $ref: '#/responses/UnfoundError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+  /k8s/get:
+    get:
+      description: get all k8s for a user
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      responses:
+        200:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      k8s:
+                        $ref: '#/definitions/Kubernetes_list'
+
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+  
+  /k8s/delete/{id}:
+    delete:
+      description: delete a k8s
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: id
+          description: k8s ID
+          required: true
+          type: string
+          format: integer
+      responses:
+        204:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        404:
+          $ref: '#/responses/UnfoundError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+  /k8s/delete:
+    delete:
+      description: delete all k8s for a user
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      responses:
+        204:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+definitions:
+  Vms:
+    type: array
+    items:
+      $ref: '#/definitions/Vm'
+  
+  Kubernetes_list:
+    type: array
+    items:
+      $ref: '#/definitions/Kubernetes'
+
+  User:
+    type: object
+    required:
+      - id
+    properties:
+      id:
+        type: string
+        format: uuid
+      name:
+        type: string
+      mail:
+        type: string
+        format: email
+      hashed_password:
+        type: string
+      voucher:
+        type: string
+
+  Quota:
+    type: object
+    required:
+      - id
+    properties:
+      id:
+        type: integer
+      userID:
+        type: string
+        format: uuid
+      vms:
+        type: integer
+      kubernetes:
+        type: integer
+
+  Vm:
+    type: object
+    required:
+      - id
+    properties:
+      id:
+        type: integer
+      userID:
+        type: string
+        format: uuid
+      vm:
+        type: object
+
+  Kubernetes:
+    type: object
+    required:
+      - id
+    properties:
+      id:
+        type: integer
+      userID:
+        type: string
+        format: uuid
+      kubernetes:
+        type: object
+
+  SingUp:
+    type: object
+    required:
+      - name
+      - mail
+      - password
+      - confirmPassword
+    properties:
+      name:
+        type: string
+      mail:
+        type: string
+        format: email
+      password:
+        type: string
+      confirmPassword:
+        type: string
+
+  VerifyCode:
+    type: object
+    required:
+      - code
+      - mail
+    properties:
+      code:
+        type: integer
+      mail:
+        type: string
+        format: email
+
+  SingIn:
+    type: object
+    required:
+      - password
+      - mail
+    properties:
+      mail:
+        type: string
+        format: email
+      password:
+        type: string
+
+  ChangePassword:
+    type: object
+    required:
+      - mail
+      - password
+      - confirm_password
+    properties:
+      mail:
+        type: string
+        format: email
+      password:
+        type: string
+      confirm_password:
+        type: string
+
+  UpdateData:
+    type: object
+    properties:
+      name:
+        type: string
+      mail:
+        type: string
+        format: email
+      password:
+        type: string
+      voucher:
+        type: string
+
+  DeployVM:
+    type: object
+    properties:
+      name:
+        type: string
+      resources:
+        type: string
+        format: small-medium-large
+  
+  DeployK8s:
+    type: object
+    properties:
+      master_name:
+        type: string
+      resources:
+        type: string
+        format: small-medium-large
+      workers:
+        type: array
+        items:
+          $ref: '#/definitions/DeployWorker'
+
+  DeployWorker:
+    type: object
+    properties:
+      name:
+        type: string
+      resources:
+        type: string
+        format: small-medium-large
+
+responses:
+  ErrorResponse:
+    description: Unexpected error
+    schema:
+      type: object
+      properties:
+        err:
+          type: string
+  
+  UnfoundError:
+    description: Unfound error
+    schema:
+      type: object
+      properties:
+        err:
+          type: string
+          description: Object is not found
+
+  UnauthorizedError:
+    description: Unauthorized error
+    schema:
+      type: object
+      properties:
+        err:
+          type: string
+          description: Access token is missing or invalid
+    

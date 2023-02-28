@@ -23,7 +23,7 @@ type Server struct {
 
 func NewServer(file string) (server *Server, err error) {
 
-	data, err := internal.ReadConfFile("./config.json")
+	data, err := internal.ReadConfFile(file)
 	if err != nil {
 		return
 	}
@@ -33,7 +33,7 @@ func NewServer(file string) (server *Server, err error) {
 	}
 
 	db := models.NewDB()
-	err = db.Connect(file)
+	err = db.Connect(configuration.Database.File)
 	if err != nil {
 		return
 	}
@@ -48,7 +48,6 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc("/user/signup", router.SignUpHandler).Methods("POST")
 	r.HandleFunc("/user/verify", router.VerifySignUpCodeHandler).Methods("POST")
 	r.HandleFunc("/user/signin", router.SignInHandler).Methods("POST")
-	// r.HandleFunc("/user/home", router.Home).Methods("GET")
 	r.HandleFunc("/user/refresh", router.RefreshJWTHandler).Methods("GET")
 	r.HandleFunc("/user/logout", router.Logout).Methods("GET")
 	r.HandleFunc("/user/forgotPassword", router.ForgotPasswordHandler).Methods("GET")
@@ -56,7 +55,7 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc("/user/changePassword", router.ChangePasswordHandler).Methods("POST")
 	r.HandleFunc("/user/update/{id}", router.UpdateUserHandler).Methods("POST")
 	r.HandleFunc("/user/get/{id}", router.GetUserHandler).Methods("GET")
-	r.HandleFunc("/user/get", router.GetAllUsersHandlres).Methods("GET") //for testing only
+	// r.HandleFunc("/user/get", router.GetAllUsersHandlres).Methods("GET") //TODO:for testing only
 	r.HandleFunc("/user/addvoucher/{id}", router.AddVoucherHandler).Methods("POST")
 	http.Handle("/", r)
 

@@ -7,8 +7,8 @@ import (
 	"github.com/rawdaGastan/grid3_auto_deployer/models"
 )
 
-func CreateJWT(u *models.User, secret string) (string, error) {
-	expirationTime := time.Now().Add(5 * time.Minute)
+func CreateJWT(u *models.User, secret string, timeout int) (string, error) {
+	expirationTime := time.Now().Add(time.Duration(timeout) * time.Minute)
 	claims := &models.Claims{
 		UserID: u.ID,
 		Email:  u.Email,

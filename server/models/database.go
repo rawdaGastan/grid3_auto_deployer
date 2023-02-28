@@ -1,11 +1,7 @@
 package models
 
 import (
-	"fmt"
 	"time"
-
-	"github.com/patrickmn/go-cache"
-	"github.com/pkg/errors"
 
 	"gorm.io/driver/sqlite"
 
@@ -13,13 +9,11 @@ import (
 )
 
 type DB struct {
-	db    *gorm.DB
-	cache *cache.Cache
+	db *gorm.DB
 }
 
 func NewDB() DB {
-	c := cache.New(5*time.Minute, 3*time.Minute) //TODO:
-	return DB{cache: c}
+	return DB{}
 }
 
 func (d *DB) Connect(file string) error {
@@ -34,7 +28,6 @@ func (d *DB) Connect(file string) error {
 func (d *DB) Migrate() error {
 	err := d.db.AutoMigrate(&User{})
 	if err != nil {
-		fmt.Printf("err: %v\n", err)
 		return err
 	}
 	// err = d.db.AutoMigrate(&Token{})
@@ -57,27 +50,9 @@ func (d *DB) Migrate() error {
 
 }
 
-func (d *DB) SetCache(key string, data interface{}) {
-	d.cache.Set(key, data, 5*time.Minute)
-}
-
-func (d *DB) GetCache(key string) (User, error) {
-	data, found := d.cache.Get(key)
-	if !found {
-		return User{}, errors.New("time out, data not found in cache")
-	}
-	value, ok := data.(User)
-	if !ok {
-		return User{}, errors.New("failed to get data from cache")
-	}
-	return value, nil
-}
-
-func (d *DB) CreateUser(u *User) (*User, error) {
-	fmt.Printf("u: %v\n", u)
+func (d *DB) CreateUser(u *User) error {
 	result := d.db.Create(&u)
-	fmt.Printf("result.Error: %v\n", result.Error)
-	return u, result.Error
+	return result.Error
 }
 
 func (d *DB) GetUserByEmail(email string) (*User, error) {
@@ -101,13 +76,13 @@ func (d *DB) GetUserById(id string) (*User, error) {
 
 }
 
-func (d *DB) GetAllUsers() ([]User, error) {
+func (d *DB) GetAllUsers() ([]User, error) { //TODO: for testing only
 	// var u User
 	var users []User
-	d.db.Delete(&users, []int{1,2,3,4,5})
+	// d.db.Delete(&users, []int{1, 2, 3, 4, 5})
 	result := d.db.Find(&users)
-	len := result.RowsAffected
-	fmt.Printf("len: %v\n", len)
+	// len := result.RowsAffected
+	// fmt.Printf("len: %v\n", len)
 	if result.Error != nil {
 		return users, result.Error
 	}
@@ -121,7 +96,7 @@ func (d *DB) UpdatePassword(email string, password string) error {
 	return nil
 }
 
-func (d *DB) UpdateUserById(id string, name string, password string, voucher string) (*User, error) {
+func (d *DB) UpdateUserById(id string, name string, password string, voucher string, updatedAt time.Time, code int) (string, error) {
 	var res *User
 	if name != "" {
 		d.db.Model(&res).Where("id = ?", id).Update("name", name)
@@ -132,7 +107,18 @@ func (d *DB) UpdateUserById(id string, name string, password string, voucher str
 	if voucher != "" {
 		d.db.Model(&res).Where("id = ?", id).Update("voucher", voucher)
 	}
-	return res, nil
+	if updatedAt.IsZero() {
+		d.db.Model(&res).Where("id = ?", id).Update("updatedAt", updatedAt)
+	}
+	if code != 0 {
+		d.db.Model(&res).Where("id = ?", id).Update("code", code)
+	}
+	return id, nil
+}
+
+func (d *DB) UpdateVerification(id string, verified bool) {
+	var res *User
+	d.db.Model(&res).Where("id=?", id).Update("verified", verified)
 }
 
 func (d *DB) AddVoucher(id string, voucher string) *User {

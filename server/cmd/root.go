@@ -22,10 +22,13 @@ var rootCmd = &cobra.Command{
 		They can deploy kubernetess that can be small, meduim, or largde.
 		The Amout of resources available will depend on their voucher.
 		`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
+
 	Run: func(cmd *cobra.Command, args []string) {
-		server, err := routes.NewServer("./database.db")
+		config, err := cmd.Flags().GetString("config")
+		if err != nil {
+			log.Fatal(err)
+		}
+		server, err := routes.NewServer(config)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -47,13 +50,5 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.grid3_auto_deployer.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.Flags().StringP("config", "c", "./config.json", "Enter your configurations path")
 }

@@ -22,8 +22,9 @@ type SignUpInput struct {
 }
 
 type VerifyCodeInput struct {
-	Email string `json:"email"`
-	Code  int    `json:"code"`
+	Email     string    `json:"email"`
+	Code      int       `json:"code"`
+	CreatedAt time.Time `json:"timestamp"`
 }
 
 type ChangePasswordInput struct {
@@ -78,6 +79,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		Name:           signUp.Name,
 		Email:          signUp.Email,
 		HashedPassword: signUp.Password,
+		Verified:       false,
 	}
 
 	// check if user already exists
@@ -102,9 +104,13 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	u.Code = code
-	fmt.Printf("code: %v\n", code)
-	msg := "Verfification Code has been sent to " + u.Email
-	r.db.SetCache(u.Email, u)
+	fmt.Printf("code: %v\n", code) //TODO: to be removed
+	msg := "Verification Code has been sent to " + u.Email
+	err = r.db.CreateUser(&u)
+	if err != nil {
+		r.WriteErrResponse(w, err)
+		return
+	}
 	r.WriteMsgResponse(w, msg, "")
 }
 
@@ -117,23 +123,22 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	cachedUser, err := r.db.GetCache(data.Email)
+	user, err := r.db.GetUserByEmail(data.Email)
 	if err != nil {
 		r.WriteErrResponse(w, err)
-		return
 	}
 
-	if cachedUser.Code != data.Code {
+	if user.Code != data.Code {
 		r.WriteErrResponse(w, fmt.Errorf("wrong code"))
 		return
 	}
 
-	u, err := r.db.CreateUser(&cachedUser)
-	if err != nil {
-		r.WriteErrResponse(w, err)
+	if user.UpdatedAt.Add(time.Duration(r.config.Token.Timeout) * time.Minute).Before(time.Now()) {
+		r.WriteErrResponse(w, fmt.Errorf("time out"))
 		return
 	}
-	r.WriteMsgResponse(w, "Account Created Successfully", u)
+	r.db.UpdateVerification(user.ID, true)
+	r.WriteMsgResponse(w, "Account Created Successfully", "")
 }
 
 func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
@@ -149,13 +154,17 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 		r.WriteErrResponse(w, err)
 	}
 
+	if !user.Verified {
+		r.WriteErrResponse(w, fmt.Errorf("user not verified yet"))
+	}
+
 	match := internal.VerifyPassword(user.HashedPassword, u.HashedPassword)
 	if match {
 		r.WriteErrResponse(w, fmt.Errorf("Password is not correct"))
 		return
 	}
 
-	token, err := internal.CreateJWT(&u, r.config.Token.Secret)
+	token, err := internal.CreateJWT(&u, r.config.Token.Secret, r.config.Token.Timeout)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
@@ -168,26 +177,6 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 	r.WriteMsgResponse(w, "token", token)
 }
 
-// func (r *Router) Home(w http.ResponseWriter, req *http.Request) {
-// 	reqToken := req.Header.Get("Authorization")
-// 	splitToken := strings.Split(reqToken, "Bearer ")
-// 	reqToken = splitToken[1]
-
-// 	claims := &models.Claims{}
-// 	token, err := jwt.ParseWithClaims(reqToken, claims, func(token *jwt.Token) (interface{}, error) {
-// 		return []byte(r.secret), nil
-// 	})
-// 	if err != nil {
-// 		r.WriteErrResponse(w, err)
-// 		return
-// 	}
-// 	if !token.Valid {
-// 		r.WriteErrResponse(w, fmt.Errorf("token is invalid"))
-// 		w.WriteHeader(http.StatusUnauthorized)
-// 		return
-// 	}
-// 	r.WriteMsgResponse(w, "Welcome Home"+claims.Email, "")
-// }
 
 func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 	reqToken := req.Header.Get("Authorization")
@@ -265,18 +254,27 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
+	user, err := r.db.GetUserByEmail(email.Email)
+	if err != nil {
+		r.WriteErrResponse(w, fmt.Errorf("user not found %v", err))
+		return
+	}
+
 	// send verification code
 	code, err := internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, email.Email)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
 	}
-	fmt.Printf("code: %v\n", code)
+	fmt.Printf("code: %v\n", code) //TODO: to be removed
 
-	msg := "Verfification Code has been sent to " + email.Email
-
-	r.db.SetCache(email.Email, code)
-	r.WriteMsgResponse(w, msg, "")
+	msg := "Verification Code has been sent to " + email.Email
+	id, err := r.db.UpdateUserById(user.ID, "", "", "", time.Now(), code)
+	if err != nil {
+		r.WriteErrResponse(w, err)
+		return
+	}
+	r.WriteMsgResponse(w, msg, id)
 }
 
 func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *http.Request) {
@@ -287,14 +285,19 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 		return
 	}
 
-	cachedUser, err := r.db.GetCache(data.Email)
+	user, err := r.db.GetUserByEmail(data.Email)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
 	}
 
-	if cachedUser.Code != data.Code {
+	if user.Code != data.Code {
 		r.WriteErrResponse(w, fmt.Errorf("wrong code"))
+		return
+	}
+
+	if user.UpdatedAt.Add(time.Duration(r.config.Token.Timeout) * time.Minute).Before(data.CreatedAt) {
+		r.WriteErrResponse(w, fmt.Errorf("time out"))
 		return
 	}
 
@@ -342,7 +345,7 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	updatedUser, err := r.db.UpdateUserById(id, input.Name, input.Password, input.Voucher)
+	updatedUser, err := r.db.UpdateUserById(id, input.Name, input.Password, input.Voucher, time.Time{}, 0)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
@@ -383,5 +386,5 @@ func (r *Router) AddVoucherHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	user := r.db.AddVoucher(id, voucher.Voucher)
-	r.WriteMsgResponse(w, "Voucher Applied Successfuly", user)
+	r.WriteMsgResponse(w, "Voucher Applied Successfully", user)
 }

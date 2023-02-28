@@ -10,6 +10,7 @@ type User struct {
 	Email          string    `json:"email" gorm:"unique" binding:"required"`
 	HashedPassword string    `json:"hashedPassword" binding:"required"`
 	Voucher        string    `json:"voucher"`
-	CreatedAt      time.Time `json:"timestamp"`
+	UpdatedAt      time.Time `json:"timestamp"`
 	Code           int       `json:"code"`
+	Verified       bool      `json:"verified"`
 }

@@ -9,7 +9,7 @@ import (
 type Configuration struct {
 	Server     Server     `json:"server"`
 	MailSender MailSender `json:"mailSender"`
-	Database   DB         `json:"databasse"`
+	Database   DB         `json:"database"`
 	Token      JwtToken   `json:"token"`
 }
 
@@ -29,7 +29,7 @@ type DB struct {
 
 type JwtToken struct {
 	Secret  string `json:"secret"`
-	Timeout string    `json:"timeout"`
+	Timeout int    `json:"timeout"`
 }
 
 func ReadConfFile(path string) ([]byte, error) {

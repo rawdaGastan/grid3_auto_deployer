@@ -243,43 +243,6 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
 
-  /user/update/{id}:
-    put:
-      description: A user to update data
-      security:
-        - Bearer: []
-      consumes:
-        - application/json
-      parameters:
-        - in: body
-          name: code
-          description: the user data to update
-          schema:
-            $ref: '#/definitions/UpdateData' 
-        - in: path
-          name: id
-          description: user ID
-          required: true
-          type: string
-          format: uuid
-      responses:
-        203:
-          description: OK
-          schema:
-                type: object
-                properties:
-                  msg:
-                    type: string
-                    example: User is updated successfully
-        404:
-          $ref: '#/responses/UnfoundError'
-        401:
-          $ref: '#/responses/UnauthorizedError'
-        500:
-          description: Unexpected error
-          schema:
-                $ref: '#/responses/ErrorResponse'
-  
   /user/add_voucher/{id}:
     put:
       description: A user to add voucher
@@ -320,7 +283,7 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
   
-  /user/get/{id}:
+  /user/{id}:
     get:
       description: getting a user
       security:
@@ -357,7 +320,44 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
 
-  /quota/get:
+    put:
+      description: A user to update data
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: code
+          description: the user data to update
+          schema:
+            $ref: '#/definitions/UpdateData' 
+        - in: path
+          name: id
+          description: user ID
+          required: true
+          type: string
+          format: uuid
+      responses:
+        203:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: User is updated successfully
+        404:
+          $ref: '#/responses/UnfoundError'
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+  
+
+  /quota:
     get:
       description: getting a quota
       security:
@@ -419,7 +419,7 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
 
-  /vm/get/{id}:
+  /vm/{id}:
     get:
       description: get a vm
       security:
@@ -483,8 +483,6 @@ paths:
           description: Unexpected error
           schema:
                 $ref: '#/responses/ErrorResponse'
-  
-  /vm/delete/{id}:
     delete:
       description: delete a vm
       security:
@@ -571,7 +569,7 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
 
-  /k8s/get/{id}:
+  /k8s/{id}:
     get:
       description: get a k8s
       security:
@@ -599,6 +597,36 @@ paths:
                       k8s:
                         $ref: '#/definitions/Kubernetes'
 
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        404:
+          $ref: '#/responses/UnfoundError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+    delete:
+      description: delete a k8s
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: id
+          description: k8s ID
+          required: true
+          type: string
+          format: integer
+      responses:
+        204:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
         401:
           $ref: '#/responses/UnauthorizedError'
         404:
@@ -636,37 +664,6 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
   
-  /k8s/delete/{id}:
-    delete:
-      description: delete a k8s
-      security:
-        - Bearer: []
-      consumes:
-        - application/json
-      parameters:
-        - in: path
-          name: id
-          description: k8s ID
-          required: true
-          type: string
-          format: integer
-      responses:
-        204:
-          description: OK
-          schema:
-                type: object
-                properties:
-                  msg:
-                    type: string
-        401:
-          $ref: '#/responses/UnauthorizedError'
-        404:
-          $ref: '#/responses/UnfoundError'
-        500:
-          description: Unexpected error
-          schema:
-                $ref: '#/responses/ErrorResponse'
-
   /k8s/delete:
     delete:
       description: delete all k8s for a user

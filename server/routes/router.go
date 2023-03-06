@@ -3,6 +3,7 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -33,7 +34,7 @@ type ResponseMsg struct {
 }
 
 // WriteErrResponse wite error messages in api
-func (router *Router) WriteErrResponse(w http.ResponseWriter, err error) {
+func (r *Router) WriteErrResponse(w http.ResponseWriter, err error) {
 	jsonErrRes, _ := json.Marshal(ErrorMsg{Error: err.Error()})
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusInternalServerError)
@@ -42,15 +43,15 @@ func (router *Router) WriteErrResponse(w http.ResponseWriter, err error) {
 }
 
 // WriteMsgResponse write response messages for api
-func (router *Router) WriteMsgResponse(w http.ResponseWriter, message string, data interface{}) {
+func (r *Router) WriteMsgResponse(w http.ResponseWriter, message string, data interface{}) {
 	contentJSON, err := json.Marshal(ResponseMsg{Message: message, Data: data})
 	if err != nil {
-		router.WriteErrResponse(w, err)
+		r.WriteErrResponse(w, err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(contentJSON)
-	log.Printf("write message response failed %v", err.Error())
+	r.WriteErrResponse(w, fmt.Errorf("write message response failed %v", err))
 }

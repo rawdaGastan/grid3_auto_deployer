@@ -1,4 +1,4 @@
-// package models for database models
+// Package models for database models
 package models
 
 // Quota struct holds available vms && k8s for each user

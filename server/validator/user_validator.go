@@ -1,4 +1,4 @@
-// package validator for validations
+// Package validator for validations
 package validator
 
 import (

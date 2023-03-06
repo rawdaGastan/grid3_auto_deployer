@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - client/**
+  workflow_dispatch:
 
 jobs:
   lint:

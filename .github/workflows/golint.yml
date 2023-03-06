@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: server
+        run: cd server
+
       - name: Set up Go
         uses: actions/setup-go@v3
         with:

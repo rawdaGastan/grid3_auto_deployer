@@ -1,7 +1,6 @@
 // Package models for database models
 package models
 
-//TODO: Change name to be same as repo
 
 import (
 	"github.com/threefoldtech/grid3-go/workloads"

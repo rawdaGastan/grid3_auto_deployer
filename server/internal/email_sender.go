@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/rawdaGastan/grid3_auto_deployer/validator"
+	"github.com/rawdaGastan/cloud4students/validator"
 )
 
 // SendMail sends verification mails

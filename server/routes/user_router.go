@@ -10,9 +10,9 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
-	"github.com/rawdaGastan/grid3_auto_deployer/internal"
-	"github.com/rawdaGastan/grid3_auto_deployer/models"
-	"github.com/rawdaGastan/grid3_auto_deployer/validator"
+	"github.com/rawdaGastan/cloud4students/internal"
+	"github.com/rawdaGastan/cloud4students/models"
+	"github.com/rawdaGastan/cloud4students/validator"
 )
 
 // SignUpInput struct for data needed when user creates account

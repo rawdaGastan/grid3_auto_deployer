@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/rawdaGastan/grid3_auto_deployer/models"
+	"github.com/rawdaGastan/cloud4students/models"
 )
 
 // CreateJWT create token for user

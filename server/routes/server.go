@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/rawdaGastan/grid3_auto_deployer/internal"
-	"github.com/rawdaGastan/grid3_auto_deployer/middlewares"
-	"github.com/rawdaGastan/grid3_auto_deployer/models"
+	"github.com/rawdaGastan/cloud4students/internal"
+	"github.com/rawdaGastan/cloud4students/middlewares"
+	"github.com/rawdaGastan/cloud4students/models"
 )
 
 // Server struct holds port of server

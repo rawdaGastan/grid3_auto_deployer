@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/rawdaGastan/grid3_auto_deployer/internal"
-	"github.com/rawdaGastan/grid3_auto_deployer/models"
+	"github.com/rawdaGastan/cloud4students/internal"
+	"github.com/rawdaGastan/cloud4students/models"
 )
 
 // Router struct holds db model and configurations

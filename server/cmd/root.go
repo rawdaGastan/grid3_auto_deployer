@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/rawdaGastan/grid3_auto_deployer/routes"
+	"github.com/rawdaGastan/cloud4students/routes"
 	"github.com/spf13/cobra"
 )
 

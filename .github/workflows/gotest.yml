@@ -14,9 +14,6 @@ jobs:
         with:
           submodules: "true"
 
-      - name: server
-        run: cd server
-
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
@@ -25,7 +22,7 @@ jobs:
 
       - name: Get dependencies
         run: |
-          go mod download
+          cd server && go mod download
 
       - name: Test
         run: go test -v ./...

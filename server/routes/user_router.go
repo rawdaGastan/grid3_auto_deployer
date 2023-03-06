@@ -25,21 +25,21 @@ type SignUpInput struct {
 
 // VerifyCodeInput struct takes verification code from user
 type VerifyCodeInput struct {
-	Email     string    `json:"email"`
-	Code      int       `json:"code"`
-	CreatedAt time.Time `json:"timestamp"`
+	Email     string    `json:"email" binding:"required"`
+	Code      int       `json:"code" binding:"required"`
+	CreatedAt time.Time `json:"timestamp" binding:"required"`
 }
 
 // ChangePasswordInput struct for user to change password
 type ChangePasswordInput struct {
-	Email           string `json:"email"`
+	Email           string `json:"email" binding:"required"`
 	Password        string `json:"password" binding:"required"`
 	ConfirmPassword string `json:"confirmPassword" binding:"required"`
 }
 
 // UpdateUserInput struct for user to updates his data
 type UpdateUserInput struct {
-	Name     string `json:"name" binding:"required"`
+	Name     string `json:"name"`
 	Password string `json:"password"`
 	Voucher  string `json:"voucher"`
 }

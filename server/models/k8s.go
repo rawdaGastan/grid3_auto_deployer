@@ -1,3 +1,4 @@
+// package models for database models
 package models
 
 //TODO: Change name to be same as repo

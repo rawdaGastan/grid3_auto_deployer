@@ -1,3 +1,4 @@
+// package routes for API endpoints
 package routes
 
 import (

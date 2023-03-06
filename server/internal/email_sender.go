@@ -1,3 +1,4 @@
+// package internal for internal details
 package internal
 
 import (

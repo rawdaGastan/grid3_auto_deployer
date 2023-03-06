@@ -1,3 +1,4 @@
+// package models for database models
 package models
 
 import (

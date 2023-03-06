@@ -3,38 +3,20 @@
     <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
       Account Settings
     </h5>
-    <v-row align="center" justify="center">
+    <v-row justify="center">
       <v-col cols="12" sm="6">
-        <v-text-field
-          v-model="email"
-          label="E-mail"
-          bg-color="accent"
-          variant="outlined"
-        >
-        </v-text-field>
+        <BaseInput label="E-mail" v-model="email" />
 
-        <v-select
-          v-model="select"
-          :items="items"
-          label="Gender"
-          bg-color="accent"
-          variant="outlined"
-        >
-        </v-select>
-        <v-text-field
-          v-model="voucher"
-          label="Voucher"
-          bg-color="accent"
-          variant="outlined"
-        ></v-text-field>
-        <v-btn
+        <BaseSelect v-model="select" :items="items" label="Gender" />
+
+        <BaseInput label="Voucher" v-model="voucher" />
+        <a
           href=""
-          variant="text"
           color="primary"
-          class="float-sm-end text-capitalize"
+          class="float-sm-end text-capitalize text-decoration-none"
         >
           Change password?
-        </v-btn>
+        </a>
       </v-col>
     </v-row>
   </v-container>
@@ -42,7 +24,13 @@
 
 <script>
 import { ref } from "vue";
+import BaseInput from "@/components/Form/BaseInput.vue";
+import BaseSelect from "@/components/Form/BaseSelect.vue";
 export default {
+  components: {
+    BaseInput,
+    BaseSelect,
+  },
   setup() {
     const email = ref(null);
     const items = ref(["Male", "Female"]);

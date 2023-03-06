@@ -1,5 +1,12 @@
 // Composables
 import { createRouter, createWebHistory } from 'vue-router'
+import Login from '@/views/Login.vue'
+import SignUp from '@/views/SignUp.vue'
+import Profile from '@/views/Profile.vue'
+import Home from '@/views/Home.vue'
+import About from '@/views/About.vue'
+import VM from '@/views/VM.vue'
+import K8s from '@/views/K8s.vue'
 
 const routes = [
   {
@@ -9,40 +16,37 @@ const routes = [
       {
         path: 'login',
         name: 'Login',
-        // route level code-splitting
-        // this generates a separate chunk (about.[hash].js) for this route
-        // which is lazy-loaded when the route is visited.
-        component: () =>
-          import(/* webpackChunkName: "login" */ '@/views/Login.vue')
+        component: Login
       },
       {
         path: 'sign-up',
         name: 'Sign Up',
-        component: () => import('@/views/SignUp.vue')
+        component: SignUp
       },
       {
         path: 'profile',
         name: 'Profile',
-        component: () => import('@/views/Profile.vue')
+        component: Profile
       },
       {
         path: '',
         name: 'Home',
-        // route level code-splitting
-        // this generates a separate chunk (about.[hash].js) for this route
-        // which is lazy-loaded when the route is visited.
-        component: () =>
-          import(/* webpackChunkName: "home" */ '@/views/Home.vue')
+        component: Home
+      },
+      {
+        path: 'about',
+        name: 'About',
+        component: About
       },
       {
         path: 'vm',
         name: 'VM',
-        component: () => import('@/views/VM.vue')
+        component: VM
       },
       {
         path: 'k8s',
         name: 'K8s',
-        component: () => import('@/views/K8s.vue')
+        component: K8s
       }
     ]
   }

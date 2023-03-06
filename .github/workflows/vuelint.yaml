@@ -19,6 +19,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
+          cache-dependency-path: ./client/yarn.lock
       - name: Yarn Install
         run: cd client && yarn install
       - name: ESLint

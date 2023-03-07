@@ -20,7 +20,7 @@ type SignUpInput struct {
 	Name            string `json:"name" binding:"required"`
 	Email           string `json:"email" gorm:"unique" binding:"required"`
 	Password        string `json:"password" binding:"required"`
-	ConfirmPassword string `json:"confirmPassword" binding:"required"`
+	ConfirmPassword string `json:"confirm_password" binding:"required"`
 }
 
 // VerifyCodeInput struct takes verification code from user
@@ -108,7 +108,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	// update code if user is not verified but exists
 	if getErr == nil {
 		if !user.Verified {
-			_, err = r.db.UpdateUserByID(user.ID, "", "", time.Now(), code)
+			_, err = r.db.UpdateUserByID(user.ID.String(), "", "", time.Now(), code)
 			if err != nil {
 				r.WriteErrResponse(w, err)
 				return
@@ -142,7 +142,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 
 		// create empty quota
 		quota := models.Quota{
-			UserID: u.ID,
+			UserID: u.ID.String(),
 			Vms:    0,
 			K8s:    0,
 		}
@@ -172,7 +172,7 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 	}
 
 	if user.Verified {
-		r.WriteMsgResponse(w, "account is already created", map[string]string{"user_id": user.ID})
+		r.WriteMsgResponse(w, "account is already created", map[string]string{"user_id": user.ID.String()})
 		return
 	}
 
@@ -185,12 +185,12 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 		r.WriteErrResponse(w, fmt.Errorf("time out"))
 		return
 	}
-	err = r.db.UpdateVerification(user.ID, true)
+	err = r.db.UpdateVerification(user.ID.String(), true)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
 	}
-	r.WriteMsgResponse(w, "account created successfully", map[string]string{"user_id": user.ID})
+	r.WriteMsgResponse(w, "account created successfully", map[string]string{"user_id": user.ID.String()})
 }
 
 // SignInHandler allows user to sign in to the system
@@ -213,19 +213,13 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	hashedPassword, err := internal.HashPassword(input.Password)
-	if err != nil {
-		r.WriteErrResponse(w, err)
-		return
-	}
-
-	match := internal.VerifyPassword(user.HashedPassword, hashedPassword)
+	match := internal.VerifyPassword(user.HashedPassword, input.Password)
 	if match {
 		r.WriteErrResponse(w, fmt.Errorf("password is not correct"))
 		return
 	}
 
-	token, err := internal.CreateJWT(user.ID, user.Email, r.config.Token.Secret, r.config.Token.Timeout)
+	token, err := internal.CreateJWT(user.ID.String(), user.Email, r.config.Token.Secret, r.config.Token.Timeout)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
@@ -310,7 +304,7 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 	}
 	fmt.Printf("code: %v\n", code) //TODO: to be removed
 
-	_, err = r.db.UpdateUserByID(user.ID, "", "", time.Now(), code)
+	_, err = r.db.UpdateUserByID(user.ID.String(), "", "", time.Now(), code)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
@@ -343,7 +337,7 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 		return
 	}
 
-	r.WriteMsgResponse(w, "code is verified", map[string]string{"user_id": user.ID})
+	r.WriteMsgResponse(w, "code is verified", map[string]string{"user_id": user.ID.String()})
 }
 
 // ChangePasswordHandler changes password of user
@@ -397,6 +391,7 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	var hashedPassword string
 	if len(strings.TrimSpace(input.Password)) != 0 {
 		// password and confirm password should match
 		if input.Password != input.ConfirmPassword {
@@ -410,9 +405,16 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 			r.WriteErrResponse(w, fmt.Errorf("error: %v password isn't valid", err))
 			return
 		}
+
+		// hash password
+		hashedPassword, err = internal.HashPassword(input.Password)
+		if err != nil {
+			r.WriteErrResponse(w, err)
+			return
+		}
 	}
 
-	userID, err := r.db.UpdateUserByID(id, input.Name, input.Password, time.Time{}, 0)
+	userID, err := r.db.UpdateUserByID(id, input.Name, hashedPassword, time.Time{}, 0)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
@@ -471,13 +473,14 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 		r.WriteErrResponse(w, err)
 		return
 	}
-	err = r.db.AddUserVoucher(id, input.Voucher)
+
+	voucherQuota, err := r.db.GetVoucher(input.Voucher)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
 	}
 
-	voucherQuota, err := r.db.GetVoucher(input.Voucher)
+	err = r.db.AddUserVoucher(id, input.Voucher)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return

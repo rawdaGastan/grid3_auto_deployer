@@ -3,11 +3,13 @@ package models
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // User struct holds data of users
 type User struct {
-	ID             string    `json:"id" gorm:"type:uuid;default:uuid_generate_v4"`
+	ID             uuid.UUID `gorm:"primary_key; unique; type:uuid; column:id"`
 	Name           string    `json:"name" binding:"required"`
 	Email          string    `json:"email" gorm:"unique" binding:"required"`
 	HashedPassword string    `json:"hashed_password" binding:"required"`

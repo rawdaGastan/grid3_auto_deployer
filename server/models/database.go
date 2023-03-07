@@ -90,7 +90,7 @@ func (d *DB) GetUserByID(id string) (User, error) {
 // UpdatePassword updates password of user
 func (d *DB) UpdatePassword(email string, password string) error {
 	var res User
-	result := d.db.Model(&res).Where("email = ?", email).Update("password", password)
+	result := d.db.Model(&res).Where("email = ?", email).Update("hashed_password", password)
 
 	return result.Error
 }
@@ -178,21 +178,8 @@ func (d *DB) GetUserQuota(userID string) (Quota, error) {
 
 // CreateVoucher creates a new voucher
 func (d *DB) CreateVoucher(v Voucher) error {
-	allVouchers, err := d.GetVouchers()
-	if err != nil {
-		return err
-	}
-	v.ID = len(allVouchers) + 1
 	result := d.db.Create(&v)
 	return result.Error
-}
-
-// GetVouchers gets all vouchers in the database
-func (d *DB) GetVouchers() ([]Voucher, error) {
-	var vouchers []Voucher
-	result := d.db.Find(&vouchers)
-
-	return vouchers, result.Error
 }
 
 // GetVoucher gets voucher

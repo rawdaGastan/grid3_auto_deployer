@@ -35,14 +35,12 @@ func (d *DB) Migrate() error {
 	if err != nil {
 		return err
 	}
-	// err = d.db.AutoMigrate(&Token{})
-	// if err != nil {
-	// 	return err
-	// }
-	// err = d.db.AutoMigrate(&Quota{})
-	// if err != nil {
-	// 	return err
-	// }
+
+	err = d.db.AutoMigrate(&Quota{})
+	if err != nil {
+		return err
+	}
+
 	// err = d.db.AutoMigrate(&VM{})
 	// if err != nil {
 	// 	return err
@@ -51,6 +49,11 @@ func (d *DB) Migrate() error {
 	// if err != nil {
 	// 	return err
 	// }
+
+	err = d.db.AutoMigrate(&Voucher{})
+	if err != nil {
+		return err
+	}
 	return nil
 
 }
@@ -62,25 +65,25 @@ func (d *DB) CreateUser(u *User) error {
 }
 
 // GetUserByEmail returns user by its email
-func (d *DB) GetUserByEmail(email string) (*User, error) {
+func (d *DB) GetUserByEmail(email string) (User, error) {
 	var res User
 	query := d.db.First(&res, "email = ?", email)
 	if query.Error != nil {
-		return &res, query.Error
+		return User{}, query.Error
 	}
 
-	return &res, nil
+	return res, nil
 }
 
 // GetUserByID returns user by its id
-func (d *DB) GetUserByID(id string) (*User, error) {
+func (d *DB) GetUserByID(id string) (User, error) {
 	var res User
 	query := d.db.First(&res, "id = ?", id)
 	if query.Error != nil {
-		return &res, query.Error
+		return User{}, query.Error
 	}
 
-	return &res, nil
+	return res, nil
 
 }
 
@@ -93,8 +96,8 @@ func (d *DB) UpdatePassword(email string, password string) error {
 }
 
 // UpdateUserByID updates information of user
-func (d *DB) UpdateUserByID(id string, name string, password string, voucher string, updatedAt time.Time, code int) (string, error) {
-	var res *User
+func (d *DB) UpdateUserByID(id string, name string, password string, updatedAt time.Time, code int) (string, error) {
+	var res User
 	if name != "" {
 		result := d.db.Model(&res).Where("id = ?", id).Update("name", name)
 		if result.Error != nil {
@@ -102,19 +105,13 @@ func (d *DB) UpdateUserByID(id string, name string, password string, voucher str
 		}
 	}
 	if password != "" {
-		result := d.db.Model(&res).Where("id = ?", id).Update("password", password)
+		result := d.db.Model(&res).Where("id = ?", id).Update("hashed_password", password)
 		if result.Error != nil {
 			return "", result.Error
 		}
 	}
-	if voucher != "" {
-		result := d.db.Model(&res).Where("id = ?", id).Update("voucher", voucher)
-		if result.Error != nil {
-			return "", result.Error
-		}
-	}
-	if updatedAt.IsZero() {
-		result := d.db.Model(&res).Where("id = ?", id).Update("updatedAt", updatedAt)
+	if !updatedAt.IsZero() {
+		result := d.db.Model(&res).Where("id = ?", id).Update("updated_at", updatedAt)
 		if result.Error != nil {
 			return "", result.Error
 		}
@@ -130,14 +127,14 @@ func (d *DB) UpdateUserByID(id string, name string, password string, voucher str
 
 // UpdateVerification updates if user is verified or not
 func (d *DB) UpdateVerification(id string, verified bool) error {
-	var res *User
+	var res User
 	result := d.db.Model(&res).Where("id=?", id).Update("verified", verified)
 	return result.Error
 }
 
-// AddVoucher applies voucher for user
-func (d *DB) AddVoucher(id string, voucher string) error {
-	var res *User
+// AddUserVoucher applies voucher for user
+func (d *DB) AddUserVoucher(id string, voucher string) error {
+	var res User
 	result := d.db.Model(&res).Where("id = ?", id).Update("voucher", voucher)
 	return result.Error
 }
@@ -154,3 +151,57 @@ func (d *DB) AddVoucher(id string, voucher string) error {
 // 	}
 // 	return users, nil
 // }
+
+// CreateQuota creates a new quota
+func (d *DB) CreateQuota(q Quota) error {
+	result := d.db.Create(&q)
+	return result.Error
+}
+
+// UpdateUserQuota updates quota
+func (d *DB) UpdateUserQuota(userID string, vms, k8s int) error {
+	var res Quota
+	result := d.db.Model(&res).Where("user_id = ?", userID).Update("vms", vms).Update("k8s", k8s)
+	return result.Error
+}
+
+// GetUserQuota gets user quota available (vms and k8s)
+func (d *DB) GetUserQuota(userID string) (Quota, error) {
+	var res Quota
+	query := d.db.First(&res, "user_id = ?", userID)
+	if query.Error != nil {
+		return res, query.Error
+	}
+
+	return res, query.Error
+}
+
+// CreateVoucher creates a new voucher
+func (d *DB) CreateVoucher(v Voucher) error {
+	allVouchers, err := d.GetVouchers()
+	if err != nil {
+		return err
+	}
+	v.ID = len(allVouchers) + 1
+	result := d.db.Create(&v)
+	return result.Error
+}
+
+// GetVouchers gets all vouchers in the database
+func (d *DB) GetVouchers() ([]Voucher, error) {
+	var vouchers []Voucher
+	result := d.db.Find(&vouchers)
+
+	return vouchers, result.Error
+}
+
+// GetVoucher gets voucher
+func (d *DB) GetVoucher(voucher string) (Voucher, error) {
+	var res Voucher
+	query := d.db.First(&res, "voucher = ?", voucher)
+	if query.Error != nil {
+		return res, query.Error
+	}
+
+	return res, query.Error
+}

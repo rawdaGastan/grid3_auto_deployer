@@ -52,14 +52,17 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc("/user/signup/verify_email", router.VerifySignUpCodeHandler).Methods("POST")
 	r.HandleFunc("/user/signin", router.SignInHandler).Methods("POST")
 	r.HandleFunc("/user/refresh_token", router.RefreshJWTHandler).Methods("POST")
-	r.HandleFunc("/user/signout", router.Logout).Methods("POST")
+	r.HandleFunc("/user/signout", router.SignOut).Methods("POST")
 	r.HandleFunc("/user/forgot_password", router.ForgotPasswordHandler).Methods("POST")
 	r.HandleFunc("/user/forget_password/verify_email", router.VerifyForgetPasswordCodeHandler).Methods("POST")
-	r.HandleFunc("/user/change_password", router.ChangePasswordHandler).Methods("POST")
+	r.HandleFunc("/user/change_password", router.ChangePasswordHandler).Methods("PUT")
 	r.HandleFunc("/user/{id}", router.UpdateUserHandler).Methods("PUT")
 	r.HandleFunc("/user/{id}", router.GetUserHandler).Methods("GET")
 	// r.HandleFunc("/user/get", router.GetAllUsersHandlres).Methods("GET") //TODO:for testing only
-	r.HandleFunc("/user/add_voucher/{id}", router.AddVoucherHandler).Methods("PUT")
+	r.HandleFunc("/user/activate_voucher/{id}", router.ActivateVoucherHandler).Methods("PUT")
+
+	// ADMIN ACCESS
+	r.HandleFunc("/voucher/generate", router.GenerateVoucherHandler).Methods("POST")
 	http.Handle("/", r)
 
 	return &Server{port: configuration.Server.Port}, nil

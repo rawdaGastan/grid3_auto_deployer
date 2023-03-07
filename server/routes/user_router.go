@@ -145,7 +145,11 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 			Vms:    0,
 			K8s:    0,
 		}
-		r.db.CreateQuota(&quota)
+		err = r.db.CreateQuota(&quota)
+		if err != nil {
+			r.WriteErrResponse(w, err)
+			return
+		}
 	}
 
 	r.WriteMsgResponse(w, "Verification Code has been sent to "+signUp.Email, "")
@@ -463,7 +467,7 @@ func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 // AddVoucherHandler makes user adds voucher to his account
-func (r *Router) AddVoucherHandler(w http.ResponseWriter, req *http.Request) {
+func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request) {
 	id := mux.Vars(req)["id"]
 
 	reqToken := req.Header.Get("Authorization")
@@ -498,7 +502,11 @@ func (r *Router) AddVoucherHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	r.db.UpdateUserQuota(id, voucherQuota.VMs, voucherQuota.K8s)
+	err = r.db.UpdateUserQuota(id, voucherQuota.VMs, voucherQuota.K8s)
+	if err != nil {
+		r.WriteErrResponse(w, err)
+		return
+	}
 
 	r.WriteMsgResponse(w, "Voucher Applied Successfully", "")
 }

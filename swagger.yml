@@ -243,7 +243,7 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
 
-  /user/add_voucher/{id}:
+  /user/activate_voucher/{id}:
     put:
       description: A user to add voucher
       security:
@@ -822,8 +822,6 @@ definitions:
         type: string
         format: email
       password:
-        type: string
-      voucher:
         type: string
 
   DeployVM:

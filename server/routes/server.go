@@ -59,7 +59,7 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc("/user/{id}", router.UpdateUserHandler).Methods("PUT")
 	r.HandleFunc("/user/{id}", router.GetUserHandler).Methods("GET")
 	// r.HandleFunc("/user/get", router.GetAllUsersHandlres).Methods("GET") //TODO:for testing only
-	r.HandleFunc("/user/add_voucher/{id}", router.AddVoucherHandler).Methods("PUT")
+	r.HandleFunc("/user/activate_voucher/{id}", router.ActivateVoucherHandler).Methods("PUT")
 
 	// ADMIN ACCESS
 	r.HandleFunc("/voucher/generate", router.GenerateVoucherHandler).Methods("POST")

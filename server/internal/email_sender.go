@@ -12,10 +12,10 @@ import (
 )
 
 // SendMail sends verification mails
-func SendMail(sender string, password string, reciever string) (int, error) {
-	valid := validator.ValidateMail(reciever)
+func SendMail(sender string, password string, receiver string, timeout int) (int, error) {
+	valid := validator.ValidateMail(receiver)
 	if !valid {
-		return 0, fmt.Errorf("email %v is not valid", reciever)
+		return 0, fmt.Errorf("email %v is not valid", receiver)
 	}
 	auth := smtp.PlainAuth(
 		"",
@@ -30,18 +30,15 @@ func SendMail(sender string, password string, reciever string) (int, error) {
 	rand.Seed(time.Now().UnixNano())
 	code := rand.Intn(max-min) + min
 
-	subject := "Welcome to Cloud4Students. \n"
-	body := `We are so glad to have you here
-your code is` + strconv.Itoa(code) +
-		`The code will expire in 5 minutes
-Please don't share it with anyone.`
+	subject := "Welcome to Cloud4Students\n\n"
+	body := fmt.Sprintf("We are so glad to have you here.\n\nYour code is %s\nThe code will expire in %d minutes.\nPlease don't share it with anyone.", strconv.Itoa(code), timeout)
 	message := subject + body
 
 	err := smtp.SendMail(
 		"smtp.gmail.com:587",
 		auth,
 		sender,
-		[]string{reciever},
+		[]string{receiver},
 		[]byte(message),
 	)
 	return code, err

@@ -3,7 +3,7 @@ package internal
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"os"
 )
 
@@ -52,7 +52,7 @@ func ReadConfFile(path string) ([]byte, error) {
 	}
 
 	defer confFile.Close()
-	conf, err := ioutil.ReadAll(confFile)
+	conf, err := io.ReadAll(confFile)
 	if err != nil {
 		return conf, err
 	}

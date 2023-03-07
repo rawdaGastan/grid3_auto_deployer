@@ -9,11 +9,11 @@ import (
 )
 
 // CreateJWT create token for user
-func CreateJWT(u *models.User, secret string, timeout int) (string, error) {
+func CreateJWT(userID string, email string, secret string, timeout int) (string, error) {
 	expirationTime := time.Now().Add(time.Duration(timeout) * time.Minute)
 	claims := &models.Claims{
-		UserID: u.ID,
-		Email:  u.Email,
+		UserID: userID,
+		Email:  email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},

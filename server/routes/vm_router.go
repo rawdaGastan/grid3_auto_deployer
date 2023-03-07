@@ -125,7 +125,7 @@ func (r *Router) DeployVmHandler(w http.ResponseWriter, req *http.Request) {
 	r.WriteMsgResponse(w, "vm", v)
 
 	userVM := models.VM{ //TODO: id ??
-		UserID: user.ID,
+		UserID: user.ID.String(),
 		Name:   vm.Name,
 		IP:     vm.YggIP,
 	}
@@ -172,7 +172,7 @@ func filterNode(resource string) types.NodeFilter {
 
 }
 
-//TODO: to be fixed
+// TODO: to be fixed
 func generateNetworkName() string {
 	seed := time.Now().UTC().UnixNano()
 	nameGenerator := namegenerator.NewNameGenerator(seed)

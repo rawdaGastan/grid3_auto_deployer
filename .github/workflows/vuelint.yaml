@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - client/**
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -13,16 +14,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: client
-        run: cd client
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
+          cache-dependency-path: ./client/yarn.lock
       - name: Yarn Install
-        run: yarn install
+        run: cd client && yarn install
       - name: ESLint
-        run: yarn check-eslint
+        run: cd client && yarn check-eslint
       - name: Prettier
-        run: yarn check-prettier
+        run: cd client && yarn check-prettier

@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - server/**
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -15,9 +16,6 @@ jobs:
         with:
           submodules: "true"
 
-      - name: server
-        run: cd server
-
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
@@ -27,7 +25,8 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          args: --timeout 3m --verbose
+          args: --timeout 3m --verbose 
+          working-directory: server
 
       - name: gofmt
         uses: Jerome1337/gofmt-action@v1.0.5

@@ -42,7 +42,6 @@ func (r *Router) WriteErrResponse(w http.ResponseWriter, err error) {
 	if err != nil {
 		log.Printf("write error response failed %v", err.Error())
 	}
-
 }
 
 // WriteMsgResponse write response messages for api
@@ -59,5 +58,4 @@ func (r *Router) WriteMsgResponse(w http.ResponseWriter, message string, data in
 	if err != nil {
 		r.WriteErrResponse(w, fmt.Errorf("write message response failed %v", err))
 	}
-
 }

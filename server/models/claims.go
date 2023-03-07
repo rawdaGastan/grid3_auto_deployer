@@ -7,7 +7,7 @@ import (
 
 // Claims struct that will be encoded to a JWT.
 type Claims struct {
-	UserID uint64 `json:"userID"`
+	UserID string `json:"user_id"`
 	Email  string `json:"email"`
 	jwt.RegisteredClaims
 }

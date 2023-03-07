@@ -18,7 +18,7 @@ type GenerateVoucherInput struct {
 	K8s    int `json:"k8s" binding:"required"`
 }
 
-// SignUpHandler creates account for user
+// GenerateVoucherHandler generates a voucher by admin
 func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request) {
 	reqToken := req.Header.Get("Authorization")
 	splitToken := strings.Split(reqToken, "Bearer ")
@@ -49,7 +49,7 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 		VMs:     input.VMs,
 	}
 
-	err = r.db.CreateVoucher(&v)
+	err = r.db.CreateVoucher(v)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return

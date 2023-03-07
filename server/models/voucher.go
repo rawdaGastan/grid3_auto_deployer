@@ -1,7 +1,7 @@
 // Package models for database models
 package models
 
-// User struct holds data of users
+// Voucher struct holds data of vouchers
 type Voucher struct {
 	ID      int    `json:"id" gorm:"unique" binding:"required"`
 	Voucher string `json:"voucher" gorm:"unique" binding:"required"`

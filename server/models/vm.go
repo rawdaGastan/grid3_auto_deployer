@@ -8,6 +8,6 @@ import (
 // VM struct for vms data
 type VM struct {
 	ID     int          `json:"id" gorm:"primaryKey"`
-	UserID string       `json:"userID"`
+	UserID string       `json:"user_id"`
 	VM     workloads.VM `json:"vm"`
 }

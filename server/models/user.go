@@ -10,9 +10,9 @@ type User struct {
 	ID             string    `json:"id" gorm:"type:uuid;default:uuid_generate_v4"`
 	Name           string    `json:"name" binding:"required"`
 	Email          string    `json:"email" gorm:"unique" binding:"required"`
-	HashedPassword string    `json:"hashedPassword" binding:"required"`
+	HashedPassword string    `json:"hashed_password" binding:"required"`
 	Voucher        string    `json:"voucher"`
-	UpdatedAt      time.Time `json:"timestamp"`
+	UpdatedAt      time.Time `json:"updated_at"`
 	Code           int       `json:"code"`
 	Verified       bool      `json:"verified"`
 	// checks if user type is admin

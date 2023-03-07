@@ -39,13 +39,14 @@ type SignInInput struct {
 type ChangePasswordInput struct {
 	Email           string `json:"email" binding:"required"`
 	Password        string `json:"password" binding:"required"`
-	ConfirmPassword string `json:"confirmPassword" binding:"required"`
+	ConfirmPassword string `json:"confirm_password" binding:"required"`
 }
 
 // UpdateUserInput struct for user to updates his data
 type UpdateUserInput struct {
-	Name     string `json:"name"`
-	Password string `json:"password"`
+	Name            string `json:"name"`
+	Password        string `json:"password"`
+	ConfirmPassword string `json:"confirm_password"`
 }
 
 // EmailInput struct for user when forgetting password
@@ -92,7 +93,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	// check if user already exists and verified
 	if getErr == nil {
 		if user.Verified {
-			r.WriteMsgResponse(w, "user already exists", signUp.Email)
+			r.WriteMsgResponse(w, "user already exists", "")
 			return
 		}
 	}
@@ -145,14 +146,14 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 			Vms:    0,
 			K8s:    0,
 		}
-		err = r.db.CreateQuota(&quota)
+		err = r.db.CreateQuota(quota)
 		if err != nil {
 			r.WriteErrResponse(w, err)
 			return
 		}
 	}
 
-	r.WriteMsgResponse(w, "Verification Code has been sent to "+signUp.Email, "")
+	r.WriteMsgResponse(w, "verification code has been sent to "+signUp.Email, "")
 }
 
 // VerifySignUpCodeHandler gets verification code to create user
@@ -171,7 +172,7 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 	}
 
 	if user.Verified {
-		r.WriteMsgResponse(w, "Account is already created", map[string]string{"user_id": user.ID})
+		r.WriteMsgResponse(w, "account is already created", map[string]string{"user_id": user.ID})
 		return
 	}
 
@@ -189,7 +190,7 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 		r.WriteErrResponse(w, err)
 		return
 	}
-	r.WriteMsgResponse(w, "Account Created Successfully", map[string]string{"user_id": user.ID})
+	r.WriteMsgResponse(w, "account created successfully", map[string]string{"user_id": user.ID})
 }
 
 // SignInHandler allows user to sign in to the system
@@ -264,8 +265,8 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 	r.WriteMsgResponse(w, "token is refreshed successfully", map[string]string{"access_token": reqToken, "refresh_token": newToken})
 }
 
-// Logout allows user to logout from the system by expiring his token
-func (r *Router) Logout(w http.ResponseWriter, req *http.Request) {
+// SignOut allows user to logout from the system by expiring his token
+func (r *Router) SignOut(w http.ResponseWriter, req *http.Request) {
 	reqToken := req.Header.Get("Authorization")
 	splitToken := strings.Split(reqToken, "Bearer ")
 	if len(splitToken) != 2 {
@@ -274,28 +275,16 @@ func (r *Router) Logout(w http.ResponseWriter, req *http.Request) {
 	}
 	reqToken = splitToken[1]
 
-	claims := &models.Claims{}
-	tkn, err := jwt.ParseWithClaims(reqToken, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(r.config.Token.Secret), nil
-	})
-
+	claims, err := r.validateToken(false, reqToken, r.config.Token.Secret)
 	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			r.WriteErrResponse(w, err)
-			return
-		}
 		r.WriteErrResponse(w, err)
 		return
 	}
-	if !tkn.Valid {
-		r.WriteErrResponse(w, fmt.Errorf("token is invalid"))
-		return
-	}
 
+	// TODO: Rawda: how you logout??
 	expirationTime := time.Now()
 	claims.ExpiresAt = jwt.NewNumericDate(expirationTime)
-	r.WriteMsgResponse(w, "Logged out successfully", "")
-
+	r.WriteMsgResponse(w, "user logged out successfully", "")
 }
 
 // ForgotPasswordHandler sends user verification code
@@ -321,13 +310,12 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 	}
 	fmt.Printf("code: %v\n", code) //TODO: to be removed
 
-	msg := "Verification Code has been sent to " + email.Email
 	_, err = r.db.UpdateUserByID(user.ID, "", "", time.Now(), code)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
 	}
-	r.WriteMsgResponse(w, msg, "")
+	r.WriteMsgResponse(w, "verification code has been sent to "+email.Email, "")
 }
 
 // VerifyForgetPasswordCodeHandler verifies code sent to user when forgetting password
@@ -355,28 +343,14 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 		return
 	}
 
-	msg := "Code Verified"
-	r.WriteMsgResponse(w, msg, map[string]string{"user_id": user.ID})
+	r.WriteMsgResponse(w, "code is verified", map[string]string{"user_id": user.ID})
 }
 
 // ChangePasswordHandler changes password of user
 func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request) {
-	reqToken := req.Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, "Bearer ")
-	if len(splitToken) != 2 {
-		r.WriteErrResponse(w, fmt.Errorf("token is required"))
-		return
-	}
-	reqToken = splitToken[1]
-
-	_, err := r.validateToken(false, reqToken, r.config.Token.Secret)
-	if err != nil {
-		r.WriteErrResponse(w, err)
-		return
-	}
-
+	// TODO: Rawda: change password for verify - settings
 	data := ChangePasswordInput{}
-	err = json.NewDecoder(req.Body).Decode(&data)
+	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
@@ -423,11 +397,19 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	//validate password
-	err = validator.ValidatePassword(input.Password)
-	if err != nil {
-		r.WriteErrResponse(w, fmt.Errorf("error: %v password isn't valid", err))
-		return
+	if len(strings.TrimSpace(input.Password)) != 0 {
+		// password and confirm password should match
+		if input.Password != input.ConfirmPassword {
+			r.WriteErrResponse(w, fmt.Errorf("password and confirm password don't match"))
+			return
+		}
+
+		//validate passwords
+		err = validator.ValidatePassword(input.Password)
+		if err != nil {
+			r.WriteErrResponse(w, fmt.Errorf("error: %v password isn't valid", err))
+			return
+		}
 	}
 
 	userID, err := r.db.UpdateUserByID(id, input.Name, input.Password, time.Time{}, 0)
@@ -462,8 +444,7 @@ func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
 		r.WriteErrResponse(w, err)
 		return
 	}
-	r.WriteMsgResponse(w, "user exists", user)
-
+	r.WriteMsgResponse(w, "user exists", map[string]interface{}{"user": user})
 }
 
 // AddVoucherHandler makes user adds voucher to his account
@@ -508,7 +489,7 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	r.WriteMsgResponse(w, "Voucher Applied Successfully", "")
+	r.WriteMsgResponse(w, "voucher is applied successfully", "")
 }
 
 // func (router *Router) GetAllUsersHandlers(w http.ResponseWriter, r *http.Request) { //TODO: to be removed for testing only

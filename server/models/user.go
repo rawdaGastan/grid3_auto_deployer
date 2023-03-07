@@ -9,7 +9,6 @@ import (
 
 // User struct holds data of users
 type User struct {
-	// TODO: uuid
 	ID             uuid.UUID `gorm:"primary_key; unique; type:uuid; column:id"`
 	Name           string    `json:"name" binding:"required"`
 	Email          string    `json:"email" gorm:"unique" binding:"required"`

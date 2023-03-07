@@ -7,7 +7,7 @@ import (
 
 // User struct holds data of users
 type User struct {
-	ID             string    `json:"id" gorm:"type:uuid;default:uuid_generate_v4()"`
+	ID             string    `json:"id" gorm:"type:uuid;default:uuid_generate_v4"`
 	Name           string    `json:"name" binding:"required"`
 	Email          string    `json:"email" gorm:"unique" binding:"required"`
 	HashedPassword string    `json:"hashedPassword" binding:"required"`
@@ -15,4 +15,5 @@ type User struct {
 	UpdatedAt      time.Time `json:"timestamp"`
 	Code           int       `json:"code"`
 	Verified       bool      `json:"verified"`
+	SSHKey         string    `json:"sshkey"`
 }

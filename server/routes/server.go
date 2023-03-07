@@ -60,6 +60,8 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc("/user/{id}", router.GetUserHandler).Methods("GET")
 	// r.HandleFunc("/user/get", router.GetAllUsersHandlres).Methods("GET") //TODO:for testing only
 	r.HandleFunc("/user/add_voucher/{id}", router.AddVoucherHandler).Methods("PUT")
+	r.HandleFunc("/k8s/deploy", router.K8sDeployHandler).Methods("POST")
+	r.HandleFunc("/k8s/{id}", router.K8sGetHandler).Methods("GET")
 	http.Handle("/", r)
 
 	return &Server{port: configuration.Server.Port}, nil

@@ -47,10 +47,14 @@ func (d *DB) Migrate() error {
 	// if err != nil {
 	// 	return err
 	// }
-	// err = d.db.AutoMigrate(&Kubernetes{})
-	// if err != nil {
-	// 	return err
-	// }
+	err = d.db.AutoMigrate(&Master{})
+	if err != nil {
+		return err
+	}
+	err = d.db.AutoMigrate(&Worker{})
+	if err != nil {
+		return err
+	}
 	return nil
 
 }
@@ -154,3 +158,27 @@ func (d *DB) AddVoucher(id string, voucher string) error {
 // 	}
 // 	return users, nil
 // }
+
+func (d *DB) CreateK8s(k *Master) error {
+	result := d.db.Create(&k)
+	return result.Error
+}
+
+func (d *DB) CreateWorker(k *Worker) error {
+	result := d.db.Create(&k)
+	return result.Error
+}
+
+func (d *DB) GetK8s(id int) (Master, []Worker, error) {
+	var k8s Master
+	err := d.db.First(&k8s, id).Error
+	if err != nil {
+		return Master{}, []Worker{}, err
+	}
+	var workers []Worker
+	err = d.db.Where("cluster_id = ?", k8s.ID).Find(&workers).Error
+	if err != nil {
+		return Master{}, []Worker{}, err
+	}
+	return k8s, workers, nil
+}

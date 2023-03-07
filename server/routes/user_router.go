@@ -209,12 +209,12 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !user.Verified {
-		r.WriteErrResponse(w, fmt.Errorf("user not verified yet"))
+		r.WriteErrResponse(w, fmt.Errorf("user is not verified yet"))
 		return
 	}
 
 	match := internal.VerifyPassword(user.HashedPassword, input.Password)
-	if match {
+	if !match {
 		r.WriteErrResponse(w, fmt.Errorf("password is not correct"))
 		return
 	}

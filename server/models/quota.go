@@ -7,3 +7,6 @@ type Quota struct {
 	Vms    int    `json:"vms"`
 	K8s    int    `json:"k8s"`
 }
+
+//TODO: vouchers table (id, voucher(random), vms, k8s,limit,num of used) --> admin
+//TODO: Add admin 

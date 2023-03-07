@@ -20,8 +20,8 @@ var rootCmd = &cobra.Command{
 	Long: `Cloud for students helps them to deploy their projects with 
 	applying for a voucher, For example :
 		They can deploy virtual machine that can be small, medium or large.
-		They can deploy kubernetess that can be small, meduim, or largde.
-		The Amout of resources available will depend on their voucher.
+		They can deploy Kubernetes that can be small, medium, or large.
+		The Amount of resources available will depend on their voucher.
 		`,
 
 	Run: func(cmd *cobra.Command, args []string) {

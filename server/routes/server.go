@@ -58,8 +58,10 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc("/user/change_password", router.ChangePasswordHandler).Methods("POST")
 	r.HandleFunc("/user/{id}", router.UpdateUserHandler).Methods("PUT")
 	r.HandleFunc("/user/{id}", router.GetUserHandler).Methods("GET")
-	// r.HandleFunc("/user/get", router.GetAllUsersHandlres).Methods("GET") //TODO:for testing only
+	r.HandleFunc("/user", router.GetAllUsersHandlers).Methods("GET") //TODO:for testing only
 	r.HandleFunc("/user/add_voucher/{id}", router.AddVoucherHandler).Methods("PUT")
+	r.HandleFunc("/user/deploy_vm/{id}", router.DeployVmHandler).Methods("POST")
+	r.HandleFunc("/user/get_vm/{id}", router.GetVmHandler).Methods("GET")
 	http.Handle("/", r)
 
 	return &Server{port: configuration.Server.Port}, nil

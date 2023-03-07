@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -151,7 +152,7 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 		r.WriteErrResponse(w, err)
 		return
 	}
-	r.WriteMsgResponse(w, "Account Created Successfully", map[string]string{"user_id": user.ID})
+	r.WriteMsgResponse(w, "Account Created Successfully", map[string]uint64{"user_id": user.ID})
 }
 
 // SignInHandler allows user to sign in to the system
@@ -215,6 +216,7 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 		r.WriteErrResponse(w, fmt.Errorf("token is invalid"))
 		return
 	}
+	//TODO: remove 30 min  && get it from config file
 
 	if time.Until(claims.ExpiresAt.Time) > 30*time.Minute {
 		r.WriteErrResponse(w, fmt.Errorf("token is expired"))
@@ -320,7 +322,7 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 	}
 
 	msg := "Code Verified"
-	r.WriteMsgResponse(w, msg, map[string]string{"user_id": user.ID})
+	r.WriteMsgResponse(w, msg, map[string]uint64{"user_id": user.ID})
 }
 
 // ChangePasswordHandler changes password of user
@@ -351,8 +353,12 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 // UpdateUserHandler updates user's data
 func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 	id := mux.Vars(req)["id"]
+	Id64, err := strconv.ParseUint(id, 10, 64)
+	if err != nil {
+		r.WriteErrResponse(w, err)
+	}
 	input := UpdateUserInput{}
-	err := json.NewDecoder(req.Body).Decode(&input)
+	err = json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
@@ -365,7 +371,7 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	userID, err := r.db.UpdateUserByID(id, input.Name, input.Password, input.Voucher, time.Time{}, 0)
+	userID, err := r.db.UpdateUserByID(Id64, input.Name, input.Password, input.Voucher, time.Time{}, 0)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
@@ -403,14 +409,14 @@ func (r *Router) AddVoucherHandler(w http.ResponseWriter, req *http.Request) {
 	r.WriteMsgResponse(w, "Voucher Applied Successfully", "")
 }
 
-// func (router *Router) GetAllUsersHandlers(w http.ResponseWriter, r *http.Request) { //TODO: to be removed for testing only
-// 	users, err := router.db.GetAllUsers()
-// 	if err != nil {
-// 		router.WriteErrResponse(w, err)
-// 	}
-// 	userBytes, err := json.Marshal(users)
-// 	if err != nil {
-// 		router.WriteErrResponse(w, err)
-// 	}
-// 	w.Write(userBytes)
-// }
+func (router *Router) GetAllUsersHandlers(w http.ResponseWriter, r *http.Request) { //TODO: to be removed for testing only
+	users, err := router.db.GetAllUsers()
+	if err != nil {
+		router.WriteErrResponse(w, err)
+	}
+	userBytes, err := json.Marshal(users)
+	if err != nil {
+		router.WriteErrResponse(w, err)
+	}
+	w.Write(userBytes)
+}

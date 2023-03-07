@@ -9,10 +9,11 @@ import (
 
 // Configuration struct to hold app configurations
 type Configuration struct {
-	Server     Server     `json:"server"`
-	MailSender MailSender `json:"mailSender"`
-	Database   DB         `json:"database"`
-	Token      JwtToken   `json:"token"`
+	Server     Server      `json:"server"`
+	MailSender MailSender  `json:"mailSender"`
+	Database   DB          `json:"database"`
+	Token      JwtToken    `json:"token"`
+	Account    GridAccount `json:"account"`
 }
 
 // Server struct to hold server's information
@@ -36,6 +37,11 @@ type DB struct {
 type JwtToken struct {
 	Secret  string `json:"secret"`
 	Timeout int    `json:"timeout"`
+}
+
+// GridAccount struct to hold grid account mnemonics
+type GridAccount struct {
+	Mnemonics string `json:"mnemonics"`
 }
 
 // ReadConfFile read configurations of json file

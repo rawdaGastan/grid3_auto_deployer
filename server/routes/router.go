@@ -39,7 +39,10 @@ func (r *Router) WriteErrResponse(w http.ResponseWriter, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusInternalServerError)
 	_, err = w.Write(jsonErrRes)
-	log.Printf("write error response failed %v", err.Error())
+	if err != nil {
+		log.Printf("write error response failed %v", err.Error())
+	}
+
 }
 
 // WriteMsgResponse write response messages for api
@@ -53,5 +56,8 @@ func (r *Router) WriteMsgResponse(w http.ResponseWriter, message string, data in
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(contentJSON)
-	r.WriteErrResponse(w, fmt.Errorf("write message response failed %v", err))
+	if err != nil {
+		r.WriteErrResponse(w, fmt.Errorf("write message response failed %v", err))
+	}
+
 }

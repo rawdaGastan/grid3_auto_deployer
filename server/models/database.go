@@ -2,6 +2,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"gorm.io/driver/sqlite"
@@ -21,6 +22,7 @@ func NewDB() DB {
 
 // Connect connects to database file
 func (d *DB) Connect(file string) error {
+
 	gormDB, err := gorm.Open(sqlite.Open(file), &gorm.Config{})
 	if err != nil {
 		return err
@@ -31,7 +33,7 @@ func (d *DB) Connect(file string) error {
 
 // Migrate migrates db schema
 func (d *DB) Migrate() error {
-	err := d.db.AutoMigrate(&User{})
+	err := d.db.AutoMigrate(&User{}, &VM{})
 	if err != nil {
 		return err
 	}
@@ -40,10 +42,6 @@ func (d *DB) Migrate() error {
 	// 	return err
 	// }
 	// err = d.db.AutoMigrate(&Quota{})
-	// if err != nil {
-	// 	return err
-	// }
-	// err = d.db.AutoMigrate(&VM{})
 	// if err != nil {
 	// 	return err
 	// }
@@ -93,7 +91,7 @@ func (d *DB) UpdatePassword(email string, password string) error {
 }
 
 // UpdateUserByID updates information of user
-func (d *DB) UpdateUserByID(id string, name string, password string, voucher string, updatedAt time.Time, code int) (string, error) {
+func (d *DB) UpdateUserByID(id uint64, name string, password string, voucher string, updatedAt time.Time, code int) (string, error) {
 	var res *User
 	if name != "" {
 		result := d.db.Model(&res).Where("id = ?", id).Update("name", name)
@@ -125,11 +123,11 @@ func (d *DB) UpdateUserByID(id string, name string, password string, voucher str
 			return "", result.Error
 		}
 	}
-	return id, nil
+	return string(id), nil
 }
 
 // UpdateVerification updates if user is verified or not
-func (d *DB) UpdateVerification(id string, verified bool) error {
+func (d *DB) UpdateVerification(id uint64, verified bool) error {
 	var res *User
 	result := d.db.Model(&res).Where("id=?", id).Update("verified", verified)
 	return result.Error
@@ -142,15 +140,43 @@ func (d *DB) AddVoucher(id string, voucher string) error {
 	return result.Error
 }
 
-// func (d *DB) GetAllUsers() ([]User, error) { //TODO: for testing only
-// 	// var u User
-// 	var users []User
-// 	// d.db.Delete(&users, []int{1, 2, 3, 4, 5})
-// 	result := d.db.Find(&users)
-// 	// len := result.RowsAffected
-// 	// fmt.Printf("len: %v\n", len)
-// 	if result.Error != nil {
-// 		return users, result.Error
-// 	}
-// 	return users, nil
-// }
+// CreateVM creates new vm
+func (d *DB) CreateVM(vm *VM) error {
+	result := d.db.Create(&vm)
+	return result.Error
+
+}
+
+// GetVmByID return vm by its id
+func (d *DB) GetVmByID(id string) (*VM, error) {
+	var vm VM
+	query := d.db.First(&vm, "id = ?", id)
+	if query.Error != nil {
+		return &vm, query.Error
+	}
+
+	return &vm, nil
+}
+
+// GetAllVms returns all vms of user
+func (d *DB) GetAllVms(userID string) ([]VM, error) {
+	var vms []VM
+	result := d.db.Where("userID = ?", userID).Find(&vms)
+	if result.Error != nil {
+		return vms, result.Error
+	}
+	return vms, nil
+}
+
+func (d *DB) GetAllUsers() ([]User, error) { //TODO: for testing only
+	// var u User
+	var users []User
+	// d.db.Delete(&users, []int{1, 2, 3, 4, 5})
+	result := d.db.Find(&users)
+	len := result.RowsAffected
+	fmt.Printf("len: %v\n", len)
+	if result.Error != nil {
+		return users, result.Error
+	}
+	return users, nil
+}

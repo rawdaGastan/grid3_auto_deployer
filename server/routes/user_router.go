@@ -110,7 +110,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	// update code if user is not verified but exists
 	if getErr == nil {
 		if !user.Verified {
-			_, err = r.db.UpdateUserByID(user.ID.String(), "", "", time.Now(), code)
+			_, err = r.db.UpdateUserByID(user.ID.String(), "", "", time.Now(), code, "")
 			if err != nil {
 				r.WriteErrResponse(w, err)
 				return

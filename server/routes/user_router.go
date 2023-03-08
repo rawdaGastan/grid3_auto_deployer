@@ -20,7 +20,6 @@ type SignUpInput struct {
 	Email           string `json:"email" gorm:"unique" binding:"required"`
 	Password        string `json:"password" binding:"required"`
 	ConfirmPassword string `json:"confirm_password" binding:"required"`
-	SSHKey          string `json:"sshKey" binding:"required"`
 }
 
 // VerifyCodeInput struct takes verification code from user
@@ -62,7 +61,6 @@ type AddVoucherInput struct {
 
 // SignUpHandler creates account for user
 func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
-
 	var signUp SignUpInput
 	err := json.NewDecoder(req.Body).Decode(&signUp)
 	if err != nil {
@@ -133,7 +131,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 			HashedPassword: hashedPassword,
 			Verified:       false,
 			Code:           code,
-			SSHKey:         signUp.SSHKey,
+			SSHKey:         user.SSHKey,
 		}
 
 		fmt.Printf("code: %v\n", code) //TODO: to be removed
@@ -275,14 +273,6 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	writeMsgResponse(w, "token is refreshed successfully", map[string]string{"access_token": reqToken, "refresh_token": newToken})
-}
-
-// SignOut allows user to logout from the system by expiring his token
-func (r *Router) SignOut(w http.ResponseWriter, req *http.Request) {
-	// TODO: Rawda: how you logout??
-	/*expirationTime := time.Now()
-	claims.ExpiresAt = jwt.NewNumericDate(expirationTime)*/
-	writeMsgResponse(w, "user logged out successfully", "")
 }
 
 // ForgotPasswordHandler sends user verification code

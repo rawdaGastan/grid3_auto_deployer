@@ -152,29 +152,23 @@ func (d *DB) GetAllVms(userID string) ([]VM, error) {
 	var vms []VM
 	result := d.db.Where("user_id = ?", userID).Find(&vms)
 	if result.Error != nil {
-		return vms, result.Error
+		return []VM{}, result.Error
 	}
-	return vms, nil
+	return vms, result.Error
 }
 
 // DeleteVMByID deletes vm by its id
 func (d *DB) DeleteVMByID(id string) error {
 	var vm VM
 	result := d.db.Delete(&vm, id)
-	if result.Error != nil {
-		return result.Error
-	}
-	return nil
+	return result.Error
 }
 
 // DeleteAllVms deletes all vms of user
 func (d *DB) DeleteAllVms(userID string) error {
 	var vms []VM
 	result := d.db.Clauses(clause.Returning{}).Where("user_id = ?", userID).Delete(&vms)
-	if result.Error != nil {
-		return result.Error
-	}
-	return nil
+	return result.Error
 }
 
 // // GetAllUsers returns all users of the system

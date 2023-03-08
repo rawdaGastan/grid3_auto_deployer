@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -22,7 +23,6 @@ import (
 type DeployVMInput struct {
 	Name      string `json:"name" binding:"required"`
 	Resources string `json:"resources" binding:"required"`
-	SSHKey    string `json:"ssh_key" binding:"required"`
 }
 
 var (
@@ -43,13 +43,19 @@ var (
 
 // DeployVMHandler creates vm for user and deploy it
 func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
-	var InputVM DeployVMInput
-	err := json.NewDecoder(req.Body).Decode(&InputVM)
+	userID := req.Context().Value("UserID").(string)
+	user, err := r.db.GetUserByID(userID)
+	if err != nil {
+		writeNotFoundResponse(w, err)
+		return
+	}
+
+	var input DeployVMInput
+	err = json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		writeErrResponse(w, err)
 		return
 	}
-	userID := req.Context().Value("UserID").(string)
 
 	// TODO: move to function validate quota (shared)
 	// check quota of user
@@ -60,7 +66,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	availableVms := 0
-	switch InputVM.Resources {
+	switch input.Resources {
 	case "small":
 		availableVms = 1
 	case "medium":
@@ -73,7 +79,12 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	vm, contractID, networkContractID, diskSize, err := r.deployVM(InputVM)
+	if len(strings.TrimSpace(user.SSHKey)) == 0 {
+		writeErrResponse(w, fmt.Errorf("ssh key is required"))
+		return
+	}
+
+	vm, contractID, networkContractID, diskSize, err := r.deployVM(input.Name, input.Resources, user.SSHKey)
 	if err != nil {
 		writeErrResponse(w, err)
 		return
@@ -83,7 +94,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		UserID:            userID,
 		Name:              vm.Name,
 		IP:                vm.YggIP,
-		Resources:         InputVM.Resources,
+		Resources:         input.Resources,
 		SRU:               diskSize,
 		CRU:               uint64(vm.CPU),
 		MRU:               uint64(vm.Memory),
@@ -142,7 +153,7 @@ func filterNode(resource string) types.NodeFilter {
 
 }
 
-func (r *Router) deployVM(VM DeployVMInput) (*workloads.VM, uint64, uint64, uint64, error) {
+func (r *Router) deployVM(vmNname, resources, sshKey string) (*workloads.VM, uint64, uint64, uint64, error) {
 	// create tfPluginClient
 	tfPluginClient, err := deployer.NewTFPluginClient(r.config.Account.Mnemonics, "sr25519", "dev", "", "", "", true, false)
 	if err != nil {
@@ -150,7 +161,7 @@ func (r *Router) deployVM(VM DeployVMInput) (*workloads.VM, uint64, uint64, uint
 	}
 
 	// filter nodes
-	filter := filterNode(VM.Resources)
+	filter := filterNode(resources)
 	nodeIDs, err := deployer.FilterNodes(tfPluginClient.GridProxyClient, filter)
 	if err != nil {
 		return nil, 0, 0, 0, err
@@ -180,7 +191,7 @@ func (r *Router) deployVM(VM DeployVMInput) (*workloads.VM, uint64, uint64, uint
 
 	// create vm workload
 	vm := workloads.VM{
-		Name:      VM.Name,
+		Name:      vmNname,
 		Flist:     Flist,
 		CPU:       int(*filter.TotalCRU),
 		PublicIP:  false,
@@ -191,7 +202,7 @@ func (r *Router) deployVM(VM DeployVMInput) (*workloads.VM, uint64, uint64, uint
 		},
 		Entrypoint: "/sbin/zinit init",
 		EnvVars: map[string]string{
-			"SSH_KEY": VM.SSHKey,
+			"SSH_KEY": sshKey,
 		},
 		NetworkName: network.Name,
 	}

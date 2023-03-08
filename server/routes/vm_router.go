@@ -8,7 +8,6 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -18,8 +17,6 @@ import (
 	"github.com/threefoldtech/grid_proxy_server/pkg/types"
 	"github.com/threefoldtech/zos/pkg/gridtypes"
 )
-
-//TODO: add bin folder
 
 // DeployVMInput struct takes input of vm from user
 type DeployVMInput struct {
@@ -46,32 +43,19 @@ var (
 
 // DeployVMHandler creates vm for user and deploy it
 func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
-	setupCorsResponse(&w, req)
-	reqToken := req.Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, "Bearer ")
-	if len(splitToken) != 2 {
-		r.WriteErrResponse(w, fmt.Errorf("token is required"))
-		return
-	}
-	reqToken = splitToken[1]
-
-	claims, err := r.validateToken(false, reqToken, r.config.Token.Secret)
-	if err != nil {
-		r.WriteErrResponse(w, err)
-		return
-	}
 	var InputVM DeployVMInput
-	err = json.NewDecoder(req.Body).Decode(&InputVM)
+	err := json.NewDecoder(req.Body).Decode(&InputVM)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
+	userID := req.Context().Value("UserID").(string)
 
 	// TODO: move to function validate quota (shared)
 	// check quota of user
-	quota, err := r.db.GetUserQuota(claims.UserID)
+	quota, err := r.db.GetUserQuota(userID)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
@@ -85,18 +69,18 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		availableVms = 3
 	}
 	if quota.Vms < availableVms {
-		r.WriteErrResponse(w, fmt.Errorf("no available vms"))
+		writeErrResponse(w, fmt.Errorf("no available vms"))
 		return
 	}
 
 	vm, contractID, networkContractID, diskSize, err := r.deployVM(InputVM)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
 	userVM := models.VM{
-		UserID:            claims.UserID,
+		UserID:            userID,
 		Name:              vm.Name,
 		IP:                vm.YggIP,
 		Resources:         InputVM.Resources,
@@ -109,17 +93,18 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 
 	err = r.db.CreateVM(&userVM)
 	if err != nil {
-		r.WriteErrResponse(w, err)
-	}
-
-	// update quota of user
-	err = r.db.UpdateUserQuota(claims.UserID, quota.Vms-availableVms, quota.K8s)
-	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
-	r.WriteMsgResponse(w, "vm deployed successfully", map[string]int{"ID": userVM.ID})
+	// update quota of user
+	err = r.db.UpdateUserQuota(userID, quota.Vms-availableVms, quota.K8s)
+	if err != nil {
+		writeErrResponse(w, err)
+		return
+	}
+
+	writeMsgResponse(w, "vm deployed successfully", map[string]int{"ID": userVM.ID})
 }
 
 // choose suitable nodes based on needed resources
@@ -251,88 +236,57 @@ func generateNetworkName() string {
 
 // GetVMHandler returns vm by its id
 func (r *Router) GetVMHandler(w http.ResponseWriter, req *http.Request) {
-	setupCorsResponse(&w, req)
-	reqToken := req.Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, "Bearer ")
-	if len(splitToken) != 2 {
-		r.WriteErrResponse(w, fmt.Errorf("token is required"))
-		return
-	}
-	reqToken = splitToken[1]
-
-	_, err := r.validateToken(false, reqToken, r.config.Token.Secret)
-	if err != nil {
-		r.WriteErrResponse(w, err)
-		return
-	}
 	id := mux.Vars(req)["id"]
+	userID := req.Context().Value("UserID").(string)
 	vm, err := r.db.GetVMByID(id)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
+		return
 	}
-	r.WriteMsgResponse(w, "vm", vm)
+	if vm.UserID != userID {
+		writeErrResponse(w, fmt.Errorf("vm not found"))
+		return
+	}
+	writeMsgResponse(w, "vm", vm)
 }
 
 // ListVMsHandler returns all vms of user
 func (r *Router) ListVMsHandler(w http.ResponseWriter, req *http.Request) {
-	setupCorsResponse(&w, req)
-	reqToken := req.Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, "Bearer ")
-	if len(splitToken) != 2 {
-		r.WriteErrResponse(w, fmt.Errorf("token is required"))
+	userID := req.Context().Value("UserID").(string)
+	vms, err := r.db.GetAllVms(userID)
+	if err != nil {
+		writeErrResponse(w, err)
 		return
 	}
-	reqToken = splitToken[1]
-
-	claims, err := r.validateToken(false, reqToken, r.config.Token.Secret)
-	if err != nil {
-		r.WriteErrResponse(w, err)
-		return
-	}
-
-	vms, err := r.db.GetAllVms(claims.UserID)
-	if err != nil {
-		r.WriteErrResponse(w, err)
-	}
-	r.WriteMsgResponse(w, "", vms)
+	writeMsgResponse(w, "", vms)
 
 }
 
 // DeleteVM deletes vm by its id
 func (r *Router) DeleteVM(w http.ResponseWriter, req *http.Request) {
-	setupCorsResponse(&w, req)
-	reqToken := req.Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, "Bearer ")
-	if len(splitToken) != 2 {
-		r.WriteErrResponse(w, fmt.Errorf("token is required"))
-		return
-	}
-	reqToken = splitToken[1]
-
-	_, err := r.validateToken(false, reqToken, r.config.Token.Secret)
-	if err != nil {
-		r.WriteErrResponse(w, err)
-		return
-	}
 	id := mux.Vars(req)["id"]
-
+	userID := req.Context().Value("UserID").(string)
 	vm, err := r.db.GetVMByID(id)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
+		return
+	}
+	if vm.UserID != userID {
+		writeErrResponse(w, fmt.Errorf("vm not found"))
 		return
 	}
 	err = r.cancelDeployment(vm)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
 	err = r.db.DeleteVMByID(id)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
-	r.WriteMsgResponse(w, "vm deleted successfully", "")
+	writeMsgResponse(w, "vm deleted successfully", "")
 }
 
 func (r *Router) cancelDeployment(vm *models.VM) error {
@@ -359,38 +313,25 @@ func (r *Router) cancelDeployment(vm *models.VM) error {
 
 // DeleteAllVMs deletes all vms of user
 func (r *Router) DeleteAllVMs(w http.ResponseWriter, req *http.Request) {
-	setupCorsResponse(&w, req)
-	reqToken := req.Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, "Bearer ")
-	if len(splitToken) != 2 {
-		r.WriteErrResponse(w, fmt.Errorf("token is required"))
-		return
-	}
-	reqToken = splitToken[1]
-
-	claims, err := r.validateToken(false, reqToken, r.config.Token.Secret)
+	userID := req.Context().Value("UserID").(string)
+	vms, err := r.db.GetAllVms(userID)
 	if err != nil {
-		r.WriteErrResponse(w, err)
-		return
-	}
-
-	vms, err := r.db.GetAllVms(claims.UserID)
-	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 	for _, vm := range vms {
 		err = r.cancelDeployment(&vm)
 		if err != nil {
-			r.WriteErrResponse(w, err)
+			writeErrResponse(w, err)
 			return
 		}
 	}
 
-	err = r.db.DeleteAllVms(claims.UserID)
+	err = r.db.DeleteAllVms(userID)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
+		return
 	}
-	r.WriteMsgResponse(w, "all vms deleted successfully", "")
+	writeMsgResponse(w, "all vms deleted successfully", "")
 
 }

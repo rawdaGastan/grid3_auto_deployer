@@ -13,8 +13,8 @@ import (
 
 // SendMail sends verification mails
 func SendMail(sender string, password string, receiver string, timeout int) (int, error) {
-	valid := validator.ValidateMail(receiver)
-	if !valid {
+	err := validator.ValidateMail(receiver)
+	if err != nil {
 		return 0, fmt.Errorf("email %v is not valid", receiver)
 	}
 	auth := smtp.PlainAuth(
@@ -34,7 +34,7 @@ func SendMail(sender string, password string, receiver string, timeout int) (int
 	body := fmt.Sprintf("We are so glad to have you here.\n\nYour code is %s\nThe code will expire in %d minutes.\nPlease don't share it with anyone.", strconv.Itoa(code), timeout)
 	message := subject + body
 
-	err := smtp.SendMail(
+	err = smtp.SendMail(
 		"smtp.gmail.com:587",
 		auth,
 		sender,

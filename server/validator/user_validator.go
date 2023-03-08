@@ -8,9 +8,9 @@ import (
 )
 
 // ValidateMail used for validating syntax mails
-func ValidateMail(address string) bool {
+func ValidateMail(address string) error {
 	_, err := mail.ParseAddress(address)
-	return err == nil
+	return err
 }
 
 // ValidatePassword used for validating passwords before creating user

@@ -1,12 +1,22 @@
 // Package models for database models
 package models
 
+type K8sCluster struct {
+	ID              int      `json:"id" gorm:"primaryKey"`
+	UserID          string   `json:"userID"`
+	NetworkContract int      `json:"networkContract"`
+	ClusterContract int      `json:"clusterContract"`
+	Master          Master   `json:"master" gorm:"foreignKey:ClusterID"`
+	Workers         []Worker `json:"workers" gorm:"foreignKey:ClusterID"`
+}
+
 // Master struct for kubernetes master data
 type Master struct {
-	ID        int    `json:"id" gorm:"primaryKey"`
-	UserID    string `json:"userID"`
-	Name      string `json:"Name"`
-	Resources string `json:"resources"`
+	ClusterID int    `json:"clusterID"`
+	Name      string `json:"name"`
+	CRU       int    `json:"cru"`
+	MRU       int    `json:"mru"`
+	SRU       int    `json:"sru"`
 	IP        string `json:"ip"`
 }
 
@@ -14,5 +24,7 @@ type Master struct {
 type Worker struct {
 	ClusterID int    `json:"clusterID"`
 	Name      string `json:"name"`
-	Resources string `json:"resources"`
+	CRU       int    `json:"cru"`
+	MRU       int    `json:"mru"`
+	SRU       int    `json:"sru"`
 }

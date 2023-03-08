@@ -46,7 +46,7 @@ func (d *DB) Migrate() error {
 	// 	return err
 	// }
 
-	err = d.db.AutoMigrate(&Voucher{})
+	err = d.db.AutoMigrate(&K8sCluster{})
 	if err != nil {
 		return err
 	}
@@ -55,6 +55,10 @@ func (d *DB) Migrate() error {
 		return err
 	}
 	err = d.db.AutoMigrate(&Worker{})
+	if err != nil {
+		return err
+	}
+	err = d.db.AutoMigrate(&Voucher{})
 	if err != nil {
 		return err
 	}
@@ -202,7 +206,7 @@ func (d *DB) GetVoucher(voucher string) (Voucher, error) {
 
 	return res, query.Error
 }
-func (d *DB) CreateK8s(k *Master) error {
+func (d *DB) CreateK8s(k *K8sCluster) error {
 	result := d.db.Create(&k)
 	return result.Error
 }
@@ -212,16 +216,39 @@ func (d *DB) CreateWorker(k *Worker) error {
 	return result.Error
 }
 
-func (d *DB) GetK8s(id int) (Master, []Worker, error) {
-	var k8s Master
+func (d *DB) GetK8s(id int) (K8sCluster, error) {
+	var k8s K8sCluster
 	err := d.db.First(&k8s, id).Error
 	if err != nil {
-		return Master{}, []Worker{}, err
+		return K8sCluster{}, err
+	}
+	var master Master
+	err = d.db.Model(&k8s).Association("Master").Find(&master)
+	if err != nil {
+		return K8sCluster{}, err
 	}
 	var workers []Worker
-	err = d.db.Where("cluster_id = ?", k8s.ID).Find(&workers).Error
+	err = d.db.Model(&k8s).Association("Workers").Find(&workers)
 	if err != nil {
-		return Master{}, []Worker{}, err
+		return K8sCluster{}, err
 	}
-	return k8s, workers, nil
+	k8s.Master = master
+	k8s.Workers = workers
+
+	return k8s, nil
+}
+
+func (d *DB) GetAllK8s(userID string) ([]K8sCluster, error) {
+	var k8sClusters []K8sCluster
+	err := d.db.Find(&k8sClusters, "user_id = ?", userID).Error
+	if err != nil {
+		return nil, err
+	}
+	for i := range k8sClusters {
+		k8sClusters[i], err = d.GetK8s(k8sClusters[i].ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return k8sClusters, nil
 }

@@ -9,9 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/rawdaGastan/cloud4students/models"
@@ -32,6 +30,9 @@ var (
 	k8sLargeCpu     = 4
 	k8sLargeMemory  = 8
 	k8sLargeDisk    = 20
+	smallK8sQouta   = 1
+	mediumK8sQouta  = 2
+	largeK8sQouta   = 3
 )
 
 type K8sDeployInput struct {
@@ -44,37 +45,18 @@ type Worker struct {
 	Resources string `json:"resources"`
 }
 
-type K8sGetResponse struct {
-	Master  models.Master   `json:"master"`
-	Workers []models.Worker `json:"workers"`
-}
-
 func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
-	// TODO: should be a function
-	// user authorization
 	reqToken := req.Header.Get("Authorization")
 	splitToken := strings.Split(reqToken, "Bearer ")
+	if len(splitToken) != 2 {
+		r.WriteErrResponse(w, fmt.Errorf("token is required"))
+		return
+	}
 	reqToken = splitToken[1]
 
-	claims := &models.Claims{}
-	tkn, err := jwt.ParseWithClaims(reqToken, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(r.config.Token.Secret), nil
-	})
+	claims, err := r.validateToken(false, reqToken, r.config.Token.Secret)
 	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			r.WriteErrResponse(w, err)
-			return
-		}
 		r.WriteErrResponse(w, err)
-		return
-	}
-	if !tkn.Valid {
-		r.WriteErrResponse(w, fmt.Errorf("token is invalid"))
-		return
-	}
-
-	if time.Until(claims.ExpiresAt.Time) > 30*time.Minute {
-		r.WriteErrResponse(w, fmt.Errorf("token is expired"))
 		return
 	}
 	var k8sDeployInput K8sDeployInput
@@ -84,7 +66,22 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// TODO: qouta verification
+	// qouta verification
+	quota, err := r.db.GetUserQuota(claims.UserID)
+	if err != nil {
+		r.WriteErrResponse(w, err)
+		return
+	}
+
+	neededQuota, err := calcNeededQuota(k8sDeployInput)
+	if err != nil {
+		r.WriteErrResponse(w, err)
+		return
+	}
+	if neededQuota > quota.K8s {
+		r.WriteErrResponse(w, fmt.Errorf("qouta not enough need %d available %d", neededQuota, quota.K8s))
+		return
+	}
 
 	// get tf plugin client
 	client, err := deployer.NewTFPluginClient(r.config.Account.Mnemonics, "sr25519", "dev", "", "", "", true, true)
@@ -124,15 +121,21 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 		r.WriteErrResponse(w, err)
 		return
 	}
+	// update quota
+	err = r.db.UpdateUserQuota(claims.UserID, quota.Vms, quota.K8s-neededQuota)
+	if err != nil {
+		r.WriteErrResponse(w, err)
+		return
+	}
 
 	// load cluster
 	masterNode := map[uint32]string{node: k8sDeployInput.MasterName}
 	workerNodes := make(map[uint32][]string)
-	workers := []string{}
+	workersNames := []string{}
 	for _, worker := range k8sDeployInput.Workers {
-		workers = append(workers, worker.Name)
+		workersNames = append(workersNames, worker.Name)
 	}
-	workerNodes[node] = workers
+	workerNodes[node] = workersNames
 	resCluster, err := client.State.LoadK8sFromGrid(masterNode, workerNodes, k8sDeployInput.MasterName)
 	if err != nil {
 		r.WriteErrResponse(w, err)
@@ -140,60 +143,65 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// save to db
-	k := models.Master{
-		UserID:    user.ID.String(),
-		Resources: k8sDeployInput.Resources,
-		Name:      k8sDeployInput.MasterName,
-		IP:        resCluster.Master.YggIP,
-	}
-	err = r.db.CreateK8s(&k)
+
+	cru, mru, sru, err := calcK8sNodeResources(k8sDeployInput.Resources)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
 	}
+	master := models.Master{
+		CRU:  cru,
+		MRU:  mru,
+		SRU:  sru,
+		Name: k8sDeployInput.MasterName,
+		IP:   resCluster.Master.YggIP,
+	}
+	workers := []models.Worker{}
 	for _, worker := range k8sDeployInput.Workers {
-		workerModel := models.Worker{
-			ClusterID: k.ID,
-			Name:      worker.Name,
-			Resources: worker.Resources,
-		}
-		err := r.db.CreateWorker(&workerModel)
+
+		cru, mru, sru, err := calcK8sNodeResources(k8sDeployInput.Resources)
 		if err != nil {
 			r.WriteErrResponse(w, err)
 			return
 		}
+		workerModel := models.Worker{
+			Name: worker.Name,
+			CRU:  cru,
+			MRU:  mru,
+			SRU:  sru,
+		}
+		workers = append(workers, workerModel)
+	}
+	kCluster := models.K8sCluster{
+		UserID:          user.ID.String(),
+		NetworkContract: int(network.NodeDeploymentID[node]),
+		ClusterContract: int(cluster.NodeDeploymentID[node]),
+		Master:          master,
+		Workers:         workers,
 	}
 
-	// write response
-	r.WriteMsgResponse(w, "Kubernetes cluster deployed successfully", map[string]int{"id": k.ID})
-}
-
-func (r *Router) K8sGetHandler(w http.ResponseWriter, req *http.Request) {
-	// TODO: should be a function
-	// user authorization
-	reqToken := req.Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, "Bearer ")
-	reqToken = splitToken[1]
-
-	claims := &models.Claims{}
-	tkn, err := jwt.ParseWithClaims(reqToken, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(r.config.Token.Secret), nil
-	})
+	err = r.db.CreateK8s(&kCluster)
 	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			r.WriteErrResponse(w, err)
-			return
-		}
 		r.WriteErrResponse(w, err)
 		return
 	}
-	if !tkn.Valid {
-		r.WriteErrResponse(w, fmt.Errorf("token is invalid"))
+
+	// write response
+	r.WriteMsgResponse(w, "Kubernetes cluster deployed successfully", map[string]int{"id": kCluster.ID})
+}
+
+func (r *Router) K8sGetHandler(w http.ResponseWriter, req *http.Request) {
+	reqToken := req.Header.Get("Authorization")
+	splitToken := strings.Split(reqToken, "Bearer ")
+	if len(splitToken) != 2 {
+		r.WriteErrResponse(w, fmt.Errorf("token is required"))
 		return
 	}
+	reqToken = splitToken[1]
 
-	if time.Until(claims.ExpiresAt.Time) > 30*time.Minute {
-		r.WriteErrResponse(w, fmt.Errorf("token is expired"))
+	_, err := r.validateToken(false, reqToken, r.config.Token.Secret)
+	if err != nil {
+		r.WriteErrResponse(w, err)
 		return
 	}
 	id, err := strconv.Atoi(mux.Vars(req)["id"])
@@ -201,15 +209,33 @@ func (r *Router) K8sGetHandler(w http.ResponseWriter, req *http.Request) {
 		r.WriteErrResponse(w, err)
 		return
 	}
-	master, workers, err := r.db.GetK8s(id)
+	cluster, err := r.db.GetK8s(id)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
 	}
-	r.WriteMsgResponse(w, "Kubernets cluster found", K8sGetResponse{
-		Master:  master,
-		Workers: workers,
-	})
+	r.WriteMsgResponse(w, "Kubernets cluster found", cluster)
+}
+func (r *Router) K8sGetAllHandler(w http.ResponseWriter, req *http.Request) {
+	reqToken := req.Header.Get("Authorization")
+	splitToken := strings.Split(reqToken, "Bearer ")
+	if len(splitToken) != 2 {
+		r.WriteErrResponse(w, fmt.Errorf("token is required"))
+		return
+	}
+	reqToken = splitToken[1]
+
+	claims, err := r.validateToken(false, reqToken, r.config.Token.Secret)
+	if err != nil {
+		r.WriteErrResponse(w, err)
+		return
+	}
+	clusters, err := r.db.GetAllK8s(claims.UserID)
+	if err != nil {
+		r.WriteErrResponse(w, err)
+		return
+	}
+	r.WriteMsgResponse(w, "Kubernets clusters found", clusters)
 }
 
 func buildK8sCluster(node uint32, sshkey, network string, k K8sDeployInput) (workloads.K8sCluster, error) {
@@ -219,22 +245,14 @@ func buildK8sCluster(node uint32, sshkey, network string, k K8sDeployInput) (wor
 		Planetary: true,
 		Node:      node,
 	}
-	switch k.Resources {
-	case "small":
-		master.CPU = k8sSmallCpu
-		master.Memory = k8sSmallMemory * 1024
-		master.DiskSize = k8sSmallDisk
-	case "medium":
-		master.CPU = k8sMediumCpu
-		master.Memory = k8sMediumMemory * 1024
-		master.DiskSize = k8sMediumDisk
-	case "large":
-		master.CPU = k8sLargeCpu
-		master.Memory = k8sLargeMemory * 1024
-		master.DiskSize = k8sLargeDisk
-	default:
-		return workloads.K8sCluster{}, fmt.Errorf("unknown master resource type %s", k.Resources)
+	cru, mru, sru, err := calcK8sNodeResources(k.Resources)
+	if err != nil {
+		return workloads.K8sCluster{}, err
 	}
+	master.CPU = cru
+	master.Memory = mru * 1024
+	master.DiskSize = sru
+
 	workers := []workloads.K8sNode{}
 	for _, worker := range k.Workers {
 		w := workloads.K8sNode{
@@ -242,30 +260,21 @@ func buildK8sCluster(node uint32, sshkey, network string, k K8sDeployInput) (wor
 			Flist: k8sFlist,
 			Node:  node,
 		}
-		switch worker.Resources {
-		case "small":
-			w.CPU = k8sSmallCpu
-			w.Memory = k8sSmallMemory * 1024
-			w.DiskSize = k8sSmallDisk
-		case "medium":
-			w.CPU = k8sMediumCpu
-			w.Memory = k8sMediumMemory * 1024
-			w.DiskSize = k8sMediumDisk
-		case "large":
-			w.CPU = k8sLargeCpu
-			w.Memory = k8sLargeMemory * 1024
-			w.DiskSize = k8sLargeDisk
-		default:
-			return workloads.K8sCluster{}, fmt.Errorf("unknown w resource type %s", k.Resources)
+		cru, mru, sru, err := calcK8sNodeResources(k.Resources)
+		if err != nil {
+			return workloads.K8sCluster{}, err
 		}
+		w.CPU = cru
+		w.Memory = mru * 1024
+		w.DiskSize = sru
+		workers = append(workers, w)
 	}
 	k8sCluster := workloads.K8sCluster{
 		Master:      &master,
 		Workers:     workers,
 		NetworkName: network,
 		// TODO: random token
-		Token: "nottoken",
-		// TODO: sshkey
+		Token:        "nottoken",
 		SSHKey:       sshkey,
 		SolutionType: k.MasterName,
 	}
@@ -284,6 +293,29 @@ func buildNetwork(node uint32, name string) workloads.ZNet {
 	}
 }
 
+func calcK8sNodeResources(resources string) (int, int, int, error) {
+	var cru int
+	var mru int
+	var sru int
+	switch resources {
+	case "small":
+		cru += k8sSmallCpu
+		mru += k8sSmallMemory
+		sru += k8sSmallDisk
+	case "medium":
+		cru += k8sMediumCpu
+		mru += k8sMediumMemory
+		sru += k8sMediumDisk
+	case "large":
+		cru += k8sLargeCpu
+		mru += k8sLargeMemory
+		sru += k8sLargeDisk
+	default:
+		return 0, 0, 0, fmt.Errorf("unknown master resource type %s", resources)
+	}
+	return cru, mru, sru, nil
+}
+
 func deployK8sClusterWithNetwork(tfPluginClient *deployer.TFPluginClient, cluster *workloads.K8sCluster, network *workloads.ZNet) error {
 	err := tfPluginClient.NetworkDeployer.Deploy(context.Background(), network)
 	if err != nil {
@@ -299,40 +331,26 @@ func deployK8sClusterWithNetwork(tfPluginClient *deployer.TFPluginClient, cluste
 func getK8sAvailableNodes(tfPluginClient *deployer.TFPluginClient, k K8sDeployInput) (uint32, error) {
 	status := "up"
 	freeMRU := uint64(0)
-	freeHRU := uint64(0)
+	freeSRU := uint64(0)
 	ipv6 := true
-	switch k.Resources {
-	case "small":
-		freeMRU += uint64(k8sSmallMemory)
-		freeHRU += uint64(k8sSmallDisk)
-	case "medium":
-		freeMRU += uint64(k8sMediumMemory)
-		freeHRU += uint64(k8sMediumDisk)
-	case "large":
-		freeMRU += uint64(k8sLargeMemory)
-		freeHRU += uint64(k8sLargeDisk)
-	default:
-		return 0, fmt.Errorf("unknown master resource type %s", k.Resources)
+	_, mru, sru, err := calcK8sNodeResources(k.Resources)
+	if err != nil {
+		return 0, err
 	}
 	for _, worker := range k.Workers {
-		switch worker.Resources {
-		case "small":
-			freeMRU += uint64(k8sSmallMemory)
-			freeHRU += uint64(k8sSmallDisk)
-		case "medium":
-			freeMRU += uint64(k8sMediumMemory)
-			freeHRU += uint64(k8sMediumDisk)
-		case "large":
-			freeMRU += uint64(k8sLargeMemory)
-			freeHRU += uint64(k8sLargeDisk)
-		default:
-			return 0, fmt.Errorf("unknown w resource type %s", k.Resources)
+		_, m, s, err := calcK8sNodeResources(worker.Resources)
+		if err != nil {
+			return 0, err
 		}
+		mru += m
+		sru += s
 	}
+	freeMRU = uint64(mru)
+	freeSRU = uint64(sru)
 	filter := types.NodeFilter{
 		Status:  &status,
-		FreeMRU: &freeHRU,
-		FreeHRU: &freeHRU,
+		FreeMRU: &freeMRU,
+		FreeSRU: &freeSRU,
 		FarmIDs: []uint64{1},
 		IPv6:    &ipv6,
 	}
@@ -342,11 +360,38 @@ func getK8sAvailableNodes(tfPluginClient *deployer.TFPluginClient, k K8sDeployIn
 	}
 	if len(nodes) == 0 {
 		return 0, fmt.Errorf(
-			"no node with free resources available using node filter: farmIDs: %v, mru: %d, hru: %d",
+			"no node with free resources available using node filter: farmIDs: %v, mru: %d, sru: %d",
 			filter.FarmIDs,
 			*filter.FreeMRU,
-			*filter.FreeHRU,
+			*filter.FreeSRU,
 		)
 	}
 	return uint32(nodes[0].NodeID), nil
+}
+
+func calcNeededQuota(k K8sDeployInput) (int, error) {
+	var k8sNeeded int
+	switch k.Resources {
+	case "small":
+		k8sNeeded += smallK8sQouta
+	case "medium":
+		k8sNeeded += mediumK8sQouta
+	case "large":
+		k8sNeeded += largeK8sQouta
+	default:
+		return 0, fmt.Errorf("unknown master resource type %s", k.Resources)
+	}
+	for _, worker := range k.Workers {
+		switch worker.Resources {
+		case "small":
+			k8sNeeded += smallK8sQouta
+		case "medium":
+			k8sNeeded += mediumK8sQouta
+		case "large":
+			k8sNeeded += largeK8sQouta
+		default:
+			return 0, fmt.Errorf("unknown w resource type %s", k.Resources)
+		}
+	}
+	return k8sNeeded, nil
 }

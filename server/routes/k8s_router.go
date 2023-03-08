@@ -178,7 +178,7 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// write response
-	writeMsgResponse(w, "Kubernetes cluster deployed successfully", map[string]int{"id": kCluster.ID})
+	writeMsgResponse(w, "Kubernetes cluster deployed successfully", map[string]int{"id": k8sCluster.ID})
 }
 
 // K8sGetHandler gets a cluster for a user

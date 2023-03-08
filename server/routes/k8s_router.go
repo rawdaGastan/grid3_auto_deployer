@@ -23,13 +23,13 @@ var (
 	k8sFlist        = "https://hub.grid.tf/tf-official-apps/threefoldtech-k3s-latest.flist"
 	k8sSmallCpu     = 1
 	k8sSmallMemory  = 2
-	k8sSmallDisk    = 10
+	k8sSmallDisk    = 5
 	k8sMediumCpu    = 2
 	k8sMediumMemory = 4
-	k8sMediumDisk   = 15
+	k8sMediumDisk   = 10
 	k8sLargeCpu     = 4
 	k8sLargeMemory  = 8
-	k8sLargeDisk    = 20
+	k8sLargeDisk    = 15
 	smallK8sQouta   = 1
 	mediumK8sQouta  = 2
 	largeK8sQouta   = 3

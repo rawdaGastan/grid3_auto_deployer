@@ -61,14 +61,14 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc("/user/{id}", router.GetUserHandler).Methods("GET", "OPTIONS")
 	// r.HandleFunc("/user/get", router.GetAllUsersHandlres).Methods("GET") //TODO:for testing only
 	r.HandleFunc("/user/activate_voucher/{id}", router.ActivateVoucherHandler).Methods("PUT", "OPTIONS")
-	r.HandleFunc("/k8s/deploy", router.K8sDeployHandler).Methods("POST", "OPTIONS")
-	r.HandleFunc("/k8s/get", router.K8sGetAllHandler).Methods("GET", "OPTIONS")
-	r.HandleFunc("/k8s/delete", router.K8sDeleteAllHandler).Methods("DELETE", "OPTIONS")
+	r.HandleFunc("/k8s", router.K8sDeployHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc("/k8s", router.K8sGetAllHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/k8s", router.K8sDeleteAllHandler).Methods("DELETE", "OPTIONS")
 	r.HandleFunc("/k8s/{id}", router.K8sGetHandler).Methods("GET", "OPTIONS")
 	r.HandleFunc("/k8s/{id}", router.K8sDeleteHandler).Methods("DELETE", "OPTIONS")
 
 	// ADMIN ACCESS
-	r.HandleFunc("/voucher/generate", router.GenerateVoucherHandler).Methods("POST")
+	r.HandleFunc("/voucher", router.GenerateVoucherHandler).Methods("POST")
 	http.Handle("/", r)
 
 	return &Server{port: configuration.Server.Port}, nil

@@ -259,7 +259,7 @@ func (d *DB) DeleteK8s(id int) error {
 	if err != nil {
 		return err
 	}
-	return d.db.Select("master", "workers").Delete(&k8s).Error
+	return d.db.Select("Master", "Workers").Delete(&k8s).Error
 }
 
 func (d *DB) DeleteAllK8s(userID string) error {
@@ -268,11 +268,5 @@ func (d *DB) DeleteAllK8s(userID string) error {
 	if err != nil {
 		return err
 	}
-	for i := range k8sClusters {
-		err = d.DeleteK8s(k8sClusters[i].ID)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return d.db.Select("Master", "Workers").Delete(&k8sClusters).Error
 }

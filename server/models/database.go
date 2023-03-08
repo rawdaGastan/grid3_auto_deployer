@@ -84,7 +84,7 @@ func (d *DB) UpdatePassword(email string, password string) error {
 }
 
 // UpdateUserByID updates information of user
-func (d *DB) UpdateUserByID(id string, name string, password string, updatedAt time.Time, code int) (string, error) {
+func (d *DB) UpdateUserByID(id string, name string, password string, sshKey string, updatedAt time.Time, code int) (string, error) {
 	var res User
 	if name != "" {
 		result := d.db.Model(&res).Where("id = ?", id).Update("name", name)
@@ -94,6 +94,12 @@ func (d *DB) UpdateUserByID(id string, name string, password string, updatedAt t
 	}
 	if password != "" {
 		result := d.db.Model(&res).Where("id = ?", id).Update("hashed_password", password)
+		if result.Error != nil {
+			return "", result.Error
+		}
+	}
+	if sshKey != "" {
+		result := d.db.Model(&res).Where("id = ?", id).Update("ssh_key", sshKey)
 		if result.Error != nil {
 			return "", result.Error
 		}

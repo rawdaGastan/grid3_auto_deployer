@@ -11,6 +11,7 @@
     :value="modelValue"
     bg-color="accent"
     variant="outlined"
+    density="compact"
   >
   </v-select>
 </template>

@@ -74,7 +74,7 @@
     <v-row v-if="results">
       <v-col class="d-flex justify-end">
         <BaseButton
-          color="error"
+          color="red-accent-2"
           :loading="deLoading"
           @click="deleteAllK8s"
           text="Delete All K8s"
@@ -102,7 +102,7 @@
               <td>{{ item.cpu }}</td>
               <td>
                 <font-awesome-icon
-                  class="text-red-darken-3"
+                  class="grey-darken-3"
                   @click="deleteK8s(item.id)"
                   icon="fa-solid fa-trash"
                 />

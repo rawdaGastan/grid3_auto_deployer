@@ -190,20 +190,34 @@ func (r *Router) GetVmHandler(w http.ResponseWriter, req *http.Request) {
 	r.WriteMsgResponse(w, "vm", vm)
 }
 
+// ListVMsHandler returns all vms of user
 func (r *Router) ListVMsHandler(w http.ResponseWriter, req *http.Request) {
 	id := mux.Vars(req)["id"]
 	vms, err := r.db.GetAllVms(id)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 	}
-	r.WriteMsgResponse(w, "S", vms)
+	r.WriteMsgResponse(w, "", vms)
 
 }
 
+// DeleteVM deletes vm by its id
 func (r *Router) DeleteVM(w http.ResponseWriter, req *http.Request) {
-
+	id := mux.Vars(req)["id"]
+	err := r.db.DeleteVmByID(id)
+	if err != nil {
+		r.WriteErrResponse(w, err)
+	}
+	r.WriteMsgResponse(w, "vm deleted successfully", "")
 }
 
+// DeleteAllVMs deletes all vms of user
 func (r *Router) DeleteAllVMs(w http.ResponseWriter, req *http.Request) {
+	id := mux.Vars(req)["id"]
+	err := r.db.DeleteAllVms(id)
+	if err != nil {
+		r.WriteErrResponse(w, err)
+	}
+	r.WriteMsgResponse(w, "all vms deleted successfully", "")
 
 }

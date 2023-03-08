@@ -17,6 +17,7 @@ type User struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 	Code           int       `json:"code"`
 	Verified       bool      `json:"verified"`
+	SSHKey         string    `json:"sshKey"`
 	// checks if user type is admin
 	Admin bool `json:"admin"`
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gorm.io/driver/sqlite"
+	"gorm.io/gorm/clause"
 
 	"gorm.io/gorm"
 )
@@ -84,7 +85,7 @@ func (d *DB) UpdatePassword(email string, password string) error {
 }
 
 // UpdateUserByID updates information of user
-func (d *DB) UpdateUserByID(id string, name string, password string, updatedAt time.Time, code int) (string, error) {
+func (d *DB) UpdateUserByID(id string, name string, password string, updatedAt time.Time, code int, sshKey string) (string, error) {
 	var res User
 	if name != "" {
 		result := d.db.Model(&res).Where("id = ?", id).Update("name", name)
@@ -110,6 +111,13 @@ func (d *DB) UpdateUserByID(id string, name string, password string, updatedAt t
 			return "", result.Error
 		}
 	}
+	if sshKey != "" {
+		result := d.db.Model(&res).Where("id = ?", id).Update("sshKey", sshKey)
+		if result.Error != nil {
+			return "", result.Error
+		}
+	}
+
 	return string(id), nil
 }
 
@@ -153,6 +161,26 @@ func (d *DB) GetAllVms(userID string) ([]VM, error) {
 		return vms, result.Error
 	}
 	return vms, nil
+}
+
+// DeleteVmByID deletes vm by its id
+func (d *DB) DeleteVmByID(id string) error {
+	var vm VM
+	result := d.db.Delete(&vm, id)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// DeleteAllVms deletes all vms of user
+func (d *DB) DeleteAllVms(userID string) error {
+	var vms []VM
+	result := d.db.Clauses(clause.Returning{}).Where("userID = ?", userID).Delete(&vms)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
 }
 
 func (d *DB) GetAllUsers() ([]User, error) { //TODO: for testing only

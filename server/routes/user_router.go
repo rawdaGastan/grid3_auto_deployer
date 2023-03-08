@@ -21,6 +21,7 @@ type SignUpInput struct {
 	Email           string `json:"email" gorm:"unique" binding:"required"`
 	Password        string `json:"password" binding:"required"`
 	ConfirmPassword string `json:"confirm_password" binding:"required"`
+	SSHKey          string `json:"sshKey" binding:"required"`
 }
 
 // VerifyCodeInput struct takes verification code from user
@@ -47,6 +48,7 @@ type UpdateUserInput struct {
 	Name            string `json:"name"`
 	Password        string `json:"password"`
 	ConfirmPassword string `json:"confirm_password"`
+	SSHKey          string `json:"sshKey" binding:"required"`
 }
 
 // EmailInput struct for user when forgetting password
@@ -131,6 +133,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 			HashedPassword: hashedPassword,
 			Verified:       false,
 			Code:           code,
+			SSHKey:         signUp.SSHKey,
 		}
 
 		fmt.Printf("code: %v\n", code) //TODO: to be removed
@@ -304,7 +307,7 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 	}
 	fmt.Printf("code: %v\n", code) //TODO: to be removed
 
-	_, err = r.db.UpdateUserByID(user.ID.String(), "", "", time.Now(), code)
+	_, err = r.db.UpdateUserByID(user.ID.String(), "", "", time.Now(), code, "")
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
@@ -414,7 +417,7 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	userID, err := r.db.UpdateUserByID(id, input.Name, hashedPassword, time.Time{}, 0)
+	userID, err := r.db.UpdateUserByID(id, input.Name, hashedPassword, time.Time{}, 0, input.SSHKey)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return

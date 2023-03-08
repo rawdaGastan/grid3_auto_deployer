@@ -5,10 +5,8 @@
     </h5>
     <v-row justify="center">
       <v-col cols="12" sm="6">
+        <BaseInput label="Name" v-model="name" />
         <BaseInput label="E-mail" v-model="email" />
-
-        <BaseSelect v-model="select" :items="items" label="Gender" />
-
         <BaseInput label="Voucher" v-model="voucher" />
         <a
           href=""
@@ -26,17 +24,18 @@
 import { ref } from "vue";
 import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseSelect from "@/components/Form/BaseSelect.vue";
+import BaseButton from "@/components/Form/BaseButton.vue";
 export default {
   components: {
     BaseInput,
     BaseSelect,
+    BaseButton,
   },
   setup() {
     const email = ref(null);
-    const items = ref(["Male", "Female"]);
-    const select = ref(null);
+    const name = ref(null);
     const voucher = ref(null);
-    return { email, items, select, voucher };
+    return { email, name, voucher };
   },
 };
 </script>

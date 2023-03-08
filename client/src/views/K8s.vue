@@ -77,7 +77,7 @@
           color="error"
           :loading="deLoading"
           @click="deleteAllK8s"
-          text="Delete"
+          text="Delete All K8s"
         />
       </v-col>
     </v-row>

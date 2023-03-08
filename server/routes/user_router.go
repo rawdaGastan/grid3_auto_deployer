@@ -61,7 +61,6 @@ type AddVoucherInput struct {
 
 // SignUpHandler creates account for user
 func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
-
 	var signUp SignUpInput
 	err := json.NewDecoder(req.Body).Decode(&signUp)
 	if err != nil {
@@ -132,6 +131,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 			HashedPassword: hashedPassword,
 			Verified:       false,
 			Code:           code,
+			SSHKey:         user.SSHKey,
 		}
 
 		fmt.Printf("code: %v\n", code) //TODO: to be removed
@@ -273,14 +273,6 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	writeMsgResponse(w, "token is refreshed successfully", map[string]string{"access_token": reqToken, "refresh_token": newToken})
-}
-
-// SignOut allows user to logout from the system by expiring his token
-func (r *Router) SignOut(w http.ResponseWriter, req *http.Request) {
-	// TODO: Rawda: how you logout??
-	/*expirationTime := time.Now()
-	claims.ExpiresAt = jwt.NewNumericDate(expirationTime)*/
-	writeMsgResponse(w, "user logged out successfully", "")
 }
 
 // ForgotPasswordHandler sends user verification code
@@ -457,14 +449,15 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 	writeMsgResponse(w, "voucher is applied successfully", "")
 }
 
-// func (router *Router) GetAllUsersHandlers(w http.ResponseWriter, r *http.Request) { //TODO: to be removed for testing only
-// 	users, err := router.db.GetAllUsers()
+// // GetAllUsersHandlers returns all users
+// func (r *Router) GetAllUsersHandlers(w http.ResponseWriter, req *http.Request) { //TODO: to be removed for testing only
+// 	users, err := r.db.GetAllUsers()
 // 	if err != nil {
-// 		routewriteErrResponse(w, err)
+// 		r.WriteErrResponse(w, err)
 // 	}
 // 	userBytes, err := json.Marshal(users)
 // 	if err != nil {
-// 		routewriteErrResponse(w, err)
+// 		r.WriteErrResponse(w, err)
 // 	}
 // 	w.Write(userBytes)
 // }

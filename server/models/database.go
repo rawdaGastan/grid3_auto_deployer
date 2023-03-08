@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"gorm.io/driver/sqlite"
+	"gorm.io/gorm/clause"
 
 	"gorm.io/gorm"
 )
@@ -21,6 +22,7 @@ func NewDB() DB {
 
 // Connect connects to database file
 func (d *DB) Connect(file string) error {
+
 	gormDB, err := gorm.Open(sqlite.Open(file), &gorm.Config{})
 	if err != nil {
 		return err
@@ -31,7 +33,7 @@ func (d *DB) Connect(file string) error {
 
 // Migrate migrates db schema
 func (d *DB) Migrate() error {
-	err := d.db.AutoMigrate(&User{}, &Quota{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{})
+	err := d.db.AutoMigrate(&User{}, &Quota{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{})
 	if err != nil {
 		return err
 	}
@@ -109,7 +111,8 @@ func (d *DB) UpdateUserByID(id string, name string, password string, sshKey stri
 			return "", result.Error
 		}
 	}
-	return id, nil
+
+	return string(id), nil
 }
 
 // UpdateVerification updates if user is verified or not
@@ -126,13 +129,56 @@ func (d *DB) AddUserVoucher(id string, voucher string) error {
 	return result.Error
 }
 
+// CreateVM creates new vm
+func (d *DB) CreateVM(vm *VM) error {
+	result := d.db.Create(&vm)
+	return result.Error
+
+}
+
+// GetVMByID return vm by its id
+func (d *DB) GetVMByID(id string) (*VM, error) {
+	var vm VM
+	query := d.db.First(&vm, "id = ?", id)
+	if query.Error != nil {
+		return &vm, query.Error
+	}
+
+	return &vm, nil
+}
+
+// GetAllVms returns all vms of user
+func (d *DB) GetAllVms(userID string) ([]VM, error) {
+	var vms []VM
+	result := d.db.Where("user_id = ?", userID).Find(&vms)
+	if result.Error != nil {
+		return []VM{}, result.Error
+	}
+	return vms, result.Error
+}
+
+// DeleteVMByID deletes vm by its id
+func (d *DB) DeleteVMByID(id string) error {
+	var vm VM
+	result := d.db.Delete(&vm, id)
+	return result.Error
+}
+
+// DeleteAllVms deletes all vms of user
+func (d *DB) DeleteAllVms(userID string) error {
+	var vms []VM
+	result := d.db.Clauses(clause.Returning{}).Where("user_id = ?", userID).Delete(&vms)
+	return result.Error
+}
+
+// // GetAllUsers returns all users of the system
 // func (d *DB) GetAllUsers() ([]User, error) { //TODO: for testing only
 // 	// var u User
 // 	var users []User
 // 	// d.db.Delete(&users, []int{1, 2, 3, 4, 5})
 // 	result := d.db.Find(&users)
-// 	// len := result.RowsAffected
-// 	// fmt.Printf("len: %v\n", len)
+// 	len := result.RowsAffected
+// 	fmt.Printf("len: %v\n", len)
 // 	if result.Error != nil {
 // 		return users, result.Error
 // 	}

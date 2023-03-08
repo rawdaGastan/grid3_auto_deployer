@@ -59,7 +59,12 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc("/user", router.GetUserHandler).Methods("GET", "OPTIONS")
 	//r.HandleFunc("/user", router.GetAllUsersHandlers).Methods("GET", "OPTIONS") //TODO:for testing only
 	r.HandleFunc("/user/activate_voucher", router.ActivateVoucherHandler).Methods("PUT", "OPTIONS")
-	r.HandleFunc("/user/signout", router.SignOut).Methods("POST", "OPTIONS")
+
+	r.HandleFunc("/vm", router.DeployVMHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc("/vm/{id}", router.GetVMHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/vm", router.ListVMsHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/vm/{id}", router.DeleteVM).Methods("DELETE", "OPTIONS")
+	r.HandleFunc("/vm", router.DeleteAllVMs).Methods("DELETE", "OPTIONS")
 
 	r.HandleFunc("/k8s", router.K8sDeployHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc("/k8s", router.K8sGetAllHandler).Methods("GET", "OPTIONS")

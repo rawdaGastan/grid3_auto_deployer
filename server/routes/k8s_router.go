@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -98,6 +99,11 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if len(strings.TrimSpace(user.SSHKey)) == 0 {
+		writeErrResponse(w, fmt.Errorf("ssh key is required"))
+		return
+	}
+
 	cluster, err := buildK8sCluster(node,
 		user.SSHKey,
 		network.Name,
@@ -107,6 +113,7 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 		writeErrResponse(w, err)
 		return
 	}
+
 	// deploy network and cluster
 	err = deployK8sClusterWithNetwork(&client, &cluster, &network)
 	if err != nil {

@@ -3,7 +3,7 @@ GOPATH := $(shell go env GOPATH)
 
 all: verifiers test
 
-//TODO: add bild in makefile 
+//TODO: add bild in makefile // we will use goreleaser
 
 test: 
 	@echo "Running Tests"

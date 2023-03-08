@@ -46,7 +46,9 @@ var (
 
 // DeployVMHandler creates vm for user and deploy it
 func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
+	//TODO: remove id of user , get it from token
 	//TODO: validation that user has available vms
+	setupCorsResponse(&w, req)
 	id := mux.Vars(req)["id"]
 	var VM DeployVmInput
 	err := json.NewDecoder(req.Body).Decode(&VM)
@@ -203,6 +205,7 @@ func (r *Router) generateNetworkName() string {
 
 // GetVMHandler returns vm by its id
 func (r *Router) GetVMHandler(w http.ResponseWriter, req *http.Request) {
+	setupCorsResponse(&w, req)
 	id := mux.Vars(req)["id"]
 	vm, err := r.db.GetVMByID(id)
 	if err != nil {
@@ -213,6 +216,8 @@ func (r *Router) GetVMHandler(w http.ResponseWriter, req *http.Request) {
 
 // ListVMsHandler returns all vms of user
 func (r *Router) ListVMsHandler(w http.ResponseWriter, req *http.Request) {
+	setupCorsResponse(&w, req)
+	// TODO: no id needed
 	id := mux.Vars(req)["id"]
 	vms, err := r.db.GetAllVms(id)
 	if err != nil {
@@ -224,6 +229,7 @@ func (r *Router) ListVMsHandler(w http.ResponseWriter, req *http.Request) {
 
 // DeleteVM deletes vm by its id
 func (r *Router) DeleteVM(w http.ResponseWriter, req *http.Request) {
+	setupCorsResponse(&w, req)
 	id := mux.Vars(req)["id"]
 	err := r.db.DeleteVMByID(id)
 	if err != nil {
@@ -234,6 +240,8 @@ func (r *Router) DeleteVM(w http.ResponseWriter, req *http.Request) {
 
 // DeleteAllVMs deletes all vms of user
 func (r *Router) DeleteAllVMs(w http.ResponseWriter, req *http.Request) {
+	setupCorsResponse(&w, req)
+	// TODO: no id needed
 	id := mux.Vars(req)["id"]
 	err := r.db.DeleteAllVms(id)
 	if err != nil {

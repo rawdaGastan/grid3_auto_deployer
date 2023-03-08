@@ -2,10 +2,10 @@
 package models
 
 import (
-	"fmt"
 	"time"
 
 	"gorm.io/driver/sqlite"
+	"gorm.io/gorm/clause"
 
 	"gorm.io/gorm"
 )
@@ -84,7 +84,7 @@ func (d *DB) UpdatePassword(email string, password string) error {
 }
 
 // UpdateUserByID updates information of user
-func (d *DB) UpdateUserByID(id string, name string, password string, updatedAt time.Time, code int) (string, error) {
+func (d *DB) UpdateUserByID(id string, name string, password string, sshKey string, updatedAt time.Time, code int) (string, error) {
 	var res User
 	if name != "" {
 		result := d.db.Model(&res).Where("id = ?", id).Update("name", name)
@@ -94,6 +94,12 @@ func (d *DB) UpdateUserByID(id string, name string, password string, updatedAt t
 	}
 	if password != "" {
 		result := d.db.Model(&res).Where("id = ?", id).Update("hashed_password", password)
+		if result.Error != nil {
+			return "", result.Error
+		}
+	}
+	if sshKey != "" {
+		result := d.db.Model(&res).Where("id = ?", id).Update("ssh_key", sshKey)
 		if result.Error != nil {
 			return "", result.Error
 		}
@@ -110,6 +116,7 @@ func (d *DB) UpdateUserByID(id string, name string, password string, updatedAt t
 			return "", result.Error
 		}
 	}
+
 	return string(id), nil
 }
 
@@ -134,8 +141,8 @@ func (d *DB) CreateVM(vm *VM) error {
 
 }
 
-// GetVmByID return vm by its id
-func (d *DB) GetVmByID(id string) (*VM, error) {
+// GetVMByID return vm by its id
+func (d *DB) GetVMByID(id string) (*VM, error) {
 	var vm VM
 	query := d.db.First(&vm, "id = ?", id)
 	if query.Error != nil {
@@ -148,25 +155,46 @@ func (d *DB) GetVmByID(id string) (*VM, error) {
 // GetAllVms returns all vms of user
 func (d *DB) GetAllVms(userID string) ([]VM, error) {
 	var vms []VM
-	result := d.db.Where("userID = ?", userID).Find(&vms)
+	result := d.db.Where("user_id = ?", userID).Find(&vms)
 	if result.Error != nil {
 		return vms, result.Error
 	}
 	return vms, nil
 }
 
-func (d *DB) GetAllUsers() ([]User, error) { //TODO: for testing only
-	// var u User
-	var users []User
-	// d.db.Delete(&users, []int{1, 2, 3, 4, 5})
-	result := d.db.Find(&users)
-	len := result.RowsAffected
-	fmt.Printf("len: %v\n", len)
+// DeleteVMByID deletes vm by its id
+func (d *DB) DeleteVMByID(id string) error {
+	var vm VM
+	result := d.db.Delete(&vm, id)
 	if result.Error != nil {
-		return users, result.Error
+		return result.Error
 	}
-	return users, nil
+	return nil
 }
+
+// DeleteAllVms deletes all vms of user
+func (d *DB) DeleteAllVms(userID string) error {
+	var vms []VM
+	result := d.db.Clauses(clause.Returning{}).Where("user_id = ?", userID).Delete(&vms)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// // GetAllUsers returns all users of the system
+// func (d *DB) GetAllUsers() ([]User, error) { //TODO: for testing only
+// 	// var u User
+// 	var users []User
+// 	// d.db.Delete(&users, []int{1, 2, 3, 4, 5})
+// 	result := d.db.Find(&users)
+// 	len := result.RowsAffected
+// 	fmt.Printf("len: %v\n", len)
+// 	if result.Error != nil {
+// 		return users, result.Error
+// 	}
+// 	return users, nil
+// }
 
 // CreateQuota creates a new quota
 func (d *DB) CreateQuota(q Quota) error {

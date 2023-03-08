@@ -44,27 +44,31 @@ func NewServer(file string) (server *Server, err error) {
 	if err != nil {
 		return
 	}
+	//TODO: add version
 
 	router := NewRouter(*configuration, db)
 	r := mux.NewRouter()
 	r.Use(middlewares.LoggingMW)
-	r.HandleFunc("/user/signup", router.SignUpHandler).Methods("POST")
-	r.HandleFunc("/user/signup/verify_email", router.VerifySignUpCodeHandler).Methods("POST")
-	r.HandleFunc("/user/signin", router.SignInHandler).Methods("POST")
-	r.HandleFunc("/user/refresh_token", router.RefreshJWTHandler).Methods("POST")
-	r.HandleFunc("/user/signout", router.SignOut).Methods("POST")
-	r.HandleFunc("/user/forgot_password", router.ForgotPasswordHandler).Methods("POST")
-	r.HandleFunc("/user/forget_password/verify_email", router.VerifyForgetPasswordCodeHandler).Methods("POST")
-	r.HandleFunc("/user/change_password", router.ChangePasswordHandler).Methods("PUT")
-	r.HandleFunc("/user/{id}", router.UpdateUserHandler).Methods("PUT")
-	r.HandleFunc("/user/{id}", router.GetUserHandler).Methods("GET")
-	r.HandleFunc("/user", router.GetAllUsersHandlers).Methods("GET") //TODO:for testing only
-	r.HandleFunc("/user/activate_voucher/{id}", router.ActivateVoucherHandler).Methods("PUT")
-	r.HandleFunc("/user/deploy_vm/{id}", router.DeployVmHandler).Methods("POST")
-	r.HandleFunc("/user/get_vm/{id}", router.GetVmHandler).Methods("GET")
+	r.HandleFunc("/user/signup", router.SignUpHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc("/user/signup/verify_email", router.VerifySignUpCodeHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc("/user/signin", router.SignInHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc("/user/refresh_token", router.RefreshJWTHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc("/user/signout", router.SignOut).Methods("POST", "OPTIONS")
+	r.HandleFunc("/user/forgot_password", router.ForgotPasswordHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc("/user/forget_password/verify_email", router.VerifyForgetPasswordCodeHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc("/user/change_password", router.ChangePasswordHandler).Methods("PUT", "OPTIONS")
+	r.HandleFunc("/user/{id}", router.UpdateUserHandler).Methods("PUT", "OPTIONS")
+	r.HandleFunc("/user/{id}", router.GetUserHandler).Methods("GET", "OPTIONS")
+	//r.HandleFunc("/user", router.GetAllUsersHandlers).Methods("GET", "OPTIONS") //TODO:for testing only
+	r.HandleFunc("/user/activate_voucher/{id}", router.ActivateVoucherHandler).Methods("PUT", "OPTIONS")
+	r.HandleFunc("/vm", router.DeployVMHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc("/vm/{id}", router.GetVMHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/vm", router.ListVMsHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/vm/{id}", router.DeleteVM).Methods("DELETE", "OPTIONS")
+	r.HandleFunc("/vm", router.DeleteAllVMs).Methods("DELETE", "OPTIONS")
 
 	// ADMIN ACCESS
-	r.HandleFunc("/voucher/generate", router.GenerateVoucherHandler).Methods("POST")
+	r.HandleFunc("/voucher", router.GenerateVoucherHandler).Methods("POST")
 	http.Handle("/", r)
 
 	return &Server{port: configuration.Server.Port}, nil

@@ -21,6 +21,7 @@ type SignUpInput struct {
 	Email           string `json:"email" gorm:"unique" binding:"required"`
 	Password        string `json:"password" binding:"required"`
 	ConfirmPassword string `json:"confirm_password" binding:"required"`
+	SSHKey          string `json:"sshKey" binding:"required"`
 }
 
 // VerifyCodeInput struct takes verification code from user
@@ -47,6 +48,7 @@ type UpdateUserInput struct {
 	Name            string `json:"name"`
 	Password        string `json:"password"`
 	ConfirmPassword string `json:"confirm_password"`
+	SSHKey          string `json:"ssh_key"`
 }
 
 // EmailInput struct for user when forgetting password
@@ -61,6 +63,7 @@ type AddVoucherInput struct {
 
 // SignUpHandler creates account for user
 func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
+	setupCorsResponse(&w, req)
 	var signUp SignUpInput
 	err := json.NewDecoder(req.Body).Decode(&signUp)
 	if err != nil {
@@ -108,7 +111,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	// update code if user is not verified but exists
 	if getErr == nil {
 		if !user.Verified {
-			_, err = r.db.UpdateUserByID(user.ID.String(), "", "", time.Now(), code)
+			_, err = r.db.UpdateUserByID(user.ID.String(), "", "", "", time.Now(), code)
 			if err != nil {
 				r.WriteErrResponse(w, err)
 				return
@@ -131,6 +134,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 			HashedPassword: hashedPassword,
 			Verified:       false,
 			Code:           code,
+			SSHKey:         signUp.SSHKey,
 		}
 
 		fmt.Printf("code: %v\n", code) //TODO: to be removed
@@ -158,6 +162,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 
 // VerifySignUpCodeHandler gets verification code to create user
 func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Request) {
+	setupCorsResponse(&w, req)
 	data := VerifyCodeInput{}
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
@@ -195,6 +200,7 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 
 // SignInHandler allows user to sign in to the system
 func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
+	setupCorsResponse(&w, req)
 	var input SignInInput
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
@@ -234,6 +240,7 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 
 // RefreshJWTHandler refreshes the user's token
 func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
+	setupCorsResponse(&w, req)
 	reqToken := req.Header.Get("Authorization")
 	splitToken := strings.Split(reqToken, "Bearer ")
 	if len(splitToken) != 2 {
@@ -261,6 +268,7 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 
 // SignOut allows user to logout from the system by expiring his token
 func (r *Router) SignOut(w http.ResponseWriter, req *http.Request) {
+	setupCorsResponse(&w, req)
 	reqToken := req.Header.Get("Authorization")
 	splitToken := strings.Split(reqToken, "Bearer ")
 	if len(splitToken) != 2 {
@@ -283,6 +291,7 @@ func (r *Router) SignOut(w http.ResponseWriter, req *http.Request) {
 
 // ForgotPasswordHandler sends user verification code
 func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request) {
+	setupCorsResponse(&w, req)
 	var email EmailInput
 	err := json.NewDecoder(req.Body).Decode(&email)
 	if err != nil {
@@ -304,7 +313,7 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 	}
 	fmt.Printf("code: %v\n", code) //TODO: to be removed
 
-	_, err = r.db.UpdateUserByID(user.ID.String(), "", "", time.Now(), code)
+	_, err = r.db.UpdateUserByID(user.ID.String(), "", "", "", time.Now(), code)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
@@ -314,6 +323,7 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 
 // VerifyForgetPasswordCodeHandler verifies code sent to user when forgetting password
 func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *http.Request) {
+	setupCorsResponse(&w, req)
 	data := VerifyCodeInput{}
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
@@ -342,6 +352,7 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 
 // ChangePasswordHandler changes password of user
 func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request) {
+	setupCorsResponse(&w, req)
 	// TODO: Rawda: change password for verify - settings
 	data := ChangePasswordInput{}
 	err := json.NewDecoder(req.Body).Decode(&data)
@@ -368,6 +379,7 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 
 // UpdateUserHandler updates user's data
 func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
+	setupCorsResponse(&w, req)
 	id := mux.Vars(req)["id"]
 
 	reqToken := req.Header.Get("Authorization")
@@ -414,7 +426,9 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	userID, err := r.db.UpdateUserByID(id, input.Name, hashedPassword, time.Time{}, 0)
+	//TODO: validate ssh key
+
+	userID, err := r.db.UpdateUserByID(id, input.Name, hashedPassword, input.SSHKey, time.Time{}, 0)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return
@@ -425,6 +439,7 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 
 // GetUserHandler returns user by its idx
 func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
+	setupCorsResponse(&w, req)
 	id := mux.Vars(req)["id"]
 
 	reqToken := req.Header.Get("Authorization")
@@ -451,6 +466,7 @@ func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
 
 // AddVoucherHandler makes user adds voucher to his account
 func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request) {
+	setupCorsResponse(&w, req)
 	id := mux.Vars(req)["id"]
 
 	reqToken := req.Header.Get("Authorization")
@@ -495,14 +511,15 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 	r.WriteMsgResponse(w, "voucher is applied successfully", "")
 }
 
-func (router *Router) GetAllUsersHandlers(w http.ResponseWriter, r *http.Request) { //TODO: to be removed for testing only
-	users, err := router.db.GetAllUsers()
-	if err != nil {
-		router.WriteErrResponse(w, err)
-	}
-	userBytes, err := json.Marshal(users)
-	if err != nil {
-		router.WriteErrResponse(w, err)
-	}
-	w.Write(userBytes)
-}
+// // GetAllUsersHandlers returns all users
+// func (r *Router) GetAllUsersHandlers(w http.ResponseWriter, req *http.Request) { //TODO: to be removed for testing only
+// 	users, err := r.db.GetAllUsers()
+// 	if err != nil {
+// 		r.WriteErrResponse(w, err)
+// 	}
+// 	userBytes, err := json.Marshal(users)
+// 	if err != nil {
+// 		r.WriteErrResponse(w, err)
+// 	}
+// 	w.Write(userBytes)
+// }

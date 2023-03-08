@@ -28,7 +28,7 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 	}
 	reqToken = splitToken[1]
 
-	_, err := r.validateToken(true, reqToken, r.config.Token.Secret)
+	_, err := r.validateToken(false, reqToken, r.config.Token.Secret)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 		return

@@ -252,3 +252,12 @@ func (d *DB) GetAllK8s(userID string) ([]K8sCluster, error) {
 	}
 	return k8sClusters, nil
 }
+
+func (d *DB) DeleteK8s(id int) error {
+	var k8s K8sCluster
+	err := d.db.First(&k8s, id).Error
+	if err != nil {
+		return err
+	}
+	return d.db.Select("master", "workers").Delete(&k8s).Error
+}

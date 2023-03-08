@@ -51,7 +51,7 @@ paths:
       parameters:
         - in: body
           name: code
-          description: the code and mail of the user to verify
+          description: the code and email of the user to verify
           schema:
             $ref: '#/definitions/VerifyCode' 
       responses:
@@ -82,11 +82,11 @@ paths:
       parameters:
         - in: body
           name: email
-          description: the mail of the user to change password
+          description: the email of the user to change password
           schema:
             type: object
             properties:
-              mail:
+              email:
                 type: string
       responses:
         201:
@@ -110,7 +110,7 @@ paths:
       parameters:
         - in: body
           name: code
-          description: the code and mail of the user to verify
+          description: the code and email of the user to verify
           schema:
             $ref: '#/definitions/VerifyCode' 
       responses:
@@ -206,7 +206,7 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
 
-  /user/change_password/{id}:
+  /user/change_password:
     put:
       description: A user to change their password
       security:
@@ -214,12 +214,6 @@ paths:
       consumes:
         - application/json
       parameters:
-        - in: path
-          name: id
-          description: user ID
-          required: true
-          type: string
-          format: uuid
         - in: body
           name: code
           description: the user's password to update
@@ -243,7 +237,7 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
 
-  /user/activate_voucher/{id}:
+  /user/activate_voucher:
     put:
       description: A user to add voucher
       security:
@@ -259,12 +253,6 @@ paths:
             properties:
               voucher:
                 type: string
-        - in: path
-          name: id
-          description: user ID
-          required: true
-          type: string
-          format: uuid
       responses:
         203:
           description: OK
@@ -283,20 +271,13 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
   
-  /user/{id}:
+  /user:
     get:
       description: getting a user
       security:
         - Bearer: []
       consumes:
         - application/json
-      parameters:
-        - in: path
-          name: id
-          description: user ID
-          required: true
-          type: string
-          format: uuid
       responses:
         200:
           description: OK
@@ -332,12 +313,6 @@ paths:
           description: the user data to update
           schema:
             $ref: '#/definitions/UpdateData' 
-        - in: path
-          name: id
-          description: user ID
-          required: true
-          type: string
-          format: uuid
       responses:
         203:
           description: OK
@@ -707,7 +682,7 @@ definitions:
         format: uuid
       name:
         type: string
-      mail:
+      email:
         type: string
         format: email
       hashed_password:
@@ -746,8 +721,18 @@ definitions:
       userID:
         type: string
         format: uuid
-      vm:
-        type: object
+      ip:
+        type: string
+      cru:
+        type: string
+      sru:
+        type: string
+      mru:
+        type: string
+      contract_id:
+        type: string
+      network_contract_id:
+        type: string
 
   Kubernetes:
     type: object
@@ -759,36 +744,75 @@ definitions:
       userID:
         type: string
         format: uuid
-      kubernetes:
+      contract_id:
+        type: string
+      network_contract_id:
+        type: string
+      master:
         type: object
+        $ref: '#/definitions/Master'
+      worker:
+        type: array
+        items:
+          $ref: '#/definitions/Worker'
+  
+  Master:
+    type: object
+    properties:
+      cluster_id: 
+        type: integer
+      name: 
+        type: string
+      ip:
+        type: string
+      cru:
+        type: string
+      sru:
+        type: string
+      mru:
+        type: string
+
+  Worker:
+    type: object
+    properties:
+      cluster_id: 
+        type: integer
+      name: 
+        type: string
+      cru:
+        type: string
+      sru:
+        type: string
+      mru:
+        type: string
 
   SingUp:
     type: object
     required:
       - name
-      - mail
+      - email
       - password
-      - confirmPassword
+      - confirm_password
     properties:
       name:
         type: string
-      mail:
+      email:
         type: string
         format: email
       password:
         type: string
-      confirmPassword:
+      confirm_password:
         type: string
 
   VerifyCode:
     type: object
     required:
       - code
-      - mail
+      - email
     properties:
       code:
         type: integer
-      mail:
+      email:
         type: string
         format: email
 
@@ -796,9 +820,9 @@ definitions:
     type: object
     required:
       - password
-      - mail
+      - email
     properties:
-      mail:
+      email:
         type: string
         format: email
       password:
@@ -807,11 +831,11 @@ definitions:
   ChangePassword:
     type: object
     required:
-      - mail
+      - email
       - password
       - confirm_password
     properties:
-      mail:
+      email:
         type: string
         format: email
       password:

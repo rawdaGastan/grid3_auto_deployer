@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/rawdaGastan/cloud4students/internal"
 	"github.com/rawdaGastan/cloud4students/models"
@@ -20,24 +19,22 @@ type GenerateVoucherInput struct {
 
 // GenerateVoucherHandler generates a voucher by admin
 func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request) {
-	reqToken := req.Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, "Bearer ")
-	if len(splitToken) != 2 {
-		r.WriteErrResponse(w, fmt.Errorf("token is required"))
+	userID := req.Context().Value("UserID").(string)
+	user, err := r.db.GetUserByID(userID)
+	if err != nil {
+		writeNotFoundResponse(w, err)
 		return
 	}
-	reqToken = splitToken[1]
 
-	_, err := r.validateToken(true, reqToken, r.config.Token.Secret)
-	if err != nil {
-		r.WriteErrResponse(w, err)
+	if !user.Admin {
+		writeErrResponse(w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
 		return
 	}
 
 	var input GenerateVoucherInput
 	err = json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
@@ -51,9 +48,9 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 
 	err = r.db.CreateVoucher(v)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
-	r.WriteMsgResponse(w, "voucher is created successfully", map[string]string{"voucher": voucher})
+	writeMsgResponse(w, "voucher is created successfully", map[string]string{"voucher": voucher})
 }

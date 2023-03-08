@@ -20,68 +20,72 @@ import (
 
 var (
 	k8sFlist        = "https://hub.grid.tf/tf-official-apps/threefoldtech-k3s-latest.flist"
-	k8sSmallCpu     = 1
+	k8sSmallCPU     = 1
 	k8sSmallMemory  = 2
 	k8sSmallDisk    = 5
-	k8sMediumCpu    = 2
+	k8sMediumCPU    = 2
 	k8sMediumMemory = 4
 	k8sMediumDisk   = 10
-	k8sLargeCpu     = 4
+	k8sLargeCPU     = 4
 	k8sLargeMemory  = 8
 	k8sLargeDisk    = 15
-	smallK8sQouta   = 1
-	mediumK8sQouta  = 2
-	largeK8sQouta   = 3
+	smallK8sQuota   = 1
+	mediumK8sQuota  = 2
+	largeK8sQuota   = 3
 )
 
+// K8sDeployInput deploy k8s cluster input
 type K8sDeployInput struct {
 	MasterName string   `json:"master_name"`
 	Resources  string   `json:"resources"`
 	Workers    []Worker `json:"workers"`
 }
+
+// Worker deploy k8s worker input
 type Worker struct {
 	Name      string `json:"name"`
 	Resources string `json:"resources"`
 }
 
+// K8sDeployHandler deploy k8s handler
 func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value("UserID").(string)
 
 	var k8sDeployInput K8sDeployInput
 	err := json.NewDecoder(req.Body).Decode(&k8sDeployInput)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
 	// quota verification
 	quota, err := r.db.GetUserQuota(userID)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
 	neededQuota, err := calcNeededQuota(k8sDeployInput)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 	if neededQuota > quota.K8s {
-		r.WriteErrResponse(w, fmt.Errorf("quota is not enough need %d available %d", neededQuota, quota.K8s))
+		writeErrResponse(w, fmt.Errorf("quota is not enough need %d available %d", neededQuota, quota.K8s))
 		return
 	}
 
 	// get tf plugin client
 	client, err := deployer.NewTFPluginClient(r.config.Account.Mnemonics, "sr25519", "dev", "", "", "", true, true)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
 	// get available nodes
 	node, err := getK8sAvailableNodes(&client, k8sDeployInput)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
@@ -90,7 +94,7 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 	// build cluster
 	user, err := r.db.GetUserByID(userID)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
@@ -100,19 +104,19 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 		k8sDeployInput,
 	)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 	// deploy network and cluster
 	err = deployK8sClusterWithNetwork(&client, &cluster, &network)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 	// update quota
 	err = r.db.UpdateUserQuota(userID, quota.Vms, quota.K8s-neededQuota)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
@@ -126,14 +130,14 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 	workerNodes[node] = workersNames
 	resCluster, err := client.State.LoadK8sFromGrid(masterNode, workerNodes, k8sDeployInput.MasterName)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
 	// save to db
 	cru, mru, sru, err := calcK8sNodeResources(k8sDeployInput.Resources)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 	master := models.Master{
@@ -148,7 +152,7 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 
 		cru, mru, sru, err := calcK8sNodeResources(k8sDeployInput.Resources)
 		if err != nil {
-			r.WriteErrResponse(w, err)
+			writeErrResponse(w, err)
 			return
 		}
 		workerModel := models.Worker{
@@ -169,126 +173,130 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 
 	err = r.db.CreateK8s(&kCluster)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
 	// write response
-	r.WriteMsgResponse(w, "Kubernetes cluster deployed successfully", map[string]int{"id": kCluster.ID})
+	writeMsgResponse(w, "Kubernetes cluster deployed successfully", map[string]int{"id": kCluster.ID})
 }
 
+// K8sGetHandler gets a cluster for a user
 func (r *Router) K8sGetHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value("UserID").(string)
 	id, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 	cluster, err := r.db.GetK8s(id)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 	if cluster.UserID != userID {
-		r.WriteErrResponse(w, errors.New("invalid user"))
+		writeErrResponse(w, errors.New("invalid user"))
 		return
 	}
-	r.WriteMsgResponse(w, "Kubernetes cluster found", cluster)
+	writeMsgResponse(w, "Kubernetes cluster found", cluster)
 }
 
+// K8sGetAllHandler gets all clusters for a user
 func (r *Router) K8sGetAllHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value("UserID").(string)
 
 	clusters, err := r.db.GetAllK8s(userID)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
-	r.WriteMsgResponse(w, "Kubernetes clusters found", clusters)
+	writeMsgResponse(w, "Kubernetes clusters found", clusters)
 }
 
+// K8sDeleteHandler deletes a cluster for a user
 func (r *Router) K8sDeleteHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value("UserID").(string)
 	id, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
 	cluster, err := r.db.GetK8s(id)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
 	if cluster.UserID != userID {
-		r.WriteErrResponse(w, errors.New("invalid user"))
+		writeErrResponse(w, errors.New("invalid user"))
 		return
 	}
 
 	client, err := deployer.NewTFPluginClient(r.config.Account.Mnemonics, "sr25519", "dev", "", "", "", true, true)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
 	err = client.SubstrateConn.CancelContract(client.Identity, uint64(cluster.ClusterContract))
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
 	err = client.SubstrateConn.CancelContract(client.Identity, uint64(cluster.NetworkContract))
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
 	err = r.db.DeleteK8s(id)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
-	r.WriteMsgResponse(w, "Cluster is deleted successfully", nil)
+	writeMsgResponse(w, "Cluster is deleted successfully", nil)
 }
 
+// K8sDeleteAllHandler deletes all clusters for a user
 func (r *Router) K8sDeleteAllHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value("UserID").(string)
 
 	client, err := deployer.NewTFPluginClient(r.config.Account.Mnemonics, "sr25519", "dev", "", "", "", true, true)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
 	clusters, err := r.db.GetAllK8s(userID)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 	for _, cluster := range clusters {
 		err = client.SubstrateConn.CancelContract(client.Identity, uint64(cluster.ClusterContract))
 		if err != nil {
-			r.WriteErrResponse(w, err)
+			writeErrResponse(w, err)
 			return
 		}
 		err = client.SubstrateConn.CancelContract(client.Identity, uint64(cluster.NetworkContract))
 		if err != nil {
-			r.WriteErrResponse(w, err)
+			writeErrResponse(w, err)
 			return
 		}
 	}
 
 	err = r.db.DeleteAllK8s(userID)
 	if err != nil {
-		r.WriteErrResponse(w, err)
+		writeErrResponse(w, err)
 		return
 	}
 
-	r.WriteMsgResponse(w, "Deleted succesfully", nil)
+	writeMsgResponse(w, "Deleted successfully", nil)
 }
 
-func buildK8sCluster(node uint32, sshkey, network string, k K8sDeployInput) (workloads.K8sCluster, error) {
+func buildK8sCluster(node uint32, sshKey, network string, k K8sDeployInput) (workloads.K8sCluster, error) {
 	master := workloads.K8sNode{
 		Name:      k.MasterName,
 		Flist:     k8sFlist,
@@ -325,7 +333,7 @@ func buildK8sCluster(node uint32, sshkey, network string, k K8sDeployInput) (wor
 		NetworkName: network,
 		// TODO: random token
 		Token:        "nottoken",
-		SSHKey:       sshkey,
+		SSHKey:       sshKey,
 		SolutionType: k.MasterName,
 	}
 
@@ -349,15 +357,15 @@ func calcK8sNodeResources(resources string) (int, int, int, error) {
 	var sru int
 	switch resources {
 	case "small":
-		cru += k8sSmallCpu
+		cru += k8sSmallCPU
 		mru += k8sSmallMemory
 		sru += k8sSmallDisk
 	case "medium":
-		cru += k8sMediumCpu
+		cru += k8sMediumCPU
 		mru += k8sMediumMemory
 		sru += k8sMediumDisk
 	case "large":
-		cru += k8sLargeCpu
+		cru += k8sLargeCPU
 		mru += k8sLargeMemory
 		sru += k8sLargeDisk
 	default:
@@ -423,22 +431,22 @@ func calcNeededQuota(k K8sDeployInput) (int, error) {
 	var k8sNeeded int
 	switch k.Resources {
 	case "small":
-		k8sNeeded += smallK8sQouta
+		k8sNeeded += smallK8sQuota
 	case "medium":
-		k8sNeeded += mediumK8sQouta
+		k8sNeeded += mediumK8sQuota
 	case "large":
-		k8sNeeded += largeK8sQouta
+		k8sNeeded += largeK8sQuota
 	default:
 		return 0, fmt.Errorf("unknown master resource type %s", k.Resources)
 	}
 	for _, worker := range k.Workers {
 		switch worker.Resources {
 		case "small":
-			k8sNeeded += smallK8sQouta
+			k8sNeeded += smallK8sQuota
 		case "medium":
-			k8sNeeded += mediumK8sQouta
+			k8sNeeded += mediumK8sQuota
 		case "large":
-			k8sNeeded += largeK8sQouta
+			k8sNeeded += largeK8sQuota
 		default:
 			return 0, fmt.Errorf("unknown w resource type %s", k.Resources)
 		}

@@ -1,6 +1,7 @@
 // Package models for database models
 package models
 
+// K8sCluster holds all cluster data
 type K8sCluster struct {
 	ID              int      `json:"id" gorm:"primaryKey"`
 	UserID          string   `json:"userID"`

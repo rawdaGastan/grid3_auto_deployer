@@ -179,16 +179,20 @@ func (d *DB) GetVoucher(voucher string) (Voucher, error) {
 
 	return res, query.Error
 }
+
+// CreateK8s creates a new k8s cluster
 func (d *DB) CreateK8s(k *K8sCluster) error {
 	result := d.db.Create(&k)
 	return result.Error
 }
 
+// CreateWorker creates a new k8s worker
 func (d *DB) CreateWorker(k *Worker) error {
 	result := d.db.Create(&k)
 	return result.Error
 }
 
+// GetK8s gets a k8s cluster
 func (d *DB) GetK8s(id int) (K8sCluster, error) {
 	var k8s K8sCluster
 	err := d.db.First(&k8s, id).Error
@@ -211,6 +215,7 @@ func (d *DB) GetK8s(id int) (K8sCluster, error) {
 	return k8s, nil
 }
 
+// GetAllK8s gets all k8s clusters
 func (d *DB) GetAllK8s(userID string) ([]K8sCluster, error) {
 	var k8sClusters []K8sCluster
 	err := d.db.Find(&k8sClusters, "user_id = ?", userID).Error
@@ -226,6 +231,7 @@ func (d *DB) GetAllK8s(userID string) ([]K8sCluster, error) {
 	return k8sClusters, nil
 }
 
+// DeleteK8s deletes a k8s cluster
 func (d *DB) DeleteK8s(id int) error {
 	var k8s K8sCluster
 	err := d.db.First(&k8s, id).Error
@@ -235,6 +241,7 @@ func (d *DB) DeleteK8s(id int) error {
 	return d.db.Select("Master", "Workers").Delete(&k8s).Error
 }
 
+// DeleteAllK8s deletes all k8s clusters
 func (d *DB) DeleteAllK8s(userID string) error {
 	var k8sClusters []K8sCluster
 	err := d.db.Find(&k8sClusters, "user_id = ?", userID).Error

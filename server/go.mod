@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/caitlin615/nist-password-validator v0.0.0-20190321104149-45ab5d3140de
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0

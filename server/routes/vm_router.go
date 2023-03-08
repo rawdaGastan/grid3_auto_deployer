@@ -5,11 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/http"
 	"time"
 
-	"github.com/goombaio/namegenerator"
 	"github.com/gorilla/mux"
 	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/threefoldtech/grid3-go/deployer"
@@ -60,70 +60,10 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		r.WriteErrResponse(w, err)
 	}
 
-	//TODO: should be separated or not ?
-	tfPluginClient, err := deployer.NewTFPluginClient(r.config.Account.Mnemonics, "sr25519", "dev", "", "", "", true, true)
+	vm, err := r.deployVM(VM)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 	}
-	name := generateNetworkName()
-
-	filter := filterNode(VM.Resources)
-	nodeIDs, err := deployer.FilterNodes(tfPluginClient.GridProxyClient, filter)
-	if err != nil {
-		r.WriteErrResponse(w, err)
-	}
-	nodeID := uint32(nodeIDs[0].NodeID)
-	fmt.Printf("nodeID: %v\n", nodeID)
-
-	network := workloads.ZNet{
-		Name:        name,
-		Description: "A network to deploy",
-		Nodes:       []uint32{nodeID},
-		IPRange: gridtypes.NewIPNet(net.IPNet{
-			IP:   net.IPv4(10, 1, 0, 0),
-			Mask: net.CIDRMask(16, 32),
-		}),
-		AddWGAccess: true,
-	}
-	publicKey, _, err := integration.GenerateSSHKeyPair()
-	if err != nil {
-		r.WriteErrResponse(w, err)
-	}
-	vm := workloads.VM{
-		Name:       VM.Name,
-		Flist:      Flist,
-		CPU:        2,
-		PublicIP:   false,
-		Planetary:  true,
-		Memory:     1024,
-		Entrypoint: "/sbin/zinit init",
-		EnvVars: map[string]string{
-			"SSH_KEY": publicKey,
-		},
-		IP:          "10.20.2.5",
-		NetworkName: network.Name,
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-
-	err = tfPluginClient.NetworkDeployer.Deploy(ctx, &network)
-	if err != nil {
-		r.WriteErrResponse(w, err)
-	}
-
-	dl := workloads.NewDeployment("vm", nodeID, "", nil, network.Name, nil, nil, []workloads.VM{vm}, nil)
-	err = tfPluginClient.DeploymentDeployer.Deploy(ctx, &dl)
-	if err != nil {
-		r.WriteErrResponse(w, err)
-	}
-
-	v, err := tfPluginClient.State.LoadVMFromGrid(nodeID, vm.Name, dl.Name)
-	if err != nil {
-		r.WriteErrResponse(w, err)
-	}
-
-	r.WriteMsgResponse(w, "vm", v)
 
 	userVM := models.VM{ //TODO: id ??
 		UserID: user.ID.String(),
@@ -139,7 +79,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 // choose suitable nodes based on needed resources
-func filterNode(resource string) types.NodeFilter {
+func (r *Router) filterNode(resource string) types.NodeFilter {
 	var filter types.NodeFilter
 	switch resource {
 	case "small":
@@ -173,12 +113,92 @@ func filterNode(resource string) types.NodeFilter {
 
 }
 
-// TODO: to be fixed
-func generateNetworkName() string {
-	seed := time.Now().UTC().UnixNano()
-	nameGenerator := namegenerator.NewNameGenerator(seed)
-	name := nameGenerator.Generate()
-	return name
+func (r *Router) deployVM(VM DeployVmInput) (*workloads.VM, error) {
+	// create tfPluginClient
+	tfPluginClient, err := deployer.NewTFPluginClient(r.config.Account.Mnemonics, "sr25519", "dev", "", "", "", true, true)
+	if err != nil {
+		return nil, err
+	}
+
+	// filter nodes
+	filter := r.filterNode(VM.Resources)
+	nodeIDs, err := deployer.FilterNodes(tfPluginClient.GridProxyClient, filter)
+	if err != nil {
+		return nil, err
+	}
+	nodeID := uint32(nodeIDs[0].NodeID)
+
+	// generate network name
+	name := r.generateNetworkName()
+
+	// create network workload
+	network := workloads.ZNet{
+		Name:        name,
+		Description: "A network to deploy",
+		Nodes:       []uint32{nodeID},
+		IPRange: gridtypes.NewIPNet(net.IPNet{
+			IP:   net.IPv4(10, 1, 0, 0),
+			Mask: net.CIDRMask(16, 32),
+		}),
+		AddWGAccess: true,
+	}
+	publicKey, _, err := integration.GenerateSSHKeyPair()
+	if err != nil {
+		return nil, err
+	}
+
+	// create vm workload
+	vm := workloads.VM{
+		Name:       VM.Name,
+		Flist:      Flist,
+		CPU:        2,
+		PublicIP:   false,
+		Planetary:  true,
+		Memory:     1024,
+		Entrypoint: "/sbin/zinit init",
+		EnvVars: map[string]string{
+			"SSH_KEY": publicKey,
+		},
+		IP:          "10.20.2.5",
+		NetworkName: network.Name,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	// deploy network
+	err = tfPluginClient.NetworkDeployer.Deploy(ctx, &network)
+	if err != nil {
+		return nil, err
+	}
+
+	// deploy vm
+	dl := workloads.NewDeployment("vm", nodeID, "", nil, network.Name, nil, nil, []workloads.VM{vm}, nil)
+	err = tfPluginClient.DeploymentDeployer.Deploy(ctx, &dl)
+	if err != nil {
+		return nil, err
+	}
+
+	// checks that vm deployed successfully
+	loadedVM, err := tfPluginClient.State.LoadVMFromGrid(nodeID, vm.Name, dl.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("loadedVM: %v\n", loadedVM)
+
+	return &vm, nil
+}
+
+// generate random names for network
+func (r *Router) generateNetworkName() string {
+	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	name := make([]byte, 4)
+	for i := range name {
+		name[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(name)
 }
 
 // GetVMHandler returns vm by its id

@@ -62,6 +62,9 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc("/user/activate_voucher/{id}", router.ActivateVoucherHandler).Methods("PUT")
 	r.HandleFunc("/user/deploy_vm/{id}", router.DeployVMHandler).Methods("POST")
 	r.HandleFunc("/user/get_vm/{id}", router.GetVMHandler).Methods("GET")
+	r.HandleFunc("/user/get_vm", router.ListVMsHandler).Methods("GET")
+	r.HandleFunc("/user/delete_vm/{id}", router.DeleteVM).Methods("DELETE")
+	r.HandleFunc("/user/delete_vm", router.DeleteAllVMs).Methods("DELETE")
 
 	// ADMIN ACCESS
 	r.HandleFunc("/voucher/generate", router.GenerateVoucherHandler).Methods("POST")

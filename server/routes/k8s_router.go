@@ -163,7 +163,7 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 		}
 		workers = append(workers, workerModel)
 	}
-	kCluster := models.K8sCluster{
+	k8sCluster := models.K8sCluster{
 		UserID:          user.ID.String(),
 		NetworkContract: int(network.NodeDeploymentID[node]),
 		ClusterContract: int(cluster.NodeDeploymentID[node]),
@@ -171,7 +171,7 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 		Workers:         workers,
 	}
 
-	err = r.db.CreateK8s(&kCluster)
+	err = r.db.CreateK8s(&k8sCluster)
 	if err != nil {
 		writeErrResponse(w, err)
 		return

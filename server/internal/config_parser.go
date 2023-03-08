@@ -14,7 +14,6 @@ type Configuration struct {
 	Database   DB          `json:"database"`
 	Token      JwtToken    `json:"token"`
 	Account    GridAccount `json:"account"`
-	Origins    []string    `json:"origins"`
 }
 
 // Server struct to hold server's information

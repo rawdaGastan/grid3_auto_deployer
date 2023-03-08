@@ -21,7 +21,7 @@ import (
 
 //TODO: add bin folder
 
-// VmInput struct takes input of vm from user
+// DeployVmInput struct takes input of vm from user
 type DeployVmInput struct {
 	Name      string `json:"name" binding:"required"`
 	Resources string `json:"resources" binding:"required"`
@@ -29,6 +29,7 @@ type DeployVmInput struct {
 }
 
 var (
+	// Flist for the vm
 	Flist        = "https://hub.grid.tf/tf-official-apps/base:latest.flist"
 	trueVal      = true
 	statusUp     = "up"
@@ -43,8 +44,8 @@ var (
 	largeDisk    = uint64(10)
 )
 
-// DeployVmHandler creates vm for user and deploy it
-func (r *Router) DeployVmHandler(w http.ResponseWriter, req *http.Request) {
+// DeployVMHandler creates vm for user and deploy it
+func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 	//TODO: validation that user has available vms
 	id := mux.Vars(req)["id"]
 	var VM DeployVmInput
@@ -180,10 +181,10 @@ func generateNetworkName() string {
 	return name
 }
 
-// GetVmHandler returns vm by its id
-func (r *Router) GetVmHandler(w http.ResponseWriter, req *http.Request) {
+// GetVMHandler returns vm by its id
+func (r *Router) GetVMHandler(w http.ResponseWriter, req *http.Request) {
 	id := mux.Vars(req)["id"]
-	vm, err := r.db.GetVmByID(id)
+	vm, err := r.db.GetVMByID(id)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 	}
@@ -204,7 +205,7 @@ func (r *Router) ListVMsHandler(w http.ResponseWriter, req *http.Request) {
 // DeleteVM deletes vm by its id
 func (r *Router) DeleteVM(w http.ResponseWriter, req *http.Request) {
 	id := mux.Vars(req)["id"]
-	err := r.db.DeleteVmByID(id)
+	err := r.db.DeleteVMByID(id)
 	if err != nil {
 		r.WriteErrResponse(w, err)
 	}

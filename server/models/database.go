@@ -142,8 +142,8 @@ func (d *DB) CreateVM(vm *VM) error {
 
 }
 
-// GetVmByID return vm by its id
-func (d *DB) GetVmByID(id string) (*VM, error) {
+// GetVMByID return vm by its id
+func (d *DB) GetVMByID(id string) (*VM, error) {
 	var vm VM
 	query := d.db.First(&vm, "id = ?", id)
 	if query.Error != nil {
@@ -163,8 +163,8 @@ func (d *DB) GetAllVms(userID string) ([]VM, error) {
 	return vms, nil
 }
 
-// DeleteVmByID deletes vm by its id
-func (d *DB) DeleteVmByID(id string) error {
+// DeleteVMByID deletes vm by its id
+func (d *DB) DeleteVMByID(id string) error {
 	var vm VM
 	result := d.db.Delete(&vm, id)
 	if result.Error != nil {
@@ -183,6 +183,7 @@ func (d *DB) DeleteAllVms(userID string) error {
 	return nil
 }
 
+// GetAllUsers returns all users of the system
 func (d *DB) GetAllUsers() ([]User, error) { //TODO: for testing only
 	// var u User
 	var users []User

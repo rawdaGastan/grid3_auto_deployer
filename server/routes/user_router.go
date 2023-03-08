@@ -498,6 +498,7 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 	r.WriteMsgResponse(w, "voucher is applied successfully", "")
 }
 
+// GetAllUsersHandlers returns all users
 func (router *Router) GetAllUsersHandlers(w http.ResponseWriter, r *http.Request) { //TODO: to be removed for testing only
 	users, err := router.db.GetAllUsers()
 	if err != nil {

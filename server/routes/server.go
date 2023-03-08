@@ -61,6 +61,12 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc("/user/activate_voucher", router.ActivateVoucherHandler).Methods("PUT", "OPTIONS")
 	r.HandleFunc("/user/signout", router.SignOut).Methods("POST", "OPTIONS")
 
+	r.HandleFunc("/k8s", router.K8sDeployHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc("/k8s", router.K8sGetAllHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/k8s", router.K8sDeleteAllHandler).Methods("DELETE", "OPTIONS")
+	r.HandleFunc("/k8s/{id}", router.K8sGetHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/k8s/{id}", router.K8sDeleteHandler).Methods("DELETE", "OPTIONS")
+
 	// ADMIN ACCESS
 	r.HandleFunc("/voucher/generate", router.GenerateVoucherHandler).Methods("POST")
 

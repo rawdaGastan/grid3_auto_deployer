@@ -425,7 +425,7 @@ func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
 	writeMsgResponse(w, "user exists", map[string]interface{}{"user": user})
 }
 
-// AddVoucherHandler makes user adds voucher to his account
+// ActivateVoucherHandler makes user adds voucher to his account
 func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value("UserID").(string)
 

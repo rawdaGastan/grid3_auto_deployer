@@ -16,8 +16,10 @@ import (
 	"github.com/rawdaGastan/cloud4students/models"
 )
 
+// UserIDKey key saved in request context
 type UserIDKey string
 
+// Authorization to authorize users in requests
 func Authorization(excludedRoutes []*mux.Route, secret string, timeout int) func(http.Handler) http.Handler {
 	// Cache the regex object of each route (obviously for performance purposes)
 	var excludedRoutesRegexp []*regexp.Regexp

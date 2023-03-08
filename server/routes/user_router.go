@@ -511,15 +511,15 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 	r.WriteMsgResponse(w, "voucher is applied successfully", "")
 }
 
-// GetAllUsersHandlers returns all users
-func (router *Router) GetAllUsersHandlers(w http.ResponseWriter, r *http.Request) { //TODO: to be removed for testing only
-	users, err := router.db.GetAllUsers()
-	if err != nil {
-		router.WriteErrResponse(w, err)
-	}
-	userBytes, err := json.Marshal(users)
-	if err != nil {
-		router.WriteErrResponse(w, err)
-	}
-	w.Write(userBytes)
-}
+// // GetAllUsersHandlers returns all users
+// func (r *Router) GetAllUsersHandlers(w http.ResponseWriter, req *http.Request) { //TODO: to be removed for testing only
+// 	users, err := r.db.GetAllUsers()
+// 	if err != nil {
+// 		r.WriteErrResponse(w, err)
+// 	}
+// 	userBytes, err := json.Marshal(users)
+// 	if err != nil {
+// 		r.WriteErrResponse(w, err)
+// 	}
+// 	w.Write(userBytes)
+// }

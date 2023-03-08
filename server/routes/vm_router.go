@@ -21,8 +21,8 @@ import (
 
 //TODO: add bin folder
 
-// DeployVmInput struct takes input of vm from user
-type DeployVmInput struct {
+// DeployVMInput struct takes input of vm from user
+type DeployVMInput struct {
 	Name      string `json:"name" binding:"required"`
 	Resources string `json:"resources" binding:"required"`
 	SSHKey    string `json:"ssh_key" binding:"required"`
@@ -60,7 +60,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		r.WriteErrResponse(w, err)
 		return
 	}
-	var InputVM DeployVmInput
+	var InputVM DeployVMInput
 	err = json.NewDecoder(req.Body).Decode(&InputVM)
 	if err != nil {
 		r.WriteErrResponse(w, err)
@@ -157,7 +157,7 @@ func filterNode(resource string) types.NodeFilter {
 
 }
 
-func (r *Router) deployVM(VM DeployVmInput) (*workloads.VM, uint64, uint64, uint64, error) {
+func (r *Router) deployVM(VM DeployVMInput) (*workloads.VM, uint64, uint64, uint64, error) {
 	// create tfPluginClient
 	tfPluginClient, err := deployer.NewTFPluginClient(r.config.Account.Mnemonics, "sr25519", "dev", "", "", "", true, false)
 	if err != nil {

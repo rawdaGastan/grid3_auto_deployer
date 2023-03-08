@@ -2,7 +2,6 @@
 package models
 
 import (
-	"fmt"
 	"time"
 
 	"gorm.io/driver/sqlite"
@@ -183,19 +182,19 @@ func (d *DB) DeleteAllVms(userID string) error {
 	return nil
 }
 
-// GetAllUsers returns all users of the system
-func (d *DB) GetAllUsers() ([]User, error) { //TODO: for testing only
-	// var u User
-	var users []User
-	// d.db.Delete(&users, []int{1, 2, 3, 4, 5})
-	result := d.db.Find(&users)
-	len := result.RowsAffected
-	fmt.Printf("len: %v\n", len)
-	if result.Error != nil {
-		return users, result.Error
-	}
-	return users, nil
-}
+// // GetAllUsers returns all users of the system
+// func (d *DB) GetAllUsers() ([]User, error) { //TODO: for testing only
+// 	// var u User
+// 	var users []User
+// 	// d.db.Delete(&users, []int{1, 2, 3, 4, 5})
+// 	result := d.db.Find(&users)
+// 	len := result.RowsAffected
+// 	fmt.Printf("len: %v\n", len)
+// 	if result.Error != nil {
+// 		return users, result.Error
+// 	}
+// 	return users, nil
+// }
 
 // CreateQuota creates a new quota
 func (d *DB) CreateQuota(q Quota) error {

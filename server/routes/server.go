@@ -16,6 +16,7 @@ import (
 	"github.com/rawdaGastan/cloud4students/internal"
 	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rawdaGastan/cloud4students/models"
+	"github.com/rs/cors"
 )
 
 // Server struct holds port of server
@@ -45,6 +46,12 @@ func NewServer(file string) (server *Server, err error) {
 		return
 	}
 
+	c := cors.New(cors.Options{
+		AllowedOrigins:   configuration.Origins,
+		AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodDelete},
+		AllowCredentials: true,
+	})
+
 	router := NewRouter(*configuration, db)
 	r := mux.NewRouter()
 	r.Use(middlewares.LoggingMW)
@@ -63,7 +70,7 @@ func NewServer(file string) (server *Server, err error) {
 
 	// ADMIN ACCESS
 	r.HandleFunc("/voucher/generate", router.GenerateVoucherHandler).Methods("POST")
-	http.Handle("/", r)
+	http.Handle("/", c.Handler(r))
 
 	return &Server{port: configuration.Server.Port}, nil
 }

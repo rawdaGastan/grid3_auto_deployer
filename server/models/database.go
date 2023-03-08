@@ -261,3 +261,18 @@ func (d *DB) DeleteK8s(id int) error {
 	}
 	return d.db.Select("master", "workers").Delete(&k8s).Error
 }
+
+func (d *DB) DeleteAllK8s(userID string) error {
+	var k8sClusters []K8sCluster
+	err := d.db.Find(&k8sClusters, "user_id = ?", userID).Error
+	if err != nil {
+		return err
+	}
+	for i := range k8sClusters {
+		err = d.DeleteK8s(k8sClusters[i].ID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

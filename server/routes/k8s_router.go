@@ -296,6 +296,54 @@ func (r *Router) K8sDeleteHandler(w http.ResponseWriter, req *http.Request) {
 
 }
 
+func (r *Router) K8sDeleteAllHandler(w http.ResponseWriter, req *http.Request) {
+	reqToken := req.Header.Get("Authorization")
+	splitToken := strings.Split(reqToken, "Bearer ")
+	if len(splitToken) != 2 {
+		r.WriteErrResponse(w, fmt.Errorf("token is required"))
+		return
+	}
+	reqToken = splitToken[1]
+
+	claims, err := r.validateToken(false, reqToken, r.config.Token.Secret)
+	if err != nil {
+		r.WriteErrResponse(w, err)
+		return
+	}
+
+	client, err := deployer.NewTFPluginClient(r.config.Account.Mnemonics, "sr25519", "dev", "", "", "", true, true)
+	if err != nil {
+		r.WriteErrResponse(w, err)
+		return
+	}
+
+	clusters, err := r.db.GetAllK8s(claims.UserID)
+	if err != nil {
+		r.WriteErrResponse(w, err)
+		return
+	}
+	for _, cluster := range clusters {
+		err = client.SubstrateConn.CancelContract(client.Identity, uint64(cluster.ClusterContract))
+		if err != nil {
+			r.WriteErrResponse(w, err)
+			return
+		}
+		err = client.SubstrateConn.CancelContract(client.Identity, uint64(cluster.NetworkContract))
+		if err != nil {
+			r.WriteErrResponse(w, err)
+			return
+		}
+	}
+
+	err = r.db.DeleteAllK8s(claims.UserID)
+	if err != nil {
+		r.WriteErrResponse(w, err)
+		return
+	}
+
+	r.WriteMsgResponse(w, "Deleted succesfully", nil)
+}
+
 func buildK8sCluster(node uint32, sshkey, network string, k K8sDeployInput) (workloads.K8sCluster, error) {
 	master := workloads.K8sNode{
 		Name:      k.MasterName,

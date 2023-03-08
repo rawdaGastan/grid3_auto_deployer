@@ -33,15 +33,10 @@ func (d *DB) Connect(file string) error {
 
 // Migrate migrates db schema
 func (d *DB) Migrate() error {
-	err := d.db.AutoMigrate(&User{}, &VM{}, &Quota{}, &Voucher{})
+	err := d.db.AutoMigrate(&User{}, &Quota{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{})
 	if err != nil {
 		return err
 	}
-
-	// err = d.db.AutoMigrate(&Kubernetes{})
-	// if err != nil {
-	// 	return err
-	// }
 
 	return nil
 }
@@ -235,4 +230,75 @@ func (d *DB) GetVoucher(voucher string) (Voucher, error) {
 	}
 
 	return res, query.Error
+}
+
+// CreateK8s creates a new k8s cluster
+func (d *DB) CreateK8s(k *K8sCluster) error {
+	result := d.db.Create(&k)
+	return result.Error
+}
+
+// CreateWorker creates a new k8s worker
+func (d *DB) CreateWorker(k *Worker) error {
+	result := d.db.Create(&k)
+	return result.Error
+}
+
+// GetK8s gets a k8s cluster
+func (d *DB) GetK8s(id int) (K8sCluster, error) {
+	var k8s K8sCluster
+	err := d.db.First(&k8s, id).Error
+	if err != nil {
+		return K8sCluster{}, err
+	}
+	var master Master
+	err = d.db.Model(&k8s).Association("Master").Find(&master)
+	if err != nil {
+		return K8sCluster{}, err
+	}
+	var workers []Worker
+	err = d.db.Model(&k8s).Association("Workers").Find(&workers)
+	if err != nil {
+		return K8sCluster{}, err
+	}
+	k8s.Master = master
+	k8s.Workers = workers
+
+	return k8s, nil
+}
+
+// GetAllK8s gets all k8s clusters
+func (d *DB) GetAllK8s(userID string) ([]K8sCluster, error) {
+	var k8sClusters []K8sCluster
+	err := d.db.Find(&k8sClusters, "user_id = ?", userID).Error
+	if err != nil {
+		return nil, err
+	}
+	for i := range k8sClusters {
+		k8sClusters[i], err = d.GetK8s(k8sClusters[i].ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return k8sClusters, nil
+}
+
+// DeleteK8s deletes a k8s cluster
+func (d *DB) DeleteK8s(id int) error {
+	var k8s K8sCluster
+	err := d.db.First(&k8s, id).Error
+	if err != nil {
+		return err
+	}
+	return d.db.Select("Master", "Workers").Delete(&k8s).Error
+}
+
+// DeleteAllK8s deletes all k8s clusters
+func (d *DB) DeleteAllK8s(userID string) error {
+	var k8sClusters []K8sCluster
+	err := d.db.Find(&k8sClusters, "user_id = ?", userID).Error
+	if err != nil {
+		return err
+	}
+	return d.db.Select("Master", "Workers").Delete(&k8sClusters).Error
 }

@@ -23,6 +23,7 @@ type User struct {
 	Admin bool `json:"admin"`
 }
 
+// BeforeCreate generates a new uuid
 func (user *User) BeforeCreate(tx *gorm.DB) (err error) {
 	id, err := uuid.NewUUID()
 	if err != nil {

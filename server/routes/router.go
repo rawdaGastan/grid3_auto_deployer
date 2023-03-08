@@ -22,6 +22,12 @@ func NewRouter(config internal.Configuration, db models.DB) (r Router) {
 	return Router{&config, db}
 }
 
+func setupCorsResponse(w *http.ResponseWriter, req *http.Request) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+	(*w).Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	(*w).Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Authorization")
+}
+
 // ErrorMsg holds errors
 type ErrorMsg struct {
 	Error string `json:"err"`

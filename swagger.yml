@@ -340,7 +340,7 @@ paths:
           schema:
             $ref: '#/responses/ErrorResponse'
 
-  /vm/deploy:
+  /vm:
     post:
       description: deploy a vm
       security:
@@ -374,6 +374,54 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
 
+    get:
+      description: get all vms for a user
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      responses:
+        200:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      vm:
+                        $ref: '#/definitions/Vms'
+
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+          
+    delete:
+      description: delete all vms for a user
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      responses:
+        204:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+  
   /vm/{id}:
     get:
       description: get a vm
@@ -441,57 +489,8 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
 
-  /vm/get:
-    get:
-      description: get all vms for a user
-      security:
-        - Bearer: []
-      consumes:
-        - application/json
-      responses:
-        200:
-          description: OK
-          schema:
-                type: object
-                properties:
-                  msg:
-                    type: string
-                  data:
-                    type: object
-                    properties:
-                      vm:
-                        $ref: '#/definitions/Vms'
-
-        401:
-          $ref: '#/responses/UnauthorizedError'
-        500:
-          description: Unexpected error
-          schema:
-                $ref: '#/responses/ErrorResponse'
-          
-  /vm/delete:
-    delete:
-      description: delete all vms for a user
-      security:
-        - Bearer: []
-      consumes:
-        - application/json
-      responses:
-        204:
-          description: OK
-          schema:
-                type: object
-                properties:
-                  msg:
-                    type: string
-        401:
-          $ref: '#/responses/UnauthorizedError'
-        500:
-          description: Unexpected error
-          schema:
-                $ref: '#/responses/ErrorResponse'
   
-  /k8s/deploy:
+  /k8s:
     post:
       description: deploy a k8s
       security:
@@ -518,6 +517,54 @@ paths:
                       id:
                         type: integer
 
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+    get:
+      description: get all k8s for a user
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      responses:
+        200:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      k8s:
+                        $ref: '#/definitions/Kubernetes_list'
+
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+  
+    delete:
+      description: delete all k8s for a user
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      responses:
+        204:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
         401:
           $ref: '#/responses/UnauthorizedError'
         500:
@@ -592,55 +639,6 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
 
-  /k8s/get:
-    get:
-      description: get all k8s for a user
-      security:
-        - Bearer: []
-      consumes:
-        - application/json
-      responses:
-        200:
-          description: OK
-          schema:
-                type: object
-                properties:
-                  msg:
-                    type: string
-                  data:
-                    type: object
-                    properties:
-                      k8s:
-                        $ref: '#/definitions/Kubernetes_list'
-
-        401:
-          $ref: '#/responses/UnauthorizedError'
-        500:
-          description: Unexpected error
-          schema:
-                $ref: '#/responses/ErrorResponse'
-  
-  /k8s/delete:
-    delete:
-      description: delete all k8s for a user
-      security:
-        - Bearer: []
-      consumes:
-        - application/json
-      responses:
-        204:
-          description: OK
-          schema:
-                type: object
-                properties:
-                  msg:
-                    type: string
-        401:
-          $ref: '#/responses/UnauthorizedError'
-        500:
-          description: Unexpected error
-          schema:
-                $ref: '#/responses/ErrorResponse'
 definitions:
   Vms:
     type: array

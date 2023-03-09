@@ -118,7 +118,7 @@ func (r *Router) K8sGetAllHandler(w http.ResponseWriter, req *http.Request) {
 
 	clusters, err := r.db.GetAllK8s(userID)
 	if err != nil {
-		writeNotFoundResponse(w, err)
+		writeMsgResponse(w, "Kubernetes clusters not found", clusters)
 		return
 	}
 

@@ -66,6 +66,8 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc(version+"/user", router.GetUserHandler).Methods("GET", "OPTIONS")
 	r.HandleFunc(version+"/user/activate_voucher", router.ActivateVoucherHandler).Methods("PUT", "OPTIONS")
 
+	r.HandleFunc(version+"/quota", router.GetQuotaHandler).Methods("GET", "OPTIONS")
+
 	r.HandleFunc(version+"/vm", router.DeployVMHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc(version+"/vm/{id}", router.GetVMHandler).Methods("GET", "OPTIONS")
 	r.HandleFunc(version+"/vm", router.ListVMsHandler).Methods("GET", "OPTIONS")

@@ -116,7 +116,7 @@ func (r *Router) ListVMsHandler(w http.ResponseWriter, req *http.Request) {
 
 	vms, err := r.db.GetAllVms(userID)
 	if err != nil {
-		writeNotFoundResponse(w, err)
+		writeMsgResponse(w, "VMs are not found", vms)
 		return
 	}
 

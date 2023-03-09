@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rawdaGastan/cloud4students/internal"
+	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rawdaGastan/cloud4students/validator"
 )
@@ -134,7 +135,6 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 			SSHKey:         user.SSHKey,
 		}
 
-		fmt.Printf("code: %v\n", code) //TODO: to be removed
 		err = r.db.CreateUser(&u)
 		if err != nil {
 			writeErrResponse(w, err)
@@ -297,7 +297,6 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 		writeErrResponse(w, err)
 		return
 	}
-	fmt.Printf("code: %v\n", code) //TODO: to be removed
 
 	_, err = r.db.UpdateUserByID(user.ID.String(), "", "", "", time.Now(), code)
 	if err != nil {
@@ -338,11 +337,15 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 
 // ChangePasswordHandler changes password of user
 func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request) {
-	// TODO: Rawda: change password for verify
-	data := ChangePasswordInput{}
+	var data ChangePasswordInput
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
 		writeErrResponse(w, err)
+		return
+	}
+
+	if data.ConfirmPassword != data.Password {
+		writeErrResponse(w, fmt.Errorf("password does not match confirm password"))
 		return
 	}
 
@@ -364,7 +367,7 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 
 // UpdateUserHandler updates user's data
 func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
-	userID := req.Context().Value("UserID").(string)
+	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	input := UpdateUserInput{}
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
@@ -395,7 +398,10 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	//TODO: validate ssh key
+	if err := validator.ValidateSSHKey(input.SSHKey); err != nil {
+		writeErrResponse(w, err)
+		return
+	}
 
 	userID, err = r.db.UpdateUserByID(userID, input.Name, hashedPassword, input.SSHKey, time.Time{}, 0)
 	if err != nil {
@@ -408,7 +414,7 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 
 // GetUserHandler returns user by its idx
 func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
-	userID := req.Context().Value("UserID").(string)
+	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	user, err := r.db.GetUserByID(userID)
 	if err != nil {
 		writeNotFoundResponse(w, err)
@@ -419,10 +425,16 @@ func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
 
 // ActivateVoucherHandler makes user adds voucher to his account
 func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request) {
-	userID := req.Context().Value("UserID").(string)
+	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 
 	var input AddVoucherInput
 	err := json.NewDecoder(req.Body).Decode(&input)
+	if err != nil {
+		writeErrResponse(w, err)
+		return
+	}
+
+	oldQuota, err := r.db.GetUserQuota(userID)
 	if err != nil {
 		writeErrResponse(w, err)
 		return
@@ -434,13 +446,18 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	if voucherQuota.Used {
+		writeErrResponse(w, fmt.Errorf("voucher is already used"))
+		return
+	}
+
 	err = r.db.AddUserVoucher(userID, input.Voucher)
 	if err != nil {
 		writeErrResponse(w, err)
 		return
 	}
 
-	err = r.db.UpdateUserQuota(userID, voucherQuota.VMs, voucherQuota.K8s)
+	err = r.db.UpdateUserQuota(userID, oldQuota.Vms+voucherQuota.VMs, oldQuota.K8s+voucherQuota.K8s)
 	if err != nil {
 		writeErrResponse(w, err)
 		return
@@ -448,16 +465,3 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 
 	writeMsgResponse(w, "voucher is applied successfully", "")
 }
-
-// // GetAllUsersHandlers returns all users
-// func (r *Router) GetAllUsersHandlers(w http.ResponseWriter, req *http.Request) { //TODO: to be removed for testing only
-// 	users, err := r.db.GetAllUsers()
-// 	if err != nil {
-// 		r.WriteErrResponse(w, err)
-// 	}
-// 	userBytes, err := json.Marshal(users)
-// 	if err != nil {
-// 		r.WriteErrResponse(w, err)
-// 	}
-// 	w.Write(userBytes)
-// }

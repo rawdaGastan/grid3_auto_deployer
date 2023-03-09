@@ -3,7 +3,7 @@ package models
 
 // VM struct for vms data
 type VM struct {
-	ID                int    `json:"id" gorm:"primaryKey;autoIncrement:true"`
+	ID                int    `json:"id" gorm:"primaryKey"`
 	UserID            string `json:"user_id"`
 	Name              string `json:"name"`
 	IP                string `json:"ip"`

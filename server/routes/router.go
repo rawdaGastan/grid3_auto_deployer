@@ -4,22 +4,24 @@ package routes
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/rawdaGastan/cloud4students/internal"
 	"github.com/rawdaGastan/cloud4students/models"
+	"github.com/rs/zerolog/log"
+	"github.com/threefoldtech/grid3-go/deployer"
 )
 
 // Router struct holds db model and configurations
 type Router struct {
-	config *internal.Configuration
-	db     models.DB
+	config         *internal.Configuration
+	db             models.DB
+	tfPluginClient deployer.TFPluginClient
 }
 
 // NewRouter create new router with db
-func NewRouter(config internal.Configuration, db models.DB) (r Router) {
-	return Router{&config, db}
+func NewRouter(config internal.Configuration, db models.DB, tfPluginClient deployer.TFPluginClient) (r Router) {
+	return Router{&config, db, tfPluginClient}
 }
 
 // ErrorMsg holds errors
@@ -40,7 +42,7 @@ func writeErrResponse(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusInternalServerError)
 	_, err = w.Write(jsonErrRes)
 	if err != nil {
-		log.Printf("write error response failed %v", err.Error())
+		log.Error().Err(err).Msg("write error response failed")
 	}
 }
 
@@ -51,7 +53,7 @@ func writeNotFoundResponse(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusNotFound)
 	_, err = w.Write(jsonErrRes)
 	if err != nil {
-		log.Printf("write not found error response failed %v", err.Error())
+		log.Error().Err(err).Msg("write not found error response failed")
 	}
 }
 

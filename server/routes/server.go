@@ -4,8 +4,6 @@ package routes
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,16 +14,19 @@ import (
 	"github.com/rawdaGastan/cloud4students/internal"
 	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rawdaGastan/cloud4students/models"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"github.com/threefoldtech/grid3-go/deployer"
 )
 
 // Server struct holds port of server
 type Server struct {
+	host string
 	port string
 }
 
 // NewServer create new server with all configurations
 func NewServer(file string) (server *Server, err error) {
-
 	data, err := internal.ReadConfFile(file)
 	if err != nil {
 		return
@@ -44,36 +45,41 @@ func NewServer(file string) (server *Server, err error) {
 	if err != nil {
 		return
 	}
-	//TODO: add version
 
-	router := NewRouter(*configuration, db)
+	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", true, false)
+	if err != nil {
+		return
+	}
+
+	version := "/" + configuration.Version
+
+	router := NewRouter(*configuration, db, tfPluginClient)
 	r := mux.NewRouter()
-	signUp := r.HandleFunc("/user/signup", router.SignUpHandler).Methods("POST", "OPTIONS")
-	signUpVerify := r.HandleFunc("/user/signup/verify_email", router.VerifySignUpCodeHandler).Methods("POST", "OPTIONS")
-	signIn := r.HandleFunc("/user/signin", router.SignInHandler).Methods("POST", "OPTIONS")
-	refreshToken := r.HandleFunc("/user/refresh_token", router.RefreshJWTHandler).Methods("POST", "OPTIONS")
-	forgetPass := r.HandleFunc("/user/forgot_password", router.ForgotPasswordHandler).Methods("POST", "OPTIONS")
-	forgetPassVerify := r.HandleFunc("/user/forget_password/verify_email", router.VerifyForgetPasswordCodeHandler).Methods("POST", "OPTIONS")
-	changePassword := r.HandleFunc("/user/change_password", router.ChangePasswordHandler).Methods("PUT", "OPTIONS")
-	r.HandleFunc("/user", router.UpdateUserHandler).Methods("PUT", "OPTIONS")
-	r.HandleFunc("/user", router.GetUserHandler).Methods("GET", "OPTIONS")
-	//r.HandleFunc("/user", router.GetAllUsersHandlers).Methods("GET", "OPTIONS") //TODO:for testing only
-	r.HandleFunc("/user/activate_voucher", router.ActivateVoucherHandler).Methods("PUT", "OPTIONS")
+	signUp := r.HandleFunc(version+"/user/signup", router.SignUpHandler).Methods("POST", "OPTIONS")
+	signUpVerify := r.HandleFunc(version+"/user/signup/verify_email", router.VerifySignUpCodeHandler).Methods("POST", "OPTIONS")
+	signIn := r.HandleFunc(version+"/user/signin", router.SignInHandler).Methods("POST", "OPTIONS")
+	refreshToken := r.HandleFunc(version+"/user/refresh_token", router.RefreshJWTHandler).Methods("POST", "OPTIONS")
+	forgetPass := r.HandleFunc(version+"/user/forgot_password", router.ForgotPasswordHandler).Methods("POST", "OPTIONS")
+	forgetPassVerify := r.HandleFunc(version+"/user/forget_password/verify_email", router.VerifyForgetPasswordCodeHandler).Methods("POST", "OPTIONS")
+	changePassword := r.HandleFunc(version+"/user/change_password", router.ChangePasswordHandler).Methods("PUT", "OPTIONS")
+	r.HandleFunc(version+"/user", router.UpdateUserHandler).Methods("PUT", "OPTIONS")
+	r.HandleFunc(version+"/user", router.GetUserHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/user/activate_voucher", router.ActivateVoucherHandler).Methods("PUT", "OPTIONS")
 
-	r.HandleFunc("/vm", router.DeployVMHandler).Methods("POST", "OPTIONS")
-	r.HandleFunc("/vm/{id}", router.GetVMHandler).Methods("GET", "OPTIONS")
-	r.HandleFunc("/vm", router.ListVMsHandler).Methods("GET", "OPTIONS")
-	r.HandleFunc("/vm/{id}", router.DeleteVM).Methods("DELETE", "OPTIONS")
-	r.HandleFunc("/vm", router.DeleteAllVMs).Methods("DELETE", "OPTIONS")
+	r.HandleFunc(version+"/vm", router.DeployVMHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc(version+"/vm/{id}", router.GetVMHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/vm", router.ListVMsHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/vm/{id}", router.DeleteVM).Methods("DELETE", "OPTIONS")
+	r.HandleFunc(version+"/vm", router.DeleteAllVMs).Methods("DELETE", "OPTIONS")
 
-	r.HandleFunc("/k8s", router.K8sDeployHandler).Methods("POST", "OPTIONS")
-	r.HandleFunc("/k8s", router.K8sGetAllHandler).Methods("GET", "OPTIONS")
-	r.HandleFunc("/k8s", router.K8sDeleteAllHandler).Methods("DELETE", "OPTIONS")
-	r.HandleFunc("/k8s/{id}", router.K8sGetHandler).Methods("GET", "OPTIONS")
-	r.HandleFunc("/k8s/{id}", router.K8sDeleteHandler).Methods("DELETE", "OPTIONS")
+	r.HandleFunc(version+"/k8s", router.K8sDeployHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc(version+"/k8s", router.K8sGetAllHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/k8s", router.K8sDeleteAllHandler).Methods("DELETE", "OPTIONS")
+	r.HandleFunc(version+"/k8s/{id}", router.K8sGetHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/k8s/{id}", router.K8sDeleteHandler).Methods("DELETE", "OPTIONS")
 
 	// ADMIN ACCESS
-	r.HandleFunc("/voucher/generate", router.GenerateVoucherHandler).Methods("POST")
+	r.HandleFunc(version+"/voucher/generate", router.GenerateVoucherHandler).Methods("POST")
 
 	r.Use(middlewares.LoggingMW)
 	r.Use(middlewares.EnableCors)
@@ -81,13 +87,13 @@ func NewServer(file string) (server *Server, err error) {
 	r.Use(middlewares.Authorization(excludedRoutes, configuration.Token.Secret, configuration.Token.Timeout))
 	http.Handle("/", r)
 
-	return &Server{port: configuration.Server.Port}, nil
+	return &Server{port: configuration.Server.Port, host: configuration.Server.Host}, nil
 }
 
 // Start starts the server
 func (s *Server) Start() (err error) {
-
-	fmt.Println("Server is listening on " + s.port)
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	log.Info().Msgf("Server is listening on %s%s", s.host, s.port)
 
 	srv := &http.Server{
 		Addr: s.port,
@@ -95,9 +101,9 @@ func (s *Server) Start() (err error) {
 
 	go func() {
 		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("HTTP server error: %v", err)
+			log.Fatal().Err(err).Msg("HTTP server error")
 		}
-		log.Println("Stopped serving new connections.")
+		log.Info().Msg("Stopped serving new connections")
 	}()
 
 	sigChan := make(chan os.Signal, 1)
@@ -108,9 +114,9 @@ func (s *Server) Start() (err error) {
 	defer shutdownRelease()
 
 	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Fatalf("HTTP shutdown error: %v", err)
+		log.Fatal().Err(err).Msg("HTTP shutdown error")
 	}
-	log.Println("Graceful shutdown complete.")
+	log.Info().Msg("Graceful shutdown complete")
 
 	return nil
 }

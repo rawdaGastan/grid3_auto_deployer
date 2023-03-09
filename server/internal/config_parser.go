@@ -14,6 +14,7 @@ type Configuration struct {
 	Database   DB          `json:"database"`
 	Token      JwtToken    `json:"token"`
 	Account    GridAccount `json:"account"`
+	Version    string      `json:"version"`
 }
 
 // Server struct to hold server's information
@@ -42,6 +43,7 @@ type JwtToken struct {
 // GridAccount struct to hold grid account mnemonics
 type GridAccount struct {
 	Mnemonics string `json:"mnemonics"`
+	Network   string `json:"network"`
 }
 
 // ReadConfFile read configurations of json file

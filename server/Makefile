@@ -3,7 +3,13 @@ GOPATH := $(shell go env GOPATH)
 
 all: verifiers test
 
-//TODO: add bild in makefile // we will use goreleaser
+build:
+	@echo "Running $@"
+	@go build -o bin/cloud4students main.go
+
+run: build
+	@echo "Running $@"
+	bin/cloud4students 
 
 test: 
 	@echo "Running Tests"

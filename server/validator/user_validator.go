@@ -5,7 +5,14 @@ import (
 	"net/mail"
 
 	"github.com/caitlin615/nist-password-validator/password"
+	"golang.org/x/crypto/ssh"
 )
+
+// ValidateSSHKey used for validating ssh keys
+func ValidateSSHKey(sshKey string) error {
+	_, err := ssh.ParsePublicKey([]byte(sshKey))
+	return err
+}
 
 // ValidateMail used for validating syntax mails
 func ValidateMail(address string) error {

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
 	"github.com/rawdaGastan/cloud4students/models"
+	"github.com/rs/zerolog/log"
 )
 
 // UserIDKey key saved in request context
@@ -106,6 +106,6 @@ func WriteUnAuthorizedResponse(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusUnauthorized)
 	_, err := w.Write(jsonErrRes)
 	if err != nil {
-		log.Printf("write auth error response failed %v", err)
+		log.Error().Err(err).Msg("write auth error response failed")
 	}
 }

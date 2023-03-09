@@ -185,26 +185,6 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
 
-  /user/signout:
-    post:
-      description: A user to sign out 
-      security:
-        - Bearer: []
-      responses:
-        201:
-          description: OK
-          schema:
-                type: object
-                properties:
-                  msg:
-                    type: string
-                    example: Signed out successfully
-        401:
-          $ref: '#/responses/UnauthorizedError'
-        500:
-          description: Unexpected error
-          schema:
-                $ref: '#/responses/ErrorResponse'
 
   /user/change_password:
     put:

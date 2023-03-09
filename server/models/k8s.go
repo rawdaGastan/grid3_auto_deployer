@@ -15,9 +15,9 @@ type K8sCluster struct {
 type Master struct {
 	ClusterID int    `json:"clusterID"`
 	Name      string `json:"name"`
-	CRU       int    `json:"cru"`
-	MRU       int    `json:"mru"`
-	SRU       int    `json:"sru"`
+	CRU       uint64 `json:"cru"`
+	MRU       uint64 `json:"mru"`
+	SRU       uint64 `json:"sru"`
 	IP        string `json:"ip"`
 }
 
@@ -25,7 +25,7 @@ type Master struct {
 type Worker struct {
 	ClusterID int    `json:"clusterID"`
 	Name      string `json:"name"`
-	CRU       int    `json:"cru"`
-	MRU       int    `json:"mru"`
-	SRU       int    `json:"sru"`
+	CRU       uint64 `json:"cru"`
+	MRU       uint64 `json:"mru"`
+	SRU       uint64 `json:"sru"`
 }

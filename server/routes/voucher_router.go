@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/rawdaGastan/cloud4students/internal"
+	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rawdaGastan/cloud4students/models"
 )
 
@@ -19,7 +20,7 @@ type GenerateVoucherInput struct {
 
 // GenerateVoucherHandler generates a voucher by admin
 func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request) {
-	userID := req.Context().Value("UserID").(string)
+	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	user, err := r.db.GetUserByID(userID)
 	if err != nil {
 		writeNotFoundResponse(w, err)

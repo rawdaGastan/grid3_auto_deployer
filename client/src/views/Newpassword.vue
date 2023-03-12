@@ -54,7 +54,7 @@ export default {
            loading.value = true;
 
            axios
-        .post("http://localhost:3000/user/change_password", {
+        .post("http://localhost:3000/v1/user/change_password", {
             password: newpassword.value,
             confirm_password:cnewpassword.value,
         })

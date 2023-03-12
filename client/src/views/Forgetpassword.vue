@@ -63,7 +63,7 @@ export default {
       loading.value = true;
 
       axios
-        .post("http://localhost:3000/user/forgot_password", {
+        .post("http://localhost:3000/v1/user/forgot_password", {
           email: email.value,
         })
         .then((response) => {

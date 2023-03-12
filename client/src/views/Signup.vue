@@ -46,15 +46,7 @@ import { useRouter } from "vue-router";
 import axios from "axios";
 
 export default {
-  data: () => ({
-    showPassword: false,
-    verify: false,
-    fullname: null,
-    email: null,
-    password: null,
-    cpassword: null,
-    loading: false,
-  }),
+
 
   setup() {
     const router= useRouter();
@@ -80,7 +72,7 @@ export default {
 
       loading.value = true;
       axios
-        .post("http://localhost:3000/user/signup", {
+        .post("http://localhost:3000/v1/user/signup", {
           name: fullname.value,
           email: email.value,
           password: password.value,
@@ -88,10 +80,12 @@ export default {
         })
         .then((response) => {
         
-            console.log("response",response.data.msg);
+           this.$router.email= email.value;
+           console.log("response",this.$route.email);
+
             router.push({
                 name: 'OTP',
-            });
+                query: { "email" : email.value }            });
         
         })
         .catch((error) =>{

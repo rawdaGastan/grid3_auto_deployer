@@ -74,7 +74,7 @@ export default {
            loading.value = true;
 
            axios
-          .post("http://localhost:3000/user/signin", {
+          .post("http://localhost:3000/v1/user/signin", {
             email: email.value,
             password: password.value,
           })

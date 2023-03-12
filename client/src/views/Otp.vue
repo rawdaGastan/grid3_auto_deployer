@@ -28,7 +28,7 @@
 
 <script>
 import { ref, watchEffect } from "vue";
-
+import { useRouter } from "vue-router";
 // Import in a Vue component
 import VOtpInput from 'vue3-otp-input';
 
@@ -36,11 +36,18 @@ export default {
   components: {
     VOtpInput,
   },
+  // props: {
+  //   email,
+  // },
   setup() {
+    const router= useRouter();
+
     const countDown = ref(30)
     const otpInput = ref(null)
     const disabled = ref(true)
-    
+    console.log("route:", router);
+
+    console.log("route.query.email:", router.query.email);
 
     const handleOnComplete = (value) => {
       console.log('OTP completed: ', value);

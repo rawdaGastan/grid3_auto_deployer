@@ -398,12 +398,12 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	if len(strings.TrimSpace(input.SSHKey)) != 0 {
+	/*if len(strings.TrimSpace(input.SSHKey)) != 0 {
 		if err := validator.ValidateSSHKey(input.SSHKey); err != nil {
 			writeErrResponse(w, err)
 			return
 		}
-	}
+	}*/
 
 	userID, err = r.db.UpdateUserByID(userID, input.Name, hashedPassword, input.SSHKey, time.Time{}, 0)
 	if err != nil {

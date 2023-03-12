@@ -2,7 +2,7 @@
   <v-container>
     <v-row>
       <v-col cols="12" sm="6" class="order-last order-md-first">
-        <div class="py-5 my-5 py-md-12 my-md-12 ">
+        <div class="py-5 my-5 py-md-12 my-md-12">
           <h5 class="text-h5 text-md-h2 font-weight-medium my-6 secondary">
             <span class="primary">Welcome To </span><br /><span
               >Cloud for Students</span
@@ -14,7 +14,7 @@
             goals.
           </p>
           <v-expansion-panels class="my-3">
-            <v-expansion-panel v-if="voucher" bg-color="transparent">
+            <v-expansion-panel v-if="!voucher" bg-color="transparent">
               <v-expansion-panel-title class="px-0">
                 <v-row>
                   <v-col cols="12" class="d-flex justify-start">
@@ -70,7 +70,7 @@
         </div>
       </v-col>
       <v-col cols="12" sm="6">
-        <div class="py-5 my-5 py-md-10 my-md-10 ">
+        <div class="py-5 my-5 py-md-10 my-md-10">
           <v-hover v-slot="{ isHovering, props }" open-delay="200">
             <v-img
               :style="
@@ -92,7 +92,8 @@
   </v-container>
 </template>
 <script>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import userService from "@/services/userService";
 export default {
   setup() {
     const items = ref([
@@ -100,7 +101,16 @@ export default {
       { name: "Kubernetes", linkName: "K8s" },
     ]);
     const voucher = ref(false);
-    return { items, voucher };
+    const checkVoucher = () => {
+      userService.getUser().then((response) => {
+        const { user } = response.data.data;
+        voucher.value = user.voucher;
+      });
+    };
+    onMounted(() => {
+      checkVoucher();
+    });
+    return { items, voucher, checkVoucher };
   },
 };
 </script>

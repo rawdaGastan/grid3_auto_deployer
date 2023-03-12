@@ -7,7 +7,6 @@
       },
     }"
     :items="items"
-    :label="label"
     :value="modelValue"
     bg-color="accent"
     variant="outlined"
@@ -19,16 +18,12 @@
 <script>
 export default {
   props: {
-    label: {
-      type: String,
-      default: "",
-    },
     items: {
       type: Array,
       required: true,
     },
     modelValue: {
-      type: [String, Number],
+      type: String,
       default: "",
     },
   },

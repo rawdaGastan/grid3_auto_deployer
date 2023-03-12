@@ -5,20 +5,20 @@
     </h5>
     <v-row justify="center">
       <v-col cols="12" sm="6">
-        <v-form v-model="verify" @submit.prevent="onSubmit">
-          <BaseInput label="Name" v-model="name" :rules="rules" />
-          <BaseSelect
-            v-model="vmImg"
-            :items="images"
-            label="VM Image"
-            class="my-3"
+        <v-form v-model="verify" @submit.prevent="deployVm">
+          <BaseInput
+            placeholder="Name"
             :rules="rules"
+            :modelValue="name"
+            @update:modelValue="name = $event"
           />
           <BaseSelect
-            v-model="selectedResource"
+            :modelValue="selectedResource"
             :items="recources"
-            label="Recources"
+            :reduce="(sel) => sel.value"
+            placeholder="Recources"
             :rules="rules"
+            @update:modelValue="selectedResource = $event"
           />
           <BaseButton
             type="submit"
@@ -30,17 +30,17 @@
         </v-form>
       </v-col>
     </v-row>
-    <v-row v-if="results">
+    <v-row v-if="results > 0">
       <v-col class="d-flex justify-end">
         <BaseButton
           color="red-accent-2"
           :loading="deLoading"
           @click="deleteVms"
-          text="Delete"
+          text="Delete All"
         />
       </v-col>
     </v-row>
-    <v-row v-if="results">
+    <v-row v-if="results > 0">
       <v-col>
         <v-table>
           <thead>
@@ -57,9 +57,10 @@
             <tr v-for="item in results" :key="item.name">
               <td>{{ item.id }}</td>
               <td>{{ item.name }}</td>
-              <td>{{ item.disk }}</td>
-              <td>{{ item.ram }}</td>
-              <td>{{ item.cpu }}</td>
+              <td>{{ item.sru }}</td>
+              <td>{{ item.mru }}</td>
+              <td>{{ item.cru }}</td>
+              <td>{{ item.ip }}</td>
               <td>
                 <font-awesome-icon
                   class="grey-darken-3"
@@ -74,19 +75,19 @@
     </v-row>
     <v-row v-else>
       <v-col>
-        <p class="my-5 text-center">No Vms Deployed</p>
+        <p class="my-5 text-center">{{ msg }}</p>
       </v-col>
     </v-row>
   </v-container>
 </template>
 
 <script>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
+import userService from "@/services/userService";
 import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseSelect from "@/components/Form/BaseSelect.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 
-import axios from "axios";
 export default {
   components: {
     BaseInput,
@@ -102,56 +103,78 @@ export default {
         return "This field is required.";
       },
     ]);
-    const vmImg = ref(null);
-    const images = ref([
-      "Ubuntu-18.04",
-      "Ubuntu-20.04",
-      "Ubuntu-22.04",
-      "Nixos-22.11",
-    ]);
     const selectedResource = ref(null);
     const recources = ref([
-      "Small VM (1 CPU, 2 MB, 10 GB)",
-      "Medium VM (2 CPU, 4 MB, 15 GB)",
-      "Big VM (4 CPU, 5 MB, 20 GB)",
+      { title: "Small VM (1 CPU, 2 MB, 10 GB)", value: "small" },
+      { title: "Medium VM (2 CPU, 4 MB, 15 GB)", value: "medium" },
+      { title: "Large VM (4 CPU, 5 MB, 20 GB)", value: "large" },
     ]);
-    const headers = ref(["ID", "Name", "Disk (sru)", "RAM (mru)", "CPU (cru)"]);
-    const selected = ref([]);
+    const headers = ref([
+      "ID",
+      "Name",
+      "Disk (sru)",
+      "RAM (mru)",
+      "CPU (cru)",
+      "IP",
+    ]);
     const loading = ref(false);
     const results = ref(null);
-    const error = ref(null);
     const deLoading = ref(false);
-    const getVMS = async () => {
-      await axios.get("https://dummyjson.com/users").then((response) => {
-        results.value = response.data;
-      });
-    };
-    const onSubmit = () => {
-      loading.value = true;
-      axios
-        .post("/vm/deploy", {
-          name: name.value,
-          resources: selectedResource.value,
+    const msg = ref(null);
+
+    const getVMS = () => {
+      userService
+        .getVms()
+        .then((response) => {
+          if (response.data.data < 1) msg.value = response.data.msg;
+          results.value = response.data.data;
         })
-        .then((response) => console.log(response))
+        .catch((response) => {
+          console.log(response.data.err);
+        });
+    };
+
+    const deployVm = () => {
+      loading.value = true;
+      userService
+        .deployVm(name.value, selectedResource.value)
+        .then(() => {
+          name.value = null;
+          selectedResource.value = null;
+          getVMS();
+        })
         .catch((error) => (error.value = error))
-        .finally(() => (loading.value = false));
+        .finally(() => {
+          loading.value = false;
+        });
     };
 
     const deleteVms = () => {
       deLoading.value = true;
-      axios
-        .delete("/vm/delete")
-        .then((response) => console.log(response))
-        .catch((error) => (error.value = error))
-        .finally(() => (loading.value = false));
+      userService
+        .deleteAllVms()
+        .then((response) => {
+          console.log(response.data);
+          getVMS();
+        })
+        .catch((response) => {
+          console.log(response);
+        })
+        .finally(() => {
+          deLoading.value = false;
+        });
     };
 
-    const deleteVm = async (id) => {
-      await axios
-        .delete(`https://dummyjson.com/users/${id}`)
+    const deleteVm = (id) => {
+      userService
+        .deleteVm(id)
         .then((response) => {
           console.log(response);
+        })
+        .catch((response) => {
+          console.log(response);
+        })
+        .finally(() => {
           getVMS();
         });
     };
@@ -162,19 +185,16 @@ export default {
     return {
       verify,
       name,
-      vmImg,
-      images,
       selectedResource,
       recources,
       loading,
       deLoading,
-      selected,
       rules,
       results,
-      error,
       headers,
+      msg,
       getVMS,
-      onSubmit,
+      deployVm,
       deleteVms,
       deleteVm,
     };

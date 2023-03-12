@@ -16,12 +16,12 @@
                 <div class="py-10" />
 
                 <v-form v-model="verify" @submit.prevent="onSubmit">
-                    <v-text-field v-model="email" :rules="[required]" class="mb-2" clearable
+                    <v-text-field v-model="email" :rules="rules" class="mb-2" clearable
                         placeholder="Enter your email" label="Email" bg-color="accent"
                         variant="outlined"></v-text-field>
 
                     <br>
-                    <v-text-field v-model="password" :rules="[required]" clearable label="Password"
+                    <v-text-field v-model="password" :rules="rules" clearable label="Password"
                         placeholder="Enter your password" bg-color="accent" variant="outlined"
                         :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
                         :type="showPassword ? 'text' : 'password'"
@@ -49,29 +49,61 @@
 </template>
 
 <script>
+  import { ref } from "vue";
+  import axios from "axios";
+  import { useRouter } from "vue-router";
+
 export default {
-    data: () => ({
-        showPassword: false,
-        verify: false,
-        email: null,
-        password: null,
-        loading: false,
-    }),
 
-    methods: {
-        onSubmit() {
-            if (!this.verify) return
+    setup() {
+    const verify = ref(false);
+    const router= useRouter();
+    const showPassword = ref(false);
+    const email= ref(null);
+    const password= ref(null);
+    const loading = ref(false);
+    const rules = ref([
+      (value) => {
+        if (value) return true;
+        return "This field is required.";
+      },
+    ]); 
+    const onSubmit =()=> {
+        if (!verify.value) return;
 
-            this.loading = true
+           loading.value = true;
 
-            setTimeout(() => (this.loading = false), 2000)
-            this.$router.push({
+           axios
+          .post("http://localhost:3000/user/signin", {
+            email: email.value,
+            password: password.value,
+          })
+          .then((response) => {
+        
+            console.log("response",response.data.msg);
+            router.push({
                 name: 'Home',
+                });
+            })
+            .catch((error) =>{
+            console.log("error", error.response.data.err)
+            })
+            .finally(() => {
+            loading.value = false;
             });
-        },
-        required(v) {
-            return !!v || 'Field is required'
-        },
-    },
+
+        };
+        return{
+            verify,
+            password,
+            showPassword,
+            email,
+            loading,
+            rules,
+            onSubmit,
+        };
 }
+
+
+};
 </script>

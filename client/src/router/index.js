@@ -33,6 +33,15 @@ const routes = [{
                 import ( /* webpackChunkName: "login" */ '@/views/Forgetpassword.vue'),
         },
         {
+            path: 'otp',
+            name: 'OTP',
+            // route level code-splitting
+            // this generates a separate chunk (about.[hash].js) for this route
+            // which is lazy-loaded when the route is visited.
+            component: () =>
+                import ( /* webpackChunkName: "login" */ '@/views/Otp.vue'),
+        },
+        {
             path: 'newPassword',
             name: 'NewPassword',
             // route level code-splitting

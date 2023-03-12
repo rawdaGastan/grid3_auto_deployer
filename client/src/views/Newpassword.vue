@@ -6,11 +6,11 @@
                 <v-form v-model="verify" @submit.prevent="onSubmit">
 
 
-                    <v-text-field v-model="newpassword" :rules="[required]" label="New Password"
+                    <v-text-field v-model="newpassword" :rules="rules" label="New Password"
                         placeholder="Enter your new password" bg-color="accent" variant="outlined">
                     </v-text-field>
 
-                    <v-text-field v-model="cnewpassword" :rules="[required]" label="Confirm New Password"
+                    <v-text-field v-model="cnewpassword" :rules="rules" label="Confirm New Password"
                         placeholder="Confirm your new password" bg-color="accent" variant="outlined">
                     </v-text-field>
 
@@ -32,34 +32,62 @@
 
 
 <script>
+  import { ref } from "vue";
+
 export default {
-    data: () => ({
-        verify: false,
-        newpassword: null,
-        cnewpassword: null,
-        loading: false,
-    }),
+    setup() {
+    const verify = ref(false);
+    const newpassword = ref(null);
+    const cnewpassword= ref(null);
+    const loading = ref(false);
+    const rules = ref([
+      (value) => {
+        if (value) return true;
+        return "This field is required.";
+      },
+    ]);
+ 
+  
+       const onSubmit =()=> {
+            if (!verify.value) return;
 
-    methods: {
-        onSubmit() {
-            if (!this.verify) return;
+           loading.value = true;
 
-            this.loading = true;
+           axios
+        .post("http://localhost:3000/user/change_password", {
+            password: newpassword.value,
+            confirm_password:cnewpassword.value,
+        })
+        .then((response) => {
 
-            setTimeout(() => (this.loading = false), 2000);
-            this.$router.push({
-                name: "Home",
-            });
-        },
-        required(v) {
-            return !!v || "Field is required";
-        },
-        cancelHandler(){
-            this.$router.push({
+          console.log("response", response.data.msg);
+          router.push({
+            name: 'login',
+          });
+
+        })
+        .catch((error) => {
+          console.log("error", error.response.data.err)
+          loading.value = false;
+
+        });
+        };
+
+      const  cancelHandler=()=>{
+            router.push({
                 name: "Login",
             });
-        }
-    },
+        };
+        return{
+            verify,
+            newpassword,
+            cnewpassword,
+            loading,
+            rules,
+            onSubmit,
+            cancelHandler, 
+        };
+    }
 };
 </script>
 

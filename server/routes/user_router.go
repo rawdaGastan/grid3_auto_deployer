@@ -447,7 +447,7 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 	}
 
 	if voucherQuota.Used {
-		writeErrResponse(w, fmt.Errorf("voucher is already used"))
+		writeMsgResponse(w, "voucher is already used", "")
 		return
 	}
 

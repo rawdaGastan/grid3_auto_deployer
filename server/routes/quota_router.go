@@ -13,7 +13,7 @@ func (r *Router) GetQuotaHandler(w http.ResponseWriter, req *http.Request) {
 
 	quota, err := r.db.GetUserQuota(userID)
 	if err != nil {
-		writeNotFoundResponse(w, err)
+		writeNotFoundResponse(w, err.Error())
 		return
 	}
 

@@ -42,7 +42,7 @@ func (d *DB) Migrate() error {
 }
 
 // CreateUser creates new user
-func (d *DB) CreateUser(u *User) error {
+func (d *DB) CreateUser(u User) error {
 	result := d.db.Create(&u)
 	return result.Error
 }
@@ -135,21 +135,21 @@ func (d *DB) AddUserVoucher(id string, voucher string) error {
 }
 
 // CreateVM creates new vm
-func (d *DB) CreateVM(vm *VM) error {
+func (d *DB) CreateVM(vm VM) error {
 	result := d.db.Create(&vm)
 	return result.Error
 
 }
 
 // GetVMByID return vm by its id
-func (d *DB) GetVMByID(id int) (*VM, error) {
+func (d *DB) GetVMByID(id int) (VM, error) {
 	var vm VM
 	query := d.db.Model(VM{ID: id}).First(&vm)
 	if query.Error != nil {
-		return &vm, query.Error
+		return vm, query.Error
 	}
 
-	return &vm, nil
+	return vm, nil
 }
 
 // GetAllVms returns all vms of user
@@ -222,13 +222,13 @@ func (d *DB) DeactivateVoucher(voucher string) error {
 }
 
 // CreateK8s creates a new k8s cluster
-func (d *DB) CreateK8s(k *K8sCluster) error {
+func (d *DB) CreateK8s(k K8sCluster) error {
 	result := d.db.Create(&k)
 	return result.Error
 }
 
 // CreateWorker creates a new k8s worker
-func (d *DB) CreateWorker(k *Worker) error {
+func (d *DB) CreateWorker(k Worker) error {
 	result := d.db.Create(&k)
 	return result.Error
 }

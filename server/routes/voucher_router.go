@@ -34,7 +34,7 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 	var input GenerateVoucherInput
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
-		writeErrResponse(w, err)
+		writeErrResponse(w, err.Error())
 		return
 	}
 
@@ -48,9 +48,9 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 
 	err = r.db.CreateVoucher(v)
 	if err != nil {
-		writeErrResponse(w, err)
+		writeErrResponse(w, err.Error())
 		return
 	}
 
-	writeMsgResponse(w, "voucher is created successfully", map[string]string{"voucher": voucher})
+	writeMsgResponse(w, "Voucher is generated successfully", map[string]string{"voucher": voucher})
 }

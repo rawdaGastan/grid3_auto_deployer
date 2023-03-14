@@ -24,9 +24,9 @@ func tempDBFile(t testing.TB) string {
 }
 
 // SetUp sets the needed configuration for testing
-func SetUp(t testing.TB) (r *routes.Router, version string) {
+func SetUp(t testing.TB) (r *routes.Router, db models.DB, version string) {
 	file := tempDBFile(t)
-	data, err := internal.ReadConfFile("./config-temp.json") 
+	data, err := internal.ReadConfFile("./config-temp.json")
 	if err != nil {
 		return
 	}
@@ -35,7 +35,7 @@ func SetUp(t testing.TB) (r *routes.Router, version string) {
 		return
 	}
 
-	db := models.NewDB()
+	db = models.NewDB()
 	err = db.Connect(file)
 	if err != nil {
 		return
@@ -52,13 +52,13 @@ func SetUp(t testing.TB) (r *routes.Router, version string) {
 
 	version = "/" + configuration.Version
 	router := routes.NewRouter(*configuration, db, tfPluginClient)
-	return &router, version
+	return &router, db, version
 
 }
 
 func TestSignUpHandler(t *testing.T) {
-	router, version := SetUp(t)
-	// Json Body
+	router, _, version := SetUp(t)
+	// json Body of request
 	body := []byte(`{
 		"name":"name",
 		"email":"name@gmail.com",
@@ -73,11 +73,9 @@ func TestSignUpHandler(t *testing.T) {
 		want := `{"msg":"Verification code has been sent to name@gmail.com","data":""}`
 		if got != want {
 			t.Errorf("got %q, want %q", got, want)
-			fmt.Printf("got: %v\n", got)
 		}
-		code := response.Code
-		if code != 200 {
-			t.Errorf("error got %d response code, want %d", code, 200)
+		if response.Code != 200 {
+			t.Errorf("error got %d response code, want %d", response.Code, 200)
 		}
 	})
 
@@ -85,11 +83,52 @@ func TestSignUpHandler(t *testing.T) {
 		request := httptest.NewRequest("POST", version+"/user/signup", nil)
 		response := httptest.NewRecorder()
 		router.SignUpHandler(response, request)
-		code := response.Code
-		if code != 500 {
-			t.Errorf("error got %d response code, want %d", code, 200)
+		if response.Code != 500 {
+			t.Errorf("error got %d response code, want %d", response.Code, 500)
 		}
 
 	})
 
+}
+
+func TestVerifySignUpCodeHandler(t *testing.T) {
+	router, db, version := SetUp(t)
+	body := []byte(`{
+		"name":"name",
+		"email":"name@gmail.com",
+		"password":"strongpass",
+		"confirm_password":"strongpass"
+	}`)
+	request1 := httptest.NewRequest("POST", version+"/user/signup", bytes.NewBuffer(body))
+	response1 := httptest.NewRecorder()
+	router.SignUpHandler(response1, request1)
+	if response1.Code != 200 {
+		t.Errorf("error got %d response code, want %d", response1.Code, 200)
+	}
+	code, err := db.GetCodeByEmail("name@gmail.com")
+	if err != nil {
+		t.Error(err)
+	}
+	t.Run("verify code ", func(t *testing.T) {
+		data := fmt.Sprintf(`{
+			"email":"name@gmail.com",
+			"code": %d
+		}`, code)
+		body = []byte(data)
+		request2 := httptest.NewRequest("POST", version+"/user/signup/verify_email", bytes.NewBuffer(body))
+		response2 := httptest.NewRecorder()
+		router.VerifySignUpCodeHandler(response2, request2)
+		if response2.Code != 200 {
+			t.Errorf("error got %d response code, want %d", response2.Code, 200)
+		}
+	})
+
+	t.Run("add empty code", func(t *testing.T) {
+		request2 := httptest.NewRequest("POST", version+"/user/signup/verify_email", nil)
+		response2 := httptest.NewRecorder()
+		router.VerifySignUpCodeHandler(response2, request2)
+		if response2.Code != 500 {
+			t.Errorf("error got %d response code, want %d", response2.Code, 500)
+		}
+	})
 }

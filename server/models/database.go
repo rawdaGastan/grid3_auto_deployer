@@ -70,6 +70,16 @@ func (d *DB) GetUserByID(id string) (User, error) {
 
 }
 
+// GetCodeByEmail returns verification code for unit testing
+func (d *DB) GetCodeByEmail(email string) (int, error) {
+	var res User
+	query := d.db.First(&res, "email = ?", email)
+	if query.Error != nil {
+		return 0, query.Error
+	}
+	return res.Code, nil
+}
+
 // UpdatePassword updates password of user
 func (d *DB) UpdatePassword(email string, password string) error {
 	var res User

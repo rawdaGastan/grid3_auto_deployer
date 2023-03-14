@@ -3,10 +3,12 @@ package tests
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
+	"github.com/magiconair/properties/assert"
 	"github.com/rawdaGastan/cloud4students/internal"
 	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rawdaGastan/cloud4students/routes"
@@ -24,7 +26,7 @@ func tempDBFile(t testing.TB) string {
 }
 
 // SetUp sets the needed configuration for testing
-func SetUp(t testing.TB) (r *routes.Router, db models.DB, version string) {
+func SetUp(t testing.TB) (r *routes.Router, db models.DB, configurations *internal.Configuration, version string) {
 	file := tempDBFile(t)
 	data, err := internal.ReadConfFile("./config-temp.json")
 	if err != nil {
@@ -52,12 +54,12 @@ func SetUp(t testing.TB) (r *routes.Router, db models.DB, version string) {
 
 	version = "/" + configuration.Version
 	router := routes.NewRouter(*configuration, db, tfPluginClient)
-	return &router, db, version
+	return &router, db, configuration, version
 
 }
 
 func TestSignUpHandler(t *testing.T) {
-	router, _, version := SetUp(t)
+	router, _, _, version := SetUp(t)
 	// json Body of request
 	body := []byte(`{
 		"name":"name",
@@ -74,25 +76,20 @@ func TestSignUpHandler(t *testing.T) {
 		if got != want {
 			t.Errorf("got %q, want %q", got, want)
 		}
-		if response.Code != 200 {
-			t.Errorf("error got %d response code, want %d", response.Code, 200)
-		}
+		assert.Equal(t, response.Code, http.StatusOK)
 	})
 
 	t.Run("send empty data", func(t *testing.T) {
 		request := httptest.NewRequest("POST", version+"/user/signup", nil)
 		response := httptest.NewRecorder()
 		router.SignUpHandler(response, request)
-		if response.Code != 500 {
-			t.Errorf("error got %d response code, want %d", response.Code, 500)
-		}
-
+		assert.Equal(t, response.Code, http.StatusInternalServerError)
 	})
 
 }
 
 func TestVerifySignUpCodeHandler(t *testing.T) {
-	router, db, version := SetUp(t)
+	router, db, _, version := SetUp(t)
 	body := []byte(`{
 		"name":"name",
 		"email":"name@gmail.com",
@@ -102,9 +99,8 @@ func TestVerifySignUpCodeHandler(t *testing.T) {
 	request1 := httptest.NewRequest("POST", version+"/user/signup", bytes.NewBuffer(body))
 	response1 := httptest.NewRecorder()
 	router.SignUpHandler(response1, request1)
-	if response1.Code != 200 {
-		t.Errorf("error got %d response code, want %d", response1.Code, 200)
-	}
+	assert.Equal(t, response1.Code, http.StatusOK)
+
 	code, err := db.GetCodeByEmail("name@gmail.com")
 	if err != nil {
 		t.Error(err)
@@ -118,17 +114,94 @@ func TestVerifySignUpCodeHandler(t *testing.T) {
 		request2 := httptest.NewRequest("POST", version+"/user/signup/verify_email", bytes.NewBuffer(body))
 		response2 := httptest.NewRecorder()
 		router.VerifySignUpCodeHandler(response2, request2)
-		if response2.Code != 200 {
-			t.Errorf("error got %d response code, want %d", response2.Code, 200)
-		}
+		assert.Equal(t, response2.Code, http.StatusOK)
+
 	})
 
 	t.Run("add empty code", func(t *testing.T) {
 		request2 := httptest.NewRequest("POST", version+"/user/signup/verify_email", nil)
 		response2 := httptest.NewRecorder()
 		router.VerifySignUpCodeHandler(response2, request2)
-		if response2.Code != 500 {
-			t.Errorf("error got %d response code, want %d", response2.Code, 500)
-		}
+		assert.Equal(t, response2.Code, http.StatusInternalServerError)
+
 	})
+}
+
+func TestSignInHandler(t *testing.T) {
+	router, db, _, version := SetUp(t)
+	u := models.User{
+		Name:           "name",
+		Email:          "name@gmail.com",
+		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		Verified:       true,
+	}
+	err := db.CreateUser(u)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Run("signIn successfully", func(t *testing.T) {
+		body := []byte(`{
+			"name":"name",
+			"email":"name@gmail.com",
+			"password":"strongpass"
+		}`)
+		request := httptest.NewRequest("POST", version+"/user/signin", bytes.NewBuffer(body))
+		response := httptest.NewRecorder()
+		router.SignInHandler(response, request)
+		assert.Equal(t, response.Code, http.StatusOK)
+
+	})
+
+	t.Run("signIn with wrong password", func(t *testing.T) {
+		body := []byte(`{
+			"name":"name",
+			"email":"name@gmail.com",
+			"password":"wrongpass"
+		}`)
+		request := httptest.NewRequest("POST", version+"/user/signin", bytes.NewBuffer(body))
+		response := httptest.NewRecorder()
+		router.SignInHandler(response, request)
+		got := response.Body.String()
+		want := `{"err":"Password is not correct"}`
+		if got != want {
+			t.Errorf("error got %q want %q", got, want)
+		}
+		assert.Equal(t, response.Code, http.StatusInternalServerError)
+
+	})
+}
+
+func TestRefreshJWTHandler(t *testing.T) {
+	router, db, config, version := SetUp(t)
+	u := models.User{
+		Name:           "name",
+		Email:          "name@gmail.com",
+		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		Verified:       true,
+	}
+	err := db.CreateUser(u)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Run("refresh jwt token", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		if err != nil {
+			t.Error(err)
+		}
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		if err != nil {
+			t.Error(err)
+		}
+		request := httptest.NewRequest("POST", version+"/user/refresh_token", nil)
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		response := httptest.NewRecorder()
+		router.RefreshJWTHandler(response, request)
+		assert.Equal(t, response.Code, http.StatusOK)
+
+	})
+
+	
+
 }

@@ -26,7 +26,7 @@ func tempDBFile(t testing.TB) string {
 // SetUp sets the needed configuration for testing
 func SetUp(t testing.TB) (r *routes.Router, version string) {
 	file := tempDBFile(t)
-	data, err := internal.ReadConfFile("/home/alaa/codescalers/cloud4students/server/config.json") //TODO:
+	data, err := internal.ReadConfFile("./config-temp.json") 
 	if err != nil {
 		return
 	}

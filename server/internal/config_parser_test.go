@@ -5,7 +5,7 @@ import (
 )
 
 func TestReadConfFile(t *testing.T) {
-	data, err := ReadConfFile("/home/alaa/codescalers/cloud4students/server/config.json") //TODO: Is it right to put path like this??
+	data, err := ReadConfFile("../tests/config-temp.json")
 	if err != nil {
 		t.Error(err)
 	}
@@ -15,7 +15,7 @@ func TestReadConfFile(t *testing.T) {
 }
 
 func TestParseConf(t *testing.T) {
-	data, err := ReadConfFile("/home/alaa/codescalers/cloud4students/server/config.json")
+	data, err := ReadConfFile("../tests/config-temp.json")
 	if err != nil {
 		t.Error(err)
 	}

@@ -100,7 +100,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// send verification code if user is not verified or not exist
-	code, err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, signUp.Email, r.config.Token.Timeout)
+	code, err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, signUp.Email, r.config.MailSender.Timeout)
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return
@@ -135,7 +135,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 			SSHKey:         user.SSHKey,
 		}
 
-		err = r.db.CreateUser(u)
+		err = r.db.CreateUser(&u)
 		if err != nil {
 			writeErrResponse(w, err.Error())
 			return
@@ -147,7 +147,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 			Vms:    0,
 			K8s:    0,
 		}
-		err = r.db.CreateQuota(quota)
+		err = r.db.CreateQuota(&quota)
 		if err != nil {
 			writeErrResponse(w, err.Error())
 			return
@@ -183,7 +183,7 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	if user.UpdatedAt.Add(time.Duration(r.config.Token.Timeout) * time.Minute).Before(time.Now()) {
+	if user.UpdatedAt.Add(time.Duration(r.config.MailSender.Timeout) * time.Second).Before(time.Now()) {
 		writeErrResponse(w, "Code has expired")
 		return
 	}
@@ -292,7 +292,7 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 	}
 
 	// send verification code
-	code, err := internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, email.Email, r.config.Token.Timeout)
+	code, err := internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, email.Email, r.config.MailSender.Timeout)
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return
@@ -327,8 +327,8 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 		return
 	}
 
-	if user.UpdatedAt.Add(time.Duration(r.config.Token.Timeout) * time.Minute).Before(time.Now()) {
-		writeErrResponse(w, "Token has expired")
+	if user.UpdatedAt.Add(time.Duration(r.config.MailSender.Timeout) * time.Minute).Before(time.Now()) {
+		writeErrResponse(w, "Code has expired")
 		return
 	}
 
@@ -375,8 +375,11 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	updates := 0
+
 	var hashedPassword string
 	if len(strings.TrimSpace(input.Password)) != 0 {
+		updates++
 		// password and confirm password should match
 		if input.Password != input.ConfirmPassword {
 			writeErrResponse(w, "Password and confirm password don't match")
@@ -398,12 +401,21 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	/*if len(strings.TrimSpace(input.SSHKey)) != 0 {
-		if err := validator.ValidateSSHKey(input.SSHKey); err != nil {
-			writeErrResponse(w, err)
+	if len(strings.TrimSpace(input.SSHKey)) != 0 {
+		updates++
+		/*if err := validator.ValidateSSHKey(input.SSHKey); err != nil {
+			writeErrResponse(w, err.Error())
 			return
-		}
-	}*/
+		}*/
+	}
+
+	if len(strings.TrimSpace(input.Name)) != 0 {
+		updates++
+	}
+
+	if updates == 0 {
+		writeMsgResponse(w, "Nothing to update", "")
+	}
 
 	userID, err = r.db.UpdateUserByID(userID, input.Name, hashedPassword, input.SSHKey, time.Time{}, 0)
 	if err != nil {

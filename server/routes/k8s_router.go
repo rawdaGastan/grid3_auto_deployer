@@ -78,7 +78,7 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = r.db.CreateK8s(k8sCluster)
+	err = r.db.CreateK8s(&k8sCluster)
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return

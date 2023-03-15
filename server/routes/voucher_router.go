@@ -46,7 +46,7 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 		VMs:     input.VMs,
 	}
 
-	err = r.db.CreateVoucher(v)
+	err = r.db.CreateVoucher(&v)
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return

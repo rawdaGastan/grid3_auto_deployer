@@ -71,7 +71,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		NetworkContractID: networkContractID,
 	}
 
-	err = r.db.CreateVM(userVM)
+	err = r.db.CreateVM(&userVM)
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return

@@ -260,7 +260,7 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 
 	// if token didn't expire
 	if time.Until(claims.ExpiresAt.Time) < time.Duration(r.config.Token.Timeout)*time.Minute {
-		writeMsgResponse(w, "Access Token still valid", map[string]string{"access_token": reqToken})
+		writeMsgResponse(w, "Access Token still valid", map[string]string{"access_token": reqToken, "refresh_token": reqToken})
 		return
 	}
 

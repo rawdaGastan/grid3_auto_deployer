@@ -1,7 +1,5 @@
 // Composables
 import { createRouter, createWebHistory } from 'vue-router'
-import Login from '@/views/Login.vue'
-import SignUp from '@/views/SignUp.vue'
 import Profile from '@/views/Profile.vue'
 import Home from '@/views/Home.vue'
 import About from '@/views/About.vue'
@@ -13,16 +11,6 @@ const routes = [
     path: '/',
     component: () => import('@/layouts/default/Default.vue'),
     children: [
-      {
-        path: 'login',
-        name: 'Login',
-        component: Login
-      },
-      {
-        path: 'sign-up',
-        name: 'Sign Up',
-        component: SignUp
-      },
       {
         path: 'profile',
         name: 'Profile',

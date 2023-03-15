@@ -4,7 +4,7 @@
 
 <script lang="ts">
 import "mosha-vue-toastify/dist/style.css";
-import { createToast } from "mosha-vue-toastify";
+import { createToast, clearToasts } from "mosha-vue-toastify";
 export default {
   setup() {
     const toast = (title, color = "#217dbb") => {
@@ -13,13 +13,13 @@ export default {
         hideProgressBar: true,
         toastBackgroundColor: color,
         timeout: 8000,
-        onClose: () => {
-          // console.log("log");
-        },
       });
     };
+    const clear = () => {
+      clearToasts();
+    };
 
-    return { toast };
+    return { toast, clear };
   },
 };
 </script>

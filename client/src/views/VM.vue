@@ -5,7 +5,7 @@
     </h5>
     <v-row justify="center">
       <v-col cols="12" sm="6">
-        <v-form v-model="verify" @submit.prevent="deployVm">
+        <v-form v-model="verify" ref="form" @submit.prevent="deployVm">
           <BaseInput
             placeholder="Name"
             :rules="rules"
@@ -43,12 +43,16 @@
     <v-row v-if="results.length > 0">
       <v-col>
         <v-table>
-          <thead>
+          <thead class="bg-primary">
             <tr>
-              <th class="text-left" v-for="head in headers" :key="head">
+              <th
+                class="text-left text-white"
+                v-for="head in headers"
+                :key="head"
+              >
                 {{ head }}
               </th>
-              <th class="text-left">
+              <th class="text-left text-white">
                 Actions
               </th>
             </tr>
@@ -63,7 +67,7 @@
               <td>{{ item.ip }}</td>
               <td>
                 <font-awesome-icon
-                  color="red-accent-2"
+                  class="text-red-accent-2"
                   @click="deleteVm(item.id, item.name)"
                   icon="fa-solid fa-trash"
                 />
@@ -110,7 +114,7 @@ export default {
       },
     ]);
     const confirm = ref(null);
-    const selectedResource = ref(null);
+    const selectedResource = ref(undefined);
     const recources = ref([
       { title: "Small VM (1 CPU, 2MB, 5GB)", value: "small" },
       { title: "Medium VM (2 CPU, 4MB, 10GB)", value: "medium" },
@@ -129,9 +133,9 @@ export default {
     const results = ref([]);
     const deLoading = ref(false);
     const message = ref(null);
+    const form = ref(null);
 
     const getVMS = () => {
-      toast.value.toast("Getting VMs..");
       userService
         .getVms()
         .then((response) => {
@@ -139,9 +143,8 @@ export default {
           results.value = data;
         })
         .catch((response) => {
-          toast.value.toast(response.data.err, {
-            toastBackgroundColor: "#FF5252",
-          });
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
         });
     };
 
@@ -150,14 +153,16 @@ export default {
       toast.value.toast("Deploying..");
       userService
         .deployVm(name.value, selectedResource.value)
-        .then(() => {
-          name.value = null;
-          selectedResource.value = null;
-          loading.value = false;
+        .then((response) => {
+          toast.value.toast(response.data.msg, "#388E3C");
+          reset();
           getVMS();
+          loading.value = false;
         })
         .catch((response) => {
-          toast.value.toast(response.response.data.err, "#FF5252");
+          reset();
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
           loading.value = false;
         });
     };
@@ -174,16 +179,18 @@ export default {
               .then((response) => {
                 toast.value.toast(response.data.msg, "#388E3C");
                 getVMS();
-              })
-              .catch((response) => {
-                toast.value.toast(response.response.data.err, "#FF5252");
                 deLoading.value = false;
               })
-              .finally(() => {
+              .catch((response) => {
+                const { err } = response.response.data;
+                toast.value.toast(err, "#FF5252");
                 deLoading.value = false;
               });
           }
         });
+    };
+    const reset = () => {
+      form.value.reset();
     };
 
     const deleteVm = (id, name) => {
@@ -196,12 +203,11 @@ export default {
               .deleteVm(id)
               .then((response) => {
                 toast.value.toast(response.data.msg, "#388E3C");
+                getVMS();
               })
               .catch((response) => {
-                toast.value.toast(response.response.data.err, "#FF5252");
-              })
-              .finally(() => {
-                getVMS();
+                const { err } = response.response.data;
+                toast.value.toast(err, "#FF5252");
               });
           }
         });
@@ -223,6 +229,8 @@ export default {
       confirm,
       toast,
       message,
+      form,
+      reset,
       getVMS,
       deployVm,
       deleteVms,

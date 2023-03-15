@@ -1,8 +1,6 @@
 import axios from "axios";
 
-// let token = localStorage.getItem("token");
-const token =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiN2E4YWRiYzUtYzI2OS0xMWVkLTg2YWQtZTQ1NGU4MWFiMDEwIiwiZW1haWwiOiJzYW1hci5hZGVsLmRlc2lnbkBnbWFpbC5jb20iLCJleHAiOjE2Nzg4ODAyOTd9.qSjno7Xlu5qQDjg7r38v_LP2Gb6OWQdEgb-_cxvIkFU";
+let token = localStorage.getItem("token");
 const authClient = axios.create({
   baseURL: "http://localhost:3000/v1",
   headers: {
@@ -15,14 +13,19 @@ if (token) {
 }
 
 async function refresh_token() {
-  await authClient.post("/user/refresh_token").then((response) => {
-    const access_token = response.data.data.access_token;
-    if (token !== access_token) {
-      console.log("signout");
-      localStorage.removeItem("token");
-    }
-    return token;
-  });
+  await authClient
+    .post("/user/refresh_token")
+    .then((response) => {
+      const access_token = response.data.data.access_token;
+      if (token !== access_token) {
+        console.log("signout");
+        localStorage.removeItem("token");
+      }
+      return token;
+    })
+    .catch((response) => {
+      console.log(response.response.data.err);
+    });
 }
 
 export default {

@@ -8,11 +8,11 @@
     </v-avatar>
     <v-row justify="center">
       <v-col cols="12" sm="6">
-        <v-form class="my-5">
+        <v-form v-model="verify" class="my-5" @submit.prevent="update">
           <BaseInput
             placeholder="Name"
             :modelValue="name"
-            :rules="rules"
+            class="my-2"
             @update:modelValue="name = $event"
           />
           <BaseInput
@@ -41,13 +41,12 @@
               :loading="actLoading"
               @update:modelValue="voucher = $event"
               class="mr-2"
-              :success-messages="[vMsg]"
-              :error-messages="[vMsg]"
               clearable
               :rules="rules"
             />
             <BaseButton
               class="bg-primary text-capitalize"
+              :disabled="!verify"
               text="Activate"
               @click="activateVoucher"
             />
@@ -63,17 +62,17 @@
             class="my-2"
             :rules="rules"
             auto-grow
-            :success-messages="[sshMsg]"
-            :error-messages="[sshMsg]"
           ></v-textarea>
           <BaseButton
+            type="submit"
+            :disabled="!verify"
             class="w-100 bg-primary text-capitalize"
             text="Update"
-            @click="update"
           />
         </v-form>
       </v-col>
     </v-row>
+    <Toast ref="toast" />
   </v-container>
 </template>
 
@@ -82,20 +81,27 @@ import { ref, onMounted, computed } from "vue";
 import userService from "@/services/userService";
 import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
+import Toast from "@/components/Toast.vue";
+
 export default {
   components: {
     BaseInput,
     BaseButton,
+    Toast,
   },
   setup() {
+    const verify = ref(false);
     const email = ref(null);
     const name = ref(null);
     const password = ref(null);
     const voucher = ref(null);
     const sshKey = ref(null);
     const actLoading = ref(false);
-    const vMsg = ref(null);
-    const sshMsg = ref(null);
+    const sMsg = ref(null);
+    const eMsg = ref(null);
+    const sshSMsg = ref(null);
+    const sshEMsg = ref(null);
+    const toast = ref(null);
     const rules = ref([
       (value) => {
         if (value) return true;
@@ -113,9 +119,12 @@ export default {
           password.value = user.hashed_password;
           voucher.value = user.voucher;
           sshKey.value = user.ssh_key;
+          verify.value = true;
+          toast.value.clear()
         })
-        .catch((err) => {
-          console.log(err); //<== alert
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
         });
     };
 
@@ -124,10 +133,11 @@ export default {
         .activateVoucher(voucher.value)
         .then((response) => {
           actLoading.value = true;
-          vMsg.value = response.data.msg;
+          sMsg.value = response.data.msg;
         })
         .catch((response) => {
-          vMsg.value = response.response.data.err;
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
         })
         .finally(() => {
           actLoading.value = false;
@@ -138,10 +148,11 @@ export default {
       userService
         .updateUser(name.value, sshKey.value)
         .then((response) => {
-          sshMsg.value = response.data.msg;
+          toast.value.toast(response.data.msg, "#388E3C");
         })
         .catch((response) => {
-          sshMsg.value = response.response.data.err;
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
         });
     };
 
@@ -155,6 +166,7 @@ export default {
     });
 
     return {
+      verify,
       email,
       name,
       password,
@@ -162,9 +174,12 @@ export default {
       sshKey,
       avatar,
       actLoading,
-      vMsg,
-      sshMsg,
+      sMsg,
+      eMsg,
+      sshSMsg,
+      sshEMsg,
       rules,
+      toast,
       getUser,
       activateVoucher,
       update,

@@ -2,6 +2,7 @@ package tests
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +11,9 @@ import (
 
 	"github.com/magiconair/properties/assert"
 	"github.com/rawdaGastan/cloud4students/internal"
+	"github.com/rawdaGastan/cloud4students/middlewares"
+
+	// "github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rawdaGastan/cloud4students/routes"
 	"github.com/threefoldtech/grid3-go/deployer"
@@ -347,6 +351,174 @@ func TestChangePasswordHandler(t *testing.T) {
 }
 
 func TestUpdateUserHandler(t *testing.T) {
+	router, db, config, version := SetUp(t)
+	u := models.User{
+		Name:           "name",
+		Email:          "name@gmail.com",
+		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		Verified:       true,
+	}
+	err := db.CreateUser(&u)
+	if err != nil {
+		t.Error(err)
+	}
 
+	t.Run("update data of user", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		if err != nil {
+			t.Error(err)
+		}
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		if err != nil {
+			t.Error(err)
+		}
+		body := []byte(`{
+		"name" : "newname",
+		"email":"name@gmail.com",
+		"password":"newpass",
+		"confirm_password":"newpass"
+		}`)
+		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.UpdateUserHandler(response, newRequest)
+		got := response.Body.String()
+		want := fmt.Sprintf(`{"msg":"User is updated successfully","data":{"user_id":"%s"}}`, user.ID.String())
+		if got != want {
+			t.Errorf("error: got %q, want %q", got, want)
+		}
+		assert.Equal(t, response.Code, http.StatusOK)
+	})
+
+	t.Run("add empty data", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		if err != nil {
+			t.Error(err)
+		}
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		if err != nil {
+			t.Error(err)
+		}
+		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(nil))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.UpdateUserHandler(response, newRequest)
+		assert.Equal(t, response.Code, http.StatusInternalServerError)
+	})
+
+	t.Run("update part of data", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		if err != nil {
+			t.Error(err)
+		}
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		if err != nil {
+			t.Error(err)
+		}
+		body := []byte(`{
+		"name" : "newname"
+		}`)
+		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.UpdateUserHandler(response, newRequest)
+		got := response.Body.String()
+		want := fmt.Sprintf(`{"msg":"User is updated successfully","data":{"user_id":"%s"}}`, user.ID.String())
+		if got != want {
+			t.Errorf("error: got %q, want %q", got, want)
+		}
+		assert.Equal(t, response.Code, http.StatusOK)
+
+	})
 
 }
+
+func TestGetUserHandler(t *testing.T) {
+	router, db, config, version := SetUp(t)
+	u := models.User{
+		Name:           "name",
+		Email:          "name@gmail.com",
+		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		Verified:       true,
+	}
+	err := db.CreateUser(&u)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Run("get user", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		if err != nil {
+			t.Error(err)
+		}
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		if err != nil {
+			t.Error(err)
+		}
+		request := httptest.NewRequest("GET", version+"/user", nil)
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.GetUserHandler(response, newRequest)
+		assert.Equal(t, response.Code, http.StatusOK)
+	})
+}
+
+//TODO: 
+// func TestActivateVoucherHandler(t *testing.T) {
+// 	router, db, config, version := SetUp(t)
+// 	u := models.User{
+// 		Name:           "name",
+// 		Email:          "name@gmail.com",
+// 		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+// 		Verified:       true,
+// 	}
+// 	err := db.CreateUser(&u)
+// 	if err != nil {
+// 		t.Error(err)
+// 	}
+
+// 	t.Run("activate voucher ", func(t *testing.T) {
+// 		v := models.Voucher{
+// 			Voucher: "voucher",
+// 			K8s:     10,
+// 			VMs:     10,
+// 		}
+// 		err = db.CreateVoucher(&v)
+// 		if err != nil {
+// 			t.Error(err)
+// 		}
+// 		user, err := db.GetUserByEmail("name@gmail.com")
+// 		if err != nil {
+// 			t.Error(err)
+// 		}
+// 		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+// 		if err != nil {
+// 			t.Error(err)
+// 		}
+// 		body := []byte(`{
+// 		"voucher" : "voucher"
+// 		}`)
+// 		request := httptest.NewRequest("GET", version+"/user/activate_voucher", bytes.NewBuffer(body))
+// 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+// 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+// 		newRequest := request.WithContext(ctx)
+// 		response := httptest.NewRecorder()
+// 		router.ActivateVoucherHandler(response, newRequest)
+// 		got := response.Body.String()
+// 		want := `{"msg":"Voucher is applied successfully","data":""}`
+// 		if got != want {
+// 			t.Errorf("error: got %q, want %q", got, want)
+// 		}
+// 		assert.Equal(t, response.Code, http.StatusOK)
+
+// 	})
+
+// }

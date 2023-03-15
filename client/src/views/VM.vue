@@ -30,7 +30,7 @@
         </v-form>
       </v-col>
     </v-row>
-    <v-row v-if="results > 0">
+    <v-row v-if="results.length > 0">
       <v-col class="d-flex justify-end">
         <BaseButton
           color="red-accent-2"
@@ -40,7 +40,7 @@
         />
       </v-col>
     </v-row>
-    <v-row v-if="results > 0">
+    <v-row v-if="results.length > 0">
       <v-col>
         <v-table>
           <thead>
@@ -57,14 +57,14 @@
             <tr v-for="item in results" :key="item.name">
               <td>{{ item.id }}</td>
               <td>{{ item.name }}</td>
-              <td>{{ item.sru }}</td>
-              <td>{{ item.mru }}</td>
+              <td>{{ item.sru }}GB</td>
+              <td>{{ item.mru }}MB</td>
               <td>{{ item.cru }}</td>
               <td>{{ item.ip }}</td>
               <td>
                 <font-awesome-icon
-                  class="grey-darken-3"
-                  @click="deleteVm(item.id)"
+                  color="red-accent-2"
+                  @click="deleteVm(item.id, item.name)"
                   icon="fa-solid fa-trash"
                 />
               </td>
@@ -75,9 +75,11 @@
     </v-row>
     <v-row v-else>
       <v-col>
-        <p class="my-5 text-center">{{ msg }}</p>
+        <p class="my-5 text-center">VMs are not found</p>
       </v-col>
     </v-row>
+    <confirm ref="confirm" />
+    <Toast ref="toast" />
   </v-container>
 </template>
 
@@ -87,12 +89,16 @@ import userService from "@/services/userService";
 import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseSelect from "@/components/Form/BaseSelect.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
+import Confirm from "@/components/Confirm.vue";
+import Toast from "@/components/Toast.vue";
 
 export default {
   components: {
     BaseInput,
     BaseSelect,
     BaseButton,
+    Confirm,
+    Toast,
   },
   setup() {
     const verify = ref(false);
@@ -103,11 +109,12 @@ export default {
         return "This field is required.";
       },
     ]);
+    const confirm = ref(null);
     const selectedResource = ref(null);
     const recources = ref([
-      { title: "Small VM (1 CPU, 2 MB, 10 GB)", value: "small" },
-      { title: "Medium VM (2 CPU, 4 MB, 15 GB)", value: "medium" },
-      { title: "Large VM (4 CPU, 5 MB, 20 GB)", value: "large" },
+      { title: "Small VM (1 CPU, 2MB, 5GB)", value: "small" },
+      { title: "Medium VM (2 CPU, 4MB, 10GB)", value: "medium" },
+      { title: "Large VM (4 CPU, 8MB, 15GB)", value: "large" },
     ]);
     const headers = ref([
       "ID",
@@ -117,65 +124,86 @@ export default {
       "CPU (cru)",
       "IP",
     ]);
+    const toast = ref(null);
     const loading = ref(false);
-    const results = ref(null);
+    const results = ref([]);
     const deLoading = ref(false);
-    const msg = ref(null);
+    const message = ref(null);
 
     const getVMS = () => {
+      toast.value.toast("Getting VMs..");
       userService
         .getVms()
         .then((response) => {
-          if (response.data.data < 1) msg.value = response.data.msg;
-          results.value = response.data.data;
+          const { data } = response.data;
+          results.value = data;
         })
         .catch((response) => {
-          console.log(response.data.err);
+          toast.value.toast(response.data.err, {
+            toastBackgroundColor: "#FF5252",
+          });
         });
     };
 
     const deployVm = () => {
       loading.value = true;
+      toast.value.toast("Deploying..");
       userService
         .deployVm(name.value, selectedResource.value)
         .then(() => {
           name.value = null;
           selectedResource.value = null;
+          loading.value = false;
           getVMS();
         })
-        .catch((error) => (error.value = error))
-        .finally(() => {
+        .catch((response) => {
+          toast.value.toast(response.response.data.err, "#FF5252");
           loading.value = false;
         });
     };
 
     const deleteVms = () => {
-      deLoading.value = true;
-      userService
-        .deleteAllVms()
-        .then((response) => {
-          console.log(response.data);
-          getVMS();
-        })
-        .catch((response) => {
-          console.log(response);
-        })
-        .finally(() => {
-          deLoading.value = false;
+      confirm.value
+        .open("Delete All VMs", "Are you sure?", { color: "red-accent-2" })
+        .then((confirm) => {
+          if (confirm) {
+            deLoading.value = true;
+            toast.value.toast(`Delete VMs..`, "#FF5252");
+            userService
+              .deleteAllVms()
+              .then((response) => {
+                toast.value.toast(response.data.msg, "#388E3C");
+                getVMS();
+              })
+              .catch((response) => {
+                toast.value.toast(response.response.data.err, "#FF5252");
+                deLoading.value = false;
+              })
+              .finally(() => {
+                deLoading.value = false;
+              });
+          }
         });
     };
 
-    const deleteVm = (id) => {
-      userService
-        .deleteVm(id)
-        .then((response) => {
-          console.log(response);
-        })
-        .catch((response) => {
-          console.log(response);
-        })
-        .finally(() => {
-          getVMS();
+    const deleteVm = (id, name) => {
+      confirm.value
+        .open(`Delete ${name}`, "Are you sure?", { color: "red-accent-2" })
+        .then((confirm) => {
+          if (confirm) {
+            toast.value.toast(`Deleting ${name}..`, "#FF5252");
+            userService
+              .deleteVm(id)
+              .then((response) => {
+                toast.value.toast(response.data.msg, "#388E3C");
+              })
+              .catch((response) => {
+                toast.value.toast(response.response.data.err, "#FF5252");
+              })
+              .finally(() => {
+                getVMS();
+              });
+          }
         });
     };
 
@@ -192,7 +220,9 @@ export default {
       rules,
       results,
       headers,
-      msg,
+      confirm,
+      toast,
+      message,
       getVMS,
       deployVm,
       deleteVms,

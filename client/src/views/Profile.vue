@@ -6,7 +6,6 @@
     <v-avatar color="primary" size="75" class="d-flex mx-auto mt-5 mb-3">
       <span class="text-h4 text-uppercase">{{ name ? avatar : "?" }}</span>
     </v-avatar>
-    <!-- <p class="text-center mb-5 text-capitalize">{{ name }}</p> -->
     <v-row justify="center">
       <v-col cols="12" sm="6">
         <v-form class="my-5">

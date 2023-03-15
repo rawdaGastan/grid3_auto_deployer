@@ -259,7 +259,7 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// if token didn't expire
-	if time.Until(claims.ExpiresAt.Time) < time.Duration(r.config.Token.Timeout)*time.Minute {
+	if time.Until(claims.ExpiresAt.Time) > time.Duration(r.config.Token.Timeout)*time.Minute {
 		writeErrResponse(w, "Access token is expired")
 		return
 	}

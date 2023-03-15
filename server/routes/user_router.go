@@ -94,7 +94,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	// check if user already exists and verified
 	if getErr == nil {
 		if user.Verified {
-			writeMsgResponse(w, "User already exists", "")
+			writeErrResponse(w, "User already exists")
 			return
 		}
 	}

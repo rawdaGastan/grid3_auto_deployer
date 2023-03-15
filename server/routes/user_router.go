@@ -174,7 +174,7 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 	}
 
 	if user.Verified {
-		writeMsgResponse(w, "Account is already created", map[string]string{"user_id": user.ID.String()})
+		writeErrResponse(w, "Account is already created")
 		return
 	}
 
@@ -260,7 +260,7 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 
 	// if token didn't expire
 	if time.Until(claims.ExpiresAt.Time) < time.Duration(r.config.Token.Timeout)*time.Minute {
-		writeMsgResponse(w, "Access token is valid", map[string]string{"access_token": reqToken, "refresh_token": reqToken})
+		writeErrResponse(w, "Access token is expired")
 		return
 	}
 
@@ -461,7 +461,7 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 	}
 
 	if voucherQuota.Used {
-		writeMsgResponse(w, "Voucher is already used", "")
+		writeErrResponse(w, "Voucher is already used")
 		return
 	}
 

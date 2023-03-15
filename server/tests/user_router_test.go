@@ -22,6 +22,7 @@ func tempDBFile(t testing.TB) string {
 		t.Fatalf("can't create temp file %q", err.Error())
 	}
 	defer file.Close()
+	defer os.Remove(file.Name())
 	return file.Name()
 }
 
@@ -135,7 +136,7 @@ func TestSignInHandler(t *testing.T) {
 		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
 		Verified:       true,
 	}
-	err := db.CreateUser(u)
+	err := db.CreateUser(&u)
 	if err != nil {
 		t.Error(err)
 	}
@@ -180,7 +181,7 @@ func TestRefreshJWTHandler(t *testing.T) {
 		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
 		Verified:       true,
 	}
-	err := db.CreateUser(u)
+	err := db.CreateUser(&u)
 	if err != nil {
 		t.Error(err)
 	}
@@ -219,7 +220,7 @@ func TestForgotPasswordHandler(t *testing.T) {
 		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
 		Verified:       true,
 	}
-	err := db.CreateUser(u)
+	err := db.CreateUser(&u)
 	if err != nil {
 		t.Error(err)
 	}
@@ -249,5 +250,103 @@ func TestForgotPasswordHandler(t *testing.T) {
 		assert.Equal(t, response.Code, http.StatusNotFound)
 
 	})
+}
+
+func TestVerifyForgetPasswordCodeHandler(t *testing.T) {
+	router, db, _, version := SetUp(t)
+	u := models.User{
+		Name:           "name",
+		Email:          "name@gmail.com",
+		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		Verified:       true,
+	}
+	err := db.CreateUser(&u)
+	if err != nil {
+		t.Error(err)
+	}
+	body := []byte(`{
+			"email":"name@gmail.com"
+		}`)
+	request1 := httptest.NewRequest("POST", version+"/user/forgot_password", bytes.NewBuffer(body))
+	response1 := httptest.NewRecorder()
+	router.ForgotPasswordHandler(response1, request1)
+	assert.Equal(t, response1.Code, http.StatusOK)
+
+	t.Run("verify code", func(t *testing.T) {
+		code, err := db.GetCodeByEmail("name@gmail.com")
+		if err != nil {
+			t.Error(err)
+		}
+		data := fmt.Sprintf(`{
+			"email":"name@gmail.com",
+			"code": %d
+		}`, code)
+		body = []byte(data)
+		request2 := httptest.NewRequest("POST", version+"/user/forget_password/verify_email", bytes.NewBuffer(body))
+		response2 := httptest.NewRecorder()
+		router.VerifyForgetPasswordCodeHandler(response2, request2)
+		assert.Equal(t, response2.Code, http.StatusOK)
+	})
+
+	t.Run("add wrong code", func(t *testing.T) {
+		data := fmt.Sprintf(`{
+			"email":"name@gmail.com",
+			"code": %d
+		}`, 00000)
+		body = []byte(data)
+		request2 := httptest.NewRequest("POST", version+"/user/forget_password/verify_email", bytes.NewBuffer(body))
+		response2 := httptest.NewRecorder()
+		router.VerifyForgetPasswordCodeHandler(response2, request2)
+		assert.Equal(t, response2.Code, http.StatusInternalServerError)
+
+	})
+}
+
+func TestChangePasswordHandler(t *testing.T) {
+	router, db, _, version := SetUp(t)
+	u := models.User{
+		Name:           "name",
+		Email:          "name@gmail.com",
+		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		Verified:       true,
+	}
+	err := db.CreateUser(&u)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Run("change password", func(t *testing.T) {
+		body := []byte(`{
+		"email":"name@gmail.com",
+		"password":"newpass",
+		"confirm_password":"newpass"
+		}`)
+
+		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		response := httptest.NewRecorder()
+		router.ChangePasswordHandler(response, request)
+		got := response.Body.String()
+		want := `{"msg":"Password is updated successfully","data":""}`
+		if got != want {
+			t.Errorf("error: got %q, want %q", got, want)
+		}
+		assert.Equal(t, response.Code, http.StatusOK)
+	})
+
+	t.Run("password and confirm password don't match", func(t *testing.T) {
+		body := []byte(`{
+		"email":"name@gmail.com",
+		"password":"newpass",
+		"confirm_password":"oldpass"
+		}`)
+
+		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		response := httptest.NewRecorder()
+		router.ChangePasswordHandler(response, request)
+		assert.Equal(t, response.Code, http.StatusInternalServerError)
+	})
+}
+
+func TestUpdateUserHandler(t *testing.T) {
+
 
 }

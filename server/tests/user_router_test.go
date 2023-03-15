@@ -18,10 +18,10 @@ import (
 // tempDBFile create temporary DB file for testing
 func tempDBFile(t testing.TB) string {
 	file, err := os.CreateTemp("", "testing")
-	defer file.Close()
 	if err != nil {
 		t.Fatalf("can't create temp file %q", err.Error())
 	}
+	defer file.Close()
 	return file.Name()
 }
 
@@ -74,7 +74,7 @@ func TestSignUpHandler(t *testing.T) {
 		got := response.Body.String()
 		want := `{"msg":"Verification code has been sent to name@gmail.com","data":""}`
 		if got != want {
-			t.Errorf("got %q, want %q", got, want)
+			t.Errorf("error : got %q, want %q", got, want)
 		}
 		assert.Equal(t, response.Code, http.StatusOK)
 	})
@@ -165,7 +165,7 @@ func TestSignInHandler(t *testing.T) {
 		got := response.Body.String()
 		want := `{"err":"Password is not correct"}`
 		if got != want {
-			t.Errorf("error got %q want %q", got, want)
+			t.Errorf("error: got %q want %q", got, want)
 		}
 		assert.Equal(t, response.Code, http.StatusInternalServerError)
 
@@ -201,7 +201,53 @@ func TestRefreshJWTHandler(t *testing.T) {
 		assert.Equal(t, response.Code, http.StatusOK)
 
 	})
+	t.Run("add empty token", func(t *testing.T) {
+		request := httptest.NewRequest("POST", version+"/user/refresh_token", nil)
+		response := httptest.NewRecorder()
+		router.RefreshJWTHandler(response, request)
+		assert.Equal(t, response.Code, http.StatusInternalServerError)
 
-	
+	})
+
+}
+
+func TestForgotPasswordHandler(t *testing.T) {
+	router, db, _, version := SetUp(t)
+	u := models.User{
+		Name:           "name",
+		Email:          "name@gmail.com",
+		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		Verified:       true,
+	}
+	err := db.CreateUser(u)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Run("forgot password", func(t *testing.T) {
+		body := []byte(`{
+			"email":"name@gmail.com"
+		}`)
+		request := httptest.NewRequest("POST", version+"/user/forgot_password", bytes.NewBuffer(body))
+		response := httptest.NewRecorder()
+		router.ForgotPasswordHandler(response, request)
+		got := response.Body.String()
+		want := `{"msg":"Verification code has been sent to name@gmail.com","data":""}`
+		if got != want {
+			t.Errorf("error: got %q, want %q", got, want)
+		}
+		assert.Equal(t, response.Code, http.StatusOK)
+	})
+
+	t.Run("add wrong email", func(t *testing.T) {
+		body := []byte(`{
+			"email":"abcde@gmail.com"
+		}`)
+		request := httptest.NewRequest("POST", version+"/user/forgot_password", bytes.NewBuffer(body))
+		response := httptest.NewRecorder()
+		router.ForgotPasswordHandler(response, request)
+		assert.Equal(t, response.Code, http.StatusNotFound)
+
+	})
 
 }

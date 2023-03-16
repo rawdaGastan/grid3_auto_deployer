@@ -1,5 +1,7 @@
 <template>
     <v-container class="d-flex fill-height">
+        <Toast ref="toast" />
+
         <v-row justify="center">
             <v-col>
                 <v-hover v-slot="{ isHovering, props }" open-delay="200">
@@ -16,23 +18,22 @@
                 <div class="py-10" />
 
                 <v-form v-model="verify" @submit.prevent="onSubmit">
-                    <v-text-field v-model="email" :rules="rules" class="mb-2" clearable
-                        placeholder="Enter your email" label="Email" bg-color="accent"
-                        variant="outlined"></v-text-field>
+                    <v-text-field v-model="email" :rules="emailRules" class="mb-2" clearable placeholder="Enter your email"
+                        label="Email" bg-color="accent" variant="outlined"></v-text-field>
 
                     <br>
                     <v-text-field v-model="password" :rules="rules" clearable label="Password"
                         placeholder="Enter your password" bg-color="accent" variant="outlined"
                         :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-                        :type="showPassword ? 'text' : 'password'"
-                        @click:append-inner="showPassword = !showPassword" style="grid-area:unset"></v-text-field>
-                    
+                        :type="showPassword ? 'text' : 'password'" @click:append-inner="showPassword = !showPassword"
+                        style="grid-area:unset"></v-text-field>
+
                     <div class="text-body-2 mb-n1 text-end">
                         <a class="text-body-2" href="/forgetPassword" color="primary">Forget password?</a>
                     </div>
                     <br>
                     <br>
-                    
+
                     <div class="text-body-2 mb-n1 text-center">
                         <v-btn color="primary" min-width="228" rel="noopener noreferrer" size="x-large" type="submit"
                             :disabled="!verify" :loading="loading" variant="flat">
@@ -49,60 +50,75 @@
 </template>
 
 <script>
-  import { ref } from "vue";
-  import axios from "axios";
-  import { useRouter } from "vue-router";
+import { ref } from "vue";
+import axios from "axios";
+import { useRouter } from "vue-router";
+import Toast from "@/components/Toast.vue";
 
 export default {
-
+    components: {
+        Toast,
+    },
     setup() {
-    const verify = ref(false);
-    const router= useRouter();
-    const showPassword = ref(false);
-    const email= ref(null);
-    const password= ref(null);
-    const loading = ref(false);
-    const rules = ref([
-      (value) => {
-        if (value) return true;
-        return "This field is required.";
-      },
-    ]); 
-    const onSubmit =()=> {
-        if (!verify.value) return;
+        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-           loading.value = true;
+        const verify = ref(false);
+        const router = useRouter();
+        const toast = ref(null);
 
-           axios
-          .post("http://localhost:3000/v1/user/signin", {
-            email: email.value,
-            password: password.value,
-          })
-          .then((response) => {
-        
-            console.log("response",response.data.msg);
-            router.push({
-                name: 'Home',
+        const showPassword = ref(false);
+        const email = ref(null);
+        const password = ref(null);
+        const loading = ref(false);
+        const emailRules = ref([
+            value => !!value || 'Field is required',
+            value => (value.match(emailRegex)) || 'Invalid email address',
+        ]);
+        const rules = ref([
+            (value) => {
+                if (value) return true;
+                return "This field is required.";
+            },
+        ]);
+        const onSubmit = () => {
+            if (!verify.value) return;
+
+            loading.value = true;
+
+            axios
+                .post("http://localhost:3000/v1/user/signin", {
+                    email: email.value,
+                    password: password.value,
+                })
+                .then((response) => {
+                    localStorage.setItem('token', response.data.data.access_token);
+                    toast.value.toast(response.data.msg);
+
+                    // router.push({
+                    //     name: 'Home',
+                    //     });
+                })
+                .catch((error) => {
+                    toast.value.toast(error.response.data.err, "#FF5252", "top-right");
+
+                })
+                .finally(() => {
+                    loading.value = false;
                 });
-            })
-            .catch((error) =>{
-            console.log("error", error.response.data.err)
-            })
-            .finally(() => {
-            loading.value = false;
-            });
 
         };
-        return{
+        return {
             verify,
             password,
             showPassword,
             email,
             loading,
             rules,
+            emailRules,
+            toast,
             onSubmit,
         };
-}
+    }
 
 
 };

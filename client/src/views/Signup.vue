@@ -1,5 +1,7 @@
 <template>
   <v-container>
+    <Toast ref="toast" />
+
     <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
       Create a new account
     </h5>
@@ -7,29 +9,29 @@
       <v-col cols="12" sm="6">
         <v-form v-model="verify" @submit.prevent="onSubmit">
 
-          <v-text-field v-model="fullname" :rules="rules" label="Full Name" placeholder="Enter your fullname"
-            bg-color="accent" variant="outlined">
+          <v-text-field v-model="fullname" :rules="fullnameRules" label="Full Name" placeholder="Enter your fullname"
+            bg-color="accent" variant="outlined" class="my-2">
           </v-text-field>
 
-          <v-text-field v-model="email" :rules="rules" label="Email" placeholder="Enter your email" bg-color="accent"
-            variant="outlined">
+          <v-text-field v-model="email" :rules="emailRules" label="Email" placeholder="Enter your email" bg-color="accent"
+            variant="outlined" class="my-2">
           </v-text-field>
 
-          <v-text-field v-model="password" :rules="rules" clearable label="Password" placeholder="Enter your password"
-            bg-color="accent" variant="outlined" :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-            :type="showPassword ? 'text' : 'password'" @click:append-inner="showPassword = !showPassword"
-            style="grid-area: unset;">
-          </v-text-field>
-
-          <v-text-field v-model="cpassword" :rules="rules" clearable label="Confirm Password"
+          <v-text-field v-model="password" :rules="passwordRules" clearable label="Password"
             placeholder="Enter your password" bg-color="accent" variant="outlined"
             :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'" :type="showPassword ? 'text' : 'password'"
-            @click:append-inner="showPassword = !showPassword" style="grid-area: unset;">
+            @click:append-inner="showPassword = !showPassword" style="grid-area: unset;" class="my-2">
+          </v-text-field>
+
+          <v-text-field v-model="cpassword" :rules="cpasswordRules" clearable label="Confirm Password"
+            placeholder="Enter your password" bg-color="accent" variant="outlined"
+            :append-inner-icon="cshowPassword ? 'mdi-eye' : 'mdi-eye-off'" :type="cshowPassword ? 'text' : 'password'"
+            @click:append-inner="cshowPassword = !cshowPassword" style="grid-area: unset;" class="my-2">
           </v-text-field>
 
 
           <v-btn min-width="228" size="x-large" type="submit" block :disabled="!verify" :loading="loading" variant="flat"
-            color="primary" class="float-sm-end text-capitalize mx-auto bg-primary">
+            color="primary" class=" text-capitalize mx-auto bg-primary">
             Create Account
           </v-btn>
 
@@ -44,27 +46,47 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
+import Toast from "@/components/Toast.vue";
 
 export default {
-
+  components: {
+    Toast,
+  },
 
   setup() {
-    const router= useRouter();
+
+    var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const router = useRouter();
     const verify = ref(false);
     const showPassword = ref(false);
+    const cshowPassword = ref(false);
     const fullname = ref(null);
     const email = ref(null);
     const password = ref(null);
     const cpassword = ref(null);
-
+    const isSignup = ref(true);
     const loading = ref(false);
-    const rules = ref([
-      (value) => {
-        if (value) return true;
-        return "This field is required.";
-      },
+    const toast = ref(null);
+
+    const fullnameRules = ref([
+      value => !!value || 'Field is required',
+      value => (value && value.length >= 3) || 'Name should be at least 3 characters',
+    ]);
+    const emailRules = ref([
+      value => !!value || 'Field is required',
+      value => (value.match(emailRegex)) || 'Invalid email address',
+    ]);
+    const passwordRules = ref([
+      value => !!value || 'Field is required',
+      value => (value && value.length >= 7) || 'Password must be at least 7 characters',
+    ]);
+    const cpasswordRules = ref([
+      value => !!value || 'Field is required',
+      value => (value == password.value) || "Passwords don't match",
 
     ]);
+
+
 
 
     const onSubmit = () => {
@@ -79,21 +101,24 @@ export default {
           confirm_password: cpassword.value,
         })
         .then((response) => {
-        
-           this.$router.email= email.value;
-           console.log("response",this.$route.email);
 
-            router.push({
-                name: 'OTP',
-                query: { "email" : email.value }            });
-        
+          localStorage.setItem('fullname', fullname.value);
+          localStorage.setItem('password', password.value);
+          localStorage.setItem('confirm_password', cpassword.value);
+
+
+          router.push({
+            name: 'OTP',
+            query: { "email": email.value, "isSignup": isSignup.value, }
+          });
+
         })
-        .catch((error) =>{
-          console.log("error", error.response.data.err)
+        .catch((error) => {
+          toast.value.toast(error.response.data.err, "#FF5252", "top-right");
           loading.value = false;
 
         });
- 
+
     };
     return {
       onSubmit,
@@ -103,9 +128,14 @@ export default {
       cpassword,
       password,
       email,
+      toast,
       fullname,
-      rules,
-
+      fullnameRules,
+      emailRules,
+      passwordRules,
+      cpasswordRules,
+      isSignup,
+      cshowPassword,
     }
   },
 };

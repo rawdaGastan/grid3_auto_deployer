@@ -1,10 +1,12 @@
 <template>
   <div class="div-wrapper">
+    <Toast ref="toast" />
+
     <v-container>
       <h5 class="text-h5 text-md-h4 text-center mt-10 mb-0 secondary">
         Reset Password
       </h5>
-      <div class="text-body-2 mb-n1 text-center font-weight-light">The verification code will be sent to the mailbox.
+      <div class="text-body-2 mb-10 text-center font-weight-light">The verification code will be sent to the mailbox.
       </div>
 
 
@@ -12,12 +14,9 @@
         <v-col cols="12" sm="6">
           <v-form v-model="verify" @submit.prevent="onSubmit">
 
-            <v-label class="text-md-h4 secondary mb-2 text-black"> E-mail</v-label>
 
-            <v-text-field v-model="email" :rules="rules" placeholder="Enter your email" bg-color="  accent"
-              variant="outlined">
-            </v-text-field>
-
+            <v-text-field v-model="email" :rules="emailRules" class="mb-2" clearable placeholder="Enter your email"
+              label="Email" bg-color="accent" variant="outlined"></v-text-field>
 
 
 
@@ -43,18 +42,25 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
-export default {
-  setup() {
-    const router = useRouter();
+import Toast from "@/components/Toast.vue";
 
+export default {
+  components: {
+    Toast,
+  },
+
+  setup() {
+    var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const toast = ref(null);
+
+    const router = useRouter();
     const verify = ref(false);
     const email = ref(null);
     const loading = ref(false);
-    const rules = ref([
-      (value) => {
-        if (value) return true;
-        return "This field is required.";
-      },
+    const isForgetpassword = ref(true);
+    const emailRules = ref([
+      value => !!value || 'Field is required',
+      value => (value.match(emailRegex)) || 'Invalid email address',
     ]);
 
     const onSubmit = () => {
@@ -67,18 +73,16 @@ export default {
           email: email.value,
         })
         .then((response) => {
-
-          console.log("response", response.data.msg);
+          toast.value.toast(response.data.msg);
           router.push({
-            // path: "/otp/" + email.value,
             name: 'OTP',
-            params: { email: email.value },
+            query: { "email": email.value, "isForgetpassword": isForgetpassword.value, }
 
           });
 
         })
         .catch((error) => {
-          console.log("error", error.response.data.err)
+          toast.value.toast(error.response.data.err, "#FF5252");
           loading.value = false;
 
         });
@@ -87,7 +91,9 @@ export default {
     return {
       verify,
       email,
+      emailRules,
       loading,
+      toast,
       onSubmit,
     }
   }

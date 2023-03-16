@@ -2,7 +2,7 @@ import axios from "axios";
 
 let token = localStorage.getItem("token");
 const authClient = axios.create({
-  baseURL: "http://localhost:3000/v1",
+  baseURL: import.meta.env.VITE_API_ENDPOINT,
   headers: {
     Authorization: "Bearer " + token,
   },

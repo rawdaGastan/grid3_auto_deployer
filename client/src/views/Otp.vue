@@ -88,7 +88,7 @@ export default {
 
       if (route.query.isForgetpassword) {
         axios
-          .post("http://localhost:3000/v1/user/forgot_password", {
+          .post(import.meta.env.VITE_API_ENDPOINT+"/user/forgot_password", {
             email: route.query.email,
           })
           .then((response) => {
@@ -105,7 +105,7 @@ export default {
       } else {
 
         axios
-          .post("http://localhost:3000/v1/user/signup", {
+          .post(import.meta.env.VITE_API_ENDPOINT+"/user/signup", {
             name: localStorage.getItem('fullname'),
             email: route.query.email,
             password: localStorage.getItem('password'),
@@ -134,7 +134,7 @@ export default {
 
 
         axios
-          .post("http://localhost:3000/v1/user/signup/verify_email", {
+          .post(import.meta.env.VITE_API_ENDPOINT+"/user/signup/verify_email", {
             email: route.query.email,
             code: Number(otp.value),
           })
@@ -155,7 +155,7 @@ export default {
           });
       } else {
         axios
-          .post("http://localhost:3000/v1/user/forget_password/verify_email", {
+          .post(import.meta.env.VITE_API_ENDPOINT+"/user/forget_password/verify_email", {
             email: route.query.email,
             code: Number(otp.value),
           })

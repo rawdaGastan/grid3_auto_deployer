@@ -76,7 +76,7 @@ export default {
             loading.value = true;
 
             axios
-                .put("http://localhost:3000/v1/user/change_password", {
+                .put(import.meta.env.VITE_API_ENDPOINT+"/user/change_password", {
                     email: route.query.email,
                     password: newpassword.value,
                     confirm_password: cnewpassword.value,

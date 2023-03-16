@@ -94,7 +94,7 @@ export default {
 
       loading.value = true;
       axios
-        .post("http://localhost:3000/v1/user/signup", {
+        .post(import.meta.env.VITE_API_ENDPOINT+"/user/signup", {
           name: fullname.value,
           email: email.value,
           password: password.value,

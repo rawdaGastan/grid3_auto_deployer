@@ -84,9 +84,8 @@ export default {
             if (!verify.value) return;
 
             loading.value = true;
-
             axios
-                .post("http://localhost:3000/v1/user/signin", {
+                .post(import.meta.env.VITE_API_ENDPOINT+"/user/signin", {
                     email: email.value,
                     password: password.value,
                 })

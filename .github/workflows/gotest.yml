@@ -4,13 +4,16 @@ on:
   push:
     paths:
       - server/**
+  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: server
-        run: cd server
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3.3.0
+        with:
+          submodules: "true"
 
       - name: Set up Go
         uses: actions/setup-go@v3
@@ -18,14 +21,9 @@ jobs:
           go-version: "1.19"
         id: go
 
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v3.3.0
-        with:
-          submodules: "true"
-
       - name: Get dependencies
         run: |
-          go mod download
+          cd server && go mod download
 
       - name: Test
-        run: go test -v ./...
+        run: cd server && go test -v ./...

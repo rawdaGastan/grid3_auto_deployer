@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - server/**
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -10,8 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: server
-        run: cd server
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3.3.0
+        with:
+          submodules: "true"
 
       - name: Set up Go
         uses: actions/setup-go@v3
@@ -19,15 +22,11 @@ jobs:
           go-version: "1.19"
         id: go
 
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v3.3.0
-        with:
-          submodules: "true"
-
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          args: --timeout 3m --verbose
+          args: --timeout 3m --verbose 
+          working-directory: server
 
       - name: gofmt
         uses: Jerome1337/gofmt-action@v1.0.5

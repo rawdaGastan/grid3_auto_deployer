@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - client/**
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -22,8 +23,8 @@ jobs:
       - name: client
         run: cd client
       - name: Yarn Install
-        run: yarn install
+        run: cd client && yarn install
       - name: ESLint
-        run: yarn check-eslint
+        run: cd client && yarn check-eslint
       - name: Prettier
-        run: yarn check-prettier
+        run: cd client && yarn check-prettier

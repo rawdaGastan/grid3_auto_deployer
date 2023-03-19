@@ -3,11 +3,9 @@ package routes
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/rawdaGastan/cloud4students/internal"
-	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rawdaGastan/cloud4students/models"
 )
 
@@ -20,7 +18,7 @@ type GenerateVoucherInput struct {
 
 // GenerateVoucherHandler generates a voucher by admin
 func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request) {
-	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
+	/*userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	user, err := r.db.GetUserByID(userID)
 	if err != nil {
 		writeNotFoundResponse(w, err)
@@ -31,11 +29,12 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 		writeErrResponse(w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
 		return
 	}
+	*/
 
 	var input GenerateVoucherInput
-	err = json.NewDecoder(req.Body).Decode(&input)
+	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
-		writeErrResponse(w, err)
+		writeErrResponse(w, err.Error())
 		return
 	}
 
@@ -47,11 +46,11 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 		VMs:     input.VMs,
 	}
 
-	err = r.db.CreateVoucher(v)
+	err = r.db.CreateVoucher(&v)
 	if err != nil {
-		writeErrResponse(w, err)
+		writeErrResponse(w, err.Error())
 		return
 	}
 
-	writeMsgResponse(w, "voucher is created successfully", map[string]string{"voucher": voucher})
+	writeMsgResponse(w, "Voucher is generated successfully", map[string]string{"voucher": voucher})
 }

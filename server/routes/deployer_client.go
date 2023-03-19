@@ -165,6 +165,7 @@ func (r *Router) deployVM(vmName, resources, sshKey string) (*workloads.VM, uint
 		NetworkName: network.Name,
 	}
 
+	// TODO set proper contexts
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(r.config.Token.Timeout)*time.Minute)
 	defer cancel()
 

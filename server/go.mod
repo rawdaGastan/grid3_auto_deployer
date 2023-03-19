@@ -11,7 +11,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.28.0
 	github.com/spf13/cobra v1.6.1
-	github.com/threefoldtech/grid3-go v0.0.0-20230307122952-a80f6715c7cb
+	github.com/threefoldtech/grid3-go v0.0.0-20230313121415-1da999636079
 	github.com/threefoldtech/grid_proxy_server v1.6.12
 	github.com/threefoldtech/zos v0.5.6-0.20230224113017-e887a6ca3fc5
 	golang.org/x/crypto v0.7.0

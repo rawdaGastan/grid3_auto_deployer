@@ -686,7 +686,7 @@ definitions:
         format: uuid
       vms:
         type: integer
-      kubernetes:
+      k8s:
         type: integer
 
   Vm:

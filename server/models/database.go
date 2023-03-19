@@ -2,6 +2,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"gorm.io/driver/sqlite"
@@ -142,14 +143,14 @@ func (d *DB) CreateVM(vm *VM) error {
 }
 
 // GetVMByID return vm by its id
-func (d *DB) GetVMByID(id int) (*VM, error) {
+func (d *DB) GetVMByID(id int) (VM, error) {
 	var vm VM
 	query := d.db.Model(VM{ID: id}).First(&vm)
 	if query.Error != nil {
-		return &vm, query.Error
+		return vm, query.Error
 	}
 
-	return &vm, nil
+	return vm, nil
 }
 
 // GetAllVms returns all vms of user
@@ -177,7 +178,7 @@ func (d *DB) DeleteAllVms(userID string) error {
 }
 
 // CreateQuota creates a new quota
-func (d *DB) CreateQuota(q Quota) error {
+func (d *DB) CreateQuota(q *Quota) error {
 	result := d.db.Create(&q)
 	return result.Error
 }
@@ -191,6 +192,9 @@ func (d *DB) UpdateUserQuota(userID string, vms, k8s int) error {
 // GetUserQuota gets user quota available (vms and k8s)
 func (d *DB) GetUserQuota(userID string) (Quota, error) {
 	var res Quota
+	var b []Quota
+	_ = d.db.Find(&b)
+	fmt.Printf("b: %v\n", b)
 	query := d.db.First(&res, "user_id = ?", userID)
 	if query.Error != nil {
 		return res, query.Error
@@ -200,7 +204,7 @@ func (d *DB) GetUserQuota(userID string) (Quota, error) {
 }
 
 // CreateVoucher creates a new voucher
-func (d *DB) CreateVoucher(v Voucher) error {
+func (d *DB) CreateVoucher(v *Voucher) error {
 	result := d.db.Create(&v)
 	return result.Error
 }

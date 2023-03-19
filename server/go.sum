@@ -1273,13 +1273,13 @@ github.com/threefoldtech/0-fs v1.3.1-0.20201203163303-d963de9adea7/go.mod h1:OPP
 github.com/threefoldtech/go-rmb v0.1.11-0.20220224131627-825c23c921d3/go.mod h1:iTDlnSja/nUsQ9XyrpOhm8hwvPMooeh80+tGC9TYCV0=
 github.com/threefoldtech/go-substrate-rpc-client/v4 v4.0.6-0.20230102154731-7c633b7d3c71 h1:vvoXPRI10quMOEXHKcakKhBZe+TlLXhNsh1wwX4cyk4=
 github.com/threefoldtech/go-substrate-rpc-client/v4 v4.0.6-0.20230102154731-7c633b7d3c71/go.mod h1:5g1oM4Zu3BOaLpsKQ+O8PAv2kNuq+kPcA1VzFbsSqxE=
-github.com/threefoldtech/grid3-go v0.0.0-20230307122952-a80f6715c7cb h1:NesySzke6NvwTwrFHT7dMNEjJZr5pMb3FkHT0W2QwrY=
-github.com/threefoldtech/grid3-go v0.0.0-20230307122952-a80f6715c7cb/go.mod h1:Q/WzUA6v6BnkIeYvRM9cbmdk7GAUWhubv90Vp40CBzM=
+github.com/threefoldtech/grid3-go v0.0.0-20230313121415-1da999636079 h1:xIlFlN5iLr42dEYHQJFFCtLcRwWwHUrotVzL7/seg6s=
+github.com/threefoldtech/grid3-go v0.0.0-20230313121415-1da999636079/go.mod h1:eVVyOez3TEW+HGWy9H2NpsmIRl2r7ofck9UFqwMA0yU=
 github.com/threefoldtech/grid_proxy_server v1.6.12 h1:kz16ZDPUC8w/03QqsyWlto+Ie0+Xnjx9NttgRr4oy+U=
 github.com/threefoldtech/grid_proxy_server v1.6.12/go.mod h1:CCj6+Y+8juSCp+FCtaYa1rZAYFAc+vrX3Mh+dzoc4m8=
 github.com/threefoldtech/rmb-sdk-go v0.0.0-20230214123537-4833a4e157e6/go.mod h1:ddt04wNV0lkrfijSa1x2nbEoyBO41WO0B0BFLIeP6Mg=
-github.com/threefoldtech/rmb-sdk-go v0.0.0-20230222091305-4c05c096b592 h1:ueYTG18SdoRYtOAd6VccRvZ9axemxw7hRRiyOYvb2pI=
-github.com/threefoldtech/rmb-sdk-go v0.0.0-20230222091305-4c05c096b592/go.mod h1:OFb7TpYhHa6YpWBJjsh6r7CX7uVbSPIJrk1QxlTT1jU=
+github.com/threefoldtech/rmb-sdk-go v1.0.1-0.20230308130815-83a645307186 h1:Wh2HLIlQulC+W8gAlovEpLWtOR9RAplxY28ESaURYZ8=
+github.com/threefoldtech/rmb-sdk-go v1.0.1-0.20230308130815-83a645307186/go.mod h1:OFb7TpYhHa6YpWBJjsh6r7CX7uVbSPIJrk1QxlTT1jU=
 github.com/threefoldtech/substrate-client v0.0.0-20220224131248-f56a2e9fa1d4/go.mod h1:Lpsz7gVNSdbWD8erfVh1AZv2wnProc7g/QHJiYp5lP8=
 github.com/threefoldtech/substrate-client v0.0.0-20220822132933-d0d75781793c/go.mod h1:XGsrSO/mdaDkP1ERv4+ccaNDsbU97u27f7p/iQpKrTA=
 github.com/threefoldtech/substrate-client v0.0.0-20220927111941-026e0cf92661/go.mod h1:U8sNNYpXyxEKuLUm4jTacuWu43vU0iu2l+K8GXIcbLo=

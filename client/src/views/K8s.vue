@@ -34,7 +34,7 @@
             <template v-slot:default="{ isActive }">
               <v-card width="100%" size="100%" class="mx-auto pa-5">
                 <v-form
-                  v-model="verify"
+                  v-model="workerVerify"
                   ref="wForm"
                   @submit.prevent="deployWorker"
                 >
@@ -65,7 +65,7 @@
                     />
                     <BaseButton
                       type="submit"
-                      :disabled="!verify"
+                      :disabled="!workerVerify"
                       class="bg-primary"
                       @click="isActive.value = false"
                       text="Save"
@@ -199,6 +199,7 @@ export default {
   },
   setup() {
     const verify = ref(false);
+    const workerVerify = ref(false);
     const k8Name = ref(null);
     const rules = ref([
       (value) => {
@@ -319,6 +320,7 @@ export default {
     });
     return {
       verify,
+      workerVerify,
       k8Name,
       selectedResource,
       resources,

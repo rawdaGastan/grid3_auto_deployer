@@ -18,11 +18,11 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "yarn"
-          cache-dependency-path: ./client/yarn.lock
+          cache: 'npm'
+          cache-dependency-path: ./client/package-lock.json
+      - name: client
+        run: cd client
       - name: Yarn Install
         run: cd client && yarn install
       - name: ESLint
-        run: cd client && yarn check-eslint
-      - name: Prettier
-        run: cd client && yarn check-prettier
+        run: cd client && yarn lint

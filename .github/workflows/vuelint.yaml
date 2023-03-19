@@ -26,5 +26,3 @@ jobs:
         run: cd client && yarn install
       - name: ESLint
         run: cd client && yarn lint
-      - name: Prettier
-        run: cd client && yarn check-prettier

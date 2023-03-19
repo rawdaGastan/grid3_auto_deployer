@@ -12,7 +12,6 @@ RUN yarn install
 RUN echo "VITE_API_ENDPOINT=$VITE_API_ENDPOINT" >> /app/.env
 RUN yarn run build
 
-
 # stage 2
 FROM nginx
 RUN mkdir /app

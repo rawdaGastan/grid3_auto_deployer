@@ -3,63 +3,6 @@
     <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
       Master
     </h5>
-    <v-row justify="end">
-      <v-col cols="auto">
-        <v-dialog transition="dialog-top-transition" max-width="500">
-          <template v-slot:activator="{ props }">
-            <BaseButton
-              color="primary"
-              v-bind="props"
-              icon="fa-plus"
-              text="workers"
-            />
-          </template>
-          <template v-slot:default="{ isActive }">
-            <v-card width="100%" size="100%" class="mx-auto pa-5">
-              <v-form
-                v-model="verify"
-                ref="wForm"
-                @submit.prevent="deployWorker"
-              >
-                <v-card-text>
-                  <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
-                    Worker
-                  </h5>
-                  <BaseInput
-                    placeholder="Name"
-                    :modelValue="workerName"
-                    :rules="rules"
-                    @update:modelValue="workerName = $event"
-                  />
-                  <BaseSelect
-                    placeholder="Recources"
-                    :modelValue="workerSelRecources"
-                    :items="workerRecources"
-                    :rules="rules"
-                    class="my-3"
-                    @update:modelValue="workerSelRecources = $event"
-                  />
-                </v-card-text>
-                <v-card-actions class="justify-center">
-                  <BaseButton
-                    class="bg-primary mr-5"
-                    @click="isActive.value = false"
-                    text="Cancel"
-                  />
-                  <BaseButton
-                    type="submit"
-                    :disabled="!verify"
-                    class="bg-primary"
-                    @click="isActive.value = false"
-                    text="Save"
-                  />
-                </v-card-actions>
-              </v-form>
-            </v-card>
-          </template>
-        </v-dialog>
-      </v-col>
-    </v-row>
     <v-row justify="center">
       <v-col cols="12" sm="6">
         <v-form v-model="verify" ref="form" @submit.prevent="deployK8s">
@@ -71,12 +14,68 @@
           />
           <BaseSelect
             :modelValue="selectedResource"
-            :items="recources"
-            placeholder="Recources"
+            :items="resources"
+            placeholder="Resources"
             :rules="rules"
             class="my-3"
             @update:modelValue="selectedResource = $event"
           />
+          <v-dialog transition="dialog-top-transition" max-width="500">
+            <template v-slot:activator="{ props }">
+              <BaseButton
+                color="primary"
+                class="d-block ml-auto"
+                v-bind="props"
+                variant="text"
+                icon="fa-plus"
+                text="workers"
+              />
+            </template>
+            <template v-slot:default="{ isActive }">
+              <v-card width="100%" size="100%" class="mx-auto pa-5">
+                <v-form
+                  v-model="verify"
+                  ref="wForm"
+                  @submit.prevent="deployWorker"
+                >
+                  <v-card-text>
+                    <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
+                      Worker
+                    </h5>
+                    <BaseInput
+                      placeholder="Name"
+                      :modelValue="workerName"
+                      :rules="rules"
+                      @update:modelValue="workerName = $event"
+                    />
+                    <BaseSelect
+                      placeholder="Resources"
+                      :modelValue="workerSelResources"
+                      :items="workerResources"
+                      :rules="rules"
+                      class="my-3"
+                      @update:modelValue="workerSelResources = $event"
+                    />
+                  </v-card-text>
+                  <v-card-actions class="justify-center">
+                    <BaseButton
+                      class="bg-primary mr-5"
+                      @click="isActive.value = false"
+                      text="Cancel"
+                    />
+                    <BaseButton
+                      type="submit"
+                      :disabled="!verify"
+                      class="bg-primary"
+                      @click="isActive.value = false"
+                      text="Save"
+
+                    />
+                  </v-card-actions>
+                </v-form>
+              </v-card>
+            </template>
+          </v-dialog>
           <BaseButton
             type="submit"
             :disabled="!verify"
@@ -207,27 +206,20 @@ export default {
         return "This field is required.";
       },
     ]);
-    const headers = ref([
-      "ID",
-      "Name",
-      "Disk (sru)",
-      "RAM (mru)",
-      "CPU (cru)",
-      "IP",
-    ]);
+    const headers = ref(["ID", "Name", "Disk (SSD)", "RAM (GB)", "CPU", "IP"]);
     const selectedResource = ref(null);
-    const recources = ref([
+    const resources = ref([
       { title: "Small K8s (1 CPU, 2MB, 5GB)", value: "small" },
       { title: "Medium K8s (2 CPU, 4MB, 10GB)", value: "medium" },
       { title: "Large K8s (4 CPU, 8MB, 15GB)", value: "large" },
     ]);
     const workerName = ref(null);
-    const workerRecources = ref([
+    const workerResources = ref([
       { title: "Small K8s (1 CPU, 2MB, 5GB)", value: "small" },
       { title: "Medium K8s (2 CPU, 4MB, 10GB)", value: "medium" },
       { title: "Large K8s (4 CPU, 8MB, 15GB)", value: "large" },
     ]);
-    const workerSelRecources = ref(null);
+    const workerSelResources = ref(null);
     const worker = ref([]);
     const loading = ref(false);
     const results = ref([]);
@@ -240,10 +232,10 @@ export default {
 
     const getK8s = () => {
       userService
-      .getK8s()
-      .then((response) => {
-        const { data } = response.data;
-        results.value = data;
+        .getK8s()
+        .then((response) => {
+          const { data } = response.data;
+          results.value = data;
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -254,7 +246,7 @@ export default {
     const deployWorker = () => {
       worker.value.push({
         name: workerName.value,
-        recources: workerSelRecources.value,
+        resources: workerSelResources.value,
       });
       wForm.value.reset();
     };
@@ -329,11 +321,11 @@ export default {
       verify,
       k8Name,
       selectedResource,
-      recources,
+      resources,
       headers,
       workerName,
-      workerRecources,
-      workerSelRecources,
+      workerResources,
+      workerSelResources,
       worker,
       loading,
       rules,

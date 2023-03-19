@@ -14,9 +14,9 @@
           />
           <BaseSelect
             :modelValue="selectedResource"
-            :items="recources"
+            :items="resources"
             :reduce="(sel) => sel.value"
-            placeholder="Recources"
+            placeholder="Resources"
             :rules="rules"
             @update:modelValue="selectedResource = $event"
           />
@@ -115,7 +115,7 @@ export default {
     ]);
     const confirm = ref(null);
     const selectedResource = ref(undefined);
-    const recources = ref([
+    const resources = ref([
       { title: "Small VM (1 CPU, 2MB, 5GB)", value: "small" },
       { title: "Medium VM (2 CPU, 4MB, 10GB)", value: "medium" },
       { title: "Large VM (4 CPU, 8MB, 15GB)", value: "large" },
@@ -123,9 +123,9 @@ export default {
     const headers = ref([
       "ID",
       "Name",
-      "Disk (sru)",
-      "RAM (mru)",
-      "CPU (cru)",
+      "Disk (SSD)",
+      "RAM (GB)",
+      "CPU",
       "IP",
     ]);
     const toast = ref(null);
@@ -220,7 +220,7 @@ export default {
       verify,
       name,
       selectedResource,
-      recources,
+      resources,
       loading,
       deLoading,
       rules,

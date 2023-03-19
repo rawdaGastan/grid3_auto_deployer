@@ -47,7 +47,7 @@
             <BaseButton
               class="bg-primary text-capitalize"
               :disabled="!verify"
-              text="Activate"
+              text="Apply Voucher"
               @click="activateVoucher"
             />
           </div>

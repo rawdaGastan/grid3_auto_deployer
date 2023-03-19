@@ -9,9 +9,12 @@ COPY . /app/
 # Install yarn and build project
 RUN yarn cache clean
 RUN yarn install
+RUN echo "VITE_API_ENDPOINT=$VITE_API_ENDPOINT" >> /app/.env
 RUN yarn run build
 
+
 # stage 2
-FROM nginx:1.19-alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-EXPOSE 8080
+FROM nginx
+RUN mkdir /app
+COPY --from=build /app/dist /app
+COPY nginx.conf /etc/nginx/nginx.conf

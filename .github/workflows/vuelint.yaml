@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - client/**
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -18,11 +19,10 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
-      - name: client
-        run: cd client
+          cache-dependency-path: ./client/yarn.lock
       - name: Yarn Install
-        run: yarn install
+        run: cd client && yarn install
       - name: ESLint
-        run: yarn check-eslint
+        run: cd client && yarn check-eslint
       - name: Prettier
-        run: yarn check-prettier
+        run: cd client && yarn check-prettier

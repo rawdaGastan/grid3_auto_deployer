@@ -1,5 +1,5 @@
 # stage 1
-FROM node:14.18.0-alpine as build
+FROM node:18.15.0-alpine as build
 
 WORKDIR /app
 
@@ -9,8 +9,12 @@ COPY . /app/
 # Install yarn and build project
 RUN yarn cache clean
 RUN yarn install
-RUN echo "VITE_API_ENDPOINT=$VITE_API_ENDPOINT" >> /app/.env
+
+# RUN export VITE_API_ENDPOINT="http://localhost:3000/v1"
+CMD echo "VITE_API_ENDPOINT=$VITE_API_ENDPOINT" >> /app/.env
 RUN yarn run build
+# RUN chmod +x /app/start.sh
+# ENTRYPOINT ["sh", "/app/start.sh"]
 
 # stage 2
 FROM nginx

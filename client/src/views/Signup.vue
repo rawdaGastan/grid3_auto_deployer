@@ -55,7 +55,7 @@ export default {
 
   setup() {
 
-    var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const router = useRouter();
     const verify = ref(false);
     const showPassword = ref(false);

@@ -6,7 +6,7 @@
       <h5 class="text-h5 text-md-h4 text-center mt-10 mb-0 secondary">
         Reset Password
       </h5>
-      <div class="text-body-2 mb-10 text-center font-weight-light">The verification code will be sent to the mailbox.
+      <div class="text-body-2 mb-10 text-center font-weight-light">The verification code will be sent to your mailbox.
       </div>
 
 
@@ -50,7 +50,7 @@ export default {
   },
 
   setup() {
-    var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const toast = ref(null);
 
     const router = useRouter();

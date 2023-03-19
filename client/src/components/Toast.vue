@@ -13,9 +13,7 @@
           hideProgressBar: true,
           toastBackgroundColor: color,
           timeout: 8000,
-          onClose: () => {
-            // console.log("log");
-          },
+      
         });
       };
   

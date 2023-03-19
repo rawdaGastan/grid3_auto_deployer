@@ -60,12 +60,10 @@ export default {
         Toast,
     },
     setup() {
-        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const verify = ref(false);
         const router = useRouter();
         const toast = ref(null);
-
         const showPassword = ref(false);
         const email = ref(null);
         const password = ref(null);
@@ -82,6 +80,7 @@ export default {
         ]);
         const onSubmit = () => {
             if (!verify.value) return;
+            // console.log(import.meta.env.VITE_API_ENDPOINT);
 
             loading.value = true;
             axios
@@ -98,6 +97,7 @@ export default {
                     //     });
                 })
                 .catch((error) => {
+                    console.log(error)
                     toast.value.toast(error.response.data.err, "#FF5252", "top-right");
 
                 })

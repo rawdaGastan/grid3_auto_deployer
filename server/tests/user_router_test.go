@@ -12,6 +12,7 @@ import (
 	"github.com/magiconair/properties/assert"
 	"github.com/rawdaGastan/cloud4students/internal"
 	"github.com/rawdaGastan/cloud4students/middlewares"
+	// "k8s.io/kubernetes/plugin/pkg/admission/namespace/exists"
 
 	// "github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rawdaGastan/cloud4students/models"
@@ -32,6 +33,12 @@ func tempDBFile(t testing.TB) string {
 
 // SetUp sets the needed configuration for testing
 func SetUp(t testing.TB) (r *routes.Router, db models.DB, configurations *internal.Configuration, version string) {
+	// DBNAME = /tmp/mydb.sqlite
+	// //first
+	// remove DBNAME if exists
+
+
+
 	file := tempDBFile(t)
 	data, err := internal.ReadConfFile("./config-temp.json")
 	if err != nil {
@@ -471,54 +478,102 @@ func TestGetUserHandler(t *testing.T) {
 	})
 }
 
-//TODO: 
-// func TestActivateVoucherHandler(t *testing.T) {
-// 	router, db, config, version := SetUp(t)
-// 	u := models.User{
-// 		Name:           "name",
-// 		Email:          "name@gmail.com",
-// 		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
-// 		Verified:       true,
-// 	}
-// 	err := db.CreateUser(&u)
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
+func TestActivateVoucherHandler(t *testing.T) {
+	router, db, config, version := SetUp(t)
+	u := models.User{
+		Name:           "name",
+		Email:          "name@gmail.com",
+		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		Verified:       true,
+	}
+	err := db.CreateUser(&u)
+	if err != nil {
+		t.Error(err)
+	}
 
-// 	t.Run("activate voucher ", func(t *testing.T) {
-// 		v := models.Voucher{
-// 			Voucher: "voucher",
-// 			K8s:     10,
-// 			VMs:     10,
-// 		}
-// 		err = db.CreateVoucher(&v)
-// 		if err != nil {
-// 			t.Error(err)
-// 		}
-// 		user, err := db.GetUserByEmail("name@gmail.com")
-// 		if err != nil {
-// 			t.Error(err)
-// 		}
-// 		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
-// 		if err != nil {
-// 			t.Error(err)
-// 		}
-// 		body := []byte(`{
-// 		"voucher" : "voucher"
-// 		}`)
-// 		request := httptest.NewRequest("GET", version+"/user/activate_voucher", bytes.NewBuffer(body))
-// 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
-// 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
-// 		newRequest := request.WithContext(ctx)
-// 		response := httptest.NewRecorder()
-// 		router.ActivateVoucherHandler(response, newRequest)
-// 		got := response.Body.String()
-// 		want := `{"msg":"Voucher is applied successfully","data":""}`
-// 		if got != want {
-// 			t.Errorf("error: got %q, want %q", got, want)
-// 		}
-// 		assert.Equal(t, response.Code, http.StatusOK)
+	t.Run("activate voucher ", func(t *testing.T) {
+		v := models.Voucher{
+			Voucher: "voucher",
+			K8s:     10,
+			VMs:     10,
+		}
+		err = db.CreateVoucher(&v)
+		if err != nil {
+			t.Error(err)
+		}
+		user, err := db.GetUserByEmail("name@gmail.com")
+		fmt.Printf("user: %v\n", user)
+		if err != nil {
+			t.Error(err)
+		}
+		err = db.CreateQuota(
+			&models.Quota{
+				UserID: user.ID.String(),
+				Vms:    10,
+				K8s:    10,
+			},
+		)
+		if err != nil {
+			t.Error(t)
+		}
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		if err != nil {
+			t.Error(err)
+		}
+		body := []byte(`{
+		"voucher" : "voucher"
+		}`)
+		request := httptest.NewRequest("PUT", version+"/user/activate_voucher", bytes.NewBuffer(body))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.ActivateVoucherHandler(response, newRequest)
+		got := response.Body.String()
+		want := `{"msg":"Voucher is applied successfully","data":""}`
+		if got != want {
+			t.Errorf("error: got %q, want %q", got, want)
+		}
+		assert.Equal(t, response.Code, http.StatusOK)
 
-// 	})
+	})
 
-// }
+	t.Run("apply wrong voucher ", func(t *testing.T) {
+		if err != nil {
+			t.Error(err)
+		}
+		user, err := db.GetUserByEmail("name@gmail.com")
+		fmt.Printf("user: %v\n", user)
+		if err != nil {
+			t.Error(err)
+		}
+		err = db.CreateQuota(
+			&models.Quota{
+				UserID: user.ID.String(),
+				Vms:    10,
+				K8s:    10,
+			},
+		)
+		if err != nil {
+			t.Error(t)
+		}
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		if err != nil {
+			t.Error(err)
+		}
+		body := []byte(`{
+		"voucher" : "voucher"
+		}`)
+		request := httptest.NewRequest("PUT", version+"/user/activate_voucher", bytes.NewBuffer(body))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.ActivateVoucherHandler(response, newRequest)
+		assert.Equal(t, response.Code, http.StatusInternalServerError)
+
+	})
+
+
+
+}

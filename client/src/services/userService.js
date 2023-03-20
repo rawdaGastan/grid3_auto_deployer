@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useRoute } from "vue-router";
 
 let token = localStorage.getItem("token");
 const authClient = axios.create({
@@ -16,15 +17,13 @@ async function refresh_token() {
   await authClient
     .post("/user/refresh_token")
     .then((response) => {
-      const access_token = response.data.data.access_token;
-      if (token !== access_token) {
-        console.log("signout");
-        localStorage.removeItem("token");
-      }
+      token = response.data.data.access_token;
       return token;
     })
-    .catch((response) => {
-      console.log(response.response.data.err);
+    .catch(() => {
+      const router = useRoute();
+      localStorage.removeItem('token')
+      router.push({ name: "Login" })
     });
 }
 

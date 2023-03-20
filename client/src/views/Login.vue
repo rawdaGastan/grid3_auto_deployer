@@ -52,7 +52,6 @@
 <script>
 import { ref } from "vue";
 import axios from "axios";
-import { useRouter } from "vue-router";
 import Toast from "@/components/Toast.vue";
 
 export default {
@@ -62,7 +61,6 @@ export default {
     setup() {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const verify = ref(false);
-        const router = useRouter();
         const toast = ref(null);
         const showPassword = ref(false);
         const email = ref(null);

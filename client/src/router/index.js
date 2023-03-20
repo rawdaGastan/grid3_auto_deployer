@@ -1,6 +1,5 @@
 // Composables
 import { createRouter, createWebHistory } from 'vue-router'
-import SignUp from '../views/Signup.vue'
 const routes = [{
     path: '/',
     component: () =>

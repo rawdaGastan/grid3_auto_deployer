@@ -40,7 +40,7 @@
     </v-row>
   </v-container>
 </template>
-  
+
 
 <script>
 import { ref } from "vue";
@@ -100,7 +100,7 @@ export default {
           password: password.value,
           confirm_password: cpassword.value,
         })
-        .then((response) => {
+        .then(() => {
 
           localStorage.setItem('fullname', fullname.value);
           localStorage.setItem('password', password.value);

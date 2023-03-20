@@ -62,7 +62,7 @@
 ### Acceptance Criteria :
     - User can cancel any specific deployment or the whole deployment easily from the interface
     - If there's any error, all logs of deployment will be shown to the user
-    - Cancelled deployments won't be returned in user's quota
+    - Cancelled deployments won't be returned in user's quota ??
 ---
 
 

@@ -18,7 +18,6 @@ export default {
     const clear = () => {
       clearToasts();
     };
-
     return { toast, clear };
   },
 };

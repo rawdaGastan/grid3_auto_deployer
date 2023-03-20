@@ -35,9 +35,7 @@ func tempDBFile(t testing.TB) string {
 func SetUp(t testing.TB) (r *routes.Router, db models.DB, configurations *internal.Configuration, version string) {
 	// DBNAME = /tmp/mydb.sqlite
 	// //first
-	// remove DBNAME if exists
-
-
+	// remove DBNAME if exists //TODO: remove tempDB file && add teardown testing.m (terraform wiki --> developer setup)
 
 	file := tempDBFile(t)
 	data, err := internal.ReadConfFile("./config-temp.json")

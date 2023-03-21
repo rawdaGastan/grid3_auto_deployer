@@ -148,7 +148,7 @@ func (r *Router) K8sDeleteHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = r.cancelDeployment(uint64(cluster.ClusterContract), uint64(cluster.NetworkContract))
+	err = r.CancelDeployment(uint64(cluster.ClusterContract), uint64(cluster.NetworkContract))
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return
@@ -173,7 +173,7 @@ func (r *Router) K8sDeleteAllHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	for _, cluster := range clusters {
-		err = r.cancelDeployment(uint64(cluster.ClusterContract), uint64(cluster.NetworkContract))
+		err = r.CancelDeployment(uint64(cluster.ClusterContract), uint64(cluster.NetworkContract))
 		if err != nil {
 			writeErrResponse(w, err.Error())
 			return

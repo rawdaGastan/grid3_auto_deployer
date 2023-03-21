@@ -191,7 +191,8 @@ func (r *Router) deployVM(vmName, resources, sshKey string) (*workloads.VM, uint
 	return &loadedVM, dl.ContractID, network.NodeDeploymentID[nodeID], uint64(disk.SizeGB), nil
 }
 
-func (r *Router) cancelDeployment(contractID uint64, netContractID uint64) error {
+// CancelDeployment cancel deployments from grid
+func (r *Router) CancelDeployment(contractID uint64, netContractID uint64) error {
 	// cancel deployment
 	err := r.tfPluginClient.SubstrateConn.CancelContract(r.tfPluginClient.Identity, contractID)
 	if err != nil {

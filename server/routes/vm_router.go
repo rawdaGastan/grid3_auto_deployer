@@ -148,7 +148,7 @@ func (r *Router) DeleteVM(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = r.cancelDeployment(vm.ContractID, vm.NetworkContractID)
+	err = r.CancelDeployment(vm.ContractID, vm.NetworkContractID)
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return
@@ -173,7 +173,7 @@ func (r *Router) DeleteAllVMs(w http.ResponseWriter, req *http.Request) {
 	}
 
 	for _, vm := range vms {
-		err = r.cancelDeployment(vm.ContractID, vm.NetworkContractID)
+		err = r.CancelDeployment(vm.ContractID, vm.NetworkContractID)
 		if err != nil {
 			writeErrResponse(w, err.Error())
 			return

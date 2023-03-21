@@ -541,7 +541,7 @@ func TestActivateVoucherHandler(t *testing.T) {
 			},
 		)
 		if err != nil {
-			t.Error(t)
+			t.Error(err)
 		}
 		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
 		if err != nil {

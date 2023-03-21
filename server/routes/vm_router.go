@@ -52,7 +52,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		writeErrResponse(w, "ssh key is required")
 		return
 	}
-
+	fmt.Println("before deployVM")
 	vm, contractID, networkContractID, diskSize, err := r.deployVM(input.Name, input.Resources, user.SSHKey)
 	if err != nil {
 		writeErrResponse(w, err.Error())

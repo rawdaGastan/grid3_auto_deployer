@@ -7,14 +7,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+
 	"testing"
 
 	"github.com/magiconair/properties/assert"
 	"github.com/rawdaGastan/cloud4students/internal"
 	"github.com/rawdaGastan/cloud4students/middlewares"
-	// "k8s.io/kubernetes/plugin/pkg/admission/namespace/exists"
 
-	// "github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rawdaGastan/cloud4students/routes"
 	"github.com/threefoldtech/grid3-go/deployer"
@@ -33,11 +32,11 @@ func tempDBFile(t testing.TB) string {
 
 // SetUp sets the needed configuration for testing
 func SetUp(t testing.TB) (r *routes.Router, db models.DB, configurations *internal.Configuration, version string) {
-	// DBNAME = /tmp/mydb.sqlite
-	// //first
-	// remove DBNAME if exists //TODO: remove tempDB file && add teardown testing.m (terraform wiki --> developer setup)
-
-	file := tempDBFile(t)
+	file := "testing.db"
+	_, err := os.OpenFile("testing.db", os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+	if err != nil {
+		return
+	}
 	data, err := internal.ReadConfFile("./config-temp.json")
 	if err != nil {
 		return
@@ -571,7 +570,5 @@ func TestActivateVoucherHandler(t *testing.T) {
 		assert.Equal(t, response.Code, http.StatusInternalServerError)
 
 	})
-
-
 
 }

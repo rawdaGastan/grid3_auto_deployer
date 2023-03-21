@@ -29,7 +29,7 @@ func TestParseConf(t *testing.T) {
 			Password: "iqpfshurvllcknpl",
 		},
 		Account: GridAccount{
-			Mnemonics: "winner giant reward damage expose pulse recipe manual brand volcano dry avoid",
+			Mnemonics: "secret add bag cluster deposit beach illness letter crouch position rain arctic",
 		},
 	}
 	got, err := ParseConf(data)

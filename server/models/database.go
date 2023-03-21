@@ -23,7 +23,6 @@ func NewDB() DB {
 
 // Connect connects to database file
 func (d *DB) Connect(file string) error {
-
 	gormDB, err := gorm.Open(sqlite.Open(file), &gorm.Config{})
 	if err != nil {
 		return err

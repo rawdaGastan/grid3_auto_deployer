@@ -19,21 +19,10 @@ import (
 	"github.com/threefoldtech/grid3-go/deployer"
 )
 
-// tempDBFile create temporary DB file for testing
-func tempDBFile(t testing.TB) string {
-	file, err := os.CreateTemp("", "testing")
-	if err != nil {
-		t.Fatalf("can't create temp file %q", err.Error())
-	}
-	defer file.Close()
-	defer os.Remove(file.Name())
-	return file.Name()
-}
-
 // SetUp sets the needed configuration for testing
 func SetUp(t testing.TB) (r *routes.Router, db models.DB, configurations *internal.Configuration, version string) {
 	file := "testing.db"
-	_, err := os.OpenFile("testing.db", os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+	_, err := os.OpenFile(file, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
 	if err != nil {
 		return
 	}

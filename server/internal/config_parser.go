@@ -48,6 +48,7 @@ type GridAccount struct {
 	Network   string `json:"network"`
 }
 
+// Salt struct to hold salt for hashing
 type Salt struct {
 	Salt string `json:"salt"`
 }

@@ -78,7 +78,7 @@ func (r *Router) ListVouchersHandler(w http.ResponseWriter, req *http.Request) {
 
 	writeMsgResponse(w, "List of all vouchers", vouchers)
 }
-
+// ApproveVoucher approves a voucher by admin
 func (r *Router) ApproveVoucher(w http.ResponseWriter, req *http.Request) {
 	/*userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	user, err := r.db.GetUserByID(userID)
@@ -103,7 +103,7 @@ func (r *Router) ApproveVoucher(w http.ResponseWriter, req *http.Request) {
 	fmt.Printf("voucher: %v\n", voucher)
 	writeMsgResponse(w, "Confirmation mail's sent to the user", "")
 }
-
+// ApproveAllVouchers approves all vouchers by admin
 func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
 	/*userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	user, err := r.db.GetUserByID(userID)

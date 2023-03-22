@@ -135,6 +135,7 @@ func (d *DB) AddUserVoucher(id string, voucher string) error {
 	return d.DeactivateVoucher(voucher)
 }
 
+// GetVoucherByUserID returns voucher by its user id
 func (d *DB) GetVoucherByUserID(id string) (Voucher, error) {
 	var res Voucher
 	query := d.db.First(&res, "user_id = ?", id)
@@ -229,7 +230,7 @@ func (d *DB) GetVoucher(voucher string) (Voucher, error) {
 
 	return res, query.Error
 }
-
+// ListAllVouchers returns all vouchers to admin
 func (d *DB) ListAllVouchers() ([]Voucher, error) {
 	var res []Voucher
 	query := d.db.Find(&res)
@@ -239,7 +240,7 @@ func (d *DB) ListAllVouchers() ([]Voucher, error) {
 
 	return res, query.Error
 }
-
+// ActivateVoucher activates voucher by user id
 func (d *DB) ActivateVoucher(userID string) (string, error) {
 	var voucher Voucher
 	query := d.db.First(&voucher, "user_id = ?", userID).Update("approved", true)

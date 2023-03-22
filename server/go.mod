@@ -10,7 +10,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/magiconair/properties v1.8.4
 	github.com/pkg/errors v0.9.1
-	github.com/rs/zerolog v1.28.0
+	github.com/rs/zerolog v1.29.0
 	github.com/spf13/cobra v1.6.1
 	github.com/threefoldtech/grid3-go v0.0.0-20230313121415-1da999636079
 	github.com/threefoldtech/grid_proxy_server v1.6.12
@@ -40,8 +40,8 @@ require (
 	github.com/jbenet/go-base58 v0.0.0-20150317085156-6237cf65f3a6 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/mattn/go-colorable v0.1.12 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-sqlite3 v1.14.15 // indirect
 	github.com/mimoo/StrobeGo v0.0.0-20210601165009-122bf33a46e0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
@@ -49,7 +49,7 @@ require (
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/threefoldtech/rmb-sdk-go v1.0.1-0.20230308130815-83a645307186 // indirect
-	github.com/threefoldtech/substrate-client v0.1.2 // indirect
+	github.com/threefoldtech/substrate-client v0.1.3 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
 	github.com/vedhavyas/go-subkey v1.0.3 // indirect
 	golang.org/x/sys v0.6.0 // indirect
@@ -59,3 +59,5 @@ require (
 )
 
 replace github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.5 => github.com/threefoldtech/go-substrate-rpc-client/v4 v4.0.6-0.20230102154731-7c633b7d3c71
+
+replace github.com/threefoldtech/grid3-go v0.0.0-20230313121415-1da999636079 => ../../grid3_client_go

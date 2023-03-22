@@ -7,9 +7,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// HashPassword hashes password of user
-func HashPassword(password string) (string, error) { //TODO: add salt of password (more encryption)
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+// HashAndSaltPassword hashes password of user
+func HashAndSaltPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
 
 	if err != nil {
 		return "", fmt.Errorf("could not hash password %w", err)

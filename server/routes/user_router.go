@@ -21,6 +21,9 @@ type SignUpInput struct {
 	Email           string `json:"email" gorm:"unique" binding:"required"`
 	Password        string `json:"password" binding:"required"`
 	ConfirmPassword string `json:"confirm_password" binding:"required"`
+	TeamSize        int    `json:"team_size" binding:"required"`
+	ProjectDesc     string `json:"project_desc" binding:"required"`
+	College         string `json:"college" binding:"required"`
 }
 
 // VerifyCodeInput struct takes verification code from user
@@ -53,6 +56,12 @@ type UpdateUserInput struct {
 // EmailInput struct for user when forgetting password
 type EmailInput struct {
 	Email string `json:"email" binding:"required"`
+}
+
+// ApplyForVoucherInput struct for user to apply for voucher
+type ApplyForVoucherInput struct {
+	VMs    int    `json:"vms" binding:"required"`
+	Reason string `json:"reason" binding:"required"`
 }
 
 // AddVoucherInput struct for voucher applied by user
@@ -105,7 +114,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		writeErrResponse(w, err.Error())
 		return
 	}
-
+	fmt.Printf("code: %v\n", code)
 	// update code if user is not verified but exists
 	if getErr == nil {
 		if !user.Verified {
@@ -120,7 +129,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	// check if user doesn't exist
 	if getErr != nil {
 		// hash password
-		hashedPassword, err := internal.HashPassword(signUp.Password)
+		hashedPassword, err := internal.HashAndSaltPassword(signUp.Password)
 		if err != nil {
 			writeErrResponse(w, err.Error())
 			return
@@ -133,6 +142,9 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 			Verified:       false,
 			Code:           code,
 			SSHKey:         user.SSHKey,
+			TeamSize:       signUp.TeamSize,
+			ProjectDesc:    signUp.ProjectDesc,
+			College:        signUp.College,
 		}
 
 		err = r.db.CreateUser(&u)
@@ -145,7 +157,6 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		quota := models.Quota{
 			UserID: u.ID.String(),
 			Vms:    0,
-			K8s:    0,
 		}
 		err = r.db.CreateQuota(&quota)
 		if err != nil {
@@ -183,7 +194,7 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	if user.UpdatedAt.Add(time.Duration(r.config.MailSender.Timeout) * time.Second).Before(time.Now()) {
+	if user.UpdatedAt.Add(time.Duration(r.config.MailSender.Timeout) * time.Minute).Before(time.Now()) {
 		writeErrResponse(w, "Code has expired")
 		return
 	}
@@ -350,7 +361,7 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 	}
 
 	// hash password
-	hashedPassword, err := internal.HashPassword(data.Password)
+	hashedPassword, err := internal.HashAndSaltPassword(data.Password)
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return
@@ -394,7 +405,7 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// hash password
-		hashedPassword, err = internal.HashPassword(input.Password)
+		hashedPassword, err = internal.HashAndSaltPassword(input.Password)
 		if err != nil {
 			writeErrResponse(w, err.Error())
 			return
@@ -437,6 +448,48 @@ func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
 	writeMsgResponse(w, "User exists", map[string]interface{}{"user": user})
 }
 
+// ApplyForVoucherHandler makes user apply for voucher that would be accepted by admin
+func (r *Router) ApplyForVoucherHandler(w http.ResponseWriter, req *http.Request) {
+	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
+	userVoucher, err := r.db.GetVoucherByUserID(userID)
+	if err != nil {
+		writeErrResponse(w, err.Error())
+		return
+	}
+	if userVoucher.Approved {
+		writeErrResponse(w, "You already have a voucher")
+		return
+	}
+	if !userVoucher.Approved && userVoucher.Voucher != "" {
+		writeErrResponse(w, "You already have a voucher request, please wait for the confirmation mail")
+		return
+	}
+
+	var input ApplyForVoucherInput
+	err = json.NewDecoder(req.Body).Decode(&input)
+	if err != nil {
+		writeErrResponse(w, err.Error())
+		return
+	}
+	// generate voucher for user but can't use it until admin approves it
+	v := internal.GenerateRandomVoucher(5)
+	voucher := models.Voucher{
+		Voucher:  v,
+		UserID:   userID,
+		VMs:      input.VMs,
+		Reason:   input.Reason,
+		Approved: false,
+	}
+
+	err = r.db.CreateVoucher(&voucher)
+	if err != nil {
+		writeErrResponse(w, err.Error())
+		return
+	}
+
+	writeMsgResponse(w, "Voucher Request is being reviewed, you'll receive a confirmation mail soon", "")
+}
+
 // ActivateVoucherHandler makes user adds voucher to his account
 func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
@@ -460,8 +513,8 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	if voucherQuota.Used {
-		writeErrResponse(w, "Voucher is already used")
+	if !voucherQuota.Approved {
+		writeErrResponse(w, "Voucher not Approved yet")
 		return
 	}
 
@@ -471,7 +524,7 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	err = r.db.UpdateUserQuota(userID, oldQuota.Vms+voucherQuota.VMs, oldQuota.K8s+voucherQuota.K8s)
+	err = r.db.UpdateUserQuota(userID, oldQuota.Vms+voucherQuota.VMs)
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return

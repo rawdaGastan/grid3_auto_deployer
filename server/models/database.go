@@ -135,6 +135,16 @@ func (d *DB) AddUserVoucher(id string, voucher string) error {
 	return d.DeactivateVoucher(voucher)
 }
 
+func (d *DB) GetVoucherByUserID(id string) (Voucher, error) {
+	var res Voucher
+	query := d.db.First(&res, "user_id = ?", id)
+	if query.Error != nil {
+		return Voucher{}, query.Error
+	}
+
+	return res, nil
+}
+
 // CreateVM creates new vm
 func (d *DB) CreateVM(vm *VM) error {
 	result := d.db.Create(&vm)
@@ -184,12 +194,12 @@ func (d *DB) CreateQuota(q *Quota) error {
 }
 
 // UpdateUserQuota updates quota
-func (d *DB) UpdateUserQuota(userID string, vms, k8s int) error {
-	quota := Quota{userID, vms, k8s}
+func (d *DB) UpdateUserQuota(userID string, vms int) error {
+	quota := Quota{userID, vms}
 	return d.db.Debug().Model(Quota{}).Where("user_id = ?", userID).Updates(quota).Error
 }
 
-// GetUserQuota gets user quota available (vms and k8s)
+// GetUserQuota gets user quota available vms (vms will be used for both vms and k8s clusters)
 func (d *DB) GetUserQuota(userID string) (Quota, error) {
 	var res Quota
 	var b []Quota
@@ -218,6 +228,25 @@ func (d *DB) GetVoucher(voucher string) (Voucher, error) {
 	}
 
 	return res, query.Error
+}
+
+func (d *DB) ListAllVouchers() ([]Voucher, error) {
+	var res []Voucher
+	query := d.db.Find(&res)
+	if query.Error != nil {
+		return res, query.Error
+	}
+
+	return res, query.Error
+}
+
+func (d *DB) ActivateVoucher(userID string) (string, error) {
+	var voucher Voucher
+	query := d.db.First(&voucher, "user_id = ?", userID).Update("approved", true)
+	if query.Error != nil {
+		return "", query.Error
+	}
+	return voucher.Voucher, nil
 }
 
 // DeactivateVoucher if it is used

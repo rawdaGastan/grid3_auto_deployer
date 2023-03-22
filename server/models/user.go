@@ -19,6 +19,9 @@ type User struct {
 	Code           int       `json:"code"`
 	SSHKey         string    `json:"ssh_key"`
 	Verified       bool      `json:"verified"`
+	TeamSize       int       `json:"team_size" binding:"required"`
+	ProjectDesc    string    `json:"project_desc" binding:"required"`
+	College        string    `json:"college" binding:"required"`
 	// checks if user type is admin
 	Admin bool `json:"admin"`
 }

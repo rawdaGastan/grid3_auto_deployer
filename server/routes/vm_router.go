@@ -78,7 +78,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// update quota of user
-	err = r.db.UpdateUserQuota(userID, quota.Vms-neededQuota, quota.K8s)
+	err = r.db.UpdateUserQuota(userID, quota.Vms-neededQuota)
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return

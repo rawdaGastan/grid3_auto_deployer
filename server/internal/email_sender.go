@@ -31,7 +31,7 @@ func SendMail(sender string, password string, receiver string, timeout int) (int
 	code := rand.Intn(max-min) + min
 
 	subject := "Welcome to Cloud4Students\n\n"
-	body := fmt.Sprintf("We are so glad to have you here.\n\nYour code is %s\nThe code will expire in %d seconds.\nPlease don't share it with anyone.", strconv.Itoa(code), timeout)
+	body := fmt.Sprintf("We are so glad to have you here.\n\nYour code is %s\nThe code will expire in %d minutes.\nPlease don't share it with anyone.", strconv.Itoa(code), timeout)
 	message := subject + body
 
 	err = smtp.SendMail(

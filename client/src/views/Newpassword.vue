@@ -76,7 +76,7 @@ export default {
             loading.value = true;
 
             axios
-                .put(import.meta.env.VITE_API_ENDPOINT+"/user/change_password", {
+                .put(window.configs.vite_app_endpoint+"/user/change_password", {
                     email: route.query.email,
                     password: newpassword.value,
                     confirm_password: cnewpassword.value,

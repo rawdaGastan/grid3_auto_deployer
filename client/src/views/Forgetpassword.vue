@@ -69,7 +69,7 @@ export default {
       loading.value = true;
 
       axios
-        .post(import.meta.env.VITE_API_ENDPOINT+"/user/forgot_password", {
+        .post(window.configs.vite_app_endpoint+"/user/forgot_password", {
           email: email.value,
         })
         .then((response) => {

@@ -78,11 +78,10 @@ export default {
         ]);
         const onSubmit = () => {
             if (!verify.value) return;
-            // console.log(import.meta.env.VITE_API_ENDPOINT);
 
             loading.value = true;
             axios
-                .post(import.meta.env.VITE_API_ENDPOINT+"/user/signin", {
+                .post(window.configs.vite_app_endpoint+"/user/signin", {
                     email: email.value,
                     password: password.value,
                 })

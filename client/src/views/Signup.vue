@@ -94,7 +94,7 @@ export default {
 
       loading.value = true;
       axios
-        .post(import.meta.env.VITE_API_ENDPOINT+"/user/signup", {
+        .post(window.configs.vite_app_endpoint+"/user/signup", {
           name: fullname.value,
           email: email.value,
           password: password.value,

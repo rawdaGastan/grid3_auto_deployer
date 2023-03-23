@@ -15,7 +15,7 @@ type Configuration struct {
 	Token      JwtToken    `json:"token"`
 	Account    GridAccount `json:"account"`
 	Version    string      `json:"version"`
-	Salt       Salt        `json:"salt"`
+	Salt       string      `json:"salt"`
 }
 
 // Server struct to hold server's information
@@ -46,11 +46,6 @@ type JwtToken struct {
 type GridAccount struct {
 	Mnemonics string `json:"mnemonics"`
 	Network   string `json:"network"`
-}
-
-// Salt struct to hold salt for hashing
-type Salt struct {
-	Salt string `json:"salt"`
 }
 
 // ReadConfFile read configurations of json file

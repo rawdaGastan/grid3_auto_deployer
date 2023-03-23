@@ -129,7 +129,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	// check if user doesn't exist
 	if getErr != nil {
 		// hash password
-		hashedPassword, err := internal.HashAndSaltPassword(signUp.Password, r.config.Salt.Salt)
+		hashedPassword, err := internal.HashAndSaltPassword(signUp.Password, r.config.Salt)
 		if err != nil {
 			writeErrResponse(w, err.Error())
 			return
@@ -227,7 +227,7 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	match := internal.VerifyPassword(user.HashedPassword, input.Password, r.config.Salt.Salt)
+	match := internal.VerifyPassword(user.HashedPassword, input.Password, r.config.Salt)
 	if !match {
 		writeErrResponse(w, "Password is not correct")
 		return
@@ -361,7 +361,7 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 	}
 
 	// hash password
-	hashedPassword, err := internal.HashAndSaltPassword(data.Password, r.config.Salt.Salt)
+	hashedPassword, err := internal.HashAndSaltPassword(data.Password, r.config.Salt)
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return
@@ -405,7 +405,7 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// hash password
-		hashedPassword, err = internal.HashAndSaltPassword(input.Password, r.config.Salt.Salt)
+		hashedPassword, err = internal.HashAndSaltPassword(input.Password, r.config.Salt)
 		if err != nil {
 			writeErrResponse(w, err.Error())
 			return

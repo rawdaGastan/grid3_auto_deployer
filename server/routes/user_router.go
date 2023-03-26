@@ -23,6 +23,9 @@ type SignUpInput struct {
 	Email           string `json:"email" gorm:"unique" binding:"required"`
 	Password        string `json:"password" binding:"required"`
 	ConfirmPassword string `json:"confirm_password" binding:"required"`
+	TeamSize        int    `json:"team_size" binding:"required"`
+	ProjectDesc     string `json:"project_desc" binding:"required"`
+	College         string `json:"college" binding:"required"`
 }
 
 // VerifyCodeInput struct takes verification code from user
@@ -55,6 +58,12 @@ type UpdateUserInput struct {
 // EmailInput struct for user when forgetting password
 type EmailInput struct {
 	Email string `json:"email" binding:"required"`
+}
+
+// ApplyForVoucherInput struct for user to apply for voucher
+type ApplyForVoucherInput struct {
+	VMs    int    `json:"vms" binding:"required"`
+	Reason string `json:"reason" binding:"required"`
 }
 
 // AddVoucherInput struct for voucher applied by user
@@ -93,7 +102,6 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	user, getErr := r.db.GetUserByEmail(signUp.Email)
-	var code int
 	// check if user already exists and verified
 	if getErr == nil {
 		if user.Verified {
@@ -103,13 +111,15 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// send verification code if user is not verified or not exist
-	code, err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, signUp.Email, r.config.MailSender.Timeout)
+	code := internal.GenerateRandomCode()
+	message := internal.SignUpMailBody(code, r.config.MailSender.Timeout)
+	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, signUp.Email, message)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
-
+	fmt.Printf("code: %v\n", code)
 	// update code if user is not verified but exists
 	if getErr == nil {
 		if !user.Verified {
@@ -125,7 +135,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	// check if user doesn't exist
 	if getErr != nil {
 		// hash password
-		hashedPassword, err := internal.HashPassword(signUp.Password)
+		hashedPassword, err := internal.HashAndSaltPassword(signUp.Password, r.config.Salt)
 		if err != nil {
 			log.Error().Err(err).Send()
 			writeErrResponse(w, internalServerErrorMsg)
@@ -139,6 +149,9 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 			Verified:       false,
 			Code:           code,
 			SSHKey:         user.SSHKey,
+			TeamSize:       signUp.TeamSize,
+			ProjectDesc:    signUp.ProjectDesc,
+			College:        signUp.College,
 		}
 
 		err = r.db.CreateUser(&u)
@@ -152,7 +165,6 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		quota := models.Quota{
 			UserID: u.ID.String(),
 			Vms:    0,
-			K8s:    0,
 		}
 		err = r.db.CreateQuota(&quota)
 		if err != nil {
@@ -237,7 +249,7 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	match := internal.VerifyPassword(user.HashedPassword, input.Password)
+	match := internal.VerifyPassword(user.HashedPassword, input.Password, r.config.Salt)
 	if !match {
 		writeErrResponse(w, "Password is not correct")
 		return
@@ -318,7 +330,9 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 	}
 
 	// send verification code
-	code, err := internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, email.Email, r.config.MailSender.Timeout)
+	code := internal.GenerateRandomCode()
+	message := internal.SignUpMailBody(code, r.config.MailSender.Timeout)
+	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, email.Email, message)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, internalServerErrorMsg)
@@ -361,7 +375,7 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 		return
 	}
 
-	if user.UpdatedAt.Add(time.Duration(r.config.MailSender.Timeout) * time.Minute).Before(time.Now()) {
+	if user.UpdatedAt.Add(time.Duration(r.config.MailSender.Timeout) * time.Second).Before(time.Now()) {
 		writeErrResponse(w, "Code has expired")
 		return
 	}
@@ -385,7 +399,7 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 	}
 
 	// hash password
-	hashedPassword, err := internal.HashPassword(data.Password)
+	hashedPassword, err := internal.HashAndSaltPassword(data.Password, r.config.Salt)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, internalServerErrorMsg)
@@ -435,7 +449,7 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// hash password
-		hashedPassword, err = internal.HashPassword(input.Password)
+		hashedPassword, err = internal.HashAndSaltPassword(input.Password, r.config.Salt)
 		if err != nil {
 			log.Error().Err(err).Send()
 			writeErrResponse(w, internalServerErrorMsg)
@@ -489,6 +503,49 @@ func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
 	writeMsgResponse(w, "User exists", map[string]interface{}{"user": user})
 }
 
+// ApplyForVoucherHandler makes user apply for voucher that would be accepted by admin
+func (r *Router) ApplyForVoucherHandler(w http.ResponseWriter, req *http.Request) {
+	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
+	userVoucher, err := r.db.GetNotUsedVoucherByUserID(userID)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		writeErrResponse(w, err.Error())
+		return
+	}
+	if userVoucher.Voucher != "" {
+		if userVoucher.Approved {
+			writeErrResponse(w, "You have already a voucher")
+			return
+		}
+
+		writeErrResponse(w, "You have already a voucher request, please wait for the confirmation mail")
+		return
+	}
+
+	var input ApplyForVoucherInput
+	err = json.NewDecoder(req.Body).Decode(&input)
+	if err != nil {
+		writeErrResponse(w, err.Error())
+		return
+	}
+
+	// generate voucher for user but can't use it until admin approves it
+	v := internal.GenerateRandomVoucher(5)
+	voucher := models.Voucher{
+		Voucher: v,
+		UserID:  userID,
+		VMs:     input.VMs,
+		Reason:  input.Reason,
+	}
+
+	err = r.db.CreateVoucher(&voucher)
+	if err != nil {
+		writeErrResponse(w, err.Error())
+		return
+	}
+
+	writeMsgResponse(w, "Voucher request is being reviewed, you'll receive a confirmation mail soon", "")
+}
+
 // ActivateVoucherHandler makes user adds voucher to his account
 func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
@@ -523,6 +580,11 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	if !voucherQuota.Approved {
+		writeErrResponse(w, "Voucher is not Approved yet")
+		return
+	}
+
 	if voucherQuota.Used {
 		writeErrResponse(w, "Voucher is already used")
 		return
@@ -535,7 +597,7 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	err = r.db.UpdateUserQuota(userID, oldQuota.Vms+voucherQuota.VMs, oldQuota.K8s+voucherQuota.K8s)
+	err = r.db.UpdateUserQuota(userID, oldQuota.Vms+voucherQuota.VMs)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, internalServerErrorMsg)

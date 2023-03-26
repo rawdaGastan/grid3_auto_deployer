@@ -15,6 +15,7 @@ type Configuration struct {
 	Token      JwtToken    `json:"token"`
 	Account    GridAccount `json:"account"`
 	Version    string      `json:"version"`
+	Salt       string      `json:"salt"`
 }
 
 // Server struct to hold server's information

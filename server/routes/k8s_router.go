@@ -60,7 +60,7 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	neededQuota, err := validateK8sQuota(k8sDeployInput, quota.K8s)
+	neededQuota, err := validateK8sQuota(k8sDeployInput, quota.Vms)
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return
@@ -87,7 +87,7 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// update quota
-	err = r.db.UpdateUserQuota(userID, quota.Vms, quota.K8s-neededQuota)
+	err = r.db.UpdateUserQuota(userID, quota.Vms-neededQuota)
 	if err == gorm.ErrRecordNotFound {
 		writeNotFoundResponse(w, "User quota not found")
 		return

@@ -64,6 +64,7 @@ func NewServer(file string) (server *Server, err error) {
 	changePassword := r.HandleFunc(version+"/user/change_password", router.ChangePasswordHandler).Methods("PUT", "OPTIONS")
 	r.HandleFunc(version+"/user", router.UpdateUserHandler).Methods("PUT", "OPTIONS")
 	r.HandleFunc(version+"/user", router.GetUserHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/user/apply_voucher", router.ApplyForVoucherHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc(version+"/user/activate_voucher", router.ActivateVoucherHandler).Methods("PUT", "OPTIONS")
 
 	r.HandleFunc(version+"/quota", router.GetQuotaHandler).Methods("GET", "OPTIONS")
@@ -81,7 +82,10 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc(version+"/k8s/{id}", router.K8sDeleteHandler).Methods("DELETE", "OPTIONS")
 
 	// ADMIN ACCESS
-	r.HandleFunc(version+"/voucher", router.GenerateVoucherHandler).Methods("POST")
+	r.HandleFunc(version+"/voucher", router.GenerateVoucherHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc(version+"/voucher", router.ListVouchersHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/voucher/{id}", router.ApproveVoucherHandler).Methods("PUT", "OPTIONS")
+	r.HandleFunc(version+"/voucher", router.ApproveAllVouchers).Methods("PUT", "OPTIONS")
 
 	r.Use(middlewares.LoggingMW)
 	r.Use(middlewares.EnableCors)

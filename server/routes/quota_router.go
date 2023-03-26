@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// GenerateVoucherHandler generates a voucher by admin
+// GetQuotaHandler gets quota
 func (r *Router) GetQuotaHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 

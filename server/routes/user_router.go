@@ -77,27 +77,27 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&signUp)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	// validate mail
 	err = validator.ValidateMail(signUp.Email)
 	if err != nil {
-		writeErrResponse(w, fmt.Sprintf("Email '%s' isn't valid", signUp.Email))
+		writeErrResponse(w, http.StatusBadRequest, fmt.Sprintf("Email '%s' isn't valid", signUp.Email))
 		return
 	}
 
 	//validate password
 	err = validator.ValidatePassword(signUp.Password)
 	if err != nil {
-		writeErrResponse(w, "Password isn't valid")
+		writeErrResponse(w, http.StatusBadRequest, "Password isn't valid")
 		return
 	}
 
 	// password and confirm password should match
 	if signUp.Password != signUp.ConfirmPassword {
-		writeErrResponse(w, "Password and confirm password don't match")
+		writeErrResponse(w, http.StatusBadRequest, "Password and confirm password don't match")
 		return
 	}
 
@@ -105,7 +105,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	// check if user already exists and verified
 	if getErr == nil {
 		if user.Verified {
-			writeErrResponse(w, "User already exists")
+			writeErrResponse(w, http.StatusBadRequest, "User already exists")
 			return
 		}
 	}
@@ -116,7 +116,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, signUp.Email, message)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -126,7 +126,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 			_, err = r.db.UpdateUserByID(user.ID.String(), "", "", "", time.Now(), code)
 			if err != nil {
 				log.Error().Err(err).Send()
-				writeErrResponse(w, internalServerErrorMsg)
+				writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 				return
 			}
 		}
@@ -138,7 +138,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		hashedPassword, err := internal.HashAndSaltPassword(signUp.Password, r.config.Salt)
 		if err != nil {
 			log.Error().Err(err).Send()
-			writeErrResponse(w, internalServerErrorMsg)
+			writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 			return
 		}
 
@@ -157,7 +157,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		err = r.db.CreateUser(&u)
 		if err != nil {
 			log.Error().Err(err).Send()
-			writeErrResponse(w, internalServerErrorMsg)
+			writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 			return
 		}
 
@@ -169,7 +169,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		err = r.db.CreateQuota(&quota)
 		if err != nil {
 			log.Error().Err(err).Send()
-			writeErrResponse(w, internalServerErrorMsg)
+			writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 			return
 		}
 	}
@@ -184,39 +184,39 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	user, err := r.db.GetUserByEmail(data.Email)
 	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "Account not found")
+		writeErrResponse(w, http.StatusNotFound, "Account not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	if user.Verified {
-		writeErrResponse(w, "Account is already created")
+		writeErrResponse(w, http.StatusBadRequest, "Account is already created")
 		return
 	}
 
 	if user.Code != data.Code {
-		writeErrResponse(w, "Wrong code")
+		writeErrResponse(w, http.StatusBadRequest, "Wrong code")
 		return
 	}
 
 	if user.UpdatedAt.Add(time.Duration(r.config.MailSender.Timeout) * time.Second).Before(time.Now()) {
-		writeErrResponse(w, "Code has expired")
+		writeErrResponse(w, http.StatusBadRequest, "Code has expired")
 		return
 	}
 	err = r.db.UpdateVerification(user.ID.String(), true)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 	writeMsgResponse(w, "Account is created successfully", map[string]string{"user_id": user.ID.String()})
@@ -229,36 +229,36 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	user, err := r.db.GetUserByEmail(input.Email)
 	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, err.Error())
+		writeErrResponse(w, http.StatusNotFound, err.Error())
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	if !user.Verified {
-		writeErrResponse(w, "User is not verified yet")
+		writeErrResponse(w, http.StatusBadRequest, "User is not verified yet")
 		return
 	}
 
 	match := internal.VerifyPassword(user.HashedPassword, input.Password, r.config.Salt)
 	if !match {
-		writeErrResponse(w, "Password is not correct")
+		writeErrResponse(w, http.StatusBadRequest, "Password is not correct")
 		return
 	}
 
 	token, err := internal.CreateJWT(user.ID.String(), user.Email, r.config.Token.Secret, r.config.Token.Timeout)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -270,7 +270,7 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 	reqToken := req.Header.Get("Authorization")
 	splitToken := strings.Split(reqToken, "Bearer ")
 	if len(splitToken) != 2 {
-		writeErrResponse(w, "Token is required")
+		writeErrResponse(w, http.StatusBadRequest, "Token is required")
 		return
 	}
 	reqToken = splitToken[1]
@@ -281,11 +281,11 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 	})
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 	if !tkn.Valid {
-		writeErrResponse(w, fmt.Sprintf("Token '%s' is invalid", reqToken))
+		writeErrResponse(w, http.StatusUnauthorized, "Invalid token")
 		return
 	}
 
@@ -301,7 +301,7 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 	newToken, err := token.SignedString([]byte(r.config.Token.Secret))
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 	writeMsgResponse(w, "Token is refreshed successfully", map[string]string{"access_token": reqToken, "refresh_token": newToken})
@@ -314,18 +314,18 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 	err := json.NewDecoder(req.Body).Decode(&email)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read email data")
 		return
 	}
 
 	user, err := r.db.GetUserByEmail(email.Email)
 	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "User is not found")
+		writeErrResponse(w, http.StatusNotFound, "User is not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -335,14 +335,14 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, email.Email, message)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	_, err = r.db.UpdateUserByID(user.ID.String(), "", "", "", time.Now(), code)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 	writeMsgResponse(w, "Verification code has been sent to "+email.Email, "")
@@ -355,39 +355,39 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read password code")
 		return
 	}
 
 	user, err := r.db.GetUserByEmail(data.Email)
 	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "User not found")
+		writeErrResponse(w, http.StatusNotFound, "User not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	if user.Code != data.Code {
-		writeErrResponse(w, "Wrong code")
+		writeErrResponse(w, http.StatusUnauthorized, "Wrong code")
 		return
 	}
 
 	if user.UpdatedAt.Add(time.Duration(r.config.MailSender.Timeout) * time.Second).Before(time.Now()) {
-		writeErrResponse(w, "Code has expired")
+		writeErrResponse(w, http.StatusUnauthorized, "Code has expired")
 		return
 	}
 
 	err = r.db.UpdateForgetPassVerification(user.ID.String(), true)
 	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "User is not found")
+		writeErrResponse(w, http.StatusNotFound, "User is not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -400,28 +400,28 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read password data")
 		return
 	}
 
 	user, err := r.db.GetUserByEmail(data.Email)
 	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "User is not found")
+		writeErrResponse(w, http.StatusNotFound, "User is not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	if !user.ForgetPassVerified {
-		writeErrResponse(w, "You are not allowed to change password")
+		writeErrResponse(w, http.StatusBadRequest, "You are not allowed to change password")
 		return
 	}
 
 	if data.ConfirmPassword != data.Password {
-		writeErrResponse(w, "Password does not match confirm password")
+		writeErrResponse(w, http.StatusBadRequest, "Password does not match confirm password")
 		return
 	}
 
@@ -429,29 +429,18 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 	hashedPassword, err := internal.HashAndSaltPassword(data.Password, r.config.Salt)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	err = r.db.UpdatePassword(data.Email, hashedPassword)
 	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "User is not found")
+		writeErrResponse(w, http.StatusNotFound, "User is not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
-		return
-	}
-
-	err = r.db.UpdateForgetPassVerification(user.ID.String(), false)
-	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "User is not found")
-		return
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -465,7 +454,7 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read user data")
 		return
 	}
 	updates := 0
@@ -475,14 +464,14 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		updates++
 		// password and confirm password should match
 		if input.Password != input.ConfirmPassword {
-			writeErrResponse(w, "Password and confirm password don't match")
+			writeErrResponse(w, http.StatusBadRequest, "Password and confirm password don't match")
 			return
 		}
 
 		//validate passwords
 		err = validator.ValidatePassword(input.Password)
 		if err != nil {
-			writeErrResponse(w, "password isn't valid")
+			writeErrResponse(w, http.StatusBadRequest, "password isn't valid")
 			return
 		}
 
@@ -490,7 +479,7 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		hashedPassword, err = internal.HashAndSaltPassword(input.Password, r.config.Salt)
 		if err != nil {
 			log.Error().Err(err).Send()
-			writeErrResponse(w, internalServerErrorMsg)
+			writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 			return
 		}
 	}
@@ -513,12 +502,12 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 
 	userID, err = r.db.UpdateUserByID(userID, input.Name, hashedPassword, input.SSHKey, time.Time{}, 0)
 	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "User not found")
+		writeErrResponse(w, http.StatusNotFound, "User not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -530,12 +519,12 @@ func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	user, err := r.db.GetUserByID(userID)
 	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "User not found")
+		writeErrResponse(w, http.StatusNotFound, "User not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 	writeMsgResponse(w, "User exists", map[string]interface{}{"user": user})
@@ -546,23 +535,23 @@ func (r *Router) ApplyForVoucherHandler(w http.ResponseWriter, req *http.Request
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	userVoucher, err := r.db.GetNotUsedVoucherByUserID(userID)
 	if err != nil && err != gorm.ErrRecordNotFound {
-		writeErrResponse(w, err.Error())
+		writeErrResponse(w, http.StatusNotFound, "Voucher not found")
 		return
 	}
 	if userVoucher.Voucher != "" {
 		if userVoucher.Approved {
-			writeErrResponse(w, "You have already a voucher")
+			writeErrResponse(w, http.StatusBadRequest, "You have already a voucher")
 			return
 		}
 
-		writeErrResponse(w, "You have already a voucher request, please wait for the confirmation mail")
+		writeErrResponse(w, http.StatusBadRequest, "You have already a voucher request, please wait for the confirmation mail")
 		return
 	}
 
 	var input ApplyForVoucherInput
 	err = json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read voucher data")
 		return
 	}
 
@@ -577,7 +566,8 @@ func (r *Router) ApplyForVoucherHandler(w http.ResponseWriter, req *http.Request
 
 	err = r.db.CreateVoucher(&voucher)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -592,53 +582,53 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read voucher data")
 		return
 	}
 
 	oldQuota, err := r.db.GetUserQuota(userID)
 	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "User quota not found")
+		writeErrResponse(w, http.StatusNotFound, "User quota not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	voucherQuota, err := r.db.GetVoucher(input.Voucher)
 	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "User voucher not found")
+		writeErrResponse(w, http.StatusNotFound, "User voucher not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	if !voucherQuota.Approved {
-		writeErrResponse(w, "Voucher is not Approved yet")
+		writeErrResponse(w, http.StatusBadRequest, "Voucher is not Approved yet")
 		return
 	}
 
 	if voucherQuota.Used {
-		writeErrResponse(w, "Voucher is already used")
+		writeErrResponse(w, http.StatusBadRequest, "Voucher is already used")
 		return
 	}
 
 	err = r.db.AddUserVoucher(userID, input.Voucher)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	err = r.db.UpdateUserQuota(userID, oldQuota.Vms+voucherQuota.VMs)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 

@@ -444,6 +444,17 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
+	err = r.db.UpdateForgetPassVerification(user.ID.String(), false)
+	if err == gorm.ErrRecordNotFound {
+		writeErrResponse(w, http.StatusNotFound, "User is not found")
+		return
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
 	writeMsgResponse(w, "Password is updated successfully", "")
 }
 

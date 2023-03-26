@@ -8,27 +8,27 @@
 
     - User can create account on the website 
     - Account would be verified via code sent to the user
-    - user should input the verification code within 5 minutes
+    - user should input the verification code within 60 seconds
 ---
 
 ## Scenario 2
 
-    - As a user I should be Login with my email and password and apply for forgot password
+    - As a user I should sign in with my email and password and apply for forgot password
 
 ### Acceptance Criteria
 
-    - User can login to the website with the right email and password 
+    - User can sign in to the website with the right email and password 
     - If user forgot the password, it should be changed
-    - user would receive verification code within 5 minutes and then would be    able to update the password
+    - user would receive verification code within 60 seconds and then would be able to update the password
 ---
 
 ## Scenario 3
 
-    - As a user I should be able to update my data anytime (name, password)
+    - As a user I should be able to update my data anytime (name, password, ssh_key)
 
 ### Acceptance Criteria
 
-    - User can login then go to the profile page to update his data such as name and password
+    - User can login then go to the profile page to update his data such as name, password and ssh_key
     - User can't update his email
 ---
 
@@ -53,7 +53,7 @@
 
 ## Scenario 6
 
-    - As a user I should be to apply for voucher to use the grid for deployment
+    - As a user I should be able to apply for a voucher to use the grid for deployment
 
 ### Acceptance Criteria
 
@@ -63,16 +63,25 @@
 
 ## Scenario 7
 
+    - As a user I should be able to activate a voucher to use the grid for deployment
+
+### Acceptance Criteria
+
+    - User can activate a voucher from the interface using profile page
+---
+
+## Scenario 8
+
     - As a user I expect to get all information about the voucher, used resources, and remaining quota 
 
 ### Acceptance Criteria
 
-    - User should get all information about the voucher and its available resources (vms and k8s)
-    - Each user will have certain numbers of vms and k8s based on the voucher 
+    - User should get all information about the voucher and its available resources (vms)
+    - Each user will have certain numbers of vms based on the voucher 
     - Each user should know how quota is calculated
 ---
 
-## Scenario 8
+## Scenario 9
 
     - As a user I expect to know all about how to use the website
 
@@ -81,7 +90,7 @@
     - User should know all about the website and how to use it, apply for vouchers, deploy and so on
 ---
 
-## Scenario 9
+## Scenario 10
 
     - As a user I expect to deploy fast and easily without any complex steps 
 
@@ -92,7 +101,7 @@
     - If there's any error, all logs of deployment will be shown to the user
 ---
 
-## Scenario 10
+## Scenario 11
 
     - As a user I expect to cancel my deployments anytime 
 
@@ -100,5 +109,4 @@
 
     - User can cancel any specific deployment or the whole deployment easily from the interface
     - If there's any error, all logs of deployment will be shown to the user
-    - Cancelled deployments won't be returned in user's quota ??
 ---

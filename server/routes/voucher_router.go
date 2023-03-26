@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/rawdaGastan/cloud4students/internal"
@@ -56,6 +57,13 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	_, err = r.db.ApproveVoucher(v.ID)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
 	writeMsgResponse(w, "Voucher is generated successfully", map[string]string{"voucher": voucher})
 }
 
@@ -101,15 +109,13 @@ func (r *Router) ApproveVoucherHandler(w http.ResponseWriter, req *http.Request)
 	*/
 
 	// get voucher id from url
-	id := mux.Vars(req)["id"]
-	voucher, err := r.db.ApproveVoucher(id)
+	id, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
-		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read vm id")
 		return
 	}
 
-	user, err := r.db.GetUserByID(voucher.UserID)
+	voucher, err := r.db.GetVoucherByID(id)
 	if err == gorm.ErrRecordNotFound {
 		writeErrResponse(w, http.StatusNotFound, "User not found")
 		return
@@ -120,7 +126,30 @@ func (r *Router) ApproveVoucherHandler(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	subject, body := internal.ApprovedVoucherMailContent(voucher.Voucher, user.Name)
+	if voucher.Approved {
+		writeErrResponse(w, http.StatusBadRequest, "Voucher is already approved")
+		return
+	}
+
+	approvedVoucher, err := r.db.ApproveVoucher(id)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	user, err := r.db.GetUserByID(approvedVoucher.UserID)
+	if err == gorm.ErrRecordNotFound {
+		writeErrResponse(w, http.StatusNotFound, "User not found")
+		return
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	subject, body := internal.ApprovedVoucherMailContent(approvedVoucher.Voucher, user.Name)
 	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.SendGridKey, user.Email, subject, body)
 	if err != nil {
 		log.Error().Err(err).Send()

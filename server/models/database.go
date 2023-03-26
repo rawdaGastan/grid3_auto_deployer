@@ -231,6 +231,17 @@ func (d *DB) GetVoucher(voucher string) (Voucher, error) {
 	return res, query.Error
 }
 
+// GetVoucherByID gets voucher by ID
+func (d *DB) GetVoucherByID(id int) (Voucher, error) {
+	var res Voucher
+	query := d.db.First(&res, id)
+	if query.Error != nil {
+		return res, query.Error
+	}
+
+	return res, query.Error
+}
+
 // ListAllVouchers returns all vouchers to admin
 func (d *DB) ListAllVouchers() ([]Voucher, error) {
 	var res []Voucher
@@ -243,9 +254,9 @@ func (d *DB) ListAllVouchers() ([]Voucher, error) {
 }
 
 // ApproveVoucher approves voucher by voucher id
-func (d *DB) ApproveVoucher(id string) (Voucher, error) {
+func (d *DB) ApproveVoucher(id int) (Voucher, error) {
 	var voucher Voucher
-	query := d.db.First(&voucher, "id = ?", id).Update("approved", true)
+	query := d.db.First(&voucher, id).Update("approved", true)
 	return voucher, query.Error
 }
 

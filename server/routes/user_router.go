@@ -119,7 +119,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
-	fmt.Printf("code: %v\n", code)
+
 	// update code if user is not verified but exists
 	if getErr == nil {
 		if !user.Verified {
@@ -380,6 +380,17 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 		return
 	}
 
+	err = r.db.UpdateForgetPassVerification(user.ID.String(), true)
+	if err == gorm.ErrRecordNotFound {
+		writeNotFoundResponse(w, "User is not found")
+		return
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
+		return
+	}
+
 	writeMsgResponse(w, "Code is verified", map[string]string{"user_id": user.ID.String()})
 }
 
@@ -390,6 +401,22 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, internalServerErrorMsg)
+		return
+	}
+
+	user, err := r.db.GetUserByEmail(data.Email)
+	if err == gorm.ErrRecordNotFound {
+		writeNotFoundResponse(w, "User is not found")
+		return
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
+		return
+	}
+
+	if !user.ForgetPassVerified {
+		writeErrResponse(w, "You are not allowed to change password")
 		return
 	}
 
@@ -408,7 +435,18 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 
 	err = r.db.UpdatePassword(data.Email, hashedPassword)
 	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "User not found")
+		writeNotFoundResponse(w, "User is not found")
+		return
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
+		return
+	}
+
+	err = r.db.UpdateForgetPassVerification(user.ID.String(), false)
+	if err == gorm.ErrRecordNotFound {
+		writeNotFoundResponse(w, "User is not found")
 		return
 	}
 	if err != nil {

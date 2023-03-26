@@ -10,18 +10,19 @@ import (
 
 // User struct holds data of users
 type User struct {
-	ID             uuid.UUID `gorm:"primary_key; unique; type:uuid; column:id"`
-	Name           string    `json:"name" binding:"required"`
-	Email          string    `json:"email" gorm:"unique" binding:"required"`
-	HashedPassword string    `json:"hashed_password" binding:"required"`
-	Voucher        string    `json:"voucher"`
-	UpdatedAt      time.Time `json:"updated_at"`
-	Code           int       `json:"code"`
-	SSHKey         string    `json:"ssh_key"`
-	Verified       bool      `json:"verified"`
-	TeamSize       int       `json:"team_size" binding:"required"`
-	ProjectDesc    string    `json:"project_desc" binding:"required"`
-	College        string    `json:"college" binding:"required"`
+	ID                 uuid.UUID `gorm:"primary_key; unique; type:uuid; column:id"`
+	Name               string    `json:"name" binding:"required"`
+	Email              string    `json:"email" gorm:"unique" binding:"required"`
+	HashedPassword     string    `json:"hashed_password" binding:"required"`
+	Voucher            string    `json:"voucher"`
+	UpdatedAt          time.Time `json:"updated_at"`
+	Code               int       `json:"code"`
+	SSHKey             string    `json:"ssh_key"`
+	Verified           bool      `json:"verified"`
+	ForgetPassVerified bool      `json:"forget_pass_verified"`
+	TeamSize           int       `json:"team_size" binding:"required"`
+	ProjectDesc        string    `json:"project_desc" binding:"required"`
+	College            string    `json:"college" binding:"required"`
 	// checks if user type is admin
 	Admin bool `json:"admin"`
 }

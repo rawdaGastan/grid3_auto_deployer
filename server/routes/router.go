@@ -3,7 +3,6 @@ package routes
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/rawdaGastan/cloud4students/internal"
@@ -38,24 +37,13 @@ type ResponseMsg struct {
 }
 
 // writeErrResponse write error messages in api
-func writeErrResponse(w http.ResponseWriter, errStr string) {
+func writeErrResponse(w http.ResponseWriter, statusCode int, errStr string) {
 	jsonErrRes, _ := json.Marshal(ErrorMsg{Error: errStr})
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusInternalServerError)
+	w.WriteHeader(statusCode)
 	_, err := w.Write(jsonErrRes)
 	if err != nil {
 		log.Error().Err(err).Msg("write error response failed")
-	}
-}
-
-// writeNotFoundResponse write error messages in api
-func writeNotFoundResponse(w http.ResponseWriter, errStr string) {
-	jsonErrRes, _ := json.Marshal(ErrorMsg{Error: errStr})
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusNotFound)
-	_, err := w.Write(jsonErrRes)
-	if err != nil {
-		log.Error().Err(err).Msg("write not found error response failed")
 	}
 }
 
@@ -63,7 +51,8 @@ func writeNotFoundResponse(w http.ResponseWriter, errStr string) {
 func writeMsgResponse(w http.ResponseWriter, message string, data interface{}) {
 	contentJSON, err := json.Marshal(ResponseMsg{Message: message, Data: data})
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -71,6 +60,7 @@ func writeMsgResponse(w http.ResponseWriter, message string, data interface{}) {
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(contentJSON)
 	if err != nil {
-		writeErrResponse(w, fmt.Sprintf("write message response failed %v", err))
+		log.Error().Err(err).Msg("write error response failed")
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 	}
 }

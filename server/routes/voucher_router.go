@@ -36,7 +36,7 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read voucher data")
 		return
 	}
 
@@ -50,7 +50,7 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 	err = r.db.CreateVoucher(&v)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 

@@ -123,13 +123,6 @@ func (d *DB) UpdateVerification(id string, verified bool) error {
 	return result.Error
 }
 
-// UpdateForgetPassVerification updates if user is verified or not to change the password
-func (d *DB) UpdateForgetPassVerification(id string, verified bool) error {
-	var res User
-	result := d.db.Model(&res).Where("id=?", id).Update("forget_pass_verified", verified)
-	return result.Error
-}
-
 // AddUserVoucher applies voucher for user
 func (d *DB) AddUserVoucher(id string, voucher string) error {
 	var res User

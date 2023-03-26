@@ -61,7 +61,7 @@ func NewServer(file string) (server *Server, err error) {
 	refreshToken := r.HandleFunc(version+"/user/refresh_token", router.RefreshJWTHandler).Methods("POST", "OPTIONS")
 	forgetPass := r.HandleFunc(version+"/user/forgot_password", router.ForgotPasswordHandler).Methods("POST", "OPTIONS")
 	forgetPassVerify := r.HandleFunc(version+"/user/forget_password/verify_email", router.VerifyForgetPasswordCodeHandler).Methods("POST", "OPTIONS")
-	changePassword := r.HandleFunc(version+"/user/change_password", router.ChangePasswordHandler).Methods("PUT", "OPTIONS")
+	r.HandleFunc(version+"/user/change_password", router.ChangePasswordHandler).Methods("PUT", "OPTIONS")
 	r.HandleFunc(version+"/user", router.UpdateUserHandler).Methods("PUT", "OPTIONS")
 	r.HandleFunc(version+"/user", router.GetUserHandler).Methods("GET", "OPTIONS")
 	r.HandleFunc(version+"/user/apply_voucher", router.ApplyForVoucherHandler).Methods("POST", "OPTIONS")
@@ -89,7 +89,7 @@ func NewServer(file string) (server *Server, err error) {
 
 	r.Use(middlewares.LoggingMW)
 	r.Use(middlewares.EnableCors)
-	excludedRoutes := []*mux.Route{signUp, signUpVerify, signIn, refreshToken, forgetPass, forgetPassVerify, changePassword}
+	excludedRoutes := []*mux.Route{signUp, signUpVerify, signIn, refreshToken, forgetPass, forgetPassVerify}
 	r.Use(middlewares.Authorization(excludedRoutes, configuration.Token.Secret, configuration.Token.Timeout))
 	http.Handle("/", r)
 

@@ -380,18 +380,15 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 		return
 	}
 
-	err = r.db.UpdateForgetPassVerification(user.ID.String(), true)
-	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(w, http.StatusNotFound, "User is not found")
-		return
-	}
+	// token
+	token, err := internal.CreateJWT(user.ID.String(), user.Email, r.config.Token.Secret, r.config.Token.Timeout)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
-	writeMsgResponse(w, "Code is verified", map[string]string{"user_id": user.ID.String()})
+	writeMsgResponse(w, "Code is verified", map[string]string{"access_token": token})
 }
 
 // ChangePasswordHandler changes password of user
@@ -401,22 +398,6 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusBadRequest, "Failed to read password data")
-		return
-	}
-
-	user, err := r.db.GetUserByEmail(data.Email)
-	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(w, http.StatusNotFound, "User is not found")
-		return
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
-		return
-	}
-
-	if !user.ForgetPassVerified {
-		writeErrResponse(w, http.StatusBadRequest, "You are not allowed to change password")
 		return
 	}
 
@@ -434,17 +415,6 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 	}
 
 	err = r.db.UpdatePassword(data.Email, hashedPassword)
-	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(w, http.StatusNotFound, "User is not found")
-		return
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
-		return
-	}
-
-	err = r.db.UpdateForgetPassVerification(user.ID.String(), false)
 	if err == gorm.ErrRecordNotFound {
 		writeErrResponse(w, http.StatusNotFound, "User is not found")
 		return

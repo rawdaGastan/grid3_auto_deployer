@@ -75,7 +75,7 @@ export default {
     const drawer = ref(false);
     const items = ref([
       {
-        path: "/",
+        path: "home",
         title: "Home",
       },
       {
@@ -99,7 +99,7 @@ export default {
       },
       {
         title: "Logout",
-        path: "login",
+        path: "/",
       },
     ]);
 

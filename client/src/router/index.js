@@ -5,19 +5,21 @@ import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
 import VM from "@/views/VM.vue";
 import K8s from "@/views/K8s.vue";
+import Login from "@/views/Login.vue";
+
+
 const routes = [
   {
     path: "/",
     component: () => import("@/layouts/default/Default.vue"),
     children: [
       {
-        path: "login",
+        path: "",
         name: "Login",
         // route level code-splitting
         // this generates a separate chunk (about.[hash].js) for this route
         // which is lazy-loaded when the route is visited.
-        component: () =>
-          import(/* webpackChunkName: "login" */ "@/views/Login.vue"),
+        component: Login,
       },
       {
         path: "signup",
@@ -61,7 +63,7 @@ const routes = [
         component: Profile,
       },
       {
-        path: "",
+        path: "home",
         name: "Home",
         component: Home,
       },

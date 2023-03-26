@@ -143,6 +143,9 @@ export default {
             localStorage.removeItem('fullname');
             localStorage.removeItem('password');
             localStorage.removeItem('confirm_password');
+            localStorage.removeItem('teamSize');
+            localStorage.removeItem('projectDescription');
+            localStorage.removeItem('faculty');
             router.push({
               name: 'Login',
             });

@@ -26,7 +26,7 @@
               Send
             </v-btn>
             <div class="text-body-2 mb-n1 mt-1 text-center">
-              <a class="text-body-2" href="/login" color="primary">Back to Login.</a>
+              <a class="text-body-2" href="/" color="primary">Back to Login.</a>
             </div>
 
           </v-form>

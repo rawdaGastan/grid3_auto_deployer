@@ -12,6 +12,8 @@ import (
 	"github.com/threefoldtech/grid3-go/deployer"
 )
 
+const internalServerErrorMsg = "Something Went Wrong"
+
 // Router struct holds db model and configurations
 type Router struct {
 	config         *internal.Configuration

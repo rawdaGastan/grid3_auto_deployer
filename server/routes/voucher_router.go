@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rawdaGastan/cloud4students/internal"
 	"github.com/rawdaGastan/cloud4students/models"
+	"github.com/rs/zerolog/log"
 )
 
 // GenerateVoucherInput struct for data needed when user creates account
@@ -34,7 +35,8 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 	var input GenerateVoucherInput
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
@@ -47,7 +49,8 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 
 	err = r.db.CreateVoucher(&v)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 

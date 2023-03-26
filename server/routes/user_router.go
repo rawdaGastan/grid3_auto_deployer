@@ -13,6 +13,7 @@ import (
 	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rawdaGastan/cloud4students/validator"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -75,21 +76,22 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	var signUp SignUpInput
 	err := json.NewDecoder(req.Body).Decode(&signUp)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
 	// validate mail
 	err = validator.ValidateMail(signUp.Email)
 	if err != nil {
-		writeErrResponse(w, fmt.Sprintf("Email '%s' isn't valid: %v", signUp.Email, err))
+		writeErrResponse(w, fmt.Sprintf("Email '%s' isn't valid", signUp.Email))
 		return
 	}
 
 	//validate password
 	err = validator.ValidatePassword(signUp.Password)
 	if err != nil {
-		writeErrResponse(w, fmt.Sprintf("Password isn't valid, error: %v", err))
+		writeErrResponse(w, "Password isn't valid")
 		return
 	}
 
@@ -113,7 +115,8 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	message := internal.SignUpMailBody(code, r.config.MailSender.Timeout)
 	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, signUp.Email, message)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 	fmt.Printf("code: %v\n", code)
@@ -122,7 +125,8 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		if !user.Verified {
 			_, err = r.db.UpdateUserByID(user.ID.String(), "", "", "", time.Now(), code)
 			if err != nil {
-				writeErrResponse(w, err.Error())
+				log.Error().Err(err).Send()
+				writeErrResponse(w, internalServerErrorMsg)
 				return
 			}
 		}
@@ -133,7 +137,8 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		// hash password
 		hashedPassword, err := internal.HashAndSaltPassword(signUp.Password, r.config.Salt)
 		if err != nil {
-			writeErrResponse(w, err.Error())
+			log.Error().Err(err).Send()
+			writeErrResponse(w, internalServerErrorMsg)
 			return
 		}
 
@@ -151,7 +156,8 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 
 		err = r.db.CreateUser(&u)
 		if err != nil {
-			writeErrResponse(w, err.Error())
+			log.Error().Err(err).Send()
+			writeErrResponse(w, internalServerErrorMsg)
 			return
 		}
 
@@ -162,7 +168,8 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		}
 		err = r.db.CreateQuota(&quota)
 		if err != nil {
-			writeErrResponse(w, err.Error())
+			log.Error().Err(err).Send()
+			writeErrResponse(w, internalServerErrorMsg)
 			return
 		}
 	}
@@ -176,13 +183,19 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 	data := VerifyCodeInput{}
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
 	user, err := r.db.GetUserByEmail(data.Email)
+	if err == gorm.ErrRecordNotFound {
+		writeNotFoundResponse(w, "Account not found")
+		return
+	}
 	if err != nil {
-		writeNotFoundResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
@@ -202,7 +215,8 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 	}
 	err = r.db.UpdateVerification(user.ID.String(), true)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 	writeMsgResponse(w, "Account is created successfully", map[string]string{"user_id": user.ID.String()})
@@ -214,13 +228,19 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 	var input SignInInput
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
 	user, err := r.db.GetUserByEmail(input.Email)
-	if err != nil {
+	if err == gorm.ErrRecordNotFound {
 		writeNotFoundResponse(w, err.Error())
+		return
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
@@ -237,14 +257,11 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 
 	token, err := internal.CreateJWT(user.ID.String(), user.Email, r.config.Token.Secret, r.config.Token.Timeout)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
-	if err != nil {
-		writeErrResponse(w, err.Error())
-		return
-	}
 	writeMsgResponse(w, "User is signed in successfully", map[string]string{"access_token": token})
 }
 
@@ -263,7 +280,8 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 		return []byte(r.config.Token.Secret), nil
 	})
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 	if !tkn.Valid {
@@ -282,7 +300,8 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	newToken, err := token.SignedString([]byte(r.config.Token.Secret))
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 	writeMsgResponse(w, "Token is refreshed successfully", map[string]string{"access_token": reqToken, "refresh_token": newToken})
@@ -294,13 +313,19 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 	var email EmailInput
 	err := json.NewDecoder(req.Body).Decode(&email)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
 	user, err := r.db.GetUserByEmail(email.Email)
+	if err == gorm.ErrRecordNotFound {
+		writeNotFoundResponse(w, "User is not found")
+		return
+	}
 	if err != nil {
-		writeNotFoundResponse(w, fmt.Sprintf("User is not found, error occurred %v", err))
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
@@ -309,13 +334,15 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 	message := internal.SignUpMailBody(code, r.config.MailSender.Timeout)
 	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, email.Email, message)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
 	_, err = r.db.UpdateUserByID(user.ID.String(), "", "", "", time.Now(), code)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 	writeMsgResponse(w, "Verification code has been sent to "+email.Email, "")
@@ -327,13 +354,19 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 	data := VerifyCodeInput{}
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
 	user, err := r.db.GetUserByEmail(data.Email)
+	if err == gorm.ErrRecordNotFound {
+		writeNotFoundResponse(w, "User not found")
+		return
+	}
 	if err != nil {
-		writeNotFoundResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
@@ -355,7 +388,8 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 	var data ChangePasswordInput
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
@@ -367,13 +401,19 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 	// hash password
 	hashedPassword, err := internal.HashAndSaltPassword(data.Password, r.config.Salt)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
 	err = r.db.UpdatePassword(data.Email, hashedPassword)
+	if err == gorm.ErrRecordNotFound {
+		writeNotFoundResponse(w, "User not found")
+		return
+	}
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
@@ -386,10 +426,10 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 	input := UpdateUserInput{}
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
-
 	updates := 0
 
 	var hashedPassword string
@@ -404,14 +444,15 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		//validate passwords
 		err = validator.ValidatePassword(input.Password)
 		if err != nil {
-			writeErrResponse(w, fmt.Sprintf("error: %v password isn't valid", err))
+			writeErrResponse(w, "password isn't valid")
 			return
 		}
 
 		// hash password
 		hashedPassword, err = internal.HashAndSaltPassword(input.Password, r.config.Salt)
 		if err != nil {
-			writeErrResponse(w, err.Error())
+			log.Error().Err(err).Send()
+			writeErrResponse(w, internalServerErrorMsg)
 			return
 		}
 	}
@@ -433,8 +474,13 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	userID, err = r.db.UpdateUserByID(userID, input.Name, hashedPassword, input.SSHKey, time.Time{}, 0)
+	if err == gorm.ErrRecordNotFound {
+		writeNotFoundResponse(w, "User not found")
+		return
+	}
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
@@ -445,8 +491,13 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	user, err := r.db.GetUserByID(userID)
+	if err == gorm.ErrRecordNotFound {
+		writeNotFoundResponse(w, "User not found")
+		return
+	}
 	if err != nil {
-		writeNotFoundResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 	writeMsgResponse(w, "User exists", map[string]interface{}{"user": user})
@@ -502,19 +553,30 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 	var input AddVoucherInput
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
 	oldQuota, err := r.db.GetUserQuota(userID)
+	if err == gorm.ErrRecordNotFound {
+		writeNotFoundResponse(w, "User quota not found")
+		return
+	}
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
 	voucherQuota, err := r.db.GetVoucher(input.Voucher)
+	if err == gorm.ErrRecordNotFound {
+		writeNotFoundResponse(w, "User voucher not found")
+		return
+	}
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
@@ -530,13 +592,15 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 
 	err = r.db.AddUserVoucher(userID, input.Voucher)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 
 	err = r.db.UpdateUserQuota(userID, oldQuota.Vms+voucherQuota.VMs)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, internalServerErrorMsg)
 		return
 	}
 

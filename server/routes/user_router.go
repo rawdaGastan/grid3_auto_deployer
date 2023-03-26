@@ -508,23 +508,23 @@ func (r *Router) ApplyForVoucherHandler(w http.ResponseWriter, req *http.Request
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	userVoucher, err := r.db.GetNotUsedVoucherByUserID(userID)
 	if err != nil && err != gorm.ErrRecordNotFound {
-		writeErrResponse(w, err.Error())
+		writeErrResponse(w, http.StatusNotFound, "Voucher not found")
 		return
 	}
 	if userVoucher.Voucher != "" {
 		if userVoucher.Approved {
-			writeErrResponse(w, "You have already a voucher")
+			writeErrResponse(w, http.StatusBadRequest, "You have already a voucher")
 			return
 		}
 
-		writeErrResponse(w, "You have already a voucher request, please wait for the confirmation mail")
+		writeErrResponse(w, http.StatusBadRequest, "You have already a voucher request, please wait for the confirmation mail")
 		return
 	}
 
 	var input ApplyForVoucherInput
 	err = json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read voucher data")
 		return
 	}
 
@@ -539,7 +539,8 @@ func (r *Router) ApplyForVoucherHandler(w http.ResponseWriter, req *http.Request
 
 	err = r.db.CreateVoucher(&voucher)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -581,7 +582,7 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 	}
 
 	if !voucherQuota.Approved {
-		writeErrResponse(w, "Voucher is not Approved yet")
+		writeErrResponse(w, http.StatusBadRequest, "Voucher is not Approved yet")
 		return
 	}
 

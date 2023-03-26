@@ -3,49 +3,46 @@ package internal
 
 import (
 	"fmt"
-	"net/smtp"
+
 	"strconv"
 
 	"github.com/rawdaGastan/cloud4students/validator"
+	"github.com/rs/zerolog/log"
+	"github.com/sendgrid/sendgrid-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
 // SendMail sends verification mails
-func SendMail(sender string, password string, receiver string, message string) error {
+func SendMail(sender, sendGridKey, receiver, subject, body string) error {
+	from := mail.NewEmail("Cloud4Students", sender)
 	err := validator.ValidateMail(receiver)
 	if err != nil {
 		return fmt.Errorf("email %v is not valid", receiver)
 	}
-	auth := smtp.PlainAuth(
-		"",
-		sender,
-		password,
-		"smtp.gmail.com",
-	)
+	to := mail.NewEmail("Cloud4Students User", receiver)
 
-	err = smtp.SendMail(
-		"smtp.gmail.com:587",
-		auth,
-		sender,
-		[]string{receiver},
-		[]byte(message),
-	)
+	message := mail.NewSingleEmail(from, subject, to, body, "")
+
+	client := sendgrid.NewSendClient(sendGridKey)
+	response, err := client.Send(message)
+
+	log.Debug().Msgf("response: %+v", response)
+
 	return err
 }
 
-// SignUpMailBody gets the email body for signup
-func SignUpMailBody(code int, timeout int) string {
+// SignUpMailContent gets the email content for signup
+func SignUpMailContent(code int, timeout int) (string, string) {
 	subject := "Welcome to Cloud4Students\n\n"
 	body := fmt.Sprintf("We are so glad to have you here.\n\nYour code is %s\nThe code will expire in %d seconds.\nPlease don't share it with anyone.", strconv.Itoa(code), timeout)
-	message := subject + body
 
-	return message
+	return subject, body
 }
 
-// ApprovedVoucherMailBody gets the body for approved voucher
-func ApprovedVoucherMailBody(voucher string, user string) string {
+// ApprovedVoucherMailContent gets the content for approved voucher
+func ApprovedVoucherMailContent(voucher string, user string) (string, string) {
 	subject := fmt.Sprintf("Welcome %v,\n\n", user)
 	body := fmt.Sprintf("We are so glad to inform you that your voucher has been approved successfully.\n\nYour voucher is %s\n\nBest regards,\nCodescalers team", voucher)
-	message := subject + body
 
-	return message
+	return subject, body
 }

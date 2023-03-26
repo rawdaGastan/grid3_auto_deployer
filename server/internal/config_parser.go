@@ -26,9 +26,9 @@ type Server struct {
 
 // MailSender struct to hold sender's email, password
 type MailSender struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Timeout  int    `json:"timeout"`
+	Email       string `json:"email"`
+	SendGridKey string `json:"sendgrid_key"`
+	Timeout     int    `json:"timeout"`
 }
 
 // DB struct to hold database file

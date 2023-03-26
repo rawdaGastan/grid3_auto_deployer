@@ -112,8 +112,9 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 
 	// send verification code if user is not verified or not exist
 	code := internal.GenerateRandomCode()
-	message := internal.SignUpMailBody(code, r.config.MailSender.Timeout)
-	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, signUp.Email, message)
+	subject, body := internal.SignUpMailContent(code, r.config.MailSender.Timeout)
+	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.SendGridKey, signUp.Email, subject, body)
+
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, internalServerErrorMsg)
@@ -331,8 +332,9 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 
 	// send verification code
 	code := internal.GenerateRandomCode()
-	message := internal.SignUpMailBody(code, r.config.MailSender.Timeout)
-	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, email.Email, message)
+	subject, body := internal.SignUpMailContent(code, r.config.MailSender.Timeout)
+	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.SendGridKey, email.Email, subject, body)
+
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, internalServerErrorMsg)

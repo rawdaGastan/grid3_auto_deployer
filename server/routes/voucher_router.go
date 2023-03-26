@@ -111,8 +111,8 @@ func (r *Router) ApproveVoucherHandler(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	message := internal.ApprovedVoucherMailBody(voucher.Voucher, user.Name)
-	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, user.Email, message)
+	subject, body := internal.ApprovedVoucherMailContent(voucher.Voucher, user.Name)
+	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.SendGridKey, user.Email, subject, body)
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return
@@ -148,8 +148,8 @@ func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		message := internal.ApprovedVoucherMailBody(v.Voucher, user.Name)
-		err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, user.Email, message)
+		subject, body := internal.ApprovedVoucherMailContent(v.Voucher, user.Name)
+		err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.SendGridKey, user.Email, subject, body)
 		if err != nil {
 			writeErrResponse(w, err.Error())
 			return

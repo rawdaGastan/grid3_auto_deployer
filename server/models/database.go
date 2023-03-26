@@ -243,7 +243,7 @@ func (d *DB) ListAllVouchers() ([]Voucher, error) {
 }
 
 // ApproveVoucher approves voucher by voucher id
-func (d *DB) ApproveVoucher(id string) (Voucher, error) {
+func (d *DB) ApproveVoucher(id int) (Voucher, error) {
 	var voucher Voucher
 	query := d.db.First(&voucher, "id = ?", id).Update("approved", true)
 	return voucher, query.Error

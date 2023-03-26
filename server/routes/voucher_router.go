@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/rawdaGastan/cloud4students/internal"
@@ -56,6 +57,13 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	_, err = r.db.ApproveVoucher(v.ID)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
 	writeMsgResponse(w, "Voucher is generated successfully", map[string]string{"voucher": voucher})
 }
 
@@ -101,7 +109,12 @@ func (r *Router) ApproveVoucherHandler(w http.ResponseWriter, req *http.Request)
 	*/
 
 	// get voucher id from url
-	id := mux.Vars(req)["id"]
+	id, err := strconv.Atoi(mux.Vars(req)["id"])
+	if err != nil {
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read vm id")
+		return
+	}
+
 	voucher, err := r.db.ApproveVoucher(id)
 	if err != nil {
 		log.Error().Err(err).Send()

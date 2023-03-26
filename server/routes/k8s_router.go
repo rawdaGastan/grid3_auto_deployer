@@ -44,7 +44,7 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 	err = json.NewDecoder(req.Body).Decode(&k8sDeployInput)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusBadRequest, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read k8s data")
 		return
 	}
 

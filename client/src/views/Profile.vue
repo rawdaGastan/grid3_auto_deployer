@@ -52,17 +52,18 @@
             />
           </div>
 
-          <v-textarea
-            clearable
-            placeholder="SSH Key"
-            :modelValue="sshKey"
-            @update:modelValue="sshKey = $event"
-            variant="outlined"
-            bg-color="accent"
-            class="my-2"
-            :rules="rules"
-            auto-grow
-          ></v-textarea>
+            <v-textarea
+              clearable
+              placeholder="SSH Key"
+              :modelValue="sshKey"
+              @update:modelValue="sshKey = $event"
+              variant="outlined"
+              bg-color="accent"
+              class="mt-2"
+              :rules="rules"
+              auto-grow
+            ></v-textarea>
+            <p class="mb-3"><strong>Note:</strong> You can generate SSH key using "ssh-keygen" command. Once generated, your public key will be stored in ~/.ssh/id_rsa.pub</p>
           <BaseButton
             type="submit"
             :disabled="!verify"

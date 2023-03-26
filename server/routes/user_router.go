@@ -13,6 +13,7 @@ import (
 	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rawdaGastan/cloud4students/validator"
+	"gorm.io/gorm"
 )
 
 // SignUpInput struct for data needed when user creates account
@@ -99,7 +100,6 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	user, getErr := r.db.GetUserByEmail(signUp.Email)
-	var code int
 	// check if user already exists and verified
 	if getErr == nil {
 		if user.Verified {
@@ -109,7 +109,9 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// send verification code if user is not verified or not exist
-	code, err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, signUp.Email, r.config.MailSender.Timeout)
+	code := internal.GenerateRandomCode()
+	message := internal.SignUpMailBody(code, r.config.MailSender.Timeout)
+	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, signUp.Email, message)
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return
@@ -194,7 +196,7 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	if user.UpdatedAt.Add(time.Duration(r.config.MailSender.Timeout) * time.Minute).Before(time.Now()) {
+	if user.UpdatedAt.Add(time.Duration(r.config.MailSender.Timeout) * time.Second).Before(time.Now()) {
 		writeErrResponse(w, "Code has expired")
 		return
 	}
@@ -303,7 +305,9 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 	}
 
 	// send verification code
-	code, err := internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, email.Email, r.config.MailSender.Timeout)
+	code := internal.GenerateRandomCode()
+	message := internal.SignUpMailBody(code, r.config.MailSender.Timeout)
+	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, email.Email, message)
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return
@@ -338,7 +342,7 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 		return
 	}
 
-	if user.UpdatedAt.Add(time.Duration(r.config.MailSender.Timeout) * time.Minute).Before(time.Now()) {
+	if user.UpdatedAt.Add(time.Duration(r.config.MailSender.Timeout) * time.Second).Before(time.Now()) {
 		writeErrResponse(w, "Code has expired")
 		return
 	}
@@ -451,18 +455,19 @@ func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
 // ApplyForVoucherHandler makes user apply for voucher that would be accepted by admin
 func (r *Router) ApplyForVoucherHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
-	userVoucher, err := r.db.GetVoucherByUserID(userID)
-	if err != nil {
+	userVoucher, err := r.db.GetNotUsedVoucherByUserID(userID)
+	if err != nil && err != gorm.ErrRecordNotFound {
 		writeErrResponse(w, err.Error())
 		return
 	}
-	if userVoucher.Approved {
-		writeErrResponse(w, "You already have a voucher")
-		return
-	}
-	if !userVoucher.Approved && userVoucher.Voucher != "" {
-		writeErrResponse(w, "You already have a voucher request, please wait for the confirmation mail")
-		return
+	if userVoucher.Voucher != "" {
+		if userVoucher.Approved {
+			writeErrResponse(w, "You have already a voucher")
+			return
+		} else {
+			writeErrResponse(w, "You have already a voucher request, please wait for the confirmation mail")
+			return
+		}
 	}
 
 	var input ApplyForVoucherInput
@@ -471,14 +476,14 @@ func (r *Router) ApplyForVoucherHandler(w http.ResponseWriter, req *http.Request
 		writeErrResponse(w, err.Error())
 		return
 	}
+
 	// generate voucher for user but can't use it until admin approves it
 	v := internal.GenerateRandomVoucher(5)
 	voucher := models.Voucher{
-		Voucher:  v,
-		UserID:   userID,
-		VMs:      input.VMs,
-		Reason:   input.Reason,
-		Approved: false,
+		Voucher: v,
+		UserID:  userID,
+		VMs:     input.VMs,
+		Reason:  input.Reason,
 	}
 
 	err = r.db.CreateVoucher(&voucher)
@@ -487,7 +492,7 @@ func (r *Router) ApplyForVoucherHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	writeMsgResponse(w, "Voucher Request is being reviewed, you'll receive a confirmation mail soon", "")
+	writeMsgResponse(w, "Voucher request is being reviewed, you'll receive a confirmation mail soon", "")
 }
 
 // ActivateVoucherHandler makes user adds voucher to his account
@@ -514,7 +519,12 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 	}
 
 	if !voucherQuota.Approved {
-		writeErrResponse(w, "Voucher not Approved yet")
+		writeErrResponse(w, "Voucher is not Approved yet")
+		return
+	}
+
+	if voucherQuota.Used {
+		writeErrResponse(w, "Voucher is already used")
 		return
 	}
 

@@ -3,19 +3,17 @@ package internal
 
 import (
 	"fmt"
-	"math/rand"
 	"net/smtp"
 	"strconv"
-	"time"
 
 	"github.com/rawdaGastan/cloud4students/validator"
 )
 
 // SendMail sends verification mails
-func SendMail(sender string, password string, receiver string, timeout int) (int, error) {
+func SendMail(sender string, password string, receiver string, message string) error {
 	err := validator.ValidateMail(receiver)
 	if err != nil {
-		return 0, fmt.Errorf("email %v is not valid", receiver)
+		return fmt.Errorf("email %v is not valid", receiver)
 	}
 	auth := smtp.PlainAuth(
 		"",
@@ -24,16 +22,6 @@ func SendMail(sender string, password string, receiver string, timeout int) (int
 		"smtp.gmail.com",
 	)
 
-	// generate random code of 4 digits
-	min := 1000
-	max := 9999
-	rand.Seed(time.Now().UnixNano())
-	code := rand.Intn(max-min) + min
-
-	subject := "Welcome to Cloud4Students\n\n"
-	body := fmt.Sprintf("We are so glad to have you here.\n\nYour code is %s\nThe code will expire in %d seconds.\nPlease don't share it with anyone.", strconv.Itoa(code), timeout)
-	message := subject + body
-
 	err = smtp.SendMail(
 		"smtp.gmail.com:587",
 		auth,
@@ -41,5 +29,23 @@ func SendMail(sender string, password string, receiver string, timeout int) (int
 		[]string{receiver},
 		[]byte(message),
 	)
-	return code, err
+	return err
+}
+
+// SignUpMailBody gets the email body for signup
+func SignUpMailBody(code int, timeout int) string {
+	subject := "Welcome to Cloud4Students\n\n"
+	body := fmt.Sprintf("We are so glad to have you here.\n\nYour code is %s\nThe code will expire in %d seconds.\nPlease don't share it with anyone.", strconv.Itoa(code), timeout)
+	message := subject + body
+
+	return message
+}
+
+// ApprovedVoucherMailBody gets the body for approved voucher
+func ApprovedVoucherMailBody(voucher string, user string) string {
+	subject := fmt.Sprintf("Welcome %v,\n\n", user)
+	body := fmt.Sprintf("We are so glad to inform you that your voucher has been approved successfully.\n\nYour voucher is %s\n\nBest regards,\nCodescalers team", voucher)
+	message := subject + body
+
+	return message
 }

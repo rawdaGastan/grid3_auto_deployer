@@ -82,10 +82,10 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc(version+"/k8s/{id}", router.K8sDeleteHandler).Methods("DELETE", "OPTIONS")
 
 	// ADMIN ACCESS
-	r.HandleFunc(version+"/voucher", router.GenerateVoucherHandler).Methods("POST")
-	r.HandleFunc(version+"/voucher", router.ListVouchersHandler).Methods("GET")
-	r.HandleFunc(version+"/voucher/{id}", router.ApproveVoucher).Methods("PUT")
-	r.HandleFunc(version+"/voucher", router.ApplyForVoucherHandler).Methods("PUT")
+	r.HandleFunc(version+"/voucher", router.GenerateVoucherHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc(version+"/voucher", router.ListVouchersHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/voucher/{id}", router.ApproveVoucherHandler).Methods("PUT", "OPTIONS")
+	r.HandleFunc(version+"/voucher", router.ApproveAllVouchers).Methods("PUT", "OPTIONS")
 
 	r.Use(middlewares.LoggingMW)
 	r.Use(middlewares.EnableCors)

@@ -3,7 +3,6 @@ package routes
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -78,31 +77,46 @@ func (r *Router) ListVouchersHandler(w http.ResponseWriter, req *http.Request) {
 
 	writeMsgResponse(w, "List of all vouchers", vouchers)
 }
-// ApproveVoucher approves a voucher by admin
-func (r *Router) ApproveVoucher(w http.ResponseWriter, req *http.Request) {
+
+// ApproveVoucherHandler approves a voucher by admin
+func (r *Router) ApproveVoucherHandler(w http.ResponseWriter, req *http.Request) {
 	/*userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	user, err := r.db.GetUserByID(userID)
 	if err != nil {
-		writeNotFoundResponse(w, err)
+		writeNotFoundResponse(w, err.Error())
 		return
 	}
+
 
 	if !user.Admin {
 		writeErrResponse(w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
 		return
 	}
 	*/
-	// get user id from url
+
+	// get voucher id from url
 	id := mux.Vars(req)["id"]
-	voucher, err := r.db.ActivateVoucher(id)
+	voucher, err := r.db.ApproveVoucher(id)
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return
 	}
-	// TODO: send confirmation email to user via third party
-	fmt.Printf("voucher: %v\n", voucher)
-	writeMsgResponse(w, "Confirmation mail's sent to the user", "")
+
+	user, err := r.db.GetUserByID(voucher.UserID)
+	if err != nil {
+		writeNotFoundResponse(w, err.Error())
+		return
+	}
+
+	message := internal.ApprovedVoucherMailBody(voucher.Voucher, user.Name)
+	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, user.Email, message)
+	if err != nil {
+		writeErrResponse(w, err.Error())
+		return
+	}
+	writeMsgResponse(w, "Confirmation mail has been sent to the user", "")
 }
+
 // ApproveAllVouchers approves all vouchers by admin
 func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
 	/*userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
@@ -118,21 +132,11 @@ func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
 	}
 	*/
 
-	vouchers, err := r.db.ListAllVouchers()
+	err := r.db.ApproveAllVouchers()
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return
 	}
 
-	for _, v := range vouchers {
-		voucher, err := r.db.ActivateVoucher(v.Voucher)
-		if err != nil {
-			writeErrResponse(w, err.Error())
-			return
-		}
-		fmt.Printf("voucher: %v\n", voucher)
-		// TODO: send confirmation email to user via third party
-	}
-
-	writeMsgResponse(w, "All vouchers are approved", vouchers)
+	writeMsgResponse(w, "All vouchers are approved", "")
 }

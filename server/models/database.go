@@ -135,10 +135,10 @@ func (d *DB) AddUserVoucher(id string, voucher string) error {
 	return d.DeactivateVoucher(voucher)
 }
 
-// GetVoucherByUserID returns voucher by its user id
-func (d *DB) GetVoucherByUserID(id string) (Voucher, error) {
+// GetNotUsedVoucherByUserID returns not used voucher by its user id
+func (d *DB) GetNotUsedVoucherByUserID(id string) (Voucher, error) {
 	var res Voucher
-	query := d.db.First(&res, "user_id = ?", id)
+	query := d.db.First(&res, "user_id = ? AND used = false", id)
 	if query.Error != nil {
 		return Voucher{}, query.Error
 	}
@@ -230,6 +230,7 @@ func (d *DB) GetVoucher(voucher string) (Voucher, error) {
 
 	return res, query.Error
 }
+
 // ListAllVouchers returns all vouchers to admin
 func (d *DB) ListAllVouchers() ([]Voucher, error) {
 	var res []Voucher
@@ -240,14 +241,18 @@ func (d *DB) ListAllVouchers() ([]Voucher, error) {
 
 	return res, query.Error
 }
-// ActivateVoucher activates voucher by user id
-func (d *DB) ActivateVoucher(userID string) (string, error) {
+
+// ApproveVoucher approves voucher by voucher id
+func (d *DB) ApproveVoucher(id string) (Voucher, error) {
 	var voucher Voucher
-	query := d.db.First(&voucher, "user_id = ?", userID).Update("approved", true)
-	if query.Error != nil {
-		return "", query.Error
-	}
-	return voucher.Voucher, nil
+	query := d.db.First(&voucher, "id = ?", id).Update("approved", true)
+	return voucher, query.Error
+}
+
+// ApproveAllVouchers approves all vouchers
+func (d *DB) ApproveAllVouchers() error {
+	var vouchers []Voucher
+	return d.db.Find(&vouchers).Update("approved", true).Error
 }
 
 // DeactivateVoucher if it is used

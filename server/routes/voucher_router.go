@@ -3,6 +3,7 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -154,7 +155,7 @@ func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
 	for _, v := range vouchers {
 		user, err := r.db.GetUserByID(v.UserID)
 		if err != nil {
-			writeErrResponse(w, http.StatusNotFound, "User not found")
+			writeErrResponse(w, http.StatusNotFound, fmt.Sprintf("User '%s' is not found", v.UserID))
 			return
 		}
 

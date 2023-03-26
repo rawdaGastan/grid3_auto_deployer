@@ -120,7 +120,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
-	fmt.Printf("code: %v\n", code)
+
 	// update code if user is not verified but exists
 	if getErr == nil {
 		if !user.Verified {
@@ -382,7 +382,15 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 		return
 	}
 
-	writeMsgResponse(w, "Code is verified", map[string]string{"user_id": user.ID.String()})
+	// token
+	token, err := internal.CreateJWT(user.ID.String(), user.Email, r.config.Token.Secret, r.config.Token.Timeout)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	writeMsgResponse(w, "Code is verified", map[string]string{"access_token": token})
 }
 
 // ChangePasswordHandler changes password of user
@@ -410,7 +418,7 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 
 	err = r.db.UpdatePassword(data.Email, hashedPassword)
 	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(w, http.StatusNotFound, "User not found")
+		writeErrResponse(w, http.StatusNotFound, "User is not found")
 		return
 	}
 	if err != nil {

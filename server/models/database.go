@@ -250,9 +250,9 @@ func (d *DB) ApproveVoucher(id string) (Voucher, error) {
 }
 
 // ApproveAllVouchers approves all vouchers
-func (d *DB) ApproveAllVouchers() error {
+func (d *DB) ApproveAllVouchers() ([]Voucher, error) {
 	var vouchers []Voucher
-	return d.db.Find(&vouchers).Update("approved", true).Error
+	return vouchers, d.db.Find(&vouchers).Update("approved", true).Error
 }
 
 // DeactivateVoucher if it is used

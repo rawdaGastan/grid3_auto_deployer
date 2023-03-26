@@ -135,11 +135,26 @@ func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
 	}
 	*/
 
-	err := r.db.ApproveAllVouchers()
+	vouchers, err := r.db.ApproveAllVouchers()
 	if err != nil {
 		writeErrResponse(w, err.Error())
 		return
 	}
 
-	writeMsgResponse(w, "All vouchers are approved", "")
+	for _, v := range vouchers {
+		user, err := r.db.GetUserByID(v.UserID)
+		if err != nil {
+			writeNotFoundResponse(w, err.Error())
+			return
+		}
+
+		message := internal.ApprovedVoucherMailBody(v.Voucher, user.Name)
+		err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, user.Email, message)
+		if err != nil {
+			writeErrResponse(w, err.Error())
+			return
+		}
+	}
+
+	writeMsgResponse(w, "All vouchers are approved and confirmation mails has been sent to the user", "")
 }

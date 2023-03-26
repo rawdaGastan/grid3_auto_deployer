@@ -515,10 +515,10 @@ func (r *Router) ApplyForVoucherHandler(w http.ResponseWriter, req *http.Request
 		if userVoucher.Approved {
 			writeErrResponse(w, "You have already a voucher")
 			return
-		} else {
-			writeErrResponse(w, "You have already a voucher request, please wait for the confirmation mail")
-			return
 		}
+
+		writeErrResponse(w, "You have already a voucher request, please wait for the confirmation mail")
+		return
 	}
 
 	var input ApplyForVoucherInput

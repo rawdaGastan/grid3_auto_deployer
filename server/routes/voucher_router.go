@@ -9,6 +9,7 @@ import (
 	"github.com/rawdaGastan/cloud4students/internal"
 	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm"
 )
 
 // GenerateVoucherInput struct for data needed when user creates account
@@ -36,7 +37,7 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read voucher data")
 		return
 	}
 
@@ -50,7 +51,7 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 	err = r.db.CreateVoucher(&v)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -74,7 +75,8 @@ func (r *Router) ListVouchersHandler(w http.ResponseWriter, req *http.Request) {
 
 	vouchers, err := r.db.ListAllVouchers()
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -101,20 +103,27 @@ func (r *Router) ApproveVoucherHandler(w http.ResponseWriter, req *http.Request)
 	id := mux.Vars(req)["id"]
 	voucher, err := r.db.ApproveVoucher(id)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	user, err := r.db.GetUserByID(voucher.UserID)
+	if err == gorm.ErrRecordNotFound {
+		writeErrResponse(w, http.StatusNotFound, "User not found")
+		return
+	}
 	if err != nil {
-		writeNotFoundResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	message := internal.ApprovedVoucherMailBody(voucher.Voucher, user.Name)
 	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, user.Email, message)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 	writeMsgResponse(w, "Confirmation mail has been sent to the user", "")
@@ -137,21 +146,23 @@ func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
 
 	vouchers, err := r.db.ApproveAllVouchers()
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	for _, v := range vouchers {
 		user, err := r.db.GetUserByID(v.UserID)
 		if err != nil {
-			writeNotFoundResponse(w, err.Error())
+			writeErrResponse(w, http.StatusNotFound, "User not found")
 			return
 		}
 
 		message := internal.ApprovedVoucherMailBody(v.Voucher, user.Name)
 		err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.Password, user.Email, message)
 		if err != nil {
-			writeErrResponse(w, err.Error())
+			log.Error().Err(err).Send()
+			writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 			return
 		}
 	}

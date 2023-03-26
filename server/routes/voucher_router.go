@@ -115,14 +115,7 @@ func (r *Router) ApproveVoucherHandler(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	voucher, err := r.db.ApproveVoucher(id)
-	if err != nil {
-		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
-		return
-	}
-
-	user, err := r.db.GetUserByID(voucher.UserID)
+	voucher, err := r.db.GetVoucherByID(id)
 	if err == gorm.ErrRecordNotFound {
 		writeErrResponse(w, http.StatusNotFound, "User not found")
 		return
@@ -133,7 +126,30 @@ func (r *Router) ApproveVoucherHandler(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	subject, body := internal.ApprovedVoucherMailContent(voucher.Voucher, user.Name)
+	if voucher.Approved {
+		writeErrResponse(w, http.StatusBadRequest, "Voucher is already approved")
+		return
+	}
+
+	approvedVoucher, err := r.db.ApproveVoucher(id)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	user, err := r.db.GetUserByID(approvedVoucher.UserID)
+	if err == gorm.ErrRecordNotFound {
+		writeErrResponse(w, http.StatusNotFound, "User not found")
+		return
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	subject, body := internal.ApprovedVoucherMailContent(approvedVoucher.Voucher, user.Name)
 	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.SendGridKey, user.Email, subject, body)
 	if err != nil {
 		log.Error().Err(err).Send()

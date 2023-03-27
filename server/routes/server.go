@@ -14,11 +14,9 @@ import (
 	"github.com/rawdaGastan/cloud4students/internal"
 	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rawdaGastan/cloud4students/models"
-	"github.com/rawdaGastan/cloud4students/validators"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/grid3-go/deployer"
-	"gopkg.in/validator.v2"
 )
 
 // Server struct holds port of server
@@ -53,23 +51,12 @@ func NewServer(file string) (server *Server, err error) {
 		return
 	}
 
-	// validations
-	err = validator.SetValidationFunc("ssh", validators.ValidateSSHKey)
-	if err != nil {
-		return
-	}
-	err = validator.SetValidationFunc("password", validators.ValidatePassword)
-	if err != nil {
-		return
-	}
-	err = validator.SetValidationFunc("mail", validators.ValidateMail)
-	if err != nil {
-		return
-	}
-
 	version := "/" + configuration.Version
 
-	router := NewRouter(*configuration, db, tfPluginClient)
+	router, err := NewRouter(*configuration, db, tfPluginClient)
+	if err != nil {
+		return
+	}
 	r := mux.NewRouter()
 	signUp := r.HandleFunc(version+"/user/signup", router.SignUpHandler).Methods("POST", "OPTIONS")
 	signUpVerify := r.HandleFunc(version+"/user/signup/verify_email", router.VerifySignUpCodeHandler).Methods("POST", "OPTIONS")

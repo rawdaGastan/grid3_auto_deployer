@@ -44,13 +44,13 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	voucher := internal.GenerateRandomVoucher(input.Length)
 	err = validator.Validate(input)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusBadRequest, "Invalid voucher data")
 		return
 	}
+	voucher := internal.GenerateRandomVoucher(input.Length)
 
 	v := models.Voucher{
 		Voucher: voucher,

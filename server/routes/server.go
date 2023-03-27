@@ -54,9 +54,18 @@ func NewServer(file string) (server *Server, err error) {
 	}
 
 	// validations
-	validator.SetValidationFunc("ssh", validators.ValidateSSHKey)
-	validator.SetValidationFunc("password", validators.ValidatePassword)
-	validator.SetValidationFunc("mail", validators.ValidateMail)
+	err = validator.SetValidationFunc("ssh", validators.ValidateSSHKey)
+	if err != nil {
+		return
+	}
+	err = validator.SetValidationFunc("password", validators.ValidatePassword)
+	if err != nil {
+		return
+	}
+	err = validator.SetValidationFunc("mail", validators.ValidateMail)
+	if err != nil {
+		return
+	}
 
 	version := "/" + configuration.Version
 

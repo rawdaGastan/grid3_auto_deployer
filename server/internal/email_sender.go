@@ -3,43 +3,46 @@ package internal
 
 import (
 	"fmt"
-	"math/rand"
-	"net/smtp"
-	"strconv"
-	"time"
 
-	"github.com/rawdaGastan/cloud4students/validator"
+	"strconv"
+
+	"github.com/rawdaGastan/cloud4students/validators"
+	"github.com/rs/zerolog/log"
+	"github.com/sendgrid/sendgrid-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
 // SendMail sends verification mails
-func SendMail(sender string, password string, receiver string, timeout int) (int, error) {
-	err := validator.ValidateMail(receiver)
+func SendMail(sender, sendGridKey, receiver, subject, body string) error {
+	from := mail.NewEmail("Cloud4Students", sender)
+	err := validators.ValidateMail(receiver, "")
 	if err != nil {
-		return 0, fmt.Errorf("email %v is not valid", receiver)
+		return fmt.Errorf("email %v is not valid", receiver)
 	}
-	auth := smtp.PlainAuth(
-		"",
-		sender,
-		password,
-		"smtp.gmail.com",
-	)
+	to := mail.NewEmail("Cloud4Students User", receiver)
 
-	// generate random code of 4 digits
-	min := 1000
-	max := 9999
-	rand.Seed(time.Now().UnixNano())
-	code := rand.Intn(max-min) + min
+	message := mail.NewSingleEmail(from, subject, to, body, "")
 
-	subject := "Welcome to Cloud4Students\n\n"
+	client := sendgrid.NewSendClient(sendGridKey)
+	response, err := client.Send(message)
+
+	log.Debug().Msgf("response: %+v", response)
+
+	return err
+}
+
+// SignUpMailContent gets the email content for signup
+func SignUpMailContent(code int, timeout int) (string, string) {
+	subject := "Welcome to Cloud4Students"
 	body := fmt.Sprintf("We are so glad to have you here.\n\nYour code is %s\nThe code will expire in %d seconds.\nPlease don't share it with anyone.", strconv.Itoa(code), timeout)
-	message := subject + body
 
-	err = smtp.SendMail(
-		"smtp.gmail.com:587",
-		auth,
-		sender,
-		[]string{receiver},
-		[]byte(message),
-	)
-	return code, err
+	return subject, body
+}
+
+// ApprovedVoucherMailContent gets the content for approved voucher
+func ApprovedVoucherMailContent(voucher string, user string) (string, string) {
+	subject := "Your voucher is approved 🎆"
+	body := fmt.Sprintf("Welcome %v,\n\nWe are so glad to inform you that your voucher has been approved successfully.\n\nYour voucher is %s\n\nBest regards,\nCodescalers team", user, voucher)
+
+	return subject, body
 }

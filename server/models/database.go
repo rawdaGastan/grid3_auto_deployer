@@ -135,6 +135,17 @@ func (d *DB) AddUserVoucher(id string, voucher string) error {
 	return d.DeactivateVoucher(voucher)
 }
 
+// GetNotUsedVoucherByUserID returns not used voucher by its user id
+func (d *DB) GetNotUsedVoucherByUserID(id string) (Voucher, error) {
+	var res Voucher
+	query := d.db.First(&res, "user_id = ? AND used = false", id)
+	if query.Error != nil {
+		return Voucher{}, query.Error
+	}
+
+	return res, nil
+}
+
 // CreateVM creates new vm
 func (d *DB) CreateVM(vm *VM) error {
 	result := d.db.Create(&vm)
@@ -184,12 +195,12 @@ func (d *DB) CreateQuota(q *Quota) error {
 }
 
 // UpdateUserQuota updates quota
-func (d *DB) UpdateUserQuota(userID string, vms, k8s int) error {
-	quota := Quota{userID, vms, k8s}
+func (d *DB) UpdateUserQuota(userID string, vms int) error {
+	quota := Quota{userID, vms}
 	return d.db.Debug().Model(Quota{}).Where("user_id = ?", userID).Updates(quota).Error
 }
 
-// GetUserQuota gets user quota available (vms and k8s)
+// GetUserQuota gets user quota available vms (vms will be used for both vms and k8s clusters)
 func (d *DB) GetUserQuota(userID string) (Quota, error) {
 	var res Quota
 	var b []Quota
@@ -218,6 +229,41 @@ func (d *DB) GetVoucher(voucher string) (Voucher, error) {
 	}
 
 	return res, query.Error
+}
+
+// GetVoucherByID gets voucher by ID
+func (d *DB) GetVoucherByID(id int) (Voucher, error) {
+	var res Voucher
+	query := d.db.First(&res, id)
+	if query.Error != nil {
+		return res, query.Error
+	}
+
+	return res, query.Error
+}
+
+// ListAllVouchers returns all vouchers to admin
+func (d *DB) ListAllVouchers() ([]Voucher, error) {
+	var res []Voucher
+	query := d.db.Find(&res)
+	if query.Error != nil {
+		return res, query.Error
+	}
+
+	return res, query.Error
+}
+
+// ApproveVoucher approves voucher by voucher id
+func (d *DB) ApproveVoucher(id int) (Voucher, error) {
+	var voucher Voucher
+	query := d.db.First(&voucher, id).Update("approved", true)
+	return voucher, query.Error
+}
+
+// ApproveAllVouchers approves all vouchers
+func (d *DB) ApproveAllVouchers() ([]Voucher, error) {
+	var vouchers []Voucher
+	return vouchers, d.db.Find(&vouchers).Update("approved", true).Error
 }
 
 // DeactivateVoucher if it is used

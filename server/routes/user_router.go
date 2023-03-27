@@ -76,13 +76,14 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&signUp)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read sign up data")
 		return
 	}
 
 	err = validator.Validate(signUp)
 	if err != nil {
-		writeErrResponse(w, http.StatusBadRequest, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusBadRequest, "Invalid sign up data")
 		return
 	}
 
@@ -176,7 +177,7 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read sign up code data")
 		return
 	}
 
@@ -221,7 +222,7 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read sing in data")
 		return
 	}
 
@@ -396,7 +397,8 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 
 	err = validator.Validate(data)
 	if err != nil {
-		writeErrResponse(w, http.StatusBadRequest, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusBadRequest, "Invalid password data")
 		return
 	}
 
@@ -441,7 +443,8 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 
 	err = validator.Validate(input)
 	if err != nil {
-		writeErrResponse(w, http.StatusBadRequest, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusBadRequest, "Invalid user data")
 		return
 	}
 

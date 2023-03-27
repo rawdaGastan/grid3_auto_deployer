@@ -45,7 +45,8 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 
 	err = validator.Validate(input)
 	if err != nil {
-		writeErrResponse(w, http.StatusBadRequest, err.Error())
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusBadRequest, "Invalid vm data")
 		return
 	}
 

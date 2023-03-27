@@ -14,6 +14,7 @@ require (
 	github.com/sendgrid/sendgrid-go v3.12.0+incompatible
 	github.com/spf13/cobra v1.6.1
 	github.com/threefoldtech/grid3-go v1.0.1
+	github.com/stretchr/testify v1.8.1
 	github.com/threefoldtech/grid_proxy_server v1.6.12
 	github.com/threefoldtech/zos v0.5.6-0.20230224113017-e887a6ca3fc5
 	golang.org/x/crypto v0.7.0

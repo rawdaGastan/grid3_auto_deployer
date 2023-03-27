@@ -118,7 +118,10 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	// update code if user is not verified but exists
 	if getErr == nil {
 		if !user.Verified {
-			_, err = r.db.UpdateUserByID(user.ID.String(), "", "", "", time.Now(), code)
+			_, err = r.db.UpdateUserByID(
+				user.ID.String(),
+				models.User{UpdatedAt: time.Now(), Code: code},
+			)
 			if err != nil {
 				log.Error().Err(err).Send()
 				writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -335,7 +338,13 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	_, err = r.db.UpdateUserByID(user.ID.String(), "", "", "", time.Now(), code)
+	_, err = r.db.UpdateUserByID(
+		user.ID.String(),
+		models.User{
+			UpdatedAt: time.Now(),
+			Code:      code,
+		},
+	)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -485,7 +494,15 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		writeMsgResponse(w, "Nothing to update", "")
 	}
 
-	userID, err = r.db.UpdateUserByID(userID, input.Name, hashedPassword, input.SSHKey, time.Time{}, 0)
+	userID, err = r.db.UpdateUserByID(
+		userID,
+		models.User{
+			Name:           input.Name,
+			HashedPassword: hashedPassword,
+			SSHKey:         input.SSHKey,
+			UpdatedAt:      time.Now(),
+		},
+	)
 	if err == gorm.ErrRecordNotFound {
 		writeErrResponse(w, http.StatusNotFound, "User not found")
 		return

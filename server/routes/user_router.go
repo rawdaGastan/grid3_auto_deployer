@@ -3,7 +3,6 @@ package routes
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -12,20 +11,20 @@ import (
 	"github.com/rawdaGastan/cloud4students/internal"
 	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rawdaGastan/cloud4students/models"
-	"github.com/rawdaGastan/cloud4students/validator"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
 )
 
 // SignUpInput struct for data needed when user creates account
 type SignUpInput struct {
-	Name            string `json:"name" binding:"required"`
-	Email           string `json:"email" gorm:"unique" binding:"required"`
-	Password        string `json:"password" binding:"required"`
-	ConfirmPassword string `json:"confirm_password" binding:"required"`
-	TeamSize        int    `json:"team_size" binding:"required"`
-	ProjectDesc     string `json:"project_desc" binding:"required"`
-	College         string `json:"college" binding:"required"`
+	Name            string `json:"name" binding:"required" validate:"min=3,max=20"`
+	Email           string `json:"email" binding:"required" validate:"mail"`
+	Password        string `json:"password" binding:"required" validate:"password"`
+	ConfirmPassword string `json:"confirm_password" binding:"required" validate:"password"`
+	TeamSize        int    `json:"team_size" binding:"required" validate:"min=1,max=20"`
+	ProjectDesc     string `json:"project_desc" binding:"required" validate:"nonzero"`
+	College         string `json:"college" binding:"required" validate:"nonzero"`
 }
 
 // VerifyCodeInput struct takes verification code from user
@@ -36,23 +35,23 @@ type VerifyCodeInput struct {
 
 // SignInInput struct for data needed when user sign in
 type SignInInput struct {
-	Email    string `json:"email" gorm:"unique" binding:"required"`
+	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
 // ChangePasswordInput struct for user to change password
 type ChangePasswordInput struct {
 	Email           string `json:"email" binding:"required"`
-	Password        string `json:"password" binding:"required"`
-	ConfirmPassword string `json:"confirm_password" binding:"required"`
+	Password        string `json:"password" binding:"required" validate:"password"`
+	ConfirmPassword string `json:"confirm_password" binding:"required" validate:"password"`
 }
 
 // UpdateUserInput struct for user to updates his data
 type UpdateUserInput struct {
 	Name            string `json:"name"`
-	Password        string `json:"password"`
-	ConfirmPassword string `json:"confirm_password"`
-	SSHKey          string `json:"ssh_key"`
+	Password        string `json:"password" validate:"password"`
+	ConfirmPassword string `json:"confirm_password" validate:"password"`
+	SSHKey          string `json:"ssh_key" validate:"ssh"`
 }
 
 // EmailInput struct for user when forgetting password
@@ -62,8 +61,8 @@ type EmailInput struct {
 
 // ApplyForVoucherInput struct for user to apply for voucher
 type ApplyForVoucherInput struct {
-	VMs    int    `json:"vms" binding:"required"`
-	Reason string `json:"reason" binding:"required"`
+	VMs    int    `json:"vms" binding:"required" validate:"min=0"`
+	Reason string `json:"reason" binding:"required" validate:"nonzero"`
 }
 
 // AddVoucherInput struct for voucher applied by user
@@ -77,21 +76,14 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&signUp)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read sign up data")
 		return
 	}
 
-	// validate mail
-	err = validator.ValidateMail(signUp.Email)
+	err = validator.Validate(signUp)
 	if err != nil {
-		writeErrResponse(w, http.StatusBadRequest, fmt.Sprintf("Email '%s' isn't valid", signUp.Email))
-		return
-	}
-
-	//validate password
-	err = validator.ValidatePassword(signUp.Password)
-	if err != nil {
-		writeErrResponse(w, http.StatusBadRequest, "Password isn't valid")
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusBadRequest, "Invalid sign up data")
 		return
 	}
 
@@ -185,7 +177,7 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read sign up code data")
 		return
 	}
 
@@ -230,7 +222,7 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read sing in data")
 		return
 	}
 
@@ -403,6 +395,13 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
+	err = validator.Validate(data)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusBadRequest, "Invalid password data")
+		return
+	}
+
 	if data.ConfirmPassword != data.Password {
 		writeErrResponse(w, http.StatusBadRequest, "Password does not match confirm password")
 		return
@@ -442,19 +441,19 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	updates := 0
 
+	err = validator.Validate(input)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusBadRequest, "Invalid user data")
+		return
+	}
+
 	var hashedPassword string
 	if len(strings.TrimSpace(input.Password)) != 0 {
 		updates++
 		// password and confirm password should match
 		if input.Password != input.ConfirmPassword {
 			writeErrResponse(w, http.StatusBadRequest, "Password and confirm password don't match")
-			return
-		}
-
-		//validate passwords
-		err = validator.ValidatePassword(input.Password)
-		if err != nil {
-			writeErrResponse(w, http.StatusBadRequest, "password isn't valid")
 			return
 		}
 

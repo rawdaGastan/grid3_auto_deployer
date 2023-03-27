@@ -7,8 +7,10 @@ import (
 
 	"github.com/rawdaGastan/cloud4students/internal"
 	"github.com/rawdaGastan/cloud4students/models"
+	"github.com/rawdaGastan/cloud4students/validators"
 	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/grid3-go/deployer"
+	"gopkg.in/validator.v2"
 )
 
 const internalServerErrorMsg = "Something Went Wrong"
@@ -21,8 +23,21 @@ type Router struct {
 }
 
 // NewRouter create new router with db
-func NewRouter(config internal.Configuration, db models.DB, tfPluginClient deployer.TFPluginClient) (r Router) {
-	return Router{&config, db, tfPluginClient}
+func NewRouter(config internal.Configuration, db models.DB, tfPluginClient deployer.TFPluginClient) (Router, error) {
+	// validations
+	err := validator.SetValidationFunc("ssh", validators.ValidateSSHKey)
+	if err != nil {
+		return Router{}, err
+	}
+	err = validator.SetValidationFunc("password", validators.ValidatePassword)
+	if err != nil {
+		return Router{}, err
+	}
+	err = validator.SetValidationFunc("mail", validators.ValidateMail)
+	if err != nil {
+		return Router{}, err
+	}
+	return Router{&config, db, tfPluginClient}, nil
 }
 
 // ErrorMsg holds errors

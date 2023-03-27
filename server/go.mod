@@ -17,6 +17,7 @@ require (
 	github.com/threefoldtech/grid_proxy_server v1.6.12
 	github.com/threefoldtech/zos v0.5.6-0.20230224113017-e887a6ca3fc5
 	golang.org/x/crypto v0.7.0
+	gopkg.in/validator.v2 v2.0.1
 	gorm.io/driver/sqlite v1.4.4
 	gorm.io/gorm v1.24.6
 )

@@ -10,19 +10,20 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
 )
 
 // K8sDeployInput deploy k8s cluster input
 type K8sDeployInput struct {
-	MasterName string   `json:"master_name"`
+	MasterName string   `json:"master_name" validate:"min=3,max=20"`
 	Resources  string   `json:"resources"`
 	Workers    []Worker `json:"workers"`
 }
 
 // Worker deploy k8s worker input
 type Worker struct {
-	Name      string `json:"name"`
+	Name      string `json:"name" validate:"min=3,max=20"`
 	Resources string `json:"resources"`
 }
 
@@ -45,6 +46,12 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusBadRequest, "Failed to read k8s data")
+		return
+	}
+	err = validator.Validate(k8sDeployInput)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusBadRequest, "Invalid Kubernetes data")
 		return
 	}
 

@@ -53,7 +53,10 @@ func NewServer(file string) (server *Server, err error) {
 
 	version := "/" + configuration.Version
 
-	router := NewRouter(*configuration, db, tfPluginClient)
+	router, err := NewRouter(*configuration, db, tfPluginClient)
+	if err != nil {
+		return
+	}
 	r := mux.NewRouter()
 	signUp := r.HandleFunc(version+"/user/signup", router.SignUpHandler).Methods("POST", "OPTIONS")
 	signUpVerify := r.HandleFunc(version+"/user/signup/verify_email", router.VerifySignUpCodeHandler).Methods("POST", "OPTIONS")

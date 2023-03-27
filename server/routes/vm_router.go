@@ -11,12 +11,13 @@ import (
 	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
 )
 
 // DeployVMInput struct takes input of vm from user
 type DeployVMInput struct {
-	Name      string `json:"name" binding:"required"`
+	Name      string `json:"name" binding:"required" validate:"min=3,max=20"`
 	Resources string `json:"resources" binding:"required"`
 }
 
@@ -28,6 +29,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		writeErrResponse(w, http.StatusNotFound, "User not found")
 		return
 	}
+
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -38,6 +40,12 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 	err = json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		writeErrResponse(w, http.StatusBadRequest, "Failed to read vm data")
+		return
+	}
+
+	err = validator.Validate(input)
+	if err != nil {
+		writeErrResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

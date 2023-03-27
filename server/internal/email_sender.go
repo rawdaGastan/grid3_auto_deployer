@@ -6,7 +6,7 @@ import (
 
 	"strconv"
 
-	"github.com/rawdaGastan/cloud4students/validator"
+	"github.com/rawdaGastan/cloud4students/validators"
 	"github.com/rs/zerolog/log"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
@@ -15,7 +15,7 @@ import (
 // SendMail sends verification mails
 func SendMail(sender, sendGridKey, receiver, subject, body string) error {
 	from := mail.NewEmail("Cloud4Students", sender)
-	err := validator.ValidateMail(receiver)
+	err := validators.ValidateMail(receiver, "")
 	if err != nil {
 		return fmt.Errorf("email %v is not valid", receiver)
 	}

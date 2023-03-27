@@ -14,9 +14,11 @@ import (
 	"github.com/rawdaGastan/cloud4students/internal"
 	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rawdaGastan/cloud4students/models"
+	"github.com/rawdaGastan/cloud4students/validators"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/grid3-go/deployer"
+	"gopkg.in/validator.v2"
 )
 
 // Server struct holds port of server
@@ -50,6 +52,11 @@ func NewServer(file string) (server *Server, err error) {
 	if err != nil {
 		return
 	}
+
+	// validations
+	validator.SetValidationFunc("ssh", validators.ValidateSSHKey)
+	validator.SetValidationFunc("password", validators.ValidatePassword)
+	validator.SetValidationFunc("mail", validators.ValidateMail)
 
 	version := "/" + configuration.Version
 

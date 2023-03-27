@@ -11,12 +11,13 @@ import (
 	"github.com/rawdaGastan/cloud4students/internal"
 	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
 )
 
 // GenerateVoucherInput struct for data needed when user creates account
 type GenerateVoucherInput struct {
-	Length int `json:"length" binding:"required"`
+	Length int `json:"length" binding:"required" validate:"min=3,max=20"`
 	VMs    int `json:"vms" binding:"required"`
 }
 
@@ -44,6 +45,11 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 	}
 
 	voucher := internal.GenerateRandomVoucher(input.Length)
+	err = validator.Validate(input)
+	if err != nil {
+		writeErrResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	v := models.Voucher{
 		Voucher: voucher,

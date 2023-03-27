@@ -5,6 +5,8 @@ import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
 import VM from "@/views/VM.vue";
 import K8s from "@/views/K8s.vue";
+import Admin from "@/views/Admin.vue";
+
 const routes = [
   {
     path: "/",
@@ -79,6 +81,11 @@ const routes = [
         path: "k8s",
         name: "K8s",
         component: K8s,
+      },
+      {
+        path: "admin",
+        name: "Admin",
+        component: Admin,
       },
     ],
   },

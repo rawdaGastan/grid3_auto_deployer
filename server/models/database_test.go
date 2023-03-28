@@ -208,6 +208,7 @@ func TestAddUserVoucher(t *testing.T) {
 		assert.Equal(t, voucher.Used, false)
 
 		err = db.AddUserVoucher(user.ID.String(), "voucher")
+		assert.NoError(t, err)
 		var u User
 		var v Voucher
 		err = db.db.First(&u).Error
@@ -531,6 +532,7 @@ func TestApproveVoucher(t *testing.T) {
 
 		var resVoucher Voucher
 		err = db.db.First(&resVoucher, "user_id = 'user'").Error
+		assert.NoError(t, err)
 		assert.Equal(t, v, resVoucher)
 	})
 }
@@ -559,6 +561,7 @@ func TestApproveAllVouchers(t *testing.T) {
 
 		var vouchers []Voucher
 		err = db.db.Find(&vouchers).Error
+		assert.NoError(t, err)
 		assert.Equal(t, v, vouchers)
 	})
 }
@@ -578,9 +581,11 @@ func TestDeactivateVoucher(t *testing.T) {
 		assert.NoError(t, err)
 
 		err = db.DeactivateVoucher("voucher1")
+		assert.NoError(t, err)
 
 		var v Voucher
 		err = db.db.Find(&v).Where("voucher = 'voucher1'").Error
+		assert.NoError(t, err)
 		assert.Equal(t, v.Used, true)
 	})
 }

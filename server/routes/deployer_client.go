@@ -133,11 +133,10 @@ func (r *Router) deployVM(vmName, resources, sshKey string) (*workloads.VM, uint
 	}
 
 	nodeIDs, err := deployer.FilterNodes(r.tfPluginClient.GridProxyClient, filter)
-	fmt.Printf("nodeIDs: %v\n", nodeIDs)
 	if err != nil {
 		return nil, 0, 0, 0, err
 	}
-	nodeID := uint32(nodeIDs[1].NodeID)
+	nodeID := uint32(nodeIDs[0].NodeID)
 
 	// create network workload
 	network := buildNetwork(nodeID, generateNetworkName())
@@ -169,25 +168,16 @@ func (r *Router) deployVM(vmName, resources, sshKey string) (*workloads.VM, uint
 	// TODO: set proper contexts
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(r.config.Token.Timeout)*time.Minute)
 	defer cancel()
-	print("after ctx")
 
 	// deploy network
 	err = r.tfPluginClient.NetworkDeployer.Deploy(ctx, &network)
-	fmt.Printf("deploy network err: %v\n", err)
 	if err != nil {
 		return nil, 0, 0, 0, err
-	}
-
-	znet, err := r.tfPluginClient.State.LoadNetworkFromGrid(network.Name)
-	fmt.Printf("znet: %v\n", znet)
-	if err != nil {
-		fmt.Printf("err: %v\n", err)
 	}
 
 	// deploy vm
 	dl := workloads.NewDeployment("vm", nodeID, "", nil, network.Name, []workloads.Disk{disk}, nil, []workloads.VM{vm}, nil)
 	err = r.tfPluginClient.DeploymentDeployer.Deploy(ctx, &dl)
-	fmt.Printf("deploy vm err: %v\n", err)
 	if err != nil {
 		return nil, 0, 0, 0, err
 	}

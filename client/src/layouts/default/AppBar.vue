@@ -103,14 +103,14 @@ export default {
       },
       {
         title: "Logout",
-        path: "/login",
+        path: "/",
       },
     ]);
 
     const checkTitle = (title) => {
       if (title == "Logout") {
         localStorage.removeItem("token");
-        router.push({ name: 'Login' })
+        router.go('/')
       }
     };
 

@@ -33,7 +33,7 @@ var (
 	smallQuota  = 1
 	mediumQuota = 2
 	largeQuota  = 3
-	publicQuota = 2
+	publicQuota = 1
 
 	trueVal  = true
 	statusUp = "up"

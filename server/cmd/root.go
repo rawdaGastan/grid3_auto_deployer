@@ -8,7 +8,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/rawdaGastan/cloud4students/routes"
+	"github.com/codescalers/cloud4students/routes"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -27,16 +27,16 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		config, err := cmd.Flags().GetString("config")
 		if err != nil {
-			log.Fatal().Err(err)
+			log.Fatal().Err(err).Send()
 		}
 		server, err := routes.NewServer(config)
 		if err != nil {
-			log.Fatal().Err(err)
+			log.Fatal().Err(err).Send()
 		}
 
 		err = server.Start()
 		if err != nil {
-			log.Fatal().Err(err)
+			log.Fatal().Err(err).Send()
 		}
 	},
 }

@@ -89,28 +89,41 @@
         </div>
       </v-col>
     </v-row>
+    <Toast ref="toast" />
   </v-container>
 </template>
 <script>
 import { ref, onMounted } from "vue";
 import userService from "@/services/userService";
+import Toast from "@/components/Toast.vue";
 export default {
+  components: {
+    Toast,
+  },
   setup() {
     const items = ref([
       { name: "Virtual Machine", linkName: "VM" },
       { name: "Kubernetes", linkName: "K8s" },
     ]);
     const voucher = ref(false);
+    const toast = ref(null);
     const checkVoucher = () => {
-      userService.getUser().then((response) => {
-        const { user } = response.data.data;
-        voucher.value = user.voucher;
-      });
+      userService
+        .getUser()
+        .then((response) => {
+          const { user } = response.data.data;
+          voucher.value = user.voucher;
+        })
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
+        });
     };
+
     onMounted(() => {
       checkVoucher();
     });
-    return { items, voucher, checkVoucher };
+    return { items, voucher, toast, checkVoucher };
   },
 };
 </script>

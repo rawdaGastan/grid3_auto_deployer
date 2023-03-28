@@ -8,8 +8,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/codescalers/cloud4students/models"
 	"github.com/pkg/errors"
-	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/threefoldtech/grid3-go/deployer"
 	"github.com/threefoldtech/grid3-go/workloads"
 	"github.com/threefoldtech/grid_proxy_server/pkg/types"
@@ -33,6 +33,7 @@ var (
 	smallQuota  = 1
 	mediumQuota = 2
 	largeQuota  = 3
+	publicQuota = 1
 
 	trueVal  = true
 	statusUp = "up"
@@ -88,21 +89,23 @@ func (r *Router) loadK8s(k8sDeployInput K8sDeployInput, userID string, node uint
 	}
 
 	// save to db
-	cru, mru, sru, err := calcNodeResources(k8sDeployInput.Resources)
+	cru, mru, sru, _, err := calcNodeResources(k8sDeployInput.Resources, k8sDeployInput.Public)
 	if err != nil {
 		return models.K8sCluster{}, err
 	}
 	master := models.Master{
-		CRU:  cru,
-		MRU:  mru,
-		SRU:  sru,
-		Name: k8sDeployInput.MasterName,
-		IP:   resCluster.Master.YggIP,
+		CRU:      cru,
+		MRU:      mru,
+		SRU:      sru,
+		Public:   k8sDeployInput.Public,
+		PublicIP: resCluster.Master.ComputedIP,
+		Name:     k8sDeployInput.MasterName,
+		YggIP:    resCluster.Master.YggIP,
 	}
 	workers := []models.Worker{}
 	for _, worker := range k8sDeployInput.Workers {
 
-		cru, mru, sru, err := calcNodeResources(k8sDeployInput.Resources)
+		cru, mru, sru, _, err := calcNodeResources(worker.Resources, false)
 		if err != nil {
 			return models.K8sCluster{}, err
 		}
@@ -125,9 +128,9 @@ func (r *Router) loadK8s(k8sDeployInput K8sDeployInput, userID string, node uint
 	return k8sCluster, nil
 }
 
-func (r *Router) deployVM(vmName, resources, sshKey string) (*workloads.VM, uint64, uint64, uint64, error) {
+func (r *Router) deployVM(vmInput DeployVMInput, sshKey string) (*workloads.VM, uint64, uint64, uint64, error) {
 	// filter nodes
-	filter, err := filterNode(resources)
+	filter, err := filterNode(vmInput.Resources, vmInput.Public)
 	if err != nil {
 		return nil, 0, 0, 0, err
 	}
@@ -144,17 +147,17 @@ func (r *Router) deployVM(vmName, resources, sshKey string) (*workloads.VM, uint
 	// create disk
 	disk := workloads.Disk{
 		Name:   "disk",
-		SizeGB: int(*filter.TotalSRU),
+		SizeGB: int(*filter.FreeSRU),
 	}
 
 	// create vm workload
 	vm := workloads.VM{
-		Name:      vmName,
+		Name:      vmInput.Name,
 		Flist:     vmFlist,
 		CPU:       int(*filter.TotalCRU),
-		PublicIP:  false,
+		PublicIP:  vmInput.Public,
 		Planetary: true,
-		Memory:    int(*filter.TotalMRU) * 1024,
+		Memory:    int(*filter.FreeMRU) * 1024,
 		Mounts: []workloads.Mount{
 			{DiskName: disk.Name, MountPoint: "/disk"},
 		},
@@ -165,7 +168,7 @@ func (r *Router) deployVM(vmName, resources, sshKey string) (*workloads.VM, uint
 		NetworkName: network.Name,
 	}
 
-	// TODO set proper contexts
+	// TODO: set proper contexts
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(r.config.Token.Timeout)*time.Minute)
 	defer cancel()
 
@@ -207,10 +210,11 @@ func (r *Router) cancelDeployment(contractID uint64, netContractID uint64) error
 	return nil
 }
 
-func calcNodeResources(resources string) (uint64, uint64, uint64, error) {
+func calcNodeResources(resources string, public bool) (uint64, uint64, uint64, uint64, error) {
 	var cru uint64
 	var mru uint64
 	var sru uint64
+	var ips uint64
 	switch resources {
 	case "small":
 		cru += smallCPU
@@ -225,19 +229,22 @@ func calcNodeResources(resources string) (uint64, uint64, uint64, error) {
 		mru += largeMemory
 		sru += largeDisk
 	default:
-		return 0, 0, 0, fmt.Errorf("unknown resource type %s", resources)
+		return 0, 0, 0, 0, fmt.Errorf("unknown resource type %s", resources)
 	}
-	return cru, mru, sru, nil
+	if public {
+		ips = 1
+	}
+	return cru, mru, sru, ips, nil
 }
 
 func (r *Router) getK8sAvailableNode(k K8sDeployInput) (uint32, error) {
-	_, mru, sru, err := calcNodeResources(k.Resources)
+	_, mru, sru, ips, err := calcNodeResources(k.Resources, k.Public)
 	if err != nil {
 		return 0, err
 	}
 
 	for _, worker := range k.Workers {
-		_, m, s, err := calcNodeResources(worker.Resources)
+		_, m, s, _, err := calcNodeResources(worker.Resources, false)
 		if err != nil {
 			return 0, err
 		}
@@ -251,6 +258,7 @@ func (r *Router) getK8sAvailableNode(k K8sDeployInput) (uint32, error) {
 		Status:  &statusUp,
 		FreeMRU: &freeMRU,
 		FreeSRU: &freeSRU,
+		FreeIPs: &ips,
 		FarmIDs: []uint64{1},
 		IPv6:    &trueVal,
 	}
@@ -264,56 +272,64 @@ func (r *Router) getK8sAvailableNode(k K8sDeployInput) (uint32, error) {
 }
 
 // choose suitable nodes based on needed resources
-func filterNode(resource string) (types.NodeFilter, error) {
-	cru, mru, sru, err := calcNodeResources(resource)
+func filterNode(resource string, public bool) (types.NodeFilter, error) {
+	cru, mru, sru, ips, err := calcNodeResources(resource, public)
 	if err != nil {
 		return types.NodeFilter{}, err
 	}
 
 	return types.NodeFilter{
 		TotalCRU: &cru,
-		TotalSRU: &sru,
-		TotalMRU: &mru,
+		FreeSRU:  &sru,
+		FreeMRU:  &mru,
+		FreeIPs:  &ips,
+		IPv4:     &trueVal,
 		Status:   &statusUp,
 		IPv6:     &trueVal,
 	}, nil
 }
 
-func validateK8sQuota(k K8sDeployInput, availableQuota int) (int, error) {
-	neededQuota, err := calcNeededQuota(k.Resources, availableQuota)
+func validateK8sQuota(k K8sDeployInput, availableResourcesQuota, availablePublicIPsQuota int) (int, error) {
+	neededQuota, err := calcNeededQuota(k.Resources)
 	if err != nil {
 		return 0, err
 	}
 
 	for _, worker := range k.Workers {
-		workerQuota, err := calcNeededQuota(worker.Resources, availableQuota)
+		workerQuota, err := calcNeededQuota(worker.Resources)
 		if err != nil {
 			return 0, err
 		}
 		neededQuota += workerQuota
 	}
 
-	if availableQuota < neededQuota {
-		return 0, fmt.Errorf("no available quota %v for kubernetes deployment", availableQuota)
+	if availableResourcesQuota < neededQuota {
+		return 0, fmt.Errorf("no available quota %d for kubernetes deployment", availableResourcesQuota)
+	}
+	if k.Public && availablePublicIPsQuota < publicQuota {
+		return 0, fmt.Errorf("no available quota %d for public ips", availablePublicIPsQuota)
 	}
 
 	return neededQuota, nil
 }
 
-func validateVMQuota(resources string, availableQuota int) (int, error) {
-	neededQuota, err := calcNeededQuota(resources, availableQuota)
+func validateVMQuota(vm DeployVMInput, availableResourcesQuota, availablePublicIPsQuota int) (int, error) {
+	neededQuota, err := calcNeededQuota(vm.Resources)
 	if err != nil {
 		return 0, err
 	}
 
-	if availableQuota < neededQuota {
-		return 0, fmt.Errorf("no available quota %v for deployment for resources %s", availableQuota, resources)
+	if availableResourcesQuota < neededQuota {
+		return 0, fmt.Errorf("no available quota %d for deployment for resources %s", availableResourcesQuota, vm.Resources)
+	}
+	if vm.Public && availablePublicIPsQuota < publicQuota {
+		return 0, fmt.Errorf("no available quota %d for public ips", availablePublicIPsQuota)
 	}
 
 	return neededQuota, nil
 }
 
-func calcNeededQuota(resources string, availableQuota int) (int, error) {
+func calcNeededQuota(resources string) (int, error) {
 	var neededQuota int
 	switch resources {
 	case "small":
@@ -347,13 +363,16 @@ func buildK8sCluster(node uint32, sshKey, network string, k K8sDeployInput) (wor
 		Planetary: true,
 		Node:      node,
 	}
-	cru, mru, sru, err := calcNodeResources(k.Resources)
+	cru, mru, sru, ips, err := calcNodeResources(k.Resources, k.Public)
 	if err != nil {
 		return workloads.K8sCluster{}, err
 	}
 	master.CPU = int(cru)
 	master.Memory = int(mru * 1024)
 	master.DiskSize = int(sru)
+	if ips == 1 {
+		master.PublicIP = true
+	}
 
 	workers := []workloads.K8sNode{}
 	for _, worker := range k.Workers {
@@ -362,7 +381,7 @@ func buildK8sCluster(node uint32, sshKey, network string, k K8sDeployInput) (wor
 			Flist: k8sFlist,
 			Node:  node,
 		}
-		cru, mru, sru, err := calcNodeResources(k.Resources)
+		cru, mru, sru, _, err := calcNodeResources(k.Resources, false)
 		if err != nil {
 			return workloads.K8sCluster{}, err
 		}

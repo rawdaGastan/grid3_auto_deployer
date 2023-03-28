@@ -39,7 +39,7 @@
                 :to="item.path"
                 class="d-flex my-3 primary text-decoration-none"
               >
-                {{ item.title }}
+                <span @click="checkTitle(item.title)">{{ item.title }}</span>
               </router-link>
             </v-list-item-title>
           </v-list-item>
@@ -70,9 +70,13 @@
 
 <script>
 import { ref } from "vue";
+import { useRouter } from "vue-router";
+
 export default {
   setup() {
     const drawer = ref(false);
+    const router = useRouter()
+
     const items = ref([
       {
         path: "home",
@@ -103,7 +107,14 @@ export default {
       },
     ]);
 
-    return { drawer, items, user };
+    const checkTitle = (title) => {
+      if (title == "Logout") {
+        localStorage.removeItem("token");
+        router.go('/')
+      }
+    };
+
+    return { drawer, items, user, checkTitle };
   },
 };
 </script>

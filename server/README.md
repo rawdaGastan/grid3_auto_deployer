@@ -22,7 +22,7 @@ example `config.json`:
     },
     "mailSender": {
         "email": "<email>",
-        "password": "<password>",
+        "sendgrid_key": "<sendgrid-key>",
         "timeout": 20 
     },
     "database": {

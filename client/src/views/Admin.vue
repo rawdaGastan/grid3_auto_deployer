@@ -29,10 +29,19 @@
                     class="d-block "
                     text="Approve"
                   />
-                  <BaseButton
+                  <!-- <BaseButton
                     class="d-block bg-red text-white"
                     text="Reject"
-                  />
+                  /> -->
+              </td>
+            </tr>
+            <tr>
+              <td class="align-center">
+                <BaseButton
+                    color="primary"
+                    class="d-block"
+                    text="Approve All"
+                />
               </td>
             </tr>
           </tbody>

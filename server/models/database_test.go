@@ -111,6 +111,7 @@ func TestUpdatePassword(t *testing.T) {
 		err := db.CreateUser(&user)
 		assert.NoError(t, err)
 		err = db.UpdatePassword("email", "new-pass")
+		assert.NoError(t, err)
 		u, err := db.GetUserByEmail("email")
 		assert.Equal(t, u.Email, "email")
 		assert.Equal(t, u.HashedPassword, "new-pass")
@@ -137,6 +138,7 @@ func TestUpdateUserByID(t *testing.T) {
 		err := db.CreateUser(&user)
 		assert.NoError(t, err)
 		id, err := db.UpdateUserByID(user.ID.String(), User{Email: "", Voucher: "voucher", HashedPassword: "new-pass", Name: "name"})
+		assert.NoError(t, err)
 		assert.Equal(t, id, user.ID.String())
 		var u User
 		err = db.db.First(&u).Error
@@ -169,6 +171,7 @@ func TestUpdateVerification(t *testing.T) {
 		assert.Equal(t, user.Verified, false)
 		assert.NoError(t, err)
 		err = db.UpdateVerification(user.ID.String(), true)
+		assert.NoError(t, err)
 		var u User
 		err = db.db.First(&u).Error
 		assert.NoError(t, err)
@@ -550,7 +553,7 @@ func TestApproveAllVouchers(t *testing.T) {
 
 		v, err := db.ApproveAllVouchers()
 		assert.NoError(t, err)
-		assert.Equal(t, len(v), 2)
+		assert.Len(t, v, 2)
 		assert.True(t, v[0].Approved)
 		assert.True(t, v[1].Approved)
 
@@ -579,5 +582,205 @@ func TestDeactivateVoucher(t *testing.T) {
 		var v Voucher
 		err = db.db.Find(&v).Where("voucher = 'voucher1'").Error
 		assert.Equal(t, v.Used, true)
+	})
+}
+
+func TestCreateK8s(t *testing.T) {
+	db := setupDB(t)
+	k8s := K8sCluster{
+		UserID: "user",
+		Master: Master{
+			Name: "master",
+		},
+		Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+	}
+	err := db.CreateK8s(&k8s)
+	assert.NoError(t, err)
+	var k K8sCluster
+	err = db.db.First(&k).Error
+	assert.NoError(t, err)
+	assert.Equal(t, k.ID, 1)
+	assert.Equal(t, k.UserID, "user")
+	var m Master
+	err = db.db.First(&m).Error
+	assert.NoError(t, err)
+	assert.Equal(t, m.Name, "master")
+	assert.Equal(t, m.ClusterID, 1)
+	var w []Worker
+	err = db.db.Find(&w).Error
+	assert.NoError(t, err)
+	assert.Len(t, w, 2)
+	assert.Equal(t, w[0].Name, "worker1")
+	assert.Equal(t, w[0].ClusterID, 1)
+	assert.Equal(t, w[1].Name, "worker2")
+	assert.Equal(t, w[1].ClusterID, 1)
+}
+func TestGetK8s(t *testing.T) {
+	db := setupDB(t)
+	t.Run("K8s not found", func(t *testing.T) {
+		_, err := db.GetK8s(1)
+		assert.Equal(t, err, gorm.ErrRecordNotFound)
+	})
+	t.Run("K8s found", func(t *testing.T) {
+		k8s := K8sCluster{
+			UserID: "user",
+			Master: Master{
+				Name: "master",
+			},
+			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+		}
+		k8s2 := K8sCluster{
+			UserID: "new-user",
+			Master: Master{
+				Name: "master",
+			},
+			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+		}
+
+		err := db.CreateK8s(&k8s)
+		assert.NoError(t, err)
+		err = db.CreateK8s(&k8s2)
+		assert.NoError(t, err)
+
+		k, err := db.GetK8s(k8s.ID)
+		assert.NoError(t, err)
+		assert.Equal(t, k, k8s)
+		assert.NotEqual(t, k, k8s2)
+	})
+}
+func TestGetAllK8s(t *testing.T) {
+	db := setupDB(t)
+	t.Run("K8s not found", func(t *testing.T) {
+		c, err := db.GetAllK8s("user")
+		assert.NoError(t, err)
+		assert.Empty(t, c)
+	})
+	t.Run("K8s found", func(t *testing.T) {
+		k8s1 := K8sCluster{
+			UserID: "user",
+			Master: Master{
+				Name: "master",
+			},
+			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+		}
+		k8s2 := K8sCluster{
+			UserID: "user",
+			Master: Master{
+				Name: "master",
+			},
+			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+		}
+		k8s3 := K8sCluster{
+			UserID: "new-user",
+			Master: Master{
+				Name: "master",
+			},
+			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+		}
+
+		err := db.CreateK8s(&k8s1)
+		assert.NoError(t, err)
+		err = db.CreateK8s(&k8s2)
+		assert.NoError(t, err)
+		err = db.CreateK8s(&k8s3)
+		assert.NoError(t, err)
+
+		k, err := db.GetAllK8s("user")
+		assert.NoError(t, err)
+		assert.Equal(t, k, []K8sCluster{k8s1, k8s2})
+
+		k, err = db.GetAllK8s("new-user")
+		assert.NoError(t, err)
+		assert.Equal(t, k, []K8sCluster{k8s3})
+	})
+}
+func TestDeleteK8s(t *testing.T) {
+	db := setupDB(t)
+	t.Run("K8s not found", func(t *testing.T) {
+		// unlike deleting vm it returns error because it find k8s from k8s table
+		// and use it to filter master and workers
+		err := db.DeleteK8s(1)
+		assert.Equal(t, err, gorm.ErrRecordNotFound)
+	})
+	t.Run("K8s found", func(t *testing.T) {
+		k8s1 := K8sCluster{
+			UserID: "user",
+			Master: Master{
+				Name: "master",
+			},
+			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+		}
+		k8s2 := K8sCluster{
+			UserID: "new-user",
+			Master: Master{
+				Name: "master",
+			},
+			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+		}
+
+		err := db.CreateK8s(&k8s1)
+		assert.NoError(t, err)
+		err = db.CreateK8s(&k8s2)
+		assert.NoError(t, err)
+
+		err = db.DeleteK8s(k8s1.ID)
+		assert.NoError(t, err)
+
+		_, err = db.GetK8s(k8s1.ID)
+		assert.Equal(t, err, gorm.ErrRecordNotFound)
+
+		k, err := db.GetK8s(k8s2.ID)
+		assert.NoError(t, err)
+		assert.Equal(t, k, k8s2)
+	})
+}
+func TestDeleteAllK8s(t *testing.T) {
+	db := setupDB(t)
+	t.Run("K8s not found", func(t *testing.T) {
+		// missing where error because gorm uses the returned clusters as the where clause
+		// for deleting masters and workers since no clusters exist where clause is empty
+		err := db.DeleteAllK8s("user")
+		assert.Equal(t, err, gorm.ErrMissingWhereClause)
+	})
+	t.Run("K8s found", func(t *testing.T) {
+		k8s1 := K8sCluster{
+			UserID: "user",
+			Master: Master{
+				Name: "master",
+			},
+			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+		}
+		k8s2 := K8sCluster{
+			UserID: "user",
+			Master: Master{
+				Name: "master",
+			},
+			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+		}
+		k8s3 := K8sCluster{
+			UserID: "new-user",
+			Master: Master{
+				Name: "master",
+			},
+			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+		}
+
+		err := db.CreateK8s(&k8s1)
+		assert.NoError(t, err)
+		err = db.CreateK8s(&k8s2)
+		assert.NoError(t, err)
+		err = db.CreateK8s(&k8s3)
+		assert.NoError(t, err)
+
+		err = db.DeleteAllK8s("user")
+		assert.NoError(t, err)
+
+		k, err := db.GetAllK8s("user")
+		assert.NoError(t, err)
+		assert.Empty(t, k)
+
+		k, err = db.GetAllK8s("new-user")
+		assert.NoError(t, err)
+		assert.Equal(t, k, []K8sCluster{k8s3})
 	})
 }

@@ -4,9 +4,9 @@ WORKDIR /server
 
 COPY . .
 
+RUN apk add --no-cache make
 RUN apk add --update gcc musl-dev
 RUN go mod tidy
 
-CMD  go run main.go
-
+CMD make run
 EXPOSE 3000

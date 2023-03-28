@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/gorilla/mux"
-	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/validator.v2"
 	"gorm.io/gorm"

@@ -1,4 +1,4 @@
-module github.com/rawdaGastan/cloud4students
+module github.com/codescalers/cloud4students
 
 go 1.16
 

@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/codescalers/cloud4students/internal"
+	"github.com/codescalers/cloud4students/models"
 	"github.com/gorilla/mux"
-	"github.com/rawdaGastan/cloud4students/internal"
-	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/validator.v2"
 	"gorm.io/gorm"

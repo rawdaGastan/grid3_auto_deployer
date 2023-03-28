@@ -4,7 +4,7 @@ package routes
 import (
 	"net/http"
 
-	"github.com/rawdaGastan/cloud4students/middlewares"
+	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )

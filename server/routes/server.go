@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/codescalers/cloud4students/internal"
+	"github.com/codescalers/cloud4students/middlewares"
+	"github.com/codescalers/cloud4students/models"
 	"github.com/gorilla/mux"
-	"github.com/rawdaGastan/cloud4students/internal"
-	"github.com/rawdaGastan/cloud4students/middlewares"
-	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/grid3-go/deployer"

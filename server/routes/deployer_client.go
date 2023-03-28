@@ -8,8 +8,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/codescalers/cloud4students/models"
 	"github.com/pkg/errors"
-	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/threefoldtech/grid3-go/deployer"
 	"github.com/threefoldtech/grid3-go/workloads"
 	"github.com/threefoldtech/grid_proxy_server/pkg/types"

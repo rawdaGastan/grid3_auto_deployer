@@ -62,8 +62,9 @@ type EmailInput struct {
 
 // ApplyForVoucherInput struct for user to apply for voucher
 type ApplyForVoucherInput struct {
-	VMs    int    `json:"vms" binding:"required" validate:"min=0"`
-	Reason string `json:"reason" binding:"required" validate:"nonzero"`
+	VMs       int    `json:"vms" binding:"required" validate:"min=0"`
+	PublicIPs int    `json:"public_ips" binding:"required" validate:"min=0"`
+	Reason    string `json:"reason" binding:"required" validate:"nonzero"`
 }
 
 // AddVoucherInput struct for voucher applied by user
@@ -572,10 +573,11 @@ func (r *Router) ApplyForVoucherHandler(w http.ResponseWriter, req *http.Request
 	// generate voucher for user but can't use it until admin approves it
 	v := internal.GenerateRandomVoucher(5)
 	voucher := models.Voucher{
-		Voucher: v,
-		UserID:  userID,
-		VMs:     input.VMs,
-		Reason:  input.Reason,
+		Voucher:   v,
+		UserID:    userID,
+		VMs:       input.VMs,
+		Reason:    input.Reason,
+		PublicIPs: input.PublicIPs,
 	}
 
 	err = r.db.CreateVoucher(&voucher)
@@ -639,7 +641,7 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	err = r.db.UpdateUserQuota(userID, oldQuota.Vms+voucherQuota.VMs)
+	err = r.db.UpdateUserQuota(userID, oldQuota.Vms+voucherQuota.VMs, oldQuota.PublicIPs+voucherQuota.PublicIPs)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)

@@ -17,8 +17,9 @@ import (
 
 // GenerateVoucherInput struct for data needed when user creates account
 type GenerateVoucherInput struct {
-	Length int `json:"length" binding:"required" validate:"min=3,max=20"`
-	VMs    int `json:"vms" binding:"required"`
+	Length    int `json:"length" binding:"required" validate:"min=3,max=20"`
+	VMs       int `json:"vms" binding:"required"`
+	PublicIPs int `json:"public_ips" binding:"required"`
 }
 
 // GenerateVoucherHandler generates a voucher by admin
@@ -53,8 +54,9 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 	voucher := internal.GenerateRandomVoucher(input.Length)
 
 	v := models.Voucher{
-		Voucher: voucher,
-		VMs:     input.VMs,
+		Voucher:   voucher,
+		VMs:       input.VMs,
+		PublicIPs: input.PublicIPs,
 	}
 
 	err = r.db.CreateVoucher(&v)

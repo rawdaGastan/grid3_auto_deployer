@@ -913,7 +913,11 @@ definitions:
       userID:
         type: string
         format: uuid
-      ip:
+      ygg_ip:
+        type: string
+      public:
+        type: boolean
+      public_ip:
         type: string
       cru:
         type: string
@@ -955,7 +959,11 @@ definitions:
         type: integer
       name: 
         type: string
-      ip:
+      ygg_ip:
+        type: string
+      public:
+        type: boolean
+      public_ip:
         type: string
       cru:
         type: string
@@ -1064,6 +1072,8 @@ definitions:
       resources:
         type: string
         format: small-medium-large
+      public:
+        type: boolean
   
   DeployK8s:
     type: object
@@ -1073,6 +1083,8 @@ definitions:
       resources:
         type: string
         format: small-medium-large
+      public:
+        type: boolean
       workers:
         type: array
         items:

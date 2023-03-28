@@ -3,8 +3,8 @@
         <Toast ref="toast" />
 
         <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
-      Change Password
-    </h5>
+            Change Password
+        </h5>
         <v-row justify="center">
             <v-col cols="12" sm="6">
                 <v-form v-model="verify" @submit.prevent="onSubmit">
@@ -47,8 +47,8 @@ import Toast from "@/components/Toast.vue";
 
 export default {
     components: {
-    Toast,
-  },
+        Toast,
+    },
     setup() {
         const verify = ref(false);
         const newpassword = ref(null);
@@ -76,13 +76,21 @@ export default {
             loading.value = true;
 
             axios
-                .put(window.configs.vite_app_endpoint+"/user/change_password", {
+                .put(window.configs.vite_app_endpoint + "/user/change_password", {
                     email: route.query.email,
                     password: newpassword.value,
                     confirm_password: cnewpassword.value,
-                })
+                }, {
+                    headers: {
+                        Authorization: "Bearer " + localStorage.getItem('password_token'),
+
+                    }
+                }
+                )
                 .then((response) => {
+
                     toast.value.toast(response.data.msg);
+                    localStorage.removeItem('password_token');
                     router.push({
                         name: 'Login',
                     });

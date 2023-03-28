@@ -54,7 +54,6 @@ const routes = [
   },
   {
     path: "/",
-    redirect: "/dashboard",
     component: Default,
     children: [
       {

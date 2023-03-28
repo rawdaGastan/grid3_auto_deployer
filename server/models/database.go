@@ -74,10 +74,10 @@ func (d *DB) ListAllUsers() ([]User, error) {
 	var res []User
 	query := d.db.Find(&res, "verified = true")
 	if query.Error != nil {
-		return res, query.Error
+		return []User{}, query.Error
 	}
 
-	return res, query.Error
+	return res, nil
 }
 
 // UpdatePassword updates password of user
@@ -217,10 +217,10 @@ func (d *DB) GetUserQuota(userID string) (Quota, error) {
 
 	query := d.db.First(&res, "user_id = ?", userID)
 	if query.Error != nil {
-		return res, query.Error
+		return Quota{}, query.Error
 	}
 
-	return res, query.Error
+	return res, nil
 }
 
 // CreateVoucher creates a new voucher
@@ -234,10 +234,10 @@ func (d *DB) GetVoucher(voucher string) (Voucher, error) {
 	var res Voucher
 	query := d.db.First(&res, "voucher = ?", voucher)
 	if query.Error != nil {
-		return res, query.Error
+		return Voucher{}, query.Error
 	}
 
-	return res, query.Error
+	return res, nil
 }
 
 // GetVoucherByID gets voucher by ID
@@ -245,10 +245,10 @@ func (d *DB) GetVoucherByID(id int) (Voucher, error) {
 	var res Voucher
 	query := d.db.First(&res, id)
 	if query.Error != nil {
-		return res, query.Error
+		return Voucher{}, query.Error
 	}
 
-	return res, query.Error
+	return res, nil
 }
 
 // ListAllVouchers returns all vouchers to admin
@@ -256,10 +256,10 @@ func (d *DB) ListAllVouchers() ([]Voucher, error) {
 	var res []Voucher
 	query := d.db.Find(&res)
 	if query.Error != nil {
-		return res, query.Error
+		return []Voucher{}, query.Error
 	}
 
-	return res, query.Error
+	return res, nil
 }
 
 // ApproveVoucher approves voucher by voucher id

@@ -12,6 +12,7 @@ import (
 	"github.com/codescalers/cloud4students/models"
 	"github.com/codescalers/cloud4students/validators"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
@@ -453,16 +454,6 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		writeErrResponse(w, http.StatusBadRequest, "Failed to read user data")
 		return
 	}
-	user, err := r.db.GetUserByID(userID)
-	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(w, http.StatusNotFound, "User not found")
-		return
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
-		return
-	}
 	updates := 0
 
 	var hashedPassword string
@@ -507,9 +498,15 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		writeMsgResponse(w, "Nothing to update", "")
 	}
 
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
 	err = r.db.UpdateUserByID(
 		models.User{
-			ID:             user.ID,
+			ID:             userUUID,
 			Name:           input.Name,
 			HashedPassword: hashedPassword,
 			SSHKey:         input.SSHKey,

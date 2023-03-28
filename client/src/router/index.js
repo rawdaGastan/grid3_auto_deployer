@@ -5,7 +5,6 @@ import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
 import VM from "@/views/VM.vue";
 import K8s from "@/views/K8s.vue";
-import Default from "@/layouts/default/Default.vue";
 
 const routes = [
   {
@@ -24,7 +23,7 @@ const routes = [
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
     component: () =>
-    import(/* webpackChunkName: "login" */ "@/views/Signup.vue"),
+      import(/* webpackChunkName: "login" */ "@/views/Signup.vue"),
   },
   {
     path: "/forgetPassword",
@@ -33,7 +32,7 @@ const routes = [
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
     component: () =>
-    import(/* webpackChunkName: "login" */ "@/views/Forgetpassword.vue"),
+      import(/* webpackChunkName: "login" */ "@/views/Forgetpassword.vue"),
   },
   {
     path: "/otp",
@@ -54,32 +53,36 @@ const routes = [
   },
   {
     path: "/",
-    component: Default,
+    component: () => import("@/layouts/default/Default.vue"),
     children: [
       {
         path: "/",
         name: "Home",
         component: Home,
-        },
-        {
-          path: "/profile",
-          name: "Profile",
-          component: Profile,
-        },
-        {
-          path: "/about",
-          name: "About",
-          component: About,
-        },
-        {
-          path: "/vm",
-          name: "VM",
-          component: VM,
-        },
-        {
+        requiredAuth: true,
+      },
+      {
+        path: "/profile",
+        name: "Profile",
+        component: Profile,
+        requiredAuth: true,
+      },
+      {
+        path: "/about",
+        name: "About",
+        component: About,
+      },
+      {
+        path: "/vm",
+        name: "VM",
+        component: VM,
+        requiredAuth: true,
+      },
+      {
         path: "/k8s",
         name: "K8s",
         component: K8s,
+        requiredAuth: true,
       },
     ],
   },
@@ -91,12 +94,11 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  if (to.path != "/login") {
-    if (localStorage.getItem("token")) {
-      next();
-    } else {
-      next("login");
-    }
+  let token = localStorage.getItem("token");
+  if (to.path != "/login" && !token) {
+    next("/login");
+  } else if (to.path == "/signup" && !token) {
+    next("/signup");
   } else {
     next();
   }

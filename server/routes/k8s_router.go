@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/gorilla/mux"
-	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
@@ -145,7 +145,7 @@ func (r *Router) K8sGetAllHandler(w http.ResponseWriter, req *http.Request) {
 
 	clusters, err := r.db.GetAllK8s(userID)
 	if err == gorm.ErrRecordNotFound || len(clusters) == 0 {
-		writeMsgResponse(w, "Kubernetes clusters not found", nil)
+		writeMsgResponse(w, "Kubernetes clusters not found", clusters)
 		return
 	}
 	if err != nil {

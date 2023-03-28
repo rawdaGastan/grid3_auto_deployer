@@ -6,7 +6,7 @@ import (
 
 	"strconv"
 
-	"github.com/rawdaGastan/cloud4students/validators"
+	"github.com/codescalers/cloud4students/validators"
 	"github.com/rs/zerolog/log"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"

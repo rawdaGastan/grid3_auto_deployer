@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/codescalers/cloud4students/internal"
+	"github.com/codescalers/cloud4students/models"
 	"github.com/gorilla/mux"
-	"github.com/rawdaGastan/cloud4students/internal"
-	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
@@ -90,6 +90,11 @@ func (r *Router) ListVouchersHandler(w http.ResponseWriter, req *http.Request) {
 	*/
 
 	vouchers, err := r.db.ListAllVouchers()
+	if err == gorm.ErrRecordNotFound || len(vouchers) == 0 {
+		writeMsgResponse(w, "Vouchers are not found", vouchers)
+		return
+	}
+
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)

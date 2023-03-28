@@ -6,4 +6,3 @@ swagger:
 
 run: 
 	docker compose up
-	

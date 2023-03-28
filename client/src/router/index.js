@@ -6,7 +6,6 @@ import About from "@/views/About.vue";
 import VM from "@/views/VM.vue";
 import K8s from "@/views/K8s.vue";
 import Admin from "@/views/Admin.vue";
-import Default from "@/layouts/default/Default.vue";
 
 const routes = [
   {
@@ -17,6 +16,9 @@ const routes = [
     // which is lazy-loaded when the route is visited.
     component: () =>
       import(/* webpackChunkName: "login" */ "@/views/Login.vue"),
+    meta: {
+      requiredAuth: false,
+    },
   },
   {
     path: "/signup",
@@ -25,7 +27,10 @@ const routes = [
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
     component: () =>
-    import(/* webpackChunkName: "login" */ "@/views/Signup.vue"),
+      import(/* webpackChunkName: "login" */ "@/views/Signup.vue"),
+    meta: {
+      requiredAuth: false,
+    },
   },
   {
     path: "/forgetPassword",
@@ -34,7 +39,10 @@ const routes = [
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
     component: () =>
-    import(/* webpackChunkName: "login" */ "@/views/Forgetpassword.vue"),
+      import(/* webpackChunkName: "login" */ "@/views/Forgetpassword.vue"),
+    meta: {
+      requiredAuth: false,
+    },
   },
   {
     path: "/otp",
@@ -43,6 +51,9 @@ const routes = [
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
     component: () => import(/* webpackChunkName: "login" */ "@/views/Otp.vue"),
+    meta: {
+      requiredAuth: false,
+    },
   },
   {
     path: "/newPassword",
@@ -52,35 +63,53 @@ const routes = [
     // which is lazy-loaded when the route is visited.
     component: () =>
       import(/* webpackChunkName: "login" */ "@/views/Newpassword.vue"),
+    meta: {
+      requiredAuth: false,
+    },
   },
   {
     path: "/",
-    component: Default,
+    component: () => import("@/layouts/default/Default.vue"),
     children: [
       {
         path: "/",
         name: "Home",
         component: Home,
+        meta: {
+          requiredAuth: true,
         },
-        {
-          path: "/profile",
-          name: "Profile",
-          component: Profile,
+      },
+      {
+        path: "/profile",
+        name: "Profile",
+        component: Profile,
+        meta: {
+          requiredAuth: true,
         },
-        {
-          path: "/about",
-          name: "About",
-          component: About,
+      },
+      {
+        path: "/about",
+        name: "About",
+        component: About,
+        meta: {
+          requiredAuth: false,
         },
-        {
-          path: "/vm",
-          name: "VM",
-          component: VM,
+      },
+      {
+        path: "/vm",
+        name: "VM",
+        component: VM,
+        meta: {
+          requiredAuth: true,
         },
-        {
+      },
+      {
         path: "/k8s",
         name: "K8s",
         component: K8s,
+        meta: {
+          requiredAuth: true,
+        },
       },
       {
         path: "admin",
@@ -97,12 +126,9 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  if (to.path != "/login") {
-    if (localStorage.getItem("token")) {
-      next();
-    } else {
-      next("login");
-    }
+  let token = localStorage.getItem("token");
+  if (to.path != "/login" && to.meta.requiredAuth && !token) {
+    next("/login");
   } else {
     next();
   }

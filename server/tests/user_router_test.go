@@ -61,10 +61,10 @@ func TestSignUpHandler(t *testing.T) {
 	router, _, _, version := SetUp(t)
 	// json Body of request
 	body := []byte(`{
-		"name":"name",
-		"email":"name@gmail.com",
-		"password":"strongpass",
-		"confirm_password":"strongpass",
+		"name": "name",
+		"email": "name@gmail.com",
+		"password": "123456",
+		"confirm_password": "123456",
 		"team_size":5,
 		"project_desc":"desc",
 		"college":"clg"
@@ -85,7 +85,7 @@ func TestSignUpHandler(t *testing.T) {
 		request := httptest.NewRequest("POST", version+"/user/signup", nil)
 		response := httptest.NewRecorder()
 		router.SignUpHandler(response, request)
-		assert.Equal(t, response.Code, http.StatusInternalServerError)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})
 
 }
@@ -494,7 +494,7 @@ func TestActivateVoucherHandler(t *testing.T) {
 			t.Error(err)
 		}
 		user, err := db.GetUserByEmail("name@gmail.com")
-		fmt.Printf("user: %v\n", user)
+
 		if err != nil {
 			t.Error(err)
 		}
@@ -534,7 +534,7 @@ func TestActivateVoucherHandler(t *testing.T) {
 			t.Error(err)
 		}
 		user, err := db.GetUserByEmail("name@gmail.com")
-		fmt.Printf("user: %v\n", user)
+
 		if err != nil {
 			t.Error(err)
 		}

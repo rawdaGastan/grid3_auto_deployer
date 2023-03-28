@@ -10,9 +10,9 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.29.0
-	github.com/sendgrid/rest v2.6.9+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.12.0+incompatible
 	github.com/spf13/cobra v1.6.1
+	github.com/stretchr/testify v1.8.2
 	github.com/threefoldtech/grid3-go v1.0.1
 	github.com/threefoldtech/grid_proxy_server v1.6.12
 	github.com/threefoldtech/zos v0.5.6-0.20230224113017-e887a6ca3fc5
@@ -21,8 +21,6 @@ require (
 	gorm.io/driver/sqlite v1.4.4
 	gorm.io/gorm v1.24.6
 )
-
-require github.com/stretchr/testify v1.8.2
 
 require (
 	github.com/ChainSafe/go-schnorrkel v1.0.0 // indirect
@@ -53,6 +51,7 @@ require (
 	github.com/pierrec/xxHash v0.1.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
+	github.com/sendgrid/rest v2.6.9+incompatible // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/threefoldtech/rmb-sdk-go v1.0.1-0.20230316162347-255e7faa0006 // indirect
 	github.com/threefoldtech/substrate-client v0.1.3 // indirect
@@ -66,5 +65,3 @@ require (
 )
 
 replace github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.5 => github.com/threefoldtech/go-substrate-rpc-client/v4 v4.0.6-0.20230102154731-7c633b7d3c71
-
-replace github.com/threefoldtech/grid3-go v0.0.0-20230313121415-1da999636079 => ../../grid3_client_go

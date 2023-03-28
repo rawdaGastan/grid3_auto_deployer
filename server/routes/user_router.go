@@ -11,6 +11,7 @@ import (
 	"github.com/rawdaGastan/cloud4students/internal"
 	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rawdaGastan/cloud4students/models"
+	"github.com/rawdaGastan/cloud4students/validators"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
@@ -49,9 +50,9 @@ type ChangePasswordInput struct {
 // UpdateUserInput struct for user to updates his data
 type UpdateUserInput struct {
 	Name            string `json:"name"`
-	Password        string `json:"password" validate:"password"`
-	ConfirmPassword string `json:"confirm_password" validate:"password"`
-	SSHKey          string `json:"ssh_key" validate:"ssh"`
+	Password        string `json:"password"`
+	ConfirmPassword string `json:"confirm_password"`
+	SSHKey          string `json:"ssh_key"`
 }
 
 // EmailInput struct for user when forgetting password
@@ -441,19 +442,19 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	updates := 0
 
-	err = validator.Validate(input)
-	if err != nil {
-		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusBadRequest, "Invalid user data")
-		return
-	}
-
 	var hashedPassword string
 	if len(strings.TrimSpace(input.Password)) != 0 {
 		updates++
 		// password and confirm password should match
 		if input.Password != input.ConfirmPassword {
 			writeErrResponse(w, http.StatusBadRequest, "Password and confirm password don't match")
+			return
+		}
+
+		err = validators.ValidatePass(input.Password)
+		if err != nil {
+			log.Error().Err(err).Send()
+			writeErrResponse(w, http.StatusBadRequest, "Invalid password")
 			return
 		}
 
@@ -468,10 +469,11 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 
 	if len(strings.TrimSpace(input.SSHKey)) != 0 {
 		updates++
-		/*if err := validator.ValidateSSHKey(input.SSHKey); err != nil {
-			writeErrResponse(w, err.Error())
+		if err := validators.ValidateSSH(input.SSHKey); err != nil {
+			log.Error().Err(err).Send()
+			writeErrResponse(w, http.StatusBadRequest, "Invalid sshKey")
 			return
-		}*/
+		}
 	}
 
 	if len(strings.TrimSpace(input.Name)) != 0 {
@@ -510,6 +512,36 @@ func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	writeMsgResponse(w, "User exists", map[string]interface{}{"user": user})
+}
+
+// GetAllUsersHandler returns all users
+func (r *Router) GetAllUsersHandler(w http.ResponseWriter, req *http.Request) {
+	/*userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
+	user, err := r.db.GetUserByID(userID)
+	if err != nil {
+		writeNotFoundResponse(w, err)
+		return
+	}
+
+	if !user.Admin {
+		writeErrResponse(w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
+		return
+	}
+	*/
+
+	users, err := r.db.ListAllUsers()
+	if err == gorm.ErrRecordNotFound || len(users) == 0 {
+		writeMsgResponse(w, "Users are not found", users)
+		return
+	}
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	writeMsgResponse(w, "Users are found", users)
 }
 
 // ApplyForVoucherHandler makes user apply for voucher that would be accepted by admin

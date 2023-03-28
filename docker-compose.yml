@@ -5,9 +5,9 @@ services:
     ports:
       - "3000:3000"
  
-  # frontend:
-  #   environment:
-  #     - VUE_APP_BACKEND=ws://localhost:3000/
-  #   image: "rawdagastan/c4s:frontend"
-  #   ports:
-  #     - "8080:8080"
+  frontend:
+    environment:
+      - VITE_API_ENDPOINT=http://localhost:3000/v1
+    image: "mayarosama/cloud4students:latest"
+    ports:
+       - "8080:80"

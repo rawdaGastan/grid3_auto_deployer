@@ -2,7 +2,6 @@
 package models
 
 import (
-	"fmt"
 	"time"
 
 	"gorm.io/driver/sqlite"
@@ -68,7 +67,17 @@ func (d *DB) GetUserByID(id string) (User, error) {
 	}
 
 	return res, nil
+}
 
+// ListAllUsers returns all users to admin
+func (d *DB) ListAllUsers() ([]User, error) {
+	var res []User
+	query := d.db.Find(&res, "verified = true")
+	if query.Error != nil {
+		return res, query.Error
+	}
+
+	return res, query.Error
 }
 
 // UpdatePassword updates password of user
@@ -205,7 +214,7 @@ func (d *DB) GetUserQuota(userID string) (Quota, error) {
 	var res Quota
 	var b []Quota
 	_ = d.db.Find(&b)
-	fmt.Printf("b: %v\n", b)
+
 	query := d.db.First(&res, "user_id = ?", userID)
 	if query.Error != nil {
 		return res, query.Error

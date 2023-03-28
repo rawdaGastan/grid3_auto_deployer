@@ -148,7 +148,7 @@ func (r *Router) ListVMsHandler(w http.ResponseWriter, req *http.Request) {
 
 	vms, err := r.db.GetAllVms(userID)
 	if err == gorm.ErrRecordNotFound || len(vms) == 0 {
-		writeMsgResponse(w, "Virtual machines not found", nil)
+		writeMsgResponse(w, "Virtual machines not found", vms)
 		return
 	}
 	if err != nil {

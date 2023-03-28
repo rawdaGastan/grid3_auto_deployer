@@ -399,7 +399,7 @@ func TestCreateQuota(t *testing.T) {
 func TestUpdateUserQuota(t *testing.T) {
 	db := setupDB(t)
 	t.Run("quota not found so no updates", func(t *testing.T) {
-		err := db.UpdateUserQuota("user", 5)
+		err := db.UpdateUserQuota("user", 5, 0)
 		assert.NoError(t, err)
 	})
 	t.Run("quota found", func(t *testing.T) {
@@ -411,7 +411,7 @@ func TestUpdateUserQuota(t *testing.T) {
 		err = db.CreateQuota(&quota2)
 		assert.NoError(t, err)
 
-		err = db.UpdateUserQuota("user", 5)
+		err = db.UpdateUserQuota("user", 5, 10)
 		assert.NoError(t, err)
 
 		var q Quota

@@ -2,7 +2,6 @@
 package models
 
 import (
-
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm/clause"
 
@@ -104,10 +103,6 @@ func (d *DB) AddUserVoucher(id string, voucher string) error {
 func (d *DB) GetNotUsedVoucherByUserID(id string) (Voucher, error) {
 	var res Voucher
 	query := d.db.First(&res, "user_id = ? AND used = false", id)
-<<<<<<< HEAD
-=======
-
->>>>>>> 12822f8 (Add database tests except k8s)
 	return res, query.Error
 }
 

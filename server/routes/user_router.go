@@ -118,9 +118,12 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	// update code if user is not verified but exists
 	if getErr == nil {
 		if !user.Verified {
-			_, err = r.db.UpdateUserByID(
-				user.ID.String(),
-				models.User{UpdatedAt: time.Now(), Code: code},
+			err = r.db.UpdateUserByID(
+				models.User{
+					ID:        user.ID,
+					UpdatedAt: time.Now(),
+					Code:      code,
+				},
 			)
 			if err != nil {
 				log.Error().Err(err).Send()
@@ -338,9 +341,9 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	_, err = r.db.UpdateUserByID(
-		user.ID.String(),
+	err = r.db.UpdateUserByID(
 		models.User{
+			ID:        user.ID,
 			UpdatedAt: time.Now(),
 			Code:      code,
 		},
@@ -450,6 +453,16 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		writeErrResponse(w, http.StatusBadRequest, "Failed to read user data")
 		return
 	}
+	user, err := r.db.GetUserByID(userID)
+	if err == gorm.ErrRecordNotFound {
+		writeErrResponse(w, http.StatusNotFound, "User not found")
+		return
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
 	updates := 0
 
 	var hashedPassword string
@@ -494,9 +507,9 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		writeMsgResponse(w, "Nothing to update", "")
 	}
 
-	userID, err = r.db.UpdateUserByID(
-		userID,
+	err = r.db.UpdateUserByID(
 		models.User{
+			ID:             user.ID,
 			Name:           input.Name,
 			HashedPassword: hashedPassword,
 			SSHKey:         input.SSHKey,

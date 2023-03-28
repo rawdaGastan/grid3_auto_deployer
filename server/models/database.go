@@ -75,9 +75,9 @@ func (d *DB) UpdatePassword(email string, password string) error {
 }
 
 // UpdateUser updates information of user. empty and unchanged fields are not updated.
-func (d *DB) UpdateUserByID(id string, user User) (string, error) {
-	result := d.db.Model(&User{}).Where("id = ?", id).Updates(user)
-	return id, result.Error
+func (d *DB) UpdateUserByID(user User) error {
+	result := d.db.Model(&User{}).Where("id = ?", user.ID.String()).Updates(user)
+	return result.Error
 }
 
 // UpdateVerification updates if user is verified or not

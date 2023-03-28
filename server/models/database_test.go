@@ -122,7 +122,7 @@ func TestUpdatePassword(t *testing.T) {
 func TestUpdateUserByID(t *testing.T) {
 	db := setupDB(t)
 	t.Run("user not found so nothing updated", func(t *testing.T) {
-		_, err := db.UpdateUserByID("id", User{Email: "email"})
+		err := db.UpdateUserByID(User{Email: "email"})
 		assert.NoError(t, err)
 		var user User
 		err = db.db.First(&user).Error
@@ -137,9 +137,14 @@ func TestUpdateUserByID(t *testing.T) {
 		}
 		err := db.CreateUser(&user)
 		assert.NoError(t, err)
-		id, err := db.UpdateUserByID(user.ID.String(), User{Email: "", Voucher: "voucher", HashedPassword: "new-pass", Name: "name"})
+		err = db.UpdateUserByID(User{
+			ID:             user.ID,
+			Email:          "",
+			Voucher:        "voucher",
+			HashedPassword: "new-pass",
+			Name:           "name",
+		})
 		assert.NoError(t, err)
-		assert.Equal(t, id, user.ID.String())
 		var u User
 		err = db.db.First(&u).Error
 		// shouldn't change

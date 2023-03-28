@@ -4,8 +4,8 @@ package internal
 import (
 	"time"
 
+	"github.com/codescalers/cloud4students/models"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/rawdaGastan/cloud4students/models"
 )
 
 // CreateJWT create token for user

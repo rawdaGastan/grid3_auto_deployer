@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/codescalers/cloud4students/internal"
+	"github.com/codescalers/cloud4students/middlewares"
+	"github.com/codescalers/cloud4students/models"
 	"github.com/gorilla/mux"
-	"github.com/rawdaGastan/cloud4students/internal"
-	"github.com/rawdaGastan/cloud4students/middlewares"
-	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/grid3-go/deployer"
@@ -46,7 +46,7 @@ func NewServer(file string) (server *Server, err error) {
 		return
 	}
 
-	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", true, false)
+	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, true, false)
 	if err != nil {
 		return
 	}
@@ -85,6 +85,7 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc(version+"/k8s/{id}", router.K8sDeleteHandler).Methods("DELETE", "OPTIONS")
 
 	// ADMIN ACCESS
+	r.HandleFunc(version+"/user/all", router.GetAllUsersHandler).Methods("GET", "OPTIONS")
 	r.HandleFunc(version+"/voucher", router.GenerateVoucherHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc(version+"/voucher", router.ListVouchersHandler).Methods("GET", "OPTIONS")
 	r.HandleFunc(version+"/voucher/{id}", router.ApproveVoucherHandler).Methods("PUT", "OPTIONS")

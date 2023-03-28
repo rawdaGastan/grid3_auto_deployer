@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/codescalers/cloud4students/middlewares"
+	"github.com/codescalers/cloud4students/models"
 	"github.com/gorilla/mux"
-	"github.com/rawdaGastan/cloud4students/middlewares"
-	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
@@ -148,7 +148,7 @@ func (r *Router) ListVMsHandler(w http.ResponseWriter, req *http.Request) {
 
 	vms, err := r.db.GetAllVms(userID)
 	if err == gorm.ErrRecordNotFound || len(vms) == 0 {
-		writeMsgResponse(w, "Virtual machines not found", nil)
+		writeMsgResponse(w, "Virtual machines not found", vms)
 		return
 	}
 	if err != nil {

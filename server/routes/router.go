@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/rawdaGastan/cloud4students/internal"
-	"github.com/rawdaGastan/cloud4students/models"
-	"github.com/rawdaGastan/cloud4students/validators"
+	"github.com/codescalers/cloud4students/internal"
+	"github.com/codescalers/cloud4students/models"
+	"github.com/codescalers/cloud4students/validators"
 	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/grid3-go/deployer"
 	"gopkg.in/validator.v2"

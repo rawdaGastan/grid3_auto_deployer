@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/codescalers/cloud4students/models"
 	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
-	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rs/zerolog/log"
 )
 

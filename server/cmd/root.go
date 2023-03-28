@@ -8,7 +8,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/rawdaGastan/cloud4students/routes"
+	"github.com/codescalers/cloud4students/routes"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )

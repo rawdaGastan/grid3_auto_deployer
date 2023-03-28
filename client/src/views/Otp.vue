@@ -93,8 +93,6 @@ export default {
           })
           .then((response) => {
         
-            localStorage.setItem('password_token', response.data.data.access_token);
-
             toast.value.toast(response.data.msg);
             countDown.value = 30;
 

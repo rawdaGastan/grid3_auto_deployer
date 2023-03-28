@@ -82,7 +82,7 @@
         <p class="my-5 text-center">VMs are not found</p>
       </v-col>
     </v-row>
-    <confirm ref="confirm" />
+    <Confirm ref="confirm" />
     <Toast ref="toast" />
   </v-container>
 </template>

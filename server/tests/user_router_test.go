@@ -10,12 +10,12 @@ import (
 
 	"testing"
 
-	"github.com/magiconair/properties/assert"
-	"github.com/rawdaGastan/cloud4students/internal"
-	"github.com/rawdaGastan/cloud4students/middlewares"
+	"github.com/codescalers/cloud4students/internal"
+	"github.com/codescalers/cloud4students/middlewares"
+	"github.com/stretchr/testify/assert"
 
-	"github.com/rawdaGastan/cloud4students/models"
-	"github.com/rawdaGastan/cloud4students/routes"
+	"github.com/codescalers/cloud4students/models"
+	"github.com/codescalers/cloud4students/routes"
 	"github.com/threefoldtech/grid3-go/deployer"
 )
 
@@ -45,13 +45,14 @@ func SetUp(t testing.TB) (r *routes.Router, db models.DB, configurations *intern
 		return
 	}
 
-	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", true, false)
+	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, true, false)
 	if err != nil {
 		return
 	}
 
 	version = "/" + configuration.Version
-	router := routes.NewRouter(*configuration, db, tfPluginClient)
+	router, err := routes.NewRouter(*configuration, db, tfPluginClient)
+	assert.NoError(t, err)
 	return &router, db, configuration, version
 
 }
@@ -63,7 +64,10 @@ func TestSignUpHandler(t *testing.T) {
 		"name":"name",
 		"email":"name@gmail.com",
 		"password":"strongpass",
-		"confirm_password":"strongpass"
+		"confirm_password":"strongpass",
+		"team_size":5,
+		"project_desc":"desc",
+		"college":"clg"
 	}`)
 	t.Run("signup successfully", func(t *testing.T) {
 		request := httptest.NewRequest("POST", version+"/user/signup", bytes.NewBuffer(body))
@@ -92,7 +96,10 @@ func TestVerifySignUpCodeHandler(t *testing.T) {
 		"name":"name",
 		"email":"name@gmail.com",
 		"password":"strongpass",
-		"confirm_password":"strongpass"
+		"confirm_password":"strongpass",
+		"team_size":5,
+		"project_desc":"desc",
+		"college":"clg"
 	}`)
 	request1 := httptest.NewRequest("POST", version+"/user/signup", bytes.NewBuffer(body))
 	response1 := httptest.NewRecorder()
@@ -480,7 +487,6 @@ func TestActivateVoucherHandler(t *testing.T) {
 	t.Run("activate voucher ", func(t *testing.T) {
 		v := models.Voucher{
 			Voucher: "voucher",
-			K8s:     10,
 			VMs:     10,
 		}
 		err = db.CreateVoucher(&v)
@@ -496,7 +502,6 @@ func TestActivateVoucherHandler(t *testing.T) {
 			&models.Quota{
 				UserID: user.ID.String(),
 				Vms:    10,
-				K8s:    10,
 			},
 		)
 		if err != nil {
@@ -537,7 +542,6 @@ func TestActivateVoucherHandler(t *testing.T) {
 			&models.Quota{
 				UserID: user.ID.String(),
 				Vms:    10,
-				K8s:    10,
 			},
 		)
 		if err != nil {

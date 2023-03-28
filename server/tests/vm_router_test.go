@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/magiconair/properties/assert"
-	"github.com/rawdaGastan/cloud4students/internal"
-	"github.com/rawdaGastan/cloud4students/middlewares"
-	"github.com/rawdaGastan/cloud4students/models"
+	"github.com/codescalers/cloud4students/internal"
+	"github.com/codescalers/cloud4students/middlewares"
+	"github.com/codescalers/cloud4students/models"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDeployVMHandler(t *testing.T) {
@@ -40,7 +40,6 @@ func TestDeployVMHandler(t *testing.T) {
 		}
 		v := models.Voucher{
 			Voucher: "voucher",
-			K8s:     10,
 			VMs:     10,
 		}
 		err = db.CreateVoucher(&v)
@@ -51,7 +50,6 @@ func TestDeployVMHandler(t *testing.T) {
 			&models.Quota{
 				UserID: user.ID.String(),
 				Vms:    10,
-				K8s:    10,
 			},
 		)
 		if err != nil {
@@ -228,7 +226,6 @@ func TestDeleteVM(t *testing.T) {
 		}
 		v := models.Voucher{
 			Voucher: "voucher",
-			K8s:     10,
 			VMs:     10,
 		}
 		err = db.CreateVoucher(&v)
@@ -239,7 +236,6 @@ func TestDeleteVM(t *testing.T) {
 			&models.Quota{
 				UserID: user.ID.String(),
 				Vms:    10,
-				K8s:    10,
 			},
 		)
 		if err != nil {
@@ -300,7 +296,6 @@ func TestDeleteDeleteAllVMs(t *testing.T) {
 		}
 		v := models.Voucher{
 			Voucher: "voucher",
-			K8s:     10,
 			VMs:     10,
 		}
 		err = db.CreateVoucher(&v)
@@ -311,7 +306,6 @@ func TestDeleteDeleteAllVMs(t *testing.T) {
 			&models.Quota{
 				UserID: user.ID.String(),
 				Vms:    10,
-				K8s:    10,
 			},
 		)
 		if err != nil {

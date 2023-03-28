@@ -1,7 +1,10 @@
 // Package internal for internal details
 package internal
 
-import "math/rand"
+import (
+	"math/rand"
+	"time"
+)
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -12,4 +15,12 @@ func GenerateRandomVoucher(n int) string {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return string(b)
+}
+
+// GenerateRandomCode generates random code of 4 digits
+func GenerateRandomCode() int {
+	min := 1000
+	max := 9999
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(max-min) + min
 }

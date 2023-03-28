@@ -25,8 +25,9 @@ func TestParseConf(t *testing.T) {
 			Port: ":3000",
 		},
 		MailSender: MailSender{
-			Email:    "alaamahmoud.1223@gmail.com",
-			Password: "iqpfshurvllcknpl",
+			Email:       "alaamahmoud.1223@gmail.com",
+			SendGridKey: "iqpfshurvllcknpl",
+			Timeout:     10,
 		},
 		Account: GridAccount{
 			Mnemonics: "secret add bag cluster deposit beach illness letter crouch position rain arctic",

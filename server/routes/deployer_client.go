@@ -8,8 +8,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/codescalers/cloud4students/models"
 	"github.com/pkg/errors"
-	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/threefoldtech/grid3-go/deployer"
 	"github.com/threefoldtech/grid3-go/workloads"
 	"github.com/threefoldtech/grid_proxy_server/pkg/types"
@@ -166,8 +166,7 @@ func (r *Router) deployVM(vmName, resources, sshKey string) (*workloads.VM, uint
 		NetworkName: network.Name,
 	}
 
-	// TODO set proper contexts
-	print("before ctx")
+	// TODO: set proper contexts
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(r.config.Token.Timeout)*time.Minute)
 	defer cancel()
 	print("after ctx")

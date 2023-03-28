@@ -15,6 +15,7 @@ type Configuration struct {
 	Token      JwtToken    `json:"token"`
 	Account    GridAccount `json:"account"`
 	Version    string      `json:"version"`
+	Salt       string      `json:"salt"`
 }
 
 // Server struct to hold server's information
@@ -25,9 +26,9 @@ type Server struct {
 
 // MailSender struct to hold sender's email, password
 type MailSender struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Timeout  int    `json:"timeout"`
+	Email       string `json:"email"`
+	SendGridKey string `json:"sendgrid_key"`
+	Timeout     int    `json:"timeout"`
 }
 
 // DB struct to hold database file

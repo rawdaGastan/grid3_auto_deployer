@@ -5,7 +5,7 @@ all: verifiers test
 
 build:
 	@echo "Running $@"
-	@go build -ldflags="-X 'github.com/rawdaGastan/cloud4students/cmd.Commit=$(shell git rev-parse HEAD)'" -o bin/cloud4students main.go
+	@go build -ldflags="-X 'github.com/codescalers/cloud4students/cmd.Commit=$(shell git rev-parse HEAD)'" -o bin/cloud4students main.go
 
 run: build
 	@echo "Running $@"

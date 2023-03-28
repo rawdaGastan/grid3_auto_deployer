@@ -15,6 +15,8 @@ import { far } from "@fortawesome/free-regular-svg-icons";
 import { fab } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import moshaToast from "mosha-vue-toastify";
+import Default from "./layouts/default/Default.vue";
+import NoNavbar from "./layouts/NoNavbar.vue";
 import "mosha-vue-toastify/dist/style.css";
 
 // Plugins
@@ -25,6 +27,9 @@ library.add(fas, far, fab);
 const app = createApp(App);
 
 registerPlugins(app);
+
+app.component("Default-Layout", Default);
+app.component("No-Navbar-Layout", NoNavbar);
 
 app
   .component("font-awesome-icon", FontAwesomeIcon)

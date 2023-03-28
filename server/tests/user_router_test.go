@@ -21,12 +21,28 @@ import (
 
 // SetUp sets the needed configuration for testing
 func SetUp(t testing.TB) (r *routes.Router, db models.DB, configurations *internal.Configuration, version string) {
-	file := "testing.db"
-	_, err := os.OpenFile(file, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
-	if err != nil {
-		return
-	}
-	data, err := internal.ReadConfFile("./config-temp.json")
+	config :=
+		`
+{
+	"server": {
+		"host": "localhost",
+		"port": ":3000"
+	},
+	"mailSender": {
+        "email": "email",
+        "sendgrid_key": "my sendgrid_key",
+        "timeout": 60 
+    },
+    "account": {
+        "mnemonics": "my mnemonics"
+    }
+}
+	`
+	dir := t.TempDir()
+	configPath := dir + "/config.json"
+	dbPath := dir + "testing.db"
+	os.WriteFile(configPath, []byte(config), 0644)
+	data, err := internal.ReadConfFile(configPath)
 	if err != nil {
 		return
 	}
@@ -36,7 +52,7 @@ func SetUp(t testing.TB) (r *routes.Router, db models.DB, configurations *intern
 	}
 
 	db = models.NewDB()
-	err = db.Connect(file)
+	err = db.Connect(dbPath)
 	if err != nil {
 		return
 	}

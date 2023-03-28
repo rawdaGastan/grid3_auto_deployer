@@ -1,11 +1,24 @@
 package internal
 
 import (
+	"os"
 	"testing"
 )
 
 func TestReadConfFile(t *testing.T) {
-	data, err := ReadConfFile("../tests/config-temp.json")
+	config :=
+		`
+{
+	"server": {
+		"host": "localhost",
+		"port": ":3000"
+	}
+}
+	`
+	dir := t.TempDir()
+	configPath := dir + "/config.json"
+	os.WriteFile(configPath, []byte(config), 0644)
+	data, err := ReadConfFile(configPath)
 	if err != nil {
 		t.Error(err)
 	}
@@ -15,7 +28,27 @@ func TestReadConfFile(t *testing.T) {
 }
 
 func TestParseConf(t *testing.T) {
-	data, err := ReadConfFile("../tests/config-temp.json")
+	config :=
+		`
+{
+	"server": {
+		"host": "localhost",
+		"port": ":3000"
+	},
+	"mailSender": {
+        "email": "email",
+        "sendgrid_key": "my sendgrid_key",
+        "timeout": 60 
+    },
+    "account": {
+        "mnemonics": "my mnemonics"
+    }
+}
+	`
+	dir := t.TempDir()
+	configPath := dir + "/config.json"
+	os.WriteFile(configPath, []byte(config), 0644)
+	data, err := ReadConfFile(configPath)
 	if err != nil {
 		t.Error(err)
 	}
@@ -25,12 +58,12 @@ func TestParseConf(t *testing.T) {
 			Port: ":3000",
 		},
 		MailSender: MailSender{
-			Email:       "alaamahmoud.1223@gmail.com",
-			SendGridKey: "iqpfshurvllcknpl",
-			Timeout:     10,
+			Email:       "email",
+			SendGridKey: "my sendgrid_key",
+			Timeout:     60,
 		},
 		Account: GridAccount{
-			Mnemonics: "secret add bag cluster deposit beach illness letter crouch position rain arctic",
+			Mnemonics: "my mnemonics",
 		},
 	}
 	got, err := ParseConf(data)

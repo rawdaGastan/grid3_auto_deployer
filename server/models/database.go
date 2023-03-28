@@ -184,8 +184,8 @@ func (d *DB) CreateQuota(q *Quota) error {
 }
 
 // UpdateUserQuota updates quota
-func (d *DB) UpdateUserQuota(userID string, vms int) error {
-	quota := Quota{userID, vms}
+func (d *DB) UpdateUserQuota(userID string, vms int, publicIPs int) error {
+	quota := Quota{userID, vms, publicIPs}
 	return d.db.Debug().Model(Quota{}).Where("user_id = ?", userID).Updates(quota).Error
 }
 

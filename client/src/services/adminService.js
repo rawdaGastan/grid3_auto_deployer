@@ -29,23 +29,21 @@ async function refresh_token() {
 }
 
 export default {
-  
+  // Users
+  async getUsers() {
+    return await authClient.get("/user/all");
+  },
+
   // Vouchers
   async getVouchers() {
     return await authClient.get("/voucher");
   },
 
-  async generateVoucher(id) {
-    return await authClient.post("/voucher", {id});
-  },
-
-  async approveVoucher(id) {
-    return await authClient.put("/voucher", {
-      id
-    });
+  async approveVoucher(voucher) {
+    return await authClient.put(`/voucher/${voucher.id}`, {voucher});
   },
 
   async approveAllVouchers(vouchers) {
-    return await authClient.put("/voucher", {vouchers});
+    return await authClient.put("/voucher", vouchers);
   },
 };

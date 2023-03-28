@@ -53,12 +53,14 @@
 import { ref } from "vue";
 import axios from "axios";
 import Toast from "@/components/Toast.vue";
+import { useRouter } from "vue-router";
 
 export default {
     components: {
         Toast,
     },
     setup() {
+        const router = useRouter();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const verify = ref(false);
         const toast = ref(null);
@@ -89,9 +91,9 @@ export default {
                     localStorage.setItem('token', response.data.data.access_token);
                     toast.value.toast(response.data.msg);
 
-                    // router.push({
-                    //     name: 'Home',
-                    //     });
+                    router.push({
+                        name: 'Home',
+                        });
                 })
                 .catch((error) => {
                     console.log(error)

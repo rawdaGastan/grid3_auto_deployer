@@ -19,6 +19,7 @@ import (
 type DeployVMInput struct {
 	Name      string `json:"name" binding:"required" validate:"min=3,max=20"`
 	Resources string `json:"resources" binding:"required"`
+	Public    bool   `json:"public"`
 }
 
 // DeployVMHandler creates vm for user and deploy it
@@ -62,7 +63,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	neededQuota, err := validateVMQuota(input.Resources, quota.Vms)
+	neededQuota, err := validateVMQuota(input, quota.Vms, quota.PublicIPs)
 	if err != nil {
 		writeErrResponse(w, http.StatusBadRequest, err.Error())
 		return
@@ -73,7 +74,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	vm, contractID, networkContractID, diskSize, err := r.deployVM(input.Name, input.Resources, user.SSHKey)
+	vm, contractID, networkContractID, diskSize, err := r.deployVM(input, user.SSHKey)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -83,8 +84,10 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 	userVM := models.VM{
 		UserID:            userID,
 		Name:              vm.Name,
-		IP:                vm.YggIP,
+		YggIP:             vm.YggIP,
 		Resources:         input.Resources,
+		Public:            input.Public,
+		PublicIP:          vm.ComputedIP,
 		SRU:               diskSize,
 		CRU:               uint64(vm.CPU),
 		MRU:               uint64(vm.Memory),
@@ -99,8 +102,12 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	publicIPsQuota := quota.PublicIPs
+	if input.Public {
+		publicIPsQuota -= publicQuota
+	}
 	// update quota of user
-	err = r.db.UpdateUserQuota(userID, quota.Vms-neededQuota)
+	err = r.db.UpdateUserQuota(userID, quota.Vms-neededQuota, publicIPsQuota)
 	if err == gorm.ErrRecordNotFound {
 		writeErrResponse(w, http.StatusNotFound, "User quota not found")
 		return

@@ -18,6 +18,7 @@ import (
 type K8sDeployInput struct {
 	MasterName string   `json:"master_name" validate:"min=3,max=20"`
 	Resources  string   `json:"resources"`
+	Public     bool     `json:"public"`
 	Workers    []Worker `json:"workers"`
 }
 
@@ -67,7 +68,7 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	neededQuota, err := validateK8sQuota(k8sDeployInput, quota.Vms)
+	neededQuota, err := validateK8sQuota(k8sDeployInput, quota.Vms, quota.PublicIPs)
 	if err != nil {
 		writeErrResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -92,9 +93,12 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
-
+	publicIPsQuota := quota.PublicIPs
+	if k8sDeployInput.Public {
+		publicIPsQuota -= publicQuota
+	}
 	// update quota
-	err = r.db.UpdateUserQuota(userID, quota.Vms-neededQuota)
+	err = r.db.UpdateUserQuota(userID, quota.Vms-neededQuota, publicIPsQuota)
 	if err == gorm.ErrRecordNotFound {
 		writeErrResponse(w, http.StatusNotFound, "User quota not found")
 		return

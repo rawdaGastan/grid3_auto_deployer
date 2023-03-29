@@ -2,8 +2,6 @@
 package models
 
 import (
-	"time"
-
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm/clause"
 
@@ -85,41 +83,10 @@ func (d *DB) UpdatePassword(email string, password string) error {
 	return result.Error
 }
 
-// UpdateUserByID updates information of user
-func (d *DB) UpdateUserByID(id string, name string, password string, sshKey string, updatedAt time.Time, code int) (string, error) {
-	var res User
-	if name != "" {
-		result := d.db.Model(&res).Where("id = ?", id).Update("name", name)
-		if result.Error != nil {
-			return "", result.Error
-		}
-	}
-	if password != "" {
-		result := d.db.Model(&res).Where("id = ?", id).Update("hashed_password", password)
-		if result.Error != nil {
-			return "", result.Error
-		}
-	}
-	if sshKey != "" {
-		result := d.db.Model(&res).Where("id = ?", id).Update("ssh_key", sshKey)
-		if result.Error != nil {
-			return "", result.Error
-		}
-	}
-	if !updatedAt.IsZero() {
-		result := d.db.Model(&res).Where("id = ?", id).Update("updated_at", updatedAt)
-		if result.Error != nil {
-			return "", result.Error
-		}
-	}
-	if code != 0 {
-		result := d.db.Model(&res).Where("id = ?", id).Update("code", code)
-		if result.Error != nil {
-			return "", result.Error
-		}
-	}
-
-	return string(id), nil
+// UpdateUser updates information of user. empty and unchanged fields are not updated.
+func (d *DB) UpdateUserByID(user User) error {
+	result := d.db.Model(&User{}).Where("id = ?", user.ID.String()).Updates(user)
+	return result.Error
 }
 
 // UpdateVerification updates if user is verified or not
@@ -193,17 +160,14 @@ func (d *DB) CreateQuota(q *Quota) error {
 }
 
 // UpdateUserQuota updates quota
-func (d *DB) UpdateUserQuota(userID string, vms int) error {
-	quota := Quota{userID, vms}
-	return d.db.Debug().Model(Quota{}).Where("user_id = ?", userID).Updates(quota).Error
+func (d *DB) UpdateUserQuota(userID string, vms int, publicIPs int) error {
+	quota := Quota{userID, vms, publicIPs}
+	return d.db.Model(Quota{}).Where("user_id = ?", userID).Updates(quota).Error
 }
 
 // GetUserQuota gets user quota available vms (vms will be used for both vms and k8s clusters)
 func (d *DB) GetUserQuota(userID string) (Quota, error) {
 	var res Quota
-	var b []Quota
-	_ = d.db.Find(&b)
-
 	query := d.db.First(&res, "user_id = ?", userID)
 	return res, query.Error
 }
@@ -250,17 +214,11 @@ func (d *DB) ApproveAllVouchers() ([]Voucher, error) {
 
 // DeactivateVoucher if it is used
 func (d *DB) DeactivateVoucher(voucher string) error {
-	return d.db.Debug().Model(Voucher{}).Where("voucher = ?", voucher).Update("used", true).Error
+	return d.db.Model(Voucher{}).Where("voucher = ?", voucher).Update("used", true).Error
 }
 
 // CreateK8s creates a new k8s cluster
 func (d *DB) CreateK8s(k *K8sCluster) error {
-	result := d.db.Create(&k)
-	return result.Error
-}
-
-// CreateWorker creates a new k8s worker
-func (d *DB) CreateWorker(k *Worker) error {
 	result := d.db.Create(&k)
 	return result.Error
 }

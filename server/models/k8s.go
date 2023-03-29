@@ -18,7 +18,9 @@ type Master struct {
 	CRU       uint64 `json:"cru"`
 	MRU       uint64 `json:"mru"`
 	SRU       uint64 `json:"sru"`
-	IP        string `json:"ip"`
+	YggIP     string `json:"ygg_ip"`
+	Public    bool   `json:"public"`
+	PublicIP  string `json:"public_ip"`
 }
 
 // Worker struct for k8s workers data

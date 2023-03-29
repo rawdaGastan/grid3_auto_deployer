@@ -29,7 +29,7 @@
       <v-menu>
         <template v-slot:activator="{ props }">
           <v-btn
-            class="primary ml-1 mt-2 pt-0 mt-md-4 text-capitalize"
+            class="primary ml-1 mt-2 pt-0 mt-md-3 text-capitalize"
             v-bind="props"
           >
             <font-awesome-icon icon="fa-user" class="mr-3 fa-l" />

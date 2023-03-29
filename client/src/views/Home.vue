@@ -113,6 +113,7 @@ export default {
         .then((response) => {
           const { user } = response.data.data;
           voucher.value = user.voucher;
+          localStorage.setItem("username", user.name);
         })
         .catch((response) => {
           const { err } = response.response.data;

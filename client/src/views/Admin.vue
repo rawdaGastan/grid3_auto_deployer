@@ -2,7 +2,7 @@
   <v-container class="d-flex justify-space-between">
     <section v-if="vouchers.length > 0">
       <h2 class="text-grey-darken-2">Vouchers</h2>
-        <v-table class="rounded-lg mt-lg" >
+        <v-table class="rounded-lg" style="margin-top: .5rem;">
           <thead class="bg-grey-lighten-5">
             <tr>
               <th
@@ -19,7 +19,7 @@
           </thead>
           <tbody>
             <tr v-for="item, index in vouchers" :key="item.key" class="text-center">
-              <td>{{ index++ }}</td>
+              <td>{{ ++index }}</td>
               <td>{{ item.id }}</td>
               <td>{{ item.reason }}</td>
               <td>{{ item.vms }} VM</td>
@@ -34,12 +34,12 @@
               </td>
               <td v-else>Approved</td>
             </tr>
-            <tr>
+            <tr v-if="approveAllCount > 0">
               <td></td>
               <td></td>
               <td></td>
               <td></td>
-              <td v-show="item.approved === false" class="d-flex justify-center align-center">
+              <td class="d-flex justify-center align-center">
                 <BaseButton
                   color="primary"
                   class="d-block"
@@ -48,6 +48,7 @@
                 />
               </td>
             </tr>
+            <template v-else></template>
           </tbody>
         </v-table>
     </section>
@@ -59,7 +60,7 @@
       </div>
       <div v-if="users.length > 0">
         <h2 class="text-grey-darken-2">Users</h2>
-        <v-table class="rounded-lg">
+        <v-table class="rounded-lg" style="margin-top: .5rem;">
             <thead class="bg-grey-lighten-5">
               <tr>
                 <th
@@ -72,17 +73,17 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="item in users" :key="item.key" class="text-center">
+              <tr v-for="item, index in users" :key="item.key" class="text-center">
+                <td>{{ ++index }}</td>
                 <td>{{ item.name }}</td>
                 <td>{{ item.email }}</td>
-                <td>{{ item.used }}</td>
+                <td>{{ item.team_size }}</td>
               </tr>
             </tbody>
         </v-table>
       </div>
     </section>
 
-    {{ usedResources }}
   </v-container>
 </template>
 
@@ -111,14 +112,15 @@ export default {
     'No',
     'Name',
     'Email' ,
-    'Used Resouces',
+    'Team Size',
     ]);
     
     const vouchers = ref([]);
     const users = ref([]);
     const toast = ref(null);
     const loading = ref(false);
-    const usedResources = ref(null)
+    const usedResources = ref(null);
+    const approveAllCount = ref(null)
     
     const getVouchers = () => {
       adminService
@@ -126,8 +128,11 @@ export default {
         .then((response) => {
           const { data } = response.data;
           vouchers.value = data;
+
           for (let voucher of data) {
             usedResources.value += voucher.vms;
+            approveAllCount.value = 0            
+            !voucher?.approved? approveAllCount.value++ : approveAllCount.value;
           }
         })
         .catch((response) => {
@@ -150,7 +155,6 @@ export default {
       adminService
         .getUsers()
         .then((response) => {
-          console.log("users", response);
           const { data } = response.data;
           users.value = data;
         })
@@ -169,6 +173,7 @@ export default {
       vouchersHeaders,
       vouchers,
       usedResources,
+      approveAllCount,
       usersHeaders,
       users,
       loading,
@@ -189,8 +194,9 @@ export default {
   }
 
   .resources{
-    margin-top: 2rem;
-    height: 10rem;
+    margin-top: 3rem;
+    height: 8rem;
+    margin-bottom: 2rem;
   }
   
   .resources_p{

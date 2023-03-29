@@ -20,7 +20,6 @@ func NewDB() DB {
 
 // Connect connects to database file
 func (d *DB) Connect(file string) error {
-
 	gormDB, err := gorm.Open(sqlite.Open(file), &gorm.Config{})
 	if err != nil {
 		return err
@@ -64,6 +63,16 @@ func (d *DB) ListAllUsers() ([]User, error) {
 	var res []User
 	query := d.db.Find(&res, "verified = true")
 	return res, query.Error
+}
+
+// GetCodeByEmail returns verification code for unit testing
+func (d *DB) GetCodeByEmail(email string) (int, error) {
+	var res User
+	query := d.db.First(&res, "email = ?", email)
+	if query.Error != nil {
+		return 0, query.Error
+	}
+	return res.Code, nil
 }
 
 // UpdatePassword updates password of user

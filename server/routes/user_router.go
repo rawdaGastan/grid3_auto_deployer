@@ -77,6 +77,7 @@ type AddVoucherInput struct {
 func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	var signUp SignUpInput
 	err := json.NewDecoder(req.Body).Decode(&signUp)
+
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusBadRequest, "Failed to read sign up data")
@@ -181,8 +182,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 
 // VerifySignUpCodeHandler gets verification code to create user
 func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Request) {
-
-	data := VerifyCodeInput{}
+	var data VerifyCodeInput
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -359,7 +359,6 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 
 // VerifyForgetPasswordCodeHandler verifies code sent to user when forgetting password
 func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *http.Request) {
-
 	data := VerifyCodeInput{}
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
@@ -380,12 +379,12 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 	}
 
 	if user.Code != data.Code {
-		writeErrResponse(w, http.StatusUnauthorized, "Wrong code")
+		writeErrResponse(w, http.StatusBadRequest, "Wrong code")
 		return
 	}
 
 	if user.UpdatedAt.Add(time.Duration(r.config.MailSender.Timeout) * time.Second).Before(time.Now()) {
-		writeErrResponse(w, http.StatusUnauthorized, "Code has expired")
+		writeErrResponse(w, http.StatusBadRequest, "Code has expired")
 		return
 	}
 

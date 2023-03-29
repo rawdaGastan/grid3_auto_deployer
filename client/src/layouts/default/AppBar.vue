@@ -72,13 +72,10 @@
 
 <script>
 import { ref } from "vue";
-import { useRouter } from "vue-router";
 
 export default {
   setup() {
     const drawer = ref(false);
-    const router = useRouter()
-
     const items = ref([
       {
         path: "/",
@@ -109,14 +106,13 @@ export default {
       },
       {
         title: "Logout",
-        path: "/",
+        path: "#",
       },
     ]);
 
     const checkTitle = (title) => {
       if (title == "Logout") {
         localStorage.removeItem("token");
-        router.go('/')
       }
     };
 

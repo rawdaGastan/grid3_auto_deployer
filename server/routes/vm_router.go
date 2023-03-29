@@ -74,7 +74,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	vm, contractID, networkContractID, diskSize, err := r.deployVM(input, user.SSHKey)
+	vm, contractID, networkContractID, diskSize, err := r.deployVM(req.Context(), input, user.SSHKey)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)

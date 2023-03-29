@@ -1,4 +1,4 @@
-name: Lint
+name: Vue lint
 on:
   push:
     paths:
@@ -18,8 +18,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-          cache-dependency-path: ./client/package-lock.json
+          cache: 'yarn'
+          cache-dependency-path: ./client/yarn.lock
       - name: client
         run: cd client
       - name: Yarn Install

@@ -53,7 +53,7 @@ func NewServer(file string) (server *Server, err error) {
 
 	version := "/" + configuration.Version
 
-	router, err := NewRouter(*configuration, db, tfPluginClient)
+	router, err := NewRouter(configuration, db, tfPluginClient)
 	if err != nil {
 		return
 	}

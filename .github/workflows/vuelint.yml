@@ -1,4 +1,4 @@
-name: Lint
+name: Vue lint
 on:
   push:
     paths:

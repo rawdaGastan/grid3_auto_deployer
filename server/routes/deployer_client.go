@@ -128,7 +128,7 @@ func (r *Router) loadK8s(k8sDeployInput K8sDeployInput, userID string, node uint
 	return k8sCluster, nil
 }
 
-func (r *Router) deployVM(vmInput DeployVMInput, sshKey string) (*workloads.VM, uint64, uint64, uint64, error) {
+func (r *Router) deployVM(ctx context.Context, vmInput DeployVMInput, sshKey string) (*workloads.VM, uint64, uint64, uint64, error) {
 	// filter nodes
 	filter, err := filterNode(vmInput.Resources, vmInput.Public)
 	if err != nil {
@@ -168,10 +168,6 @@ func (r *Router) deployVM(vmInput DeployVMInput, sshKey string) (*workloads.VM, 
 		NetworkName: network.Name,
 	}
 
-	// TODO: set proper contexts
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(r.config.Token.Timeout)*time.Minute)
-	defer cancel()
-
 	// deploy network
 	err = r.tfPluginClient.NetworkDeployer.Deploy(ctx, &network)
 	if err != nil {
@@ -195,7 +191,7 @@ func (r *Router) deployVM(vmInput DeployVMInput, sshKey string) (*workloads.VM, 
 }
 
 // CancelDeployment cancel deployments from grid
-func (r *Router) CancelDeployment(contractID uint64, netContractID uint64) error {
+func (r *Router) cancelDeployment(contractID uint64, netContractID uint64) error {
 	// cancel deployment
 	err := r.tfPluginClient.SubstrateConn.CancelContract(r.tfPluginClient.Identity, contractID)
 	if err != nil {

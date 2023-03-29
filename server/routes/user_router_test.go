@@ -1,4 +1,5 @@
-package tests
+// Package routes for API endpoints
+package routes
 
 import (
 	"bytes"
@@ -15,12 +16,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/codescalers/cloud4students/models"
-	"github.com/codescalers/cloud4students/routes"
 	"github.com/threefoldtech/grid3-go/deployer"
 )
 
 // SetUp sets the needed configuration for testing
-func SetUp(t testing.TB) (r *routes.Router, db models.DB, configurations internal.Configuration, version string) {
+func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Configuration, version string) {
 	config :=
 		`
 {
@@ -71,7 +71,7 @@ func SetUp(t testing.TB) (r *routes.Router, db models.DB, configurations interna
 	assert.NoError(t, err)
 
 	version = "/" + configuration.Version
-	router, err := routes.NewRouter(configuration, db, tfPluginClient)
+	router, err := NewRouter(configuration, db, tfPluginClient)
 	assert.NoError(t, err)
 
 	return &router, db, configuration, version

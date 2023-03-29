@@ -1,4 +1,5 @@
-package tests
+// Package routes for API endpoints
+package routes
 
 import (
 	"bytes"
@@ -68,7 +69,7 @@ func TestDeployVMHandler(t *testing.T) {
 		vm, err := db.GetVMByID(1)
 		assert.NoError(t, err)
 
-		err = router.CancelDeployment(vm.ContractID, vm.NetworkContractID)
+		err = router.cancelDeployment(vm.ContractID, vm.NetworkContractID)
 		assert.NoError(t, err)
 	})
 }
@@ -96,7 +97,7 @@ func TestGetVMHandler(t *testing.T) {
 			ID:        1,
 			UserID:    user.ID.String(),
 			Name:      "vm",
-			IP:        "10.1.0.0",
+			YggIP:     "10.1.0.0",
 			Resources: "small",
 			SRU:       5,
 			CRU:       2,
@@ -141,7 +142,7 @@ func TestListVMsHandler(t *testing.T) {
 		vm := models.VM{
 			UserID:    user.ID.String(),
 			Name:      "vm",
-			IP:        "10.1.0.0",
+			YggIP:     "10.1.0.0",
 			Resources: "small",
 			SRU:       5,
 			CRU:       2,
@@ -198,7 +199,7 @@ func TestDeleteVM(t *testing.T) {
 		vm := models.VM{
 			UserID:    user.ID.String(),
 			Name:      "vm",
-			IP:        "10.1.0.0",
+			YggIP:     "10.1.0.0",
 			Resources: "small",
 			SRU:       5,
 			CRU:       2,
@@ -250,7 +251,7 @@ func TestDeleteDeleteAllVMs(t *testing.T) {
 			ID:        1,
 			UserID:    user.ID.String(),
 			Name:      "vm",
-			IP:        "10.1.0.0",
+			YggIP:     "10.1.0.0",
 			Resources: "small",
 			SRU:       5,
 			CRU:       2,

@@ -74,7 +74,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	vm, contractID, networkContractID, diskSize, err := r.deployVM(input, user.SSHKey)
+	vm, contractID, networkContractID, diskSize, err := r.deployVM(req.Context(), input, user.SSHKey)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -187,7 +187,7 @@ func (r *Router) DeleteVM(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = r.CancelDeployment(vm.ContractID, vm.NetworkContractID)
+	err = r.cancelDeployment(vm.ContractID, vm.NetworkContractID)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -219,7 +219,7 @@ func (r *Router) DeleteAllVMs(w http.ResponseWriter, req *http.Request) {
 	}
 
 	for _, vm := range vms {
-		err = r.CancelDeployment(vm.ContractID, vm.NetworkContractID)
+		err = r.cancelDeployment(vm.ContractID, vm.NetworkContractID)
 		if err != nil {
 			log.Error().Err(err).Send()
 			writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)

@@ -42,8 +42,17 @@ func TestParseConf(t *testing.T) {
         "timeout": 60 
     },
     "account": {
-        "mnemonics": "my mnemonics"
-    }
+        "mnemonics": "my mnemonics",
+		"network": "my network"
+    },
+	"token": {
+        "secret": "secret",
+        "timeout": 10
+    },
+	"database": {
+        "file": "testing.db"
+    },
+	"version": "v1"
 }
 	`
 	dir := t.TempDir()
@@ -68,6 +77,14 @@ func TestParseConf(t *testing.T) {
 		Account: GridAccount{
 			Mnemonics: "my mnemonics",
 		},
+		Token: JwtToken{
+			Secret:  "secret",
+			Timeout: 10,
+		},
+		Database: DB{
+			File: "testing.db",
+		},
+		Version: "v1",
 	}
 
 	got, err := ParseConf(data)

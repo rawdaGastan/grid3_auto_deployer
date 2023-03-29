@@ -345,7 +345,6 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 
 // VerifyForgetPasswordCodeHandler verifies code sent to user when forgetting password
 func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *http.Request) {
-
 	data := VerifyCodeInput{}
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
@@ -366,12 +365,12 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 	}
 
 	if user.Code != data.Code {
-		writeErrResponse(w, http.StatusUnauthorized, "Wrong code")
+		writeErrResponse(w, http.StatusBadRequest, "Wrong code")
 		return
 	}
 
 	if user.UpdatedAt.Add(time.Duration(r.config.MailSender.Timeout) * time.Second).Before(time.Now()) {
-		writeErrResponse(w, http.StatusUnauthorized, "Code has expired")
+		writeErrResponse(w, http.StatusBadRequest, "Code has expired")
 		return
 	}
 

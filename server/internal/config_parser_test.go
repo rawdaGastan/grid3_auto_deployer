@@ -3,6 +3,8 @@ package internal
 import (
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestReadConfFile(t *testing.T) {
@@ -17,14 +19,13 @@ func TestReadConfFile(t *testing.T) {
 	`
 	dir := t.TempDir()
 	configPath := dir + "/config.json"
-	os.WriteFile(configPath, []byte(config), 0644)
+
+	err := os.WriteFile(configPath, []byte(config), 0644)
+	assert.NoError(t, err)
+
 	data, err := ReadConfFile(configPath)
-	if err != nil {
-		t.Error(err)
-	}
-	if data == nil {
-		t.Errorf("File is empty!")
-	}
+	assert.NoError(t, err)
+	assert.NotEmpty(t, data)
 }
 
 func TestParseConf(t *testing.T) {
@@ -47,11 +48,13 @@ func TestParseConf(t *testing.T) {
 	`
 	dir := t.TempDir()
 	configPath := dir + "/config.json"
-	os.WriteFile(configPath, []byte(config), 0644)
+
+	err := os.WriteFile(configPath, []byte(config), 0644)
+	assert.NoError(t, err)
+
 	data, err := ReadConfFile(configPath)
-	if err != nil {
-		t.Error(err)
-	}
+	assert.NoError(t, err)
+
 	expected := Configuration{
 		Server: Server{
 			Host: "localhost",
@@ -66,18 +69,10 @@ func TestParseConf(t *testing.T) {
 			Mnemonics: "my mnemonics",
 		},
 	}
-	got, err := ParseConf(data)
-	if err != nil {
-		t.Error(err)
-	}
-	if got.Server != expected.Server {
-		t.Errorf("incorrect data, got %v, want %v", got.Server, expected.Server)
-	}
-	if got.MailSender.Email != expected.MailSender.Email {
-		t.Errorf("incorrect data, got %v, want %v", got.MailSender.Email, expected.MailSender.Email)
-	}
-	if got.Account.Mnemonics != expected.Account.Mnemonics {
-		t.Errorf("incorrect data, got %s, want %s", got.Account.Mnemonics, expected.Account.Mnemonics)
-	}
 
+	got, err := ParseConf(data)
+	assert.NoError(t, err)
+	assert.Equal(t, got.Server, expected.Server)
+	assert.Equal(t, got.MailSender.Email, expected.MailSender.Email)
+	assert.Equal(t, got.Account.Mnemonics, expected.Account.Mnemonics)
 }

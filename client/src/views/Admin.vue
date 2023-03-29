@@ -1,5 +1,5 @@
 <template>
-  <v-container>
+  <v-container class="d-flex justify-space-between">
     <section v-if="vouchers.length > 0">
       <h2 class="text-grey-darken-2">Vouchers</h2>
         <v-table class="rounded-lg mt-lg" >
@@ -18,66 +18,77 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in vouchers" :key="item.key" class="text-center">
-              <td>{{ item.no }}</td>
+            <tr v-for="item, index in vouchers" :key="item.key" class="text-center">
+              <td>{{ index++ }}</td>
               <td>{{ item.id }}</td>
               <td>{{ item.reason }}</td>
-              <td>{{ item.VMNumber }} VM</td>
-              <td class="d-flex justify-center align-center">
+              <td>{{ item.vms }} VM</td>
+              <td v-if="item.approved === false" class="d-flex justify-center align-center">
                 <BaseButton
                     color="primary"
                     class="d-block "
                     text="Approve"
+                    @click="approveVoucher(item.id)"
+
                   />
               </td>
+              <td v-else>Approved</td>
             </tr>
             <tr>
               <td></td>
               <td></td>
               <td></td>
               <td></td>
-              <td class="d-flex justify-center align-center">
+              <td v-show="item.approved === false" class="d-flex justify-center align-center">
                 <BaseButton
                   color="primary"
                   class="d-block"
                   text="Approve All"
+                  @click="approveAllVouchers"
                 />
               </td>
             </tr>
           </tbody>
         </v-table>
     </section>
-    <section v-if="users.length > 0">
-      <h2 class="text-grey-darken-2">Users</h2>
-      <v-table class="rounded-lg">
-          <thead class="bg-grey-lighten-5">
-            <tr>
-              <th
-                class="text-center text-grey-darken-1"
-                v-for="head in usersHeaders"
-                :key="head"
-              >
-                {{ head }}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in users" :key="item.key" class="text-center">
-              <td>{{ item.no }}</td>
-              <td>{{ item.name }}</td>
-              <td>{{ item.id }}</td>
-              <td>{{ item.used }}</td>
-            </tr>
-          </tbody>
-        </v-table>
 
+    
+    <section>
+      <div v-show="usedResources > 0" class="resources text-white rounded-xl bg-primary">
+        <p class="resources_p" align="center">Numbers of Used Reasources <strong style="font-size: 2.3rem;">{{ usedResources }} VM</strong></p>
+      </div>
+      <div v-if="users.length > 0">
+        <h2 class="text-grey-darken-2">Users</h2>
+        <v-table class="rounded-lg">
+            <thead class="bg-grey-lighten-5">
+              <tr>
+                <th
+                  class="text-center text-grey-darken-1"
+                  v-for="head in usersHeaders"
+                  :key="head"
+                >
+                  {{ head }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in users" :key="item.key" class="text-center">
+                <td>{{ item.name }}</td>
+                <td>{{ item.email }}</td>
+                <td>{{ item.used }}</td>
+              </tr>
+            </tbody>
+        </v-table>
+      </div>
     </section>
+
+    {{ usedResources }}
   </v-container>
 </template>
 
 
 <script>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import adminService from "@/services/adminService.js"
 
@@ -99,7 +110,7 @@ export default {
     const usersHeaders = ref([
     'No',
     'Name',
-    'User ID' ,
+    'Email' ,
     'Used Resouces',
     ]);
     
@@ -107,16 +118,17 @@ export default {
     const users = ref([]);
     const toast = ref(null);
     const loading = ref(false);
-
+    const usedResources = ref(null)
     
     const getVouchers = () => {
       adminService
         .getVouchers()
         .then((response) => {
-          console.log("vouchers response", response);
-          // const { data } = response.data;
-          // vouchers.value = data;
-          // console.log("vouchers.value", vouchers.value);
+          const { data } = response.data;
+          vouchers.value = data;
+          for (let voucher of data) {
+            usedResources.value += voucher.vms;
+          }
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -124,25 +136,23 @@ export default {
         });
     };
 
-    const approveVoucher = (voucher) => {
+    const approveVoucher = (id) => {
       adminService
-      .approveVoucher(voucher);
+      .approveVoucher(id);
     }
 
-    const approveAllVouchers = (vouchers) => {
+    const approveAllVouchers = () => {
       adminService
-      .approveAllVouchers(vouchers);
+      .approveAllVouchers();
     }
 
     const getUsers = () => {
       adminService
         .getUsers()
         .then((response) => {
-          console.log("users response", response);
-
-          // const { data } = response.data;
-          // users.value = data;
-          // console.log("users.value", users.value);
+          console.log("users", response);
+          const { data } = response.data;
+          users.value = data;
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -150,11 +160,15 @@ export default {
         });
     };
 
-
+    onMounted(() => {
+      getVouchers();
+      getUsers();
+    });
 
     return {
       vouchersHeaders,
       vouchers,
+      usedResources,
       usersHeaders,
       users,
       loading,
@@ -174,4 +188,14 @@ export default {
     margin-bottom: 3rem;
   }
 
+  .resources{
+    margin-top: 2rem;
+    height: 10rem;
+  }
+  
+  .resources_p{
+    height: 100%;
+    padding: 2rem;
+    font-size: 1.8rem;
+  }
 </style>

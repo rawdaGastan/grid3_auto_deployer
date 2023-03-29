@@ -39,11 +39,11 @@ export default {
     return await authClient.get("/voucher");
   },
 
-  async approveVoucher(voucher) {
-    return await authClient.put(`/voucher/${voucher.id}`, {voucher});
+  async approveVoucher(id) {
+    return await authClient.put(`/voucher/${id}`);
   },
 
-  async approveAllVouchers(vouchers) {
-    return await authClient.put("/voucher", vouchers);
+  async approveAllVouchers() {
+    return await authClient.put("/voucher");
   },
 };

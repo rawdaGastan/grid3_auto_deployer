@@ -5,7 +5,6 @@ import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
 import VM from "@/views/VM.vue";
 import K8s from "@/views/K8s.vue";
-import Login from "@/views/Login.vue";
 
 
 const routes = [

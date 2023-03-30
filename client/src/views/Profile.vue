@@ -118,10 +118,9 @@ export default {
   setup() {
     const email = ref(null);
     const name = ref(null);
-    const college = ref(null);
-    const team_size = ref(null);
-    const project_desc = ref(null);
-    const password = ref(null);
+    const college = ref('-');
+    const team_size = ref(0);
+    const project_desc = ref('');
     const voucher = ref(null);
     const sshKey = ref(null);
     const actLoading = ref(false);
@@ -144,7 +143,6 @@ export default {
           const { user } = response.data.data;
           email.value = user.email;
           name.value = user.name;
-          password.value = user.hashed_password;
           voucher.value = user.voucher;
           sshKey.value = user.ssh_key;
           college.value = user.college;
@@ -198,6 +196,10 @@ export default {
       return true;
     });
 
+    const checkEmptyInputs = (value) => {
+      if(!value) return '-'
+    };
+
     const checkUser = (username) => {
       if (localStorage.getItem("username") !== username) {
         localStorage.setItem("username", username);
@@ -216,7 +218,6 @@ export default {
       project_desc,
       email,
       name,
-      password,
       voucher,
       sshKey,
       avatar,

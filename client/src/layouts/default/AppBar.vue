@@ -12,22 +12,28 @@
         </router-link>
       </v-app-bar-title>
       <v-list class="hidden-md-and-down">
-        <v-list-item>
-          <v-btn
-            v-for="item in items"
-            :key="item.title"
+        <v-list-item-title class="py-3">
+          <router-link
+            v-for="(item, index) in items"
+            :key="index"
             :to="item.path"
-            class="primary"
+            class="pa-5 primary text-decoration-none"
+            @click="setActive(index)"
+            :class="{ active: isActive == index }"
           >
             {{ item.title }}
-          </v-btn>
-        </v-list-item>
+          </router-link>
+        </v-list-item-title>
       </v-list>
 
       <v-menu>
         <template v-slot:activator="{ props }">
-          <v-btn class="primary mt-2 pt-0 mt-md-3 pt-md-1" v-bind="props">
-            Username
+          <v-btn
+            class="primary ml-1 mt-2 pt-0 mt-md-3 text-capitalize"
+            v-bind="props"
+          >
+            <font-awesome-icon icon="fa-user" class="mr-3 fa-l" />
+            {{ username }}
           </v-btn>
         </template>
         <v-list>
@@ -70,13 +76,12 @@
 
 <script>
 import { ref } from "vue";
-import { useRouter } from "vue-router";
 
 export default {
   setup() {
     const drawer = ref(false);
-    const router = useRouter()
-
+    const username = ref(localStorage.getItem("username"));
+    const isActive = ref(null);
     const items = ref([
       {
         path: "home",
@@ -103,24 +108,27 @@ export default {
       },
       {
         title: "Logout",
-        path: "/",
+        path: "#",
       },
     ]);
+
+    const setActive = (index) => {
+      isActive.value = index;
+    };
 
     const checkTitle = (title) => {
       if (title == "Logout") {
         localStorage.removeItem("token");
-        router.go('/')
       }
     };
 
-    return { drawer, items, user, checkTitle };
+    return { drawer, items, user, username, isActive, setActive, checkTitle };
   },
 };
 </script>
 
 <style>
-.v-btn--active > .v-btn__overlay {
-  opacity: 0;
+.active {
+  background-color: #217dbb0a;
 }
 </style>

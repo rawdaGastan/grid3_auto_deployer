@@ -15,6 +15,36 @@
             class="my-2"
             @update:modelValue="name = $event"
           />
+          <v-row>
+            <v-col cols="12" sm="6">
+              <BaseInput
+                placeholder="College"
+                :modelValue="college"
+                disabled
+                hide-details="true"
+              />
+            </v-col>
+            <v-col cols="12" sm="6">
+              <BaseInput
+                hide-details="true"
+                placeholder="Team members"
+                :modelValue="team_size"
+                disabled
+              />
+            </v-col>
+            <v-col>
+              <v-textarea
+                clearable
+                placeholder="Project description"
+                :modelValue="project_desc"
+                variant="outlined"
+                bg-color="accent"
+                auto-grow
+                disabled
+              ></v-textarea>
+            </v-col>
+          </v-row>
+
           <BaseInput
             placeholder="E-mail"
             :modelValue="email"
@@ -29,7 +59,7 @@
             disabled
           />
           <router-link
-            to="#"
+            to="/newPassword"
             color="primary"
             class="d-block text-right text-capitalize text-decoration-none mb-5"
             >*Change Password</router-link
@@ -42,11 +72,9 @@
               @update:modelValue="voucher = $event"
               class="mr-2"
               clearable
-              :rules="rules"
             />
             <BaseButton
               class="bg-primary text-capitalize"
-              :disabled="!verify"
               text="Apply Voucher"
               @click="activateVoucher"
             />
@@ -56,6 +84,7 @@
             clearable
             placeholder="SSH Key"
             :modelValue="sshKey"
+            :value="sshKey"
             @update:modelValue="sshKey = $event"
             variant="outlined"
             bg-color="accent"
@@ -90,9 +119,11 @@ export default {
     Toast,
   },
   setup() {
-    const verify = ref(false);
     const email = ref(null);
     const name = ref(null);
+    const college = ref(null);
+    const team_size = ref(null);
+    const project_desc = ref(null);
     const password = ref(null);
     const voucher = ref(null);
     const sshKey = ref(null);
@@ -114,13 +145,15 @@ export default {
         .getUser()
         .then((response) => {
           const { user } = response.data.data;
-          email.value = response.data.data.user.email;
-          name.value = response.data.data.user.name;
+          email.value = user.email;
+          name.value = user.name;
           password.value = user.hashed_password;
           voucher.value = user.voucher;
           sshKey.value = user.ssh_key;
-          verify.value = true;
-          toast.value.clear()
+          college.value = user.college;
+          team_size.value = user.team_size;
+          project_desc.value = user.project_desc;
+          toast.value.clear();
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -161,12 +194,21 @@ export default {
       return val.charAt(0);
     });
 
+    const verify = computed(() => {
+      if (name.value && sshKey.value)
+        return name.value.length > 0 && sshKey.value.length > 0;
+      return true;
+    });
+
     onMounted(() => {
       getUser();
     });
 
     return {
+      college,
       verify,
+      team_size,
+      project_desc,
       email,
       name,
       password,

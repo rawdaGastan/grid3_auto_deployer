@@ -1,0 +1,28 @@
+#!/bin/sh
+if [ -d public ] 
+then
+    file="public/config.js"
+else
+    file="config.js"
+fi
+
+if [ -z ${VITE_API_ENDPOINT+x} ]
+then
+    echo 'Error! $VITE_API_ENDPOINT is required.'
+    exit 64
+fi
+
+
+configs="
+window.configs = window.configs || {};
+window.configs.vite_app_endpoint = '$VITE_API_ENDPOINT';
+"
+
+if [ -e $file ]
+then
+    rm $file
+fi
+
+echo $configs > $file
+
+yarn vite

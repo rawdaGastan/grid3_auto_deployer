@@ -71,6 +71,9 @@ const routes = [
   {
     path: "/",
     component: () => import("@/layouts/default/Default.vue"),
+    meta: {
+      requiredAuth: true,
+    },
     children: [
       {
         path: "/",
@@ -111,6 +114,11 @@ const routes = [
         meta: {
           requiredAuth: true,
         },
+      },
+      {
+        path: "/logout",
+        name: "Logout",
+        redirect: "/login",
       },
     ],
   },

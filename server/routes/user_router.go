@@ -12,6 +12,7 @@ import (
 	"github.com/codescalers/cloud4students/models"
 	"github.com/codescalers/cloud4students/validators"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
@@ -76,6 +77,7 @@ type AddVoucherInput struct {
 func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	var signUp SignUpInput
 	err := json.NewDecoder(req.Body).Decode(&signUp)
+
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusBadRequest, "Failed to read sign up data")
@@ -118,7 +120,13 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	// update code if user is not verified but exists
 	if getErr == nil {
 		if !user.Verified {
-			_, err = r.db.UpdateUserByID(user.ID.String(), "", "", "", time.Now(), code)
+			err = r.db.UpdateUserByID(
+				models.User{
+					ID:        user.ID,
+					UpdatedAt: time.Now(),
+					Code:      code,
+				},
+			)
 			if err != nil {
 				log.Error().Err(err).Send()
 				writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -174,8 +182,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 
 // VerifySignUpCodeHandler gets verification code to create user
 func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Request) {
-
-	data := VerifyCodeInput{}
+	var data VerifyCodeInput
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -335,7 +342,13 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	_, err = r.db.UpdateUserByID(user.ID.String(), "", "", "", time.Now(), code)
+	err = r.db.UpdateUserByID(
+		models.User{
+			ID:        user.ID,
+			UpdatedAt: time.Now(),
+			Code:      code,
+		},
+	)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -346,7 +359,6 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 
 // VerifyForgetPasswordCodeHandler verifies code sent to user when forgetting password
 func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *http.Request) {
-
 	data := VerifyCodeInput{}
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
@@ -367,12 +379,12 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 	}
 
 	if user.Code != data.Code {
-		writeErrResponse(w, http.StatusUnauthorized, "Wrong code")
+		writeErrResponse(w, http.StatusBadRequest, "Wrong code")
 		return
 	}
 
 	if user.UpdatedAt.Add(time.Duration(r.config.MailSender.Timeout) * time.Second).Before(time.Now()) {
-		writeErrResponse(w, http.StatusUnauthorized, "Code has expired")
+		writeErrResponse(w, http.StatusBadRequest, "Code has expired")
 		return
 	}
 
@@ -485,7 +497,21 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		writeMsgResponse(w, "Nothing to update", "")
 	}
 
-	userID, err = r.db.UpdateUserByID(userID, input.Name, hashedPassword, input.SSHKey, time.Time{}, 0)
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+	err = r.db.UpdateUserByID(
+		models.User{
+			ID:             userUUID,
+			Name:           input.Name,
+			HashedPassword: hashedPassword,
+			SSHKey:         input.SSHKey,
+			UpdatedAt:      time.Now(),
+		},
+	)
 	if err == gorm.ErrRecordNotFound {
 		writeErrResponse(w, http.StatusNotFound, "User not found")
 		return

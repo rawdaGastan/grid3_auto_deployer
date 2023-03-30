@@ -107,6 +107,10 @@ export default {
         path: "profile",
       },
       {
+        title: "Change password",
+        path: "/newPassword",
+      },
+      {
         title: "Logout",
         path: "#",
       },

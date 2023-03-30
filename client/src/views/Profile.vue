@@ -60,22 +60,7 @@
             variant="outlined"
             density="compact"
           ></v-text-field>
-          <v-text-field
-            label="Password"
-            type="password"
-            v-model="email"
-            disabled
-            bg-color="accent"
-            variant="outlined"
-            density="compact"
-          ></v-text-field>
 
-          <router-link
-            to="/newPassword"
-            color="primary"
-            class="d-block text-right text-capitalize text-decoration-none mb-5"
-            >*Change Password</router-link
-          >
           <div class="d-flex">
             <v-text-field
               label="Voucher"

@@ -111,6 +111,7 @@ import userService from "@/services/userService";
 import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import Toast from "@/components/Toast.vue";
+import router from "@/router";
 
 export default {
   components: {
@@ -181,6 +182,7 @@ export default {
       userService
         .updateUser(name.value, sshKey.value)
         .then((response) => {
+          checkUser(name.value)
           toast.value.toast(response.data.msg, "#388E3C");
         })
         .catch((response) => {
@@ -199,6 +201,13 @@ export default {
         return name.value.length > 0 && sshKey.value.length > 0;
       return true;
     });
+
+    const checkUser = (username) => {
+      if (localStorage.getItem("username") !== username) {
+        localStorage.setItem("username", username);
+        router.go()
+      }
+    };
 
     onMounted(() => {
       getUser();
@@ -225,6 +234,7 @@ export default {
       getUser,
       activateVoucher,
       update,
+      checkUser,
     };
   },
 };

@@ -119,6 +119,7 @@ export default {
     const checkTitle = (title) => {
       if (title == "Logout") {
         localStorage.removeItem("token");
+        localStorage.removeItem("username");
       }
     };
 

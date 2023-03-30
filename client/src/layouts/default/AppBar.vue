@@ -84,7 +84,7 @@ export default {
     const isActive = ref(null);
     const items = ref([
       {
-        path: "/",
+        path: "home",
         title: "Home",
       },
       {

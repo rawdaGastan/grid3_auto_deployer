@@ -6,6 +6,7 @@ import About from "@/views/About.vue";
 import VM from "@/views/VM.vue";
 import K8s from "@/views/K8s.vue";
 
+
 const routes = [
   {
     path: "/login",

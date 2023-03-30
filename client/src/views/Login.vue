@@ -90,7 +90,7 @@ export default {
                     toast.value.toast(response.data.msg);
 
                     router.push({
-                        name: 'Profile',
+                        name: 'Home',
                         });
                 })
                 .catch((error) => {

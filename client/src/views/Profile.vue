@@ -147,16 +147,19 @@ export default {
           sshKey.value = user.ssh_key;
           if (!user.college) {
             college.value = "-";
+          } else {
+            college.value = user.college;
           }
-          college.value = user.college;
           if (!user.team_size) {
             team_size.value = 0;
+          } else {
+            team_size.value = user.team_size;
           }
-          team_size.value = user.team_size;
           if (!user.project_desc) {
             project_desc.value = "Description..";
+          } else {
+            project_desc.value = user.project_desc;
           }
-          project_desc.value = user.project_desc;
           toast.value.clear();
         })
         .catch((response) => {

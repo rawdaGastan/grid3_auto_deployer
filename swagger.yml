@@ -770,14 +770,22 @@ paths:
           required: true
           type: string
           format: integer
+        - in: body
+          name: voucher
+          description: approval status
+          schema:
+            type: object
+            properties:
+              approved:
+                type: boolean
       responses:
         203:
           description: OK
           schema:
-                type: object
-                properties:
-                  msg:
-                    type: string
+            type: object
+            properties:
+              msg:
+                type: string
         401:
           $ref: '#/responses/UnauthorizedError'
         404:
@@ -818,7 +826,7 @@ definitions:
   Users:
     type: array
     items:
-      $ref: '#/definitions/User'
+      $ref: '#/definitions/UserUsedQuota'
 
   Vouchers:
     type: array
@@ -864,6 +872,42 @@ definitions:
         type: string
       college:
         type: string
+
+  UserUsedQuota:
+    type: object
+    properties:
+      user_id:
+        type: string
+        format: uuid
+      name:
+        type: string
+      email:
+        type: string
+        format: email
+      hashed_password:
+        type: string
+      voucher:
+        type: string
+      ssh_key:
+        type: string
+      admin:
+        type: boolean
+      verified: 
+        type: boolean
+      team_size:
+        type: integer
+      project_desc:
+        type: string
+      college:
+        type: string
+      vms:
+        type: integer
+      public_ips:
+        type: integer
+      used_vms:
+        type: integer
+      used_public_ips:
+        type: integer
 
   Quota:
     type: object

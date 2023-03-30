@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// set at build time
+// Commit set at build time
 var Commit string
 
 // versionCmd represents the version command

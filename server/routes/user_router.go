@@ -99,7 +99,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 
 	user, getErr := r.db.GetUserByEmail(signUp.Email)
 	// check if user already exists and verified
-	if getErr == nil {
+	if getErr != gorm.ErrRecordNotFound {
 		if user.Verified {
 			writeErrResponse(w, http.StatusBadRequest, "User already exists")
 			return
@@ -110,23 +110,36 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 	code := internal.GenerateRandomCode()
 	subject, body := internal.SignUpMailContent(code, r.config.MailSender.Timeout)
 	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.SendGridKey, signUp.Email, subject, body)
-
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
+	hashedPassword, err := internal.HashAndSaltPassword(signUp.Password, r.config.Salt)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	u := models.User{
+		Name:           signUp.Name,
+		Email:          signUp.Email,
+		HashedPassword: hashedPassword,
+		Code:           code,
+		SSHKey:         user.SSHKey,
+		TeamSize:       signUp.TeamSize,
+		ProjectDesc:    signUp.ProjectDesc,
+		College:        signUp.College,
+	}
+
 	// update code if user is not verified but exists
-	if getErr == nil {
+	if getErr != gorm.ErrRecordNotFound {
 		if !user.Verified {
-			err = r.db.UpdateUserByID(
-				models.User{
-					ID:        user.ID,
-					UpdatedAt: time.Now(),
-					Code:      code,
-				},
-			)
+			u.ID = user.ID
+			u.UpdatedAt = time.Now()
+			err = r.db.UpdateUserByID(u)
 			if err != nil {
 				log.Error().Err(err).Send()
 				writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -137,26 +150,6 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 
 	// check if user doesn't exist
 	if getErr != nil {
-		// hash password
-		hashedPassword, err := internal.HashAndSaltPassword(signUp.Password, r.config.Salt)
-		if err != nil {
-			log.Error().Err(err).Send()
-			writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
-			return
-		}
-
-		u := models.User{
-			Name:           signUp.Name,
-			Email:          signUp.Email,
-			HashedPassword: hashedPassword,
-			Verified:       false,
-			Code:           code,
-			SSHKey:         user.SSHKey,
-			TeamSize:       signUp.TeamSize,
-			ProjectDesc:    signUp.ProjectDesc,
-			College:        signUp.College,
-		}
-
 		err = r.db.CreateUser(&u)
 		if err != nil {
 			log.Error().Err(err).Send()

@@ -45,36 +45,12 @@
           </v-text-field>
 
 
-          <div class="d-flex my-3">
-         
+          <v-row justify="center">
 
-            <v-checkbox v-model="checked"></v-checkbox>
-
-
-            <v-card class="overflow-y-auto justify-center" max-height="100" max-width="85%">
-              <v-banner class="justify-center text-h6 font-weight-light" sticky>
-                Terms and Conditions
-              </v-banner>
-
-
-              <v-card-text>
-                <div class="mb-4">
-                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Modi commodi earum tenetur. Asperiores
-                  dolorem
-                  placeat ab nobis iusto culpa, autem molestias molestiae quidem pariatur. Debitis beatae expedita nam
-                  facere perspiciatis. Lorem ipsum dolor sit amet consectetur adipisicing elit. Repellendus ducimus
-                  cupiditate rerum officiis consequuntur laborum doloremque quaerat ipsa voluptates, nobis nam quis
-                  nulla
-                  ullam at corporis, similique ratione quasi illo!
-                </div>
-              </v-card-text>
-            </v-card>
-
-          </div>
-
-
-
-
+            <button type="button" class="btn mb-6" @click="showModal" style="font-weight: bold;text-decoration: underline;">
+              Terms and Conditions </button>
+          </v-row>
+          <Modal v-show="isModalVisible" @close="closeModal" @accept="acceptModal" @decline="declineModal" />
 
 
           <v-btn min-width="228" size="x-large" type="submit" block :disabled="!verify || !checked" :loading="loading"
@@ -94,9 +70,12 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 import Toast from "@/components/Toast.vue";
+import Modal from '@/components/Modal.vue';
+
 export default {
   components: {
     Toast,
+    Modal,
   },
 
   setup() {
@@ -111,14 +90,13 @@ export default {
     const faculty = ref(null);
     const projectDescription = ref(null);
     const teamSize = ref(null);
-
     const password = ref(null);
     const cpassword = ref(null);
     const isSignup = ref(true);
     const loading = ref(false);
     const toast = ref(null);
     const checked = ref(false);
-
+    const isModalVisible = ref(false);
 
     const Rules = ref([
       value => !!value || 'Field is required',
@@ -144,7 +122,23 @@ export default {
 
 
 
+    const showModal = () => {
+      isModalVisible.value = true;
+    };
+    const acceptModal = () => {
+      checked.value = true;
+      isModalVisible.value = false;
+    };
 
+    const declineModal = () => {
+      checked.value = false;
+      isModalVisible.value = false;
+    };
+
+    const closeModal = () => {
+
+      isModalVisible.value = false;
+    }
     const onSubmit = () => {
       if (!verify.value) return;
 
@@ -185,6 +179,10 @@ export default {
     };
     return {
       onSubmit,
+      closeModal,
+      showModal,
+      acceptModal,
+      declineModal,
       loading,
       verify,
       showPassword,
@@ -203,7 +201,8 @@ export default {
       faculty,
       projectDescription,
       teamSize,
-      teamSizeRules
+      teamSizeRules,
+      isModalVisible
 
     }
   },

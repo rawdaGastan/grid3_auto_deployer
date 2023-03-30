@@ -3,10 +3,15 @@
     <div class="d-flex flex-no-wrap justify-space-between">
       <div>
         <v-card-title class="text-body-1">
-          <!-- <v-icon size="small" color="white" icon="mdi-domain"></v-icon> -->
-          <span class="pa-2">VMs: {{ vm }}</span>
+          <div class="my-1">
+            <font-awesome-icon icon="fa-cube" />
+            <span class="pa-2"> VMs: {{ vm }}</span>
+          </div>
           <hr />
-          <span class="pa-2">IPS: {{ ips }}</span>
+          <div class="mt-2">
+            <font-awesome-icon icon="fa-diagram-project" />
+            <span class="pa-2">IPs: {{ ips }}</span>
+          </div>
         </v-card-title>
       </div>
     </div>

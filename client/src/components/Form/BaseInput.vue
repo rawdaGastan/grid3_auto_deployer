@@ -1,5 +1,6 @@
 <template>
   <v-text-field
+    :label="modelValue"
     v-bind="$attrs"
     bg-color="accent"
     variant="outlined"

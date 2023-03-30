@@ -23,9 +23,9 @@
                 <tbody>
                   <tr v-for="item, index in vouchers" :key="item.key" class="text-center">
                     <td>{{ ++index }}</td>
-                    <td>{{ item.id }}</td>
                     <td>{{ item.reason }}</td>
                     <td>{{ item.vms }} VM</td>
+                    <td>{{ item.public_ips }}</td>
                     <td v-if="!approved" class="d-flex justify-center align-center">
                       <BaseButton
                           color="primary"
@@ -110,9 +110,9 @@ export default {
     const confirm = ref(null);
     const vouchersHeaders = ref([
     'No',
-    'User ID' ,
     'Reason for Voucher',
     'Number of VMs',
+    'Public IPs'
     ]);
 
 

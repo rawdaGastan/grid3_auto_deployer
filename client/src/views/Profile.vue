@@ -71,6 +71,27 @@
               density="compact"
               class="mr-2"
               clearable
+              :disabled="!verified"
+            ></v-text-field>
+
+            <BaseButton
+              :disabled="!verified"
+              class="bg-primary text-capitalize"
+              text="Apply Voucher"
+              @click="activateVoucher"
+            />
+          </div>
+
+          <div class="d-flex" v-if="newVoucher">
+            <v-text-field
+              label="Voucher"
+              v-model="anotherVoucher"
+              :loading="actLoading"
+              bg-color="accent"
+              variant="outlined"
+              density="compact"
+              class="mr-2"
+              clearable
             ></v-text-field>
 
             <BaseButton
@@ -78,6 +99,13 @@
               text="Apply Voucher"
               @click="activateVoucher"
             />
+          </div>
+
+          <div class="mb-3 text-right">
+            <span class="pointer" @click="newVoucherInput">
+              <font-awesome-icon icon="fa-plus" class="primary" />
+              New Voucher
+            </span>
           </div>
 
           <v-textarea
@@ -122,6 +150,7 @@ export default {
     const team_size = ref(0);
     const project_desc = ref("");
     const voucher = ref(null);
+    const anotherVoucher = ref(null);
     const sshKey = ref(null);
     const actLoading = ref(false);
     const sMsg = ref(null);
@@ -129,6 +158,8 @@ export default {
     const sshSMsg = ref(null);
     const sshEMsg = ref(null);
     const toast = ref(null);
+    const newVoucher = ref(false);
+    const verified = ref(null);
     const rules = ref([
       (value) => {
         if (value) return true;
@@ -144,6 +175,7 @@ export default {
           email.value = user.email;
           name.value = user.name;
           voucher.value = user.voucher;
+          verified.value = user.verified;
           sshKey.value = user.ssh_key;
           if (!user.college) {
             college.value = "-";
@@ -168,6 +200,10 @@ export default {
         });
     };
 
+    const newVoucherInput = () => {
+      newVoucher.value = true;
+    };
+    
     const activateVoucher = () => {
       userService
         .activateVoucher(voucher.value)
@@ -236,11 +272,20 @@ export default {
       sshEMsg,
       rules,
       toast,
+      newVoucher,
+      anotherVoucher,
       getUser,
       activateVoucher,
       update,
       checkUser,
+      newVoucherInput,
     };
   },
 };
 </script>
+
+<style>
+.pointer {
+  cursor: pointer;
+}
+</style>

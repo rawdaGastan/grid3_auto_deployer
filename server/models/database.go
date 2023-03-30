@@ -59,9 +59,14 @@ func (d *DB) GetUserByID(id string) (User, error) {
 }
 
 // ListAllUsers returns all users to admin
-func (d *DB) ListAllUsers() ([]User, error) {
-	var res []User
-	query := d.db.Find(&res, "verified = true")
+func (d *DB) ListAllUsers() ([]UserUsedQuota, error) {
+	var res []UserUsedQuota
+	query := d.db.Table("users").
+		Select("*, vouchers.vms - quota.vms as used_vms, vouchers.public_ips - quota.public_ips as used_public_ips").
+		Joins("left join quota on quota.user_id = users.id").
+		Joins("left join vouchers on vouchers.user_id = users.id").
+		Where("verified = true").
+		Scan(&res)
 	return res, query.Error
 }
 
@@ -83,7 +88,7 @@ func (d *DB) UpdatePassword(email string, password string) error {
 	return result.Error
 }
 
-// UpdateUser updates information of user. empty and unchanged fields are not updated.
+// UpdateUserByID updates information of user. empty and unchanged fields are not updated.
 func (d *DB) UpdateUserByID(user User) error {
 	result := d.db.Model(&User{}).Where("id = ?", user.ID.String()).Updates(user)
 	return result.Error
@@ -199,10 +204,10 @@ func (d *DB) ListAllVouchers() ([]Voucher, error) {
 	return res, query.Error
 }
 
-// ApproveVoucher approves voucher by voucher id
-func (d *DB) ApproveVoucher(id int) (Voucher, error) {
+// UpdateVoucher approves voucher by voucher id
+func (d *DB) UpdateVoucher(id int, approved bool) (Voucher, error) {
 	var voucher Voucher
-	query := d.db.First(&voucher, id).Update("approved", true)
+	query := d.db.First(&voucher, id).Update("approved", approved)
 	return voucher, query.Error
 }
 

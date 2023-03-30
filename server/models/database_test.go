@@ -519,7 +519,7 @@ func TestListAllVouchers(t *testing.T) {
 func TestApproveVoucher(t *testing.T) {
 	db := setupDB(t)
 	t.Run("voucher not found", func(t *testing.T) {
-		_, err := db.ApproveVoucher(1)
+		_, err := db.UpdateVoucher(1, true)
 		assert.Equal(t, err, gorm.ErrRecordNotFound)
 	})
 	t.Run("voucher found", func(t *testing.T) {
@@ -531,7 +531,7 @@ func TestApproveVoucher(t *testing.T) {
 		err = db.CreateVoucher(&voucher2)
 		assert.NoError(t, err)
 
-		v, err := db.ApproveVoucher(voucher1.ID)
+		v, err := db.UpdateVoucher(voucher1.ID, true)
 		assert.NoError(t, err)
 		assert.Equal(t, v.Approved, true)
 

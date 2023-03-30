@@ -9,34 +9,41 @@
     <v-row justify="center">
       <v-col cols="12" sm="6">
         <v-form v-model="verify" class="my-5" @submit.prevent="update">
-          <BaseInput
-            placeholder="Name"
-            :modelValue="name"
-            class="my-2"
-            @update:modelValue="name = $event"
-          />
+          <v-text-field
+            label="Name"
+            v-model="name"
+            bg-color="accent"
+            variant="outlined"
+            density="compact"
+          ></v-text-field>
           <v-row>
             <v-col cols="12" sm="6">
-              <BaseInput
-                placeholder="College"
-                :modelValue="college"
+              <v-text-field
+                label="College"
+                v-model="college"
                 disabled
                 hide-details="true"
-              />
+                bg-color="accent"
+                variant="outlined"
+                density="compact"
+              ></v-text-field>
             </v-col>
             <v-col cols="12" sm="6">
-              <BaseInput
-                hide-details="true"
-                placeholder="Team members"
-                :modelValue="team_size"
+              <v-text-field
+                label="Team members"
+                v-model="team_size"
                 disabled
-              />
+                hide-details="true"
+                bg-color="accent"
+                variant="outlined"
+                density="compact"
+              ></v-text-field>
             </v-col>
             <v-col>
               <v-textarea
                 clearable
-                placeholder="Project description"
-                :modelValue="project_desc"
+                label="Project description"
+                v-model="project_desc"
                 variant="outlined"
                 bg-color="accent"
                 auto-grow
@@ -45,19 +52,24 @@
             </v-col>
           </v-row>
 
-          <BaseInput
-            placeholder="E-mail"
-            :modelValue="email"
-            @update:modelValue="email = $event"
+          <v-text-field
+            label="E-mail"
+            v-model="email"
             disabled
-          />
-          <BaseInput
-            placeholder="Password"
+            bg-color="accent"
+            variant="outlined"
+            density="compact"
+          ></v-text-field>
+          <v-text-field
+            label="Password"
             type="password"
-            :modelValue="password"
-            @update:modelValue="password = $event"
+            v-model="email"
             disabled
-          />
+            bg-color="accent"
+            variant="outlined"
+            density="compact"
+          ></v-text-field>
+
           <router-link
             to="/newPassword"
             color="primary"
@@ -65,14 +77,17 @@
             >*Change Password</router-link
           >
           <div class="d-flex">
-            <BaseInput
-              placeholder="Voucher"
-              :modelValue="voucher"
+            <v-text-field
+              label="Voucher"
+              v-model="voucher"
               :loading="actLoading"
-              @update:modelValue="voucher = $event"
+              bg-color="accent"
+              variant="outlined"
+              density="compact"
               class="mr-2"
               clearable
-            />
+            ></v-text-field>
+
             <BaseButton
               class="bg-primary text-capitalize"
               text="Apply Voucher"
@@ -82,10 +97,8 @@
 
           <v-textarea
             clearable
-            placeholder="SSH Key"
-            :modelValue="sshKey"
-            :value="sshKey"
-            @update:modelValue="sshKey = $event"
+            label="SSH Key"
+            v-model="sshKey"
             variant="outlined"
             bg-color="accent"
             class="my-2"
@@ -108,14 +121,12 @@
 <script>
 import { ref, onMounted, computed } from "vue";
 import userService from "@/services/userService";
-import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import Toast from "@/components/Toast.vue";
 import router from "@/router";
 
 export default {
   components: {
-    BaseInput,
     BaseButton,
     Toast,
   },
@@ -182,7 +193,7 @@ export default {
       userService
         .updateUser(name.value, sshKey.value)
         .then((response) => {
-          checkUser(name.value)
+          checkUser(name.value);
           toast.value.toast(response.data.msg, "#388E3C");
         })
         .catch((response) => {
@@ -205,7 +216,7 @@ export default {
     const checkUser = (username) => {
       if (localStorage.getItem("username") !== username) {
         localStorage.setItem("username", username);
-        router.go()
+        router.go();
       }
     };
 

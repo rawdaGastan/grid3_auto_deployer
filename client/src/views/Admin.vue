@@ -3,9 +3,30 @@
     <v-row no-gutters>
       <v-col>
         <v-sheet class="bg-tertiary background pa-2 ma-2" style="background-color: #D8F2FA;">
+          <div v-show="usedResources > 0" class="resources text-white rounded-xl bg-primary">
+            <p class="resources_p" align="center">Numbers of Used Reasources <strong style="font-size: 2.3rem;">{{ usedResources }} VM</strong></p>
+          </div>
           <section v-if="vouchers.length > 0">
             <h2 class="text-grey-darken-2">Vouchers</h2>
               <v-table class="rounded-lg" style="margin-top: .5rem;">
+                <!-- <template v-slot:bottom>
+                  <div class="text-center pt-2">
+                    <v-pagination
+                      v-model="currentPage"
+                      :length="totalPages"
+                    ></v-pagination>
+                    <v-text-field
+                      :model-value="itemsPerPage"
+                      class="pa-2"
+                      label="Items per page"
+                      type="number"
+                      min="-1"
+                      max="15"
+                      hide-details
+                      @update:model-value="itemsPerPage = parseInt($event, 10)"
+                    ></v-text-field>
+                  </div>
+                </template> -->
                 <thead class="bg-grey-lighten-5">
                   <tr>
                     <th
@@ -23,17 +44,29 @@
                 <tbody>
                   <tr v-for="item, index in vouchers" :key="item.key" class="text-center">
                     <td>{{ ++index }}</td>
+                    <td>
+                      <p>{{ item.name }}</p>
+                      <p>{{ item.email }}</p>
+                    </td>
                     <td>{{ item.reason }}</td>
                     <td>{{ item.vms }} VM</td>
                     <td>{{ item.public_ips }}</td>
-                    <td v-if="!approved" class="d-flex justify-center align-center">
+                    <td v-if="!item.approved" class="d-flex justify-space-around align-center">
                       <BaseButton
-                          color="primary"
-                          class="d-block "
-                          text="Approve"
-                          @click="approveVoucher(item.id)"
+                        color="primary"
+                        class="d-block "
+                        text="Approve"
+                        @click="approveVoucher(item.id, true)"
       
-                        />
+                      />
+
+                      <BaseButton
+                        color="red-lighten-1"
+                        class="d-block "
+                        text="Reject"
+                        @click="approveVoucher(item.id, false)"
+      
+                      />
                     </td>
                     <td v-else>Approved</td>
                   </tr>
@@ -54,22 +87,20 @@
                   <template v-else></template>
                 </tbody>
               </v-table>
+
           </section>
         </v-sheet>
       </v-col>
-      <v-col cols="5">
+      <v-col>
         <v-sheet class="bg-tertiary pa-2 ma-2" style="background-color: #D8F2FA;">
           <section>
-            <div v-show="usedResources > 0" class="resources text-white rounded-xl bg-primary">
-              <p class="resources_p" align="center">Numbers of Used Reasources <strong style="font-size: 2.3rem;">{{ usedResources }} VM</strong></p>
-            </div>
             <div v-if="users.length > 0">
               <h2 class="text-grey-darken-2">Users</h2>
               <v-table class="rounded-lg" style="margin-top: .5rem;">
                   <thead class="bg-grey-lighten-5">
                     <tr>
                       <th
-                        class="text-center text-grey-darken-1"
+                        class="text-grey-darken-1 text-center"
                         v-for="head in usersHeaders"
                         :key="head"
                       >
@@ -110,6 +141,7 @@ export default {
     const confirm = ref(null);
     const vouchersHeaders = ref([
     'No',
+    'User',
     'Reason for Voucher',
     'Number of VMs',
     'Public IPs'
@@ -129,21 +161,39 @@ export default {
     const loading = ref(false);
     const usedResources = ref(null);
     const approveAllCount = ref(null)
-    const approved = ref(null);
+    const currentPage = ref(null);
+    const totalPages = ref(null);
+    const itemsPerPage = ref(null)
+    const userInfo = ref(null);
+
     
-    const getVouchers = () => {
+    currentPage.value = 1;
+    itemsPerPage.value = 5;
+    totalPages.value = vouchers?.value.length / itemsPerPage.value;
+
+
+    const getVouchers = () =>  {
       adminService
         .getVouchers()
         .then((response) => {
           const { data } = response.data;
           vouchers.value = data;
+          approveAllCount.value = 0            
 
           for (let voucher of data) {
             usedResources.value += voucher.vms;
-            approveAllCount.value = 0            
-            !voucher?.approved? approveAllCount.value++ : approveAllCount.value;
-            approved.value = computed(() => voucher.approved)
+
+            if(!voucher?.approved){
+              approveAllCount.value++
+            }
+
+            userInfo.value = users?.value?.find(user => user.ID === voucher.user_id);
+
+            if(voucher.user_id ===  userInfo?.value?.ID){
+              Object.assign(voucher, {email: userInfo?.value?.email, name: userInfo?.value?.name});
+            }
           }
+
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -151,9 +201,9 @@ export default {
         });
     };
 
-    const approveVoucher = (id) => {
+    const approveVoucher = (id, approved) => {
       adminService
-      .approveVoucher(id);
+      .approveVoucher(id, approved);
     }
 
     const approveAllVouchers = () => {
@@ -175,8 +225,8 @@ export default {
     };
 
     onMounted(() => {
-      getVouchers();
       getUsers();
+      getVouchers();
     });
 
     return {
@@ -184,9 +234,9 @@ export default {
       vouchers,
       usedResources,
       approveAllCount,
-      approved,
       usersHeaders,
       users,
+      userInfo,
       loading,
       confirm,
       toast,
@@ -194,6 +244,9 @@ export default {
       approveVoucher,
       approveAllVouchers,
       getUsers,
+      currentPage,
+      totalPages,
+      itemsPerPage,
     };
   },
 };

@@ -118,9 +118,9 @@ export default {
   setup() {
     const email = ref(null);
     const name = ref(null);
-    const college = ref('-');
+    const college = ref("");
     const team_size = ref(0);
-    const project_desc = ref('');
+    const project_desc = ref("");
     const voucher = ref(null);
     const sshKey = ref(null);
     const actLoading = ref(false);
@@ -145,8 +145,17 @@ export default {
           name.value = user.name;
           voucher.value = user.voucher;
           sshKey.value = user.ssh_key;
+          if (!user.college) {
+            college.value = "-";
+          }
           college.value = user.college;
+          if (!user.team_size) {
+            team_size.value = 0;
+          }
           team_size.value = user.team_size;
+          if (!user.project_desc) {
+            project_desc.value = "Description..";
+          }
           project_desc.value = user.project_desc;
           toast.value.clear();
         })
@@ -195,10 +204,6 @@ export default {
         return name.value.length > 0 && sshKey.value.length > 0;
       return true;
     });
-
-    const checkEmptyInputs = (value) => {
-      if(!value) return '-'
-    };
 
     const checkUser = (username) => {
       if (localStorage.getItem("username") !== username) {

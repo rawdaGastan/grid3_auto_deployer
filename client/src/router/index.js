@@ -1,6 +1,5 @@
 // Composables
 import { createRouter, createWebHistory } from "vue-router";
-import Profile from "@/views/Profile.vue";
 import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
 import VM from "@/views/VM.vue";

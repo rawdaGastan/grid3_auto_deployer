@@ -65,6 +65,7 @@ const routes = [
       import(/* webpackChunkName: "login" */ "@/views/Newpassword.vue"),
     meta: {
       requiredAuth: false,
+      layout : 'Default'
     },
   },
   {

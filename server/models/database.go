@@ -2,9 +2,6 @@
 package models
 
 import (
-	"fmt"
-	"time"
-
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm/clause"
 
@@ -23,7 +20,6 @@ func NewDB() DB {
 
 // Connect connects to database file
 func (d *DB) Connect(file string) error {
-
 	gormDB, err := gorm.Open(sqlite.Open(file), &gorm.Config{})
 	if err != nil {
 		return err
@@ -52,23 +48,31 @@ func (d *DB) CreateUser(u *User) error {
 func (d *DB) GetUserByEmail(email string) (User, error) {
 	var res User
 	query := d.db.First(&res, "email = ?", email)
-	if query.Error != nil {
-		return User{}, query.Error
-	}
-
-	return res, nil
+	return res, query.Error
 }
 
 // GetUserByID returns user by its id
 func (d *DB) GetUserByID(id string) (User, error) {
 	var res User
 	query := d.db.First(&res, "id = ?", id)
+	return res, query.Error
+}
+
+// ListAllUsers returns all users to admin
+func (d *DB) ListAllUsers() ([]User, error) {
+	var res []User
+	query := d.db.Find(&res, "verified = true")
+	return res, query.Error
+}
+
+// GetCodeByEmail returns verification code for unit testing
+func (d *DB) GetCodeByEmail(email string) (int, error) {
+	var res User
+	query := d.db.First(&res, "email = ?", email)
 	if query.Error != nil {
-		return User{}, query.Error
+		return 0, query.Error
 	}
-
-	return res, nil
-
+	return res.Code, nil
 }
 
 // UpdatePassword updates password of user
@@ -79,41 +83,10 @@ func (d *DB) UpdatePassword(email string, password string) error {
 	return result.Error
 }
 
-// UpdateUserByID updates information of user
-func (d *DB) UpdateUserByID(id string, name string, password string, sshKey string, updatedAt time.Time, code int) (string, error) {
-	var res User
-	if name != "" {
-		result := d.db.Model(&res).Where("id = ?", id).Update("name", name)
-		if result.Error != nil {
-			return "", result.Error
-		}
-	}
-	if password != "" {
-		result := d.db.Model(&res).Where("id = ?", id).Update("hashed_password", password)
-		if result.Error != nil {
-			return "", result.Error
-		}
-	}
-	if sshKey != "" {
-		result := d.db.Model(&res).Where("id = ?", id).Update("ssh_key", sshKey)
-		if result.Error != nil {
-			return "", result.Error
-		}
-	}
-	if !updatedAt.IsZero() {
-		result := d.db.Model(&res).Where("id = ?", id).Update("updated_at", updatedAt)
-		if result.Error != nil {
-			return "", result.Error
-		}
-	}
-	if code != 0 {
-		result := d.db.Model(&res).Where("id = ?", id).Update("code", code)
-		if result.Error != nil {
-			return "", result.Error
-		}
-	}
-
-	return string(id), nil
+// UpdateUser updates information of user. empty and unchanged fields are not updated.
+func (d *DB) UpdateUserByID(user User) error {
+	result := d.db.Model(&User{}).Where("id = ?", user.ID.String()).Updates(user)
+	return result.Error
 }
 
 // UpdateVerification updates if user is verified or not
@@ -135,6 +108,13 @@ func (d *DB) AddUserVoucher(id string, voucher string) error {
 	return d.DeactivateVoucher(voucher)
 }
 
+// GetNotUsedVoucherByUserID returns not used voucher by its user id
+func (d *DB) GetNotUsedVoucherByUserID(id string) (Voucher, error) {
+	var res Voucher
+	query := d.db.First(&res, "user_id = ? AND used = false", id)
+	return res, query.Error
+}
+
 // CreateVM creates new vm
 func (d *DB) CreateVM(vm *VM) error {
 	result := d.db.Create(&vm)
@@ -146,11 +126,7 @@ func (d *DB) CreateVM(vm *VM) error {
 func (d *DB) GetVMByID(id int) (VM, error) {
 	var vm VM
 	query := d.db.Model(VM{ID: id}).First(&vm)
-	if query.Error != nil {
-		return vm, query.Error
-	}
-
-	return vm, nil
+	return vm, query.Error
 }
 
 // GetAllVms returns all vms of user
@@ -184,22 +160,15 @@ func (d *DB) CreateQuota(q *Quota) error {
 }
 
 // UpdateUserQuota updates quota
-func (d *DB) UpdateUserQuota(userID string, vms, k8s int) error {
-	quota := Quota{userID, vms, k8s}
-	return d.db.Debug().Model(Quota{}).Where("user_id = ?", userID).Updates(quota).Error
+func (d *DB) UpdateUserQuota(userID string, vms int, publicIPs int) error {
+	quota := Quota{userID, vms, publicIPs}
+	return d.db.Model(Quota{}).Where("user_id = ?", userID).Updates(quota).Error
 }
 
-// GetUserQuota gets user quota available (vms and k8s)
+// GetUserQuota gets user quota available vms (vms will be used for both vms and k8s clusters)
 func (d *DB) GetUserQuota(userID string) (Quota, error) {
 	var res Quota
-	var b []Quota
-	_ = d.db.Find(&b)
-	fmt.Printf("b: %v\n", b)
 	query := d.db.First(&res, "user_id = ?", userID)
-	if query.Error != nil {
-		return res, query.Error
-	}
-
 	return res, query.Error
 }
 
@@ -213,26 +182,43 @@ func (d *DB) CreateVoucher(v *Voucher) error {
 func (d *DB) GetVoucher(voucher string) (Voucher, error) {
 	var res Voucher
 	query := d.db.First(&res, "voucher = ?", voucher)
-	if query.Error != nil {
-		return res, query.Error
-	}
-
 	return res, query.Error
+}
+
+// GetVoucherByID gets voucher by ID
+func (d *DB) GetVoucherByID(id int) (Voucher, error) {
+	var res Voucher
+	query := d.db.First(&res, id)
+	return res, query.Error
+}
+
+// ListAllVouchers returns all vouchers to admin
+func (d *DB) ListAllVouchers() ([]Voucher, error) {
+	var res []Voucher
+	query := d.db.Find(&res)
+	return res, query.Error
+}
+
+// ApproveVoucher approves voucher by voucher id
+func (d *DB) ApproveVoucher(id int) (Voucher, error) {
+	var voucher Voucher
+	query := d.db.First(&voucher, id).Update("approved", true)
+	return voucher, query.Error
+}
+
+// ApproveAllVouchers approves all vouchers
+func (d *DB) ApproveAllVouchers() ([]Voucher, error) {
+	var vouchers []Voucher
+	return vouchers, d.db.Find(&vouchers).Update("approved", true).Error
 }
 
 // DeactivateVoucher if it is used
 func (d *DB) DeactivateVoucher(voucher string) error {
-	return d.db.Debug().Model(Voucher{}).Where("voucher = ?", voucher).Update("used", true).Error
+	return d.db.Model(Voucher{}).Where("voucher = ?", voucher).Update("used", true).Error
 }
 
 // CreateK8s creates a new k8s cluster
 func (d *DB) CreateK8s(k *K8sCluster) error {
-	result := d.db.Create(&k)
-	return result.Error
-}
-
-// CreateWorker creates a new k8s worker
-func (d *DB) CreateWorker(k *Worker) error {
 	result := d.db.Create(&k)
 	return result.Error
 }

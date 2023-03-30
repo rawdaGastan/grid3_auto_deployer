@@ -3,6 +3,7 @@ package internal
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 )
@@ -15,6 +16,7 @@ type Configuration struct {
 	Token      JwtToken    `json:"token"`
 	Account    GridAccount `json:"account"`
 	Version    string      `json:"version"`
+	Salt       string      `json:"salt"`
 }
 
 // Server struct to hold server's information
@@ -25,9 +27,9 @@ type Server struct {
 
 // MailSender struct to hold sender's email, password
 type MailSender struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Timeout  int    `json:"timeout"`
+	Email       string `json:"email"`
+	SendGridKey string `json:"sendgrid_key"`
+	Timeout     int    `json:"timeout"`
 }
 
 // DB struct to hold database file
@@ -63,11 +65,36 @@ func ReadConfFile(path string) ([]byte, error) {
 }
 
 // ParseConf parses content of file to Configurations struct
-func ParseConf(conf []byte) (*Configuration, error) {
-	myConf := Configuration{}
+func ParseConf(conf []byte) (Configuration, error) {
+	var myConf Configuration
 	err := json.Unmarshal(conf, &myConf)
 	if err != nil {
-		return &myConf, err
+		return myConf, err
 	}
-	return &myConf, nil
+
+	if myConf.Server.Host == "" || myConf.Server.Port == "" {
+		return myConf, errors.New("server configuration is required")
+	}
+
+	if myConf.MailSender.Email == "" || myConf.MailSender.SendGridKey == "" || myConf.MailSender.Timeout == 0 {
+		return myConf, errors.New("mail sender configuration is required")
+	}
+
+	if myConf.Database.File == "" {
+		return myConf, errors.New("database configuration is required")
+	}
+
+	if myConf.Account.Mnemonics == "" || myConf.Account.Network == "" {
+		return myConf, errors.New("account configuration is required")
+	}
+
+	if myConf.Token.Secret == "" || myConf.Token.Timeout == 0 {
+		return myConf, errors.New("jwt token configuration is required")
+	}
+
+	if myConf.Version == "" {
+		return myConf, errors.New("version is required")
+	}
+
+	return myConf, nil
 }

@@ -195,7 +195,7 @@ paths:
         - application/json
       parameters:
         - in: body
-          name: code
+          name: password
           description: the user's password to update
           schema:
             $ref: '#/definitions/ChangePassword' 
@@ -226,7 +226,7 @@ paths:
         - application/json
       parameters:
         - in: body
-          name: code
+          name: voucher
           description: the voucher to add
           schema:
             type: object
@@ -246,6 +246,41 @@ paths:
           $ref: '#/responses/UnauthorizedError'
         404:
           $ref: '#/responses/UnfoundError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+  
+  /user/apply_voucher:
+    post:
+      description: A user to apply for a voucher
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: voucher
+          description: the voucher to apply for
+          schema:
+            type: object
+            properties:
+              vms:
+                type: integer
+              public_ips:
+                type: integer
+              reason:
+                type: string
+      responses:
+        201:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        401:
+          $ref: '#/responses/UnauthorizedError'
         500:
           description: Unexpected error
           schema:
@@ -289,7 +324,7 @@ paths:
         - application/json
       parameters:
         - in: body
-          name: code
+          name: data
           description: the user data to update
           schema:
             $ref: '#/definitions/UpdateData' 
@@ -349,7 +384,7 @@ paths:
         - application/json
       parameters:
         - in: body
-          name: code
+          name: vm
           description: the vm to deploy
           schema:
             $ref: '#/definitions/DeployVM'
@@ -499,7 +534,7 @@ paths:
         - application/json
       parameters:
         - in: body
-          name: code
+          name: k8s
           description: the k8s to deploy
           schema:
             $ref: '#/definitions/DeployK8s'
@@ -639,7 +674,157 @@ paths:
           schema:
                 $ref: '#/responses/ErrorResponse'
 
-definitions:
+  /voucher:
+    get:
+      description: getting all vouchers
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      responses:
+        200:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        $ref: '#/definitions/Vouchers'
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+    
+    put:
+      description: approve all vouchers
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      responses:
+        203:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        404:
+          $ref: '#/responses/UnfoundError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+    
+    post:
+      description: generate a voucher
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: voucher
+          description: the voucher to generate
+          schema:
+            $ref: '#/definitions/GenerateVoucher'
+      responses:
+        201:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  data: 
+                    type: object
+                    properties:
+                      users:
+                        $ref: '#/definitions/Voucher'
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+  /voucher/{id}:
+    put:
+      description: approve a voucher
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      parameters:
+        - in: path
+          name: id
+          description: voucher ID
+          required: true
+          type: string
+          format: integer
+      responses:
+        203:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        404:
+          $ref: '#/responses/UnfoundError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+  /user/all:
+    get:
+      description: getting all user
+      security:
+        - Bearer: []
+      consumes:
+        - application/json
+      responses:
+        200:
+          description: OK
+          schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        $ref: '#/definitions/Users'
+        401:
+          $ref: '#/responses/UnauthorizedError'
+        500:
+          description: Unexpected error
+          schema:
+                $ref: '#/responses/ErrorResponse'
+
+definitions:  
+  Users:
+    type: array
+    items:
+      $ref: '#/definitions/User'
+
+  Vouchers:
+    type: array
+    items:
+      $ref: '#/definitions/Voucher'
+
   Vms:
     type: array
     items:
@@ -673,6 +858,12 @@ definitions:
         type: boolean
       verified: 
         type: boolean
+      team_size:
+        type: integer
+      project_desc:
+        type: string
+      college:
+        type: string
 
   Quota:
     type: object
@@ -686,8 +877,31 @@ definitions:
         format: uuid
       vms:
         type: integer
-      k8s:
+      public_ips:
         type: integer
+
+  Voucher:
+    type: object
+    required:
+      - id
+    properties:
+      id:
+        type: integer
+      userID:
+        type: string
+        format: uuid
+      voucher:
+        type: string
+      vms:
+        type: integer
+      public_ips:
+        type: integer
+      reason:
+        type: string
+      used:
+        type: boolean
+      approved:
+        type: boolean
 
   Vm:
     type: object
@@ -699,7 +913,11 @@ definitions:
       userID:
         type: string
         format: uuid
-      ip:
+      ygg_ip:
+        type: string
+      public:
+        type: boolean
+      public_ip:
         type: string
       cru:
         type: string
@@ -741,7 +959,11 @@ definitions:
         type: integer
       name: 
         type: string
-      ip:
+      ygg_ip:
+        type: string
+      public:
+        type: boolean
+      public_ip:
         type: string
       cru:
         type: string
@@ -771,6 +993,9 @@ definitions:
       - email
       - password
       - confirm_password
+      - team_size
+      - project_desc
+      - college
     properties:
       name:
         type: string
@@ -780,6 +1005,12 @@ definitions:
       password:
         type: string
       confirm_password:
+        type: string
+      team_size:
+        type: integer
+      project_desc:
+        type: string
+      college:
         type: string
 
   VerifyCode:
@@ -841,6 +1072,8 @@ definitions:
       resources:
         type: string
         format: small-medium-large
+      public:
+        type: boolean
   
   DeployK8s:
     type: object
@@ -850,6 +1083,8 @@ definitions:
       resources:
         type: string
         format: small-medium-large
+      public:
+        type: boolean
       workers:
         type: array
         items:
@@ -863,6 +1098,16 @@ definitions:
       resources:
         type: string
         format: small-medium-large
+
+  GenerateVoucher:
+    type: object
+    properties:
+      length:
+        type: string
+      vms:
+        type: integer
+      public_ips:
+        type: integer
 
 responses:
   ErrorResponse:

@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/codescalers/cloud4students/internal"
+	"github.com/codescalers/cloud4students/middlewares"
+	"github.com/codescalers/cloud4students/models"
 	"github.com/gorilla/mux"
-	"github.com/rawdaGastan/cloud4students/internal"
-	"github.com/rawdaGastan/cloud4students/middlewares"
-	"github.com/rawdaGastan/cloud4students/models"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/grid3-go/deployer"
@@ -46,14 +46,17 @@ func NewServer(file string) (server *Server, err error) {
 		return
 	}
 
-	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", true, false)
+	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, true, false)
 	if err != nil {
 		return
 	}
 
 	version := "/" + configuration.Version
 
-	router := NewRouter(*configuration, db, tfPluginClient)
+	router, err := NewRouter(configuration, db, tfPluginClient)
+	if err != nil {
+		return
+	}
 	r := mux.NewRouter()
 	signUp := r.HandleFunc(version+"/user/signup", router.SignUpHandler).Methods("POST", "OPTIONS")
 	signUpVerify := r.HandleFunc(version+"/user/signup/verify_email", router.VerifySignUpCodeHandler).Methods("POST", "OPTIONS")
@@ -61,9 +64,10 @@ func NewServer(file string) (server *Server, err error) {
 	refreshToken := r.HandleFunc(version+"/user/refresh_token", router.RefreshJWTHandler).Methods("POST", "OPTIONS")
 	forgetPass := r.HandleFunc(version+"/user/forgot_password", router.ForgotPasswordHandler).Methods("POST", "OPTIONS")
 	forgetPassVerify := r.HandleFunc(version+"/user/forget_password/verify_email", router.VerifyForgetPasswordCodeHandler).Methods("POST", "OPTIONS")
-	changePassword := r.HandleFunc(version+"/user/change_password", router.ChangePasswordHandler).Methods("PUT", "OPTIONS")
+	r.HandleFunc(version+"/user/change_password", router.ChangePasswordHandler).Methods("PUT", "OPTIONS")
 	r.HandleFunc(version+"/user", router.UpdateUserHandler).Methods("PUT", "OPTIONS")
 	r.HandleFunc(version+"/user", router.GetUserHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/user/apply_voucher", router.ApplyForVoucherHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc(version+"/user/activate_voucher", router.ActivateVoucherHandler).Methods("PUT", "OPTIONS")
 
 	r.HandleFunc(version+"/quota", router.GetQuotaHandler).Methods("GET", "OPTIONS")
@@ -81,11 +85,15 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc(version+"/k8s/{id}", router.K8sDeleteHandler).Methods("DELETE", "OPTIONS")
 
 	// ADMIN ACCESS
-	r.HandleFunc(version+"/voucher", router.GenerateVoucherHandler).Methods("POST")
+	r.HandleFunc(version+"/user/all", router.GetAllUsersHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/voucher", router.GenerateVoucherHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc(version+"/voucher", router.ListVouchersHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/voucher/{id}", router.ApproveVoucherHandler).Methods("PUT", "OPTIONS")
+	r.HandleFunc(version+"/voucher", router.ApproveAllVouchers).Methods("PUT", "OPTIONS")
 
 	r.Use(middlewares.LoggingMW)
 	r.Use(middlewares.EnableCors)
-	excludedRoutes := []*mux.Route{signUp, signUpVerify, signIn, refreshToken, forgetPass, forgetPassVerify, changePassword}
+	excludedRoutes := []*mux.Route{signUp, signUpVerify, signIn, refreshToken, forgetPass, forgetPassVerify}
 	r.Use(middlewares.Authorization(excludedRoutes, configuration.Token.Secret, configuration.Token.Timeout))
 	http.Handle("/", r)
 

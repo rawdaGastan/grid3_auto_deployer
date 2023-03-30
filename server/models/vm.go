@@ -6,7 +6,9 @@ type VM struct {
 	ID                int    `json:"id" gorm:"primaryKey"`
 	UserID            string `json:"user_id"`
 	Name              string `json:"name"`
-	IP                string `json:"ip"`
+	YggIP             string `json:"ygg_ip"`
+	Public            bool   `json:"public"`
+	PublicIP          string `json:"public_ip"`
 	Resources         string `json:"resources"`
 	SRU               uint64 `json:"sru"`
 	CRU               uint64 `json:"cru"`

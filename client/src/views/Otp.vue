@@ -88,11 +88,11 @@ export default {
 
       if (route.query.isForgetpassword) {
         axios
-          .post(window.configs.vite_app_endpoint+"/user/forgot_password", {
+          .post(window.configs.vite_app_endpoint + "/user/forgot_password", {
             email: route.query.email,
           })
           .then((response) => {
-
+        
             toast.value.toast(response.data.msg);
             countDown.value = 30;
 
@@ -105,7 +105,7 @@ export default {
       } else {
 
         axios
-          .post(window.configs.vite_app_endpoint+"/user/signup", {
+          .post(window.configs.vite_app_endpoint + "/user/signup", {
             name: localStorage.getItem('fullname'),
             email: route.query.email,
             password: localStorage.getItem('password'),
@@ -134,7 +134,7 @@ export default {
 
 
         axios
-          .post(window.configs.vite_app_endpoint+"/user/signup/verify_email", {
+          .post(window.configs.vite_app_endpoint + "/user/signup/verify_email", {
             email: route.query.email,
             code: Number(otp.value),
           })
@@ -155,12 +155,13 @@ export default {
           });
       } else {
         axios
-          .post(window.configs.vite_app_endpoint+"/user/forget_password/verify_email", {
+          .post(window.configs.vite_app_endpoint + "/user/forget_password/verify_email", {
             email: route.query.email,
             code: Number(otp.value),
           })
           .then((response) => {
             toast.value.toast(response.data.msg);
+            localStorage.setItem('password_token',response.data.data.access_token);
 
             router.push({
               name: 'NewPassword',

@@ -5,7 +5,7 @@ all: verifiers test
 
 build:
 	@echo "Running $@"
-	@go build -o bin/cloud4students main.go
+	@go build -ldflags="-X 'github.com/codescalers/cloud4students/cmd.Commit=$(shell git rev-parse HEAD)'" -o bin/cloud4students main.go
 
 run: build
 	@echo "Running $@"
@@ -19,6 +19,8 @@ coverage: clean
 	mkdir coverage
 	go test -v -vet=off ./... -coverprofile=coverage/coverage.out
 	go tool cover -html=coverage/coverage.out -o coverage/coverage.html
+	@${GOPATH}/bin/gopherbadger -png=false -md="README.md"
+	rm coverage.out
 
 clean:
 	rm ./coverage -rf
@@ -30,6 +32,8 @@ getverifiers:
 	@echo "Installing deadcode" && go get -u github.com/remyoudompheng/go-misc/deadcode && go install github.com/remyoudompheng/go-misc/deadcode
 	@echo "Installing misspell" && go get -u github.com/client9/misspell/cmd/misspell && go install github.com/client9/misspell/cmd/misspell
 	@echo "Installing golangci-lint" && go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
+	@echo "Installing gopherbadger" && go get github.com/jpoles1/gopherbadger && go install github.com/jpoles1/gopherbadger
+	go mod tidy
 
 verifiers: fmt lint cyclo deadcode spelling staticcheck
 

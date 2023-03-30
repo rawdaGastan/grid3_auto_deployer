@@ -7,22 +7,24 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/gorilla/mux"
-	"github.com/rawdaGastan/cloud4students/middlewares"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
 )
 
 // K8sDeployInput deploy k8s cluster input
 type K8sDeployInput struct {
-	MasterName string   `json:"master_name"`
+	MasterName string   `json:"master_name" validate:"min=3,max=20"`
 	Resources  string   `json:"resources"`
+	Public     bool     `json:"public"`
 	Workers    []Worker `json:"workers"`
 }
 
 // Worker deploy k8s worker input
 type Worker struct {
-	Name      string `json:"name"`
+	Name      string `json:"name" validate:"min=3,max=20"`
 	Resources string `json:"resources"`
 }
 
@@ -31,12 +33,12 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	user, err := r.db.GetUserByID(userID)
 	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "User not found")
+		writeErrResponse(w, http.StatusNotFound, "User not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -44,30 +46,36 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 	err = json.NewDecoder(req.Body).Decode(&k8sDeployInput)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read k8s data")
+		return
+	}
+	err = validator.Validate(k8sDeployInput)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(w, http.StatusBadRequest, "Invalid Kubernetes data")
 		return
 	}
 
 	// quota verification
 	quota, err := r.db.GetUserQuota(userID)
 	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "User quota not found")
+		writeErrResponse(w, http.StatusNotFound, "User quota not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
-	neededQuota, err := validateK8sQuota(k8sDeployInput, quota.K8s)
+	neededQuota, err := validateK8sQuota(k8sDeployInput, quota.Vms, quota.PublicIPs)
 	if err != nil {
-		writeErrResponse(w, err.Error())
+		writeErrResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	if len(strings.TrimSpace(user.SSHKey)) == 0 {
-		writeErrResponse(w, "SSH key is required")
+		writeErrResponse(w, http.StatusBadRequest, "SSH key is required")
 		return
 	}
 
@@ -75,33 +83,36 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 	node, networkContractID, k8sContractID, err := r.deployK8sClusterWithNetwork(k8sDeployInput, user.SSHKey)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	k8sCluster, err := r.loadK8s(k8sDeployInput, userID, node, networkContractID, k8sContractID)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
-
+	publicIPsQuota := quota.PublicIPs
+	if k8sDeployInput.Public {
+		publicIPsQuota -= publicQuota
+	}
 	// update quota
-	err = r.db.UpdateUserQuota(userID, quota.Vms, quota.K8s-neededQuota)
+	err = r.db.UpdateUserQuota(userID, quota.Vms-neededQuota, publicIPsQuota)
 	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "User quota not found")
+		writeErrResponse(w, http.StatusNotFound, "User quota not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	err = r.db.CreateK8s(&k8sCluster)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -114,25 +125,21 @@ func (r *Router) K8sGetHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	id, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
-		writeErrResponse(w, "Failed to parse cluster id")
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read cluster id")
 		return
 	}
 
 	cluster, err := r.db.GetK8s(id)
-	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "Kubernetes cluster not found")
+	if err == gorm.ErrRecordNotFound || cluster.UserID != userID {
+		writeErrResponse(w, http.StatusNotFound, "Kubernetes cluster not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
-	if cluster.UserID != userID {
-		writeNotFoundResponse(w, "Kubernetes cluster not found")
-		return
-	}
 	writeMsgResponse(w, "Kubernetes cluster found", cluster)
 }
 
@@ -142,12 +149,12 @@ func (r *Router) K8sGetAllHandler(w http.ResponseWriter, req *http.Request) {
 
 	clusters, err := r.db.GetAllK8s(userID)
 	if err == gorm.ErrRecordNotFound || len(clusters) == 0 {
-		writeMsgResponse(w, "Kubernetes clusters not found", nil)
+		writeMsgResponse(w, "Kubernetes clusters not found", clusters)
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -159,37 +166,32 @@ func (r *Router) K8sDeleteHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	id, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
-		writeErrResponse(w, "Failed to parse cluster id")
+		writeErrResponse(w, http.StatusBadRequest, "Failed to read cluster id")
 		return
 	}
 
 	cluster, err := r.db.GetK8s(id)
-	if err == gorm.ErrRecordNotFound {
-		writeNotFoundResponse(w, "Kubernetes cluster not found")
+	if err == gorm.ErrRecordNotFound || cluster.UserID != userID {
+		writeErrResponse(w, http.StatusNotFound, "Kubernetes cluster not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
-		return
-	}
-
-	if cluster.UserID != userID {
-		writeNotFoundResponse(w, "Kubernetes cluster not found")
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	err = r.cancelDeployment(uint64(cluster.ClusterContract), uint64(cluster.NetworkContract))
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	err = r.db.DeleteK8s(id)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 	writeMsgResponse(w, "kubernetes cluster is deleted successfully", nil)
@@ -206,7 +208,7 @@ func (r *Router) K8sDeleteAllHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -214,7 +216,7 @@ func (r *Router) K8sDeleteAllHandler(w http.ResponseWriter, req *http.Request) {
 		err = r.cancelDeployment(uint64(cluster.ClusterContract), uint64(cluster.NetworkContract))
 		if err != nil {
 			log.Error().Err(err).Send()
-			writeErrResponse(w, internalServerErrorMsg)
+			writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 			return
 		}
 	}
@@ -222,7 +224,7 @@ func (r *Router) K8sDeleteAllHandler(w http.ResponseWriter, req *http.Request) {
 	err = r.db.DeleteAllK8s(userID)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, internalServerErrorMsg)
+		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 

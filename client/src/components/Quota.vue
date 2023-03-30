@@ -4,7 +4,7 @@
       <div>
         <v-card-title class="text-body-1">
           <v-tooltip activator="parent" location="end">
-            Instances consume: <br />small: 1 vm <br />medium: 2 vms
+            Deployments consume: <br />small: 1 vm <br />medium: 2 vms
             <br />large: 3 vms</v-tooltip
           >
           <div class="my-1">

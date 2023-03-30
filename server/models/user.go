@@ -36,3 +36,24 @@ func (user *User) BeforeCreate(tx *gorm.DB) (err error) {
 	user.ID = id
 	return
 }
+
+// UserUsedQuota has user data + voucher quota and used quota
+type UserUsedQuota struct {
+	UserID         string    `json:"user_id"`
+	Name           string    `json:"name"`
+	Email          string    `json:"email"`
+	HashedPassword string    `json:"hashed_password"`
+	Voucher        string    `json:"voucher"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	Code           int       `json:"code"`
+	SSHKey         string    `json:"ssh_key"`
+	Verified       bool      `json:"verified"`
+	TeamSize       int       `json:"team_size"`
+	ProjectDesc    string    `json:"project_desc"`
+	College        string    `json:"college"`
+	Admin          bool      `json:"admin"`
+	Vms            int       `json:"vms"`
+	PublicIPs      int       `json:"public_ips"`
+	UsedVms        int       `json:"used_vms"`
+	UsedPublicIPs  int       `json:"used_public_ips"`
+}

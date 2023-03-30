@@ -9,34 +9,41 @@
     <v-row justify="center">
       <v-col cols="12" sm="6">
         <v-form v-model="verify" class="my-5" @submit.prevent="update">
-          <BaseInput
-            placeholder="Name"
-            :modelValue="name"
-            class="my-2"
-            @update:modelValue="name = $event"
-          />
+          <v-text-field
+            label="Name"
+            v-model="name"
+            bg-color="accent"
+            variant="outlined"
+            density="compact"
+          ></v-text-field>
           <v-row>
             <v-col cols="12" sm="6">
-              <BaseInput
-                placeholder="College"
-                :modelValue="college"
+              <v-text-field
+                label="College"
+                v-model="college"
                 disabled
                 hide-details="true"
-              />
+                bg-color="accent"
+                variant="outlined"
+                density="compact"
+              ></v-text-field>
             </v-col>
             <v-col cols="12" sm="6">
-              <BaseInput
-                hide-details="true"
-                placeholder="Team members"
-                :modelValue="team_size"
+              <v-text-field
+                label="Team members"
+                v-model="team_size"
                 disabled
-              />
+                hide-details="true"
+                bg-color="accent"
+                variant="outlined"
+                density="compact"
+              ></v-text-field>
             </v-col>
             <v-col>
               <v-textarea
                 clearable
-                placeholder="Project description"
-                :modelValue="project_desc"
+                label="Project description"
+                v-model="project_desc"
                 variant="outlined"
                 bg-color="accent"
                 auto-grow
@@ -45,34 +52,27 @@
             </v-col>
           </v-row>
 
-          <BaseInput
-            placeholder="E-mail"
-            :modelValue="email"
-            @update:modelValue="email = $event"
+          <v-text-field
+            label="E-mail"
+            v-model="email"
             disabled
-          />
-          <BaseInput
-            placeholder="Password"
-            type="password"
-            :modelValue="password"
-            @update:modelValue="password = $event"
-            disabled
-          />
-          <router-link
-            to="/newPassword"
-            color="primary"
-            class="d-block text-right text-capitalize text-decoration-none mb-5"
-            >*Change Password</router-link
-          >
+            bg-color="accent"
+            variant="outlined"
+            density="compact"
+          ></v-text-field>
+
           <div class="d-flex">
-            <BaseInput
-              placeholder="Voucher"
-              :modelValue="voucher"
+            <v-text-field
+              label="Voucher"
+              v-model="voucher"
               :loading="actLoading"
-              @update:modelValue="voucher = $event"
+              bg-color="accent"
+              variant="outlined"
+              density="compact"
               class="mr-2"
               clearable
-            />
+            ></v-text-field>
+
             <BaseButton
               class="bg-primary text-capitalize"
               text="Apply Voucher"
@@ -82,10 +82,8 @@
 
           <v-textarea
             clearable
-            placeholder="SSH Key"
-            :modelValue="sshKey"
-            :value="sshKey"
-            @update:modelValue="sshKey = $event"
+            label="SSH Key"
+            v-model="sshKey"
             variant="outlined"
             bg-color="accent"
             class="my-2"
@@ -108,23 +106,21 @@
 <script>
 import { ref, onMounted, computed } from "vue";
 import userService from "@/services/userService";
-import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import Toast from "@/components/Toast.vue";
+import router from "@/router";
 
 export default {
   components: {
-    BaseInput,
     BaseButton,
     Toast,
   },
   setup() {
     const email = ref(null);
     const name = ref(null);
-    const college = ref(null);
-    const team_size = ref(null);
-    const project_desc = ref(null);
-    const password = ref(null);
+    const college = ref("");
+    const team_size = ref(0);
+    const project_desc = ref("");
     const voucher = ref(null);
     const sshKey = ref(null);
     const actLoading = ref(false);
@@ -147,12 +143,23 @@ export default {
           const { user } = response.data.data;
           email.value = user.email;
           name.value = user.name;
-          password.value = user.hashed_password;
           voucher.value = user.voucher;
           sshKey.value = user.ssh_key;
-          college.value = user.college;
-          team_size.value = user.team_size;
-          project_desc.value = user.project_desc;
+          if (!user.college) {
+            college.value = "-";
+          } else {
+            college.value = user.college;
+          }
+          if (!user.team_size) {
+            team_size.value = 0;
+          } else {
+            team_size.value = user.team_size;
+          }
+          if (!user.project_desc) {
+            project_desc.value = "Description..";
+          } else {
+            project_desc.value = user.project_desc;
+          }
           toast.value.clear();
         })
         .catch((response) => {
@@ -181,6 +188,7 @@ export default {
       userService
         .updateUser(name.value, sshKey.value)
         .then((response) => {
+          checkUser(name.value);
           toast.value.toast(response.data.msg, "#388E3C");
         })
         .catch((response) => {
@@ -200,6 +208,13 @@ export default {
       return true;
     });
 
+    const checkUser = (username) => {
+      if (localStorage.getItem("username") !== username) {
+        localStorage.setItem("username", username);
+        router.go();
+      }
+    };
+
     onMounted(() => {
       getUser();
     });
@@ -211,7 +226,6 @@ export default {
       project_desc,
       email,
       name,
-      password,
       voucher,
       sshKey,
       avatar,
@@ -225,6 +239,7 @@ export default {
       getUser,
       activateVoucher,
       update,
+      checkUser,
     };
   },
 };

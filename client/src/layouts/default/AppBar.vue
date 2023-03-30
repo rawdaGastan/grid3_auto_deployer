@@ -111,6 +111,10 @@ export default {
         path: "profile",
       },
       {
+        title: "Change password",
+        path: "/newPassword",
+      },
+      {
         title: "Logout",
         path: "#",
       },
@@ -123,6 +127,7 @@ export default {
     const checkTitle = (title) => {
       if (title == "Logout") {
         localStorage.removeItem("token");
+        localStorage.removeItem("username");
       }
     };
 

@@ -3,7 +3,7 @@ import { useRoute } from "vue-router";
 
 let token = localStorage.getItem("token");
 const authClient = axios.create({
-  baseURL: import.meta.env.VITE_API_ENDPOINT,
+  baseURL: window.configs.vite_app_endpoint,
   headers: {
     Authorization: "Bearer " + token,
   },
@@ -42,6 +42,10 @@ export default {
       name,
       ssh_key,
     });
+  },
+
+  async getQuota() {
+    return await authClient.get("/quota");
   },
 
   // VM

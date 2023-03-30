@@ -46,3 +46,11 @@ func ApprovedVoucherMailContent(voucher string, user string) (string, string) {
 
 	return subject, body
 }
+
+// RejectedVoucherMailContent gets the content for rejected voucher
+func RejectedVoucherMailContent(user string) (string, string) {
+	subject := "Your voucher is rejected 😔"
+	body := fmt.Sprintf("Welcome %v,\n\nWe are sorry to inform you that your voucher has been rejected\n\nBest regards,\nCodescalers team", user)
+
+	return subject, body
+}

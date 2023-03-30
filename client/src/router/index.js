@@ -7,6 +7,7 @@ import VM from "@/views/VM.vue";
 import K8s from "@/views/K8s.vue";
 import Admin from "@/views/Admin.vue";
 
+
 const routes = [
   {
     path: "/login",
@@ -65,6 +66,7 @@ const routes = [
       import(/* webpackChunkName: "login" */ "@/views/Newpassword.vue"),
     meta: {
       requiredAuth: false,
+      layout : 'Default'
     },
   },
   {

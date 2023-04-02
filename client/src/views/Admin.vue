@@ -187,17 +187,19 @@ export default {
               approveAllCount.value++
             }
 
-            userInfo.value = users?.value?.find(user => user.ID === voucher.user_id);
+            if(voucher.user_id){
+              userInfo.value = users?.value?.find(user => user.user_id === voucher.user_id);
 
-            if(voucher.user_id ===  userInfo?.value?.ID){
-              Object.assign(voucher, {email: userInfo?.value?.email, name: userInfo?.value?.name});
+              if(voucher.user_id ===  userInfo?.value?.user_id){
+                Object.assign(voucher, {email: userInfo?.value?.email, name: userInfo?.value?.name});
+              }
             }
           }
 
         })
         .catch((response) => {
-          const { err } = response.response.data;
-          toast.value.toast(err, "#FF5252") || toast.value.toast("Failed to load data.", "#FF5252");
+          const { err } = response;
+          toast.value.toast(err, "#FF5252");
         });
     };
 

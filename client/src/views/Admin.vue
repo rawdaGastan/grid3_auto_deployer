@@ -1,11 +1,14 @@
 <template>
   <v-container class="d-flex justify-space-between">
     <v-row no-gutters>
-      <v-col cols="8">
+      <v-col>
         <v-sheet class="bg-tertiary background pa-2 ma-2" style="background-color: #D8F2FA;">
+          <div v-show="usedResources > 0" class="resources text-white rounded-xl bg-primary">
+            <p class="resources_p" align="center">Numbers of Used Reasources <strong style="font-size: 2.3rem;">{{ usedResources }} VM</strong></p>
+          </div>
           <section v-if="vouchers.length > 0">
-            <h3 class="font-weight-medium text-grey-darken-2">Vouchers</h3>
-              <v-table class="rounded-sm" style="margin-top: .5rem;">
+            <h2 class="text-grey-darken-2">Vouchers</h2>
+              <v-table class="rounded-lg" style="margin-top: .5rem;">
                 <!-- <template v-slot:bottom>
                   <div class="text-center pt-2">
                     <v-pagination
@@ -88,15 +91,11 @@
           </section>
         </v-sheet>
       </v-col>
-      <v-col cols="4">
-        <v-sheet class="bg-tertiary ma-2" style="background-color: #D8F2FA;">
-          <div v-show="usedResources > 0" class="resources text-white text-center rounded-lg bg-primary">
-            <p class="pt-md-4 mx-lg-auto font-weight-medium pa-" align="center">Numbers of Used Reasources </p>
-            <p><strong style="font-size: 2.3rem;">{{ usedResources }} VM</strong></p>
-          </div>
+      <v-col>
+        <v-sheet class="bg-tertiary pa-2 ma-2" style="background-color: #D8F2FA;">
           <section>
             <div v-if="users.length > 0">
-              <h3 class="font-weight-medium text-grey-darken-2">Users</h3>
+              <h2 class="text-grey-darken-2">Users</h2>
               <v-table class="rounded-lg" style="margin-top: .5rem;">
                   <thead class="bg-grey-lighten-5">
                     <tr>

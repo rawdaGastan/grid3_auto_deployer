@@ -23,9 +23,10 @@
           </v-text-field>
 
           <v-text-field v-model="teamSize" :rules="teamSizeRules" label="Team Size" placeholder="Enter your team size"
-            bg-color="accent" variant="outlined" class="my-2">
+            bg-color="accent" variant="outlined" class="my-2" >
           </v-text-field>
 
+       
 
           <v-textarea v-model="projectDescription" :rules="Rules" label="Project Description"
             placeholder="Enter your project description" bg-color="accent" variant="outlined" class="my-2">
@@ -47,7 +48,8 @@
 
           <v-row justify="center">
 
-            <button type="button" class="btn mb-6" @click="showModal" style="font-weight: bold;text-decoration: underline;">
+            <button type="button" class="btn mb-6" @click="showModal"
+              style="font-weight: bold;text-decoration: underline;">
               Terms and Conditions </button>
           </v-row>
           <Modal v-show="isModalVisible" @close="closeModal" @accept="acceptModal" @decline="declineModal" />
@@ -128,16 +130,19 @@ export default {
     const acceptModal = () => {
       checked.value = true;
       isModalVisible.value = false;
+
     };
 
     const declineModal = () => {
       checked.value = false;
       isModalVisible.value = false;
+
     };
 
     const closeModal = () => {
 
       isModalVisible.value = false;
+
     }
     const onSubmit = () => {
       if (!verify.value) return;
@@ -149,7 +154,7 @@ export default {
           email: email.value,
           password: password.value,
           confirm_password: cpassword.value,
-          team_size: teamSize.value,
+          team_size: Number(teamSize.value),
           project_desc: projectDescription.value,
           college: faculty.value,
         })
@@ -158,7 +163,7 @@ export default {
           localStorage.setItem('fullname', fullname.value);
           localStorage.setItem('password', password.value);
           localStorage.setItem('confirm_password', cpassword.value);
-          localStorage.setItem('teamSize', teamSize.value);
+          localStorage.setItem('teamSize', Number(teamSize.value));
           localStorage.setItem('projectDescription', projectDescription.value);
           localStorage.setItem('faculty', faculty.value);
 

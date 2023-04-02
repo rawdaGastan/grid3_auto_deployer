@@ -83,28 +83,27 @@ export default {
 
             loading.value = true;
             axios
-                .post(window.configs.vite_app_endpoint+"/user/signin", {
+                .post(window.configs.vite_app_endpoint + "/user/signin", {
                     email: email.value,
                     password: password.value,
                 })
                 .then((response) => {
                     localStorage.setItem('token', response.data.data.access_token);
                     toast.value.toast(response.data.msg);
-
                     router.push({
                         name: 'Home',
-                        });
-                })
-                .catch((error) => {
-                    console.log(error)
-                    toast.value.toast(error.response.data.err, "#FF5252", "top-right");
+
+                    });
 
                 })
-                .finally(() => {
+                .catch((error) => {
+                    toast.value.toast(error.response.data.err, "#FF5252");
                     loading.value = false;
+
                 });
 
         };
+
         return {
             verify,
             password,

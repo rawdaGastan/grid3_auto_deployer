@@ -80,16 +80,30 @@
             />
           </div>
 
-          <v-textarea
-            clearable
-            label="SSH Key"
-            v-model="sshKey"
-            variant="outlined"
-            bg-color="accent"
-            class="my-2"
-            :rules="rules"
-            auto-grow
-          ></v-textarea>
+          <div class="d-flex justify-space-between" style="align-items: baseline;">
+            <v-textarea
+              clearable
+              label="SSH Key"
+              v-model="sshKey"
+              variant="outlined"
+              bg-color="accent"
+              class="my-2"
+              :rules="rules"
+              auto-grow
+              ></v-textarea>
+              <v-tooltip text="You can generate SSH key using 'ssh-keygen' command. Once generated, your public key will be stored in ~/.ssh/id_rsa.pub" right>
+                <template v-slot:activator="{ props }">
+                  <v-icon
+                  v-bind="props"
+                  color="primary"
+                  dark
+                  >
+                    mdi-information
+                  </v-icon>
+                </template>
+            </v-tooltip>
+          
+          </div>
           <BaseButton
             type="submit"
             :disabled="!verify"

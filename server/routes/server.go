@@ -14,6 +14,8 @@ import (
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/grid3-go/deployer"
@@ -91,10 +93,14 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc(version+"/voucher/{id}", router.UpdateVoucherHandler).Methods("PUT", "OPTIONS")
 	r.HandleFunc(version+"/voucher", router.ApproveAllVouchers).Methods("PUT", "OPTIONS")
 
+	prometheus.MustRegister(middlewares.Requests)
+
 	r.Use(middlewares.LoggingMW)
 	r.Use(middlewares.EnableCors)
 	excludedRoutes := []*mux.Route{signUp, signUpVerify, signIn, refreshToken, forgetPass, forgetPassVerify}
 	r.Use(middlewares.Authorization(excludedRoutes, configuration.Token.Secret, configuration.Token.Timeout))
+
+	http.Handle("/metrics", promhttp.Handler())
 	http.Handle("/", r)
 
 	return &Server{port: configuration.Server.Port, host: configuration.Server.Host}, nil

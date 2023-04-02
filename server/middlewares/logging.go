@@ -12,6 +12,7 @@ import (
 func LoggingMW(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Info().Msgf("%v: %v\n%v", r.Method, r.RequestURI, time.Now().Format(time.RFC850))
+		Requests.WithLabelValues(r.Method, r.RequestURI).Inc()
 		h.ServeHTTP(w, r)
 	})
 }

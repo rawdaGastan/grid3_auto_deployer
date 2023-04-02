@@ -128,7 +128,7 @@
 
 
 <script>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import adminService from "@/services/adminService.js"
 

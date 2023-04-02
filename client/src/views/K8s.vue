@@ -20,6 +20,8 @@
             class="my-3"
             @update:modelValue="selectedResource = $event"
           />
+          <v-checkbox v-model="checked" label="Public IP"></v-checkbox>
+
           <v-dialog transition="dialog-top-transition" max-width="500">
             <template v-slot:activator="{ props }">
               <BaseButton
@@ -63,6 +65,7 @@
                       @click="isActive.value = false"
                       text="Cancel"
                     />
+
                     <BaseButton
                       type="submit"
                       :disabled="!workerVerify"
@@ -153,7 +156,9 @@
                           <td>{{ item.master.sru }}GB</td>
                           <td>{{ item.master.mru }}MB</td>
                           <td>{{ item.master.cru }}</td>
-                          <td>{{ item.master.ip }}</td>
+                          <td>{{ item.master.ygg_ip }}</td>
+                          <td>{{ item.master.public_ip }}</td>
+
                         </tr>
                       </tbody>
                     </v-table>
@@ -199,6 +204,8 @@ export default {
   },
   setup() {
     const verify = ref(false);
+    const checked = ref(false);
+
     const workerVerify = ref(false);
     const k8Name = ref(null);
     const rules = ref([
@@ -256,7 +263,7 @@ export default {
       loading.value = true;
       toast.value.toast("Deploying..");
       userService
-        .deployK8s(k8Name.value, selectedResource.value, worker.value)
+        .deployK8s(k8Name.value, selectedResource.value, worker.value, checked.value)
         .then((response) => {
           form.value.reset();
           console.log(response.data);
@@ -319,6 +326,7 @@ export default {
       getK8s();
     });
     return {
+      checked,
       verify,
       workerVerify,
       k8Name,

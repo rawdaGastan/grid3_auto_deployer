@@ -53,8 +53,8 @@ export default {
     return await authClient.get("/vm");
   },
 
-  async deployVm(name, resources) {
-    return await authClient.post("/vm", { name, resources });
+  async deployVm(name, resources, checked) {
+    return await authClient.post("/vm", { name, resources , public : checked  });
   },
 
   async deleteVm(id) {
@@ -70,11 +70,12 @@ export default {
     return await authClient.get("/k8s");
   },
 
-  async deployK8s(master_name, resources, workers) {
+  async deployK8s(master_name, resources, workers, checked) {
     return await authClient.post("/k8s", {
       master_name,
       resources,
       workers,
+      public :checked
     });
   },
 

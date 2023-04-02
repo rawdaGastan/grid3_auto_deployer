@@ -53,6 +53,7 @@ export default {
     setup() {
         const verify = ref(false);
         const newpassword = ref(null);
+        const cnewpassword = ref(null);
         const showPassword = ref(false);
         const cshowPassword = ref(false);
         const toast = ref(null);
@@ -81,6 +82,7 @@ export default {
                 verify.value = true;
                 return verify.value;
             }
+
 
         };
 
@@ -125,6 +127,7 @@ export default {
         return {
             verify,
             newpassword,
+            cnewpassword,
             loading,
             showPassword,
             cshowPassword,

@@ -22,8 +22,8 @@ async function refresh_token() {
     })
     .catch(() => {
       const router = useRoute();
-      localStorage.removeItem('token')
-      router.push({ name: "Login" })
+      localStorage.removeItem("token");
+      router.push({ name: "Login" });
     });
 }
 
@@ -41,6 +41,14 @@ export default {
     return await authClient.put("/user", {
       name,
       ssh_key,
+    });
+  },
+
+  async newVoucher(vms, public_ips, reason) {
+    return await authClient.post("/user/apply_voucher", {
+      vms,
+      public_ips,
+      reason,
     });
   },
 

@@ -66,7 +66,7 @@
               <td>{{ item.mru }}MB</td>
               <td>{{ item.cru }}</td>
               <td>{{ item.ygg_ip }}</td>
-              <td>{{ item.public_ip }}</td>
+              <td v-if="item.public_ip">{{ item.public_ip }}</td>
 
               
               <td>

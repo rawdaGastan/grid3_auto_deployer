@@ -157,7 +157,7 @@
                           <td>{{ item.master.mru }}MB</td>
                           <td>{{ item.master.cru }}</td>
                           <td>{{ item.master.ygg_ip }}</td>
-                          <td>{{ item.master.public_ip }}</td>
+                          <td v-if=" item.master.public_ip ">{{  item.master.public_ip  }}</td>
 
                         </tr>
                       </tbody>

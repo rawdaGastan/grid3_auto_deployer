@@ -12,19 +12,20 @@
                     <v-text-field v-model="newpassword" clearable label="Password" placeholder="Enter your password"
                         bg-color="accent" variant="outlined" :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
                         :type="showPassword ? 'text' : 'password'" @click:append-inner="showPassword = !showPassword"
-                        style="grid-area: unset;" class="my-2" :rules="passwordRules" @input="validatePassword"  >
+                        style="grid-area: unset;" class="my-3" :rules="passwordRules">
                     </v-text-field>
 
-                    <v-text-field v-model="cnewpassword"  @input="validatePassword" clearable label="Confirm Password"
-                        placeholder="Enter your password" bg-color="accent" variant="outlined"
+                    <v-text-field v-model="cnewpassword" :rules="cpasswordRules" :error-messages="passwordError" clearable
+                        label="Confirm Password" placeholder="Enter your password" bg-color="accent" variant="outlined"
                         :append-inner-icon="cshowPassword ? 'mdi-eye' : 'mdi-eye-off'"
                         :type="cshowPassword ? 'text' : 'password'" @click:append-inner="cshowPassword = !cshowPassword"
                         style="grid-area: unset;" class="mt-2 mb-0">
                     </v-text-field>
 
-                    <div class="mb-2" v-if="passwordError" style="color:#b02d34;font-size: 12px;font-family: sans-serif;padding: 6px 16px 0px;">
+                    <!-- <div class="mb-2" v-if="passwordError"
+                        style="color:#b02d34;font-size: 12px;font-family: sans-serif;padding: 6px 16px 0px;">
                         {{ passwordError }}
-                    </div>
+                    </div> -->
 
 
                     <v-card-actions class="justify-center">
@@ -58,33 +59,36 @@ export default {
         const cshowPassword = ref(false);
         const toast = ref(null);
         const loading = ref(false);
-        const passwordError = ref(null);
+        const passwordError = ref("");
 
         const route = useRoute();
         const router = useRouter();
-        const passwordRules = ref([
-            value => !!value || 'Field is required',
-            value => (value && value.length >= 7) || 'Password must be at least 7 characters',
-            
-        ]);
-      
 
         const validatePassword = () => {
-         
-
             if (newpassword.value !== cnewpassword.value) {
                 passwordError.value = "Passwords don't match";
                 verify.value = false;
-                return verify.value;
             }
             else {
-                passwordError.value = '';
+                passwordError.value = "";
                 verify.value = true;
-                return verify.value;
+
             }
+            return verify.value;
 
 
         };
+        const cpasswordRules = ref([
+            validatePassword,
+            value => !!value || 'Field is required',
+
+        ]);
+        const passwordRules = ref([
+            validatePassword,
+            value => !!value || 'Field is required',
+            value => (value && value.length >= 7) || 'Password must be at least 7 characters',
+
+        ]);
 
         const onSubmit = () => {
             if (!verify.value) return;
@@ -132,6 +136,7 @@ export default {
             showPassword,
             cshowPassword,
             passwordRules,
+            cpasswordRules,
             toast,
             passwordError,
             onSubmit,

@@ -84,7 +84,10 @@
               />
             </v-col>
           </v-row>
-                    <div class="d-flex justify-space-between" style="align-items: baseline;">
+          <div
+            class="d-flex justify-space-between"
+            style="align-items: baseline;"
+          >
             <v-textarea
               clearable
               label="SSH Key"
@@ -94,26 +97,26 @@
               class="my-2"
               :rules="rules"
               auto-grow
-              ></v-textarea>
-              <v-tooltip text="You can generate SSH key using 'ssh-keygen' command. Once generated, your public key will be stored in ~/.ssh/id_rsa.pub" right>
-                <template v-slot:activator="{ props }">
-                  <v-icon
-                  v-bind="props"
-                  color="primary"
-                  dark
-                  >
-                    mdi-information
-                  </v-icon>
-                </template>
+            ></v-textarea>
+            <v-tooltip
+              text="You can generate SSH key using 'ssh-keygen' command. Once generated, your public key will be stored in ~/.ssh/id_rsa.pub"
+              right
+            >
+              <template v-slot:activator="{ props }">
+                <v-icon v-bind="props" color="primary" dark>
+                  mdi-information
+                </v-icon>
+              </template>
             </v-tooltip>
-          
           </div>
-          <BaseButton
-            type="submit"
-            :disabled="!verify"
-            class="w-100 bg-primary text-capitalize"
-            text="Update"
-          />
+          <v-row>
+            <v-col>
+              <BaseButton
+                type="submit"
+                :disabled="!verify"
+                class="w-100 bg-primary text-capitalize"
+                text="Update"
+              />
             </v-col>
             <v-col>
               <v-dialog transition="dialog-top-transition" max-width="500">
@@ -224,8 +227,8 @@ export default {
     const verified = ref(null);
     const loading = ref(false);
     const newVoucherVerify = ref(false);
-    const vms = ref(0);
-    const ips = ref(0);
+    const vms = ref(null);
+    const ips = ref(null);
     const reason = ref(null);
     const rules = ref([
       (value) => {

@@ -9,21 +9,22 @@
             <v-col cols="12" sm="6">
                 <v-form v-model="verify" @submit.prevent="onSubmit">
 
-                    <v-text-field v-model="newpassword" :rules="passwordRules" clearable label="Password"
-                        placeholder="Enter your password" bg-color="accent" variant="outlined"
-                        :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+                    <v-text-field v-model="newpassword" clearable label="Password" placeholder="Enter your password"
+                        bg-color="accent" variant="outlined" :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
                         :type="showPassword ? 'text' : 'password'" @click:append-inner="showPassword = !showPassword"
-                        style="grid-area: unset;" class="my-2">
+                        style="grid-area: unset;" class="my-2" :rules="passwordRules" @input="validatePassword"  >
                     </v-text-field>
 
-                    <v-text-field v-model="cnewpassword" :rules="cpasswordRules" clearable label="Confirm Password"
+                    <v-text-field v-model="cnewpassword"  @input="validatePassword" clearable label="Confirm Password"
                         placeholder="Enter your password" bg-color="accent" variant="outlined"
                         :append-inner-icon="cshowPassword ? 'mdi-eye' : 'mdi-eye-off'"
                         :type="cshowPassword ? 'text' : 'password'" @click:append-inner="cshowPassword = !cshowPassword"
-                        style="grid-area: unset;" class="my-2">
+                        style="grid-area: unset;" class="mt-2 mb-0">
                     </v-text-field>
 
-
+                    <div class="mb-2" v-if="passwordError" style="color:#b02d34;font-size: 12px;font-family: sans-serif;padding: 6px 16px 0px;">
+                        {{ passwordError }}
+                    </div>
 
 
                     <v-card-actions class="justify-center">
@@ -52,23 +53,36 @@ export default {
     setup() {
         const verify = ref(false);
         const newpassword = ref(null);
-        const cnewpassword = ref(null);
         const showPassword = ref(false);
         const cshowPassword = ref(false);
         const toast = ref(null);
         const loading = ref(false);
+        const passwordError = ref(null);
+
         const route = useRoute();
         const router = useRouter();
         const passwordRules = ref([
             value => !!value || 'Field is required',
             value => (value && value.length >= 7) || 'Password must be at least 7 characters',
+            
         ]);
-        const cpasswordRules = ref([
-            value => !!value || 'Field is required',
-            value => (value == newpassword.value) || "Passwords don't match",
+      
 
-        ]);
+        const validatePassword = () => {
+         
 
+            if (newpassword.value !== cnewpassword.value) {
+                passwordError.value = "Passwords don't match";
+                verify.value = false;
+                return verify.value;
+            }
+            else {
+                passwordError.value = '';
+                verify.value = true;
+                return verify.value;
+            }
+
+        };
 
         const onSubmit = () => {
             if (!verify.value) return;
@@ -111,15 +125,16 @@ export default {
         return {
             verify,
             newpassword,
-            cnewpassword,
             loading,
             showPassword,
             cshowPassword,
             passwordRules,
-            cpasswordRules,
             toast,
+            passwordError,
             onSubmit,
             cancelHandler,
+            validatePassword,
+
         };
     }
 };

@@ -44,6 +44,10 @@ export default {
     });
   },
 
+  async getQuota() {
+    return await authClient.get("/quota");
+  },
+
   // VM
   async getVms() {
     return await authClient.get("/vm");

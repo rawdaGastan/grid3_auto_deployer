@@ -95,6 +95,7 @@
 <script>
 import { ref, onMounted } from "vue";
 import userService from "@/services/userService";
+import router from "@/router";
 import Toast from "@/components/Toast.vue";
 export default {
   components: {
@@ -116,6 +117,10 @@ export default {
           localStorage.setItem("username", user.name);
         })
         .catch((response) => {
+          const { status } = response.response;
+          if (status == 401) {
+            router.push("/login");
+          }
           const { err } = response.response.data;
           toast.value.toast(err, "#FF5252");
         });

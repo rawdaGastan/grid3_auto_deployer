@@ -20,6 +20,7 @@
             :rules="rules"
             @update:modelValue="selectedResource = $event"
           />
+          <v-checkbox v-model="checked" label="Public IP"></v-checkbox>
           <BaseButton
             type="submit"
             class="d-block mx-auto bg-primary"
@@ -64,7 +65,10 @@
               <td>{{ item.sru }}GB</td>
               <td>{{ item.mru }}MB</td>
               <td>{{ item.cru }}</td>
-              <td>{{ item.ip }}</td>
+              <td>{{ item.ygg_ip }}</td>
+              <td v-if="item.public_ip">{{ item.public_ip }}</td>
+
+              
               <td>
                 <font-awesome-icon
                   class="text-red-accent-2"
@@ -106,6 +110,8 @@ export default {
   },
   setup() {
     const verify = ref(false);
+    const checked= ref(false);
+
     const name = ref(null);
     const rules = ref([
       (value) => {
@@ -149,10 +155,11 @@ export default {
     };
 
     const deployVm = () => {
+      
       loading.value = true;
       toast.value.toast("Deploying..");
       userService
-        .deployVm(name.value, selectedResource.value)
+        .deployVm(name.value, selectedResource.value , checked.value)
         .then((response) => {
           toast.value.toast(response.data.msg, "#388E3C");
           reset();
@@ -230,6 +237,7 @@ export default {
       toast,
       message,
       form,
+      checked,
       reset,
       getVMS,
       deployVm,

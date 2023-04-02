@@ -53,7 +53,7 @@
 import { ref } from "vue";
 import axios from "axios";
 import Toast from "@/components/Toast.vue";
-
+import router from "@/router";
 export default {
     components: {
         Toast,
@@ -86,6 +86,7 @@ export default {
                     password: password.value,
                 })
                 .then((response) => {
+                    localStorage.setItem('token', response.data.data.access_token);
                     toast.value.toast(response.data.msg);
                     router.push({
                         name: 'Home',
@@ -100,7 +101,7 @@ export default {
                 });
 
         };
-        
+
         return {
             verify,
             password,

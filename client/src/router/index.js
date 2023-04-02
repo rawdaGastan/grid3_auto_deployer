@@ -1,11 +1,9 @@
 // Composables
 import { createRouter, createWebHistory } from "vue-router";
-import Profile from "@/views/Profile.vue";
 import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
 import VM from "@/views/VM.vue";
 import K8s from "@/views/K8s.vue";
-
 
 const routes = [
   {
@@ -65,7 +63,7 @@ const routes = [
       import(/* webpackChunkName: "login" */ "@/views/Newpassword.vue"),
     meta: {
       requiredAuth: false,
-      layout : 'Default'
+      layout: "Default",
     },
   },
   {
@@ -86,7 +84,7 @@ const routes = [
       {
         path: "/profile",
         name: "Profile",
-        component: Profile,
+        component: import("@/views/Profile.vue"),
         meta: {
           requiredAuth: true,
         },

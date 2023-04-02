@@ -3,6 +3,10 @@
     <div class="d-flex flex-no-wrap justify-space-between">
       <div>
         <v-card-title class="text-body-1">
+          <v-tooltip activator="parent" location="end">
+            Deployments consume: <br />small: 1 vm <br />medium: 2 vms
+            <br />large: 3 vms</v-tooltip
+          >
           <div class="my-1">
             <font-awesome-icon icon="fa-cube" />
             <span class="pa-2"> VMs: {{ vm }}</span>

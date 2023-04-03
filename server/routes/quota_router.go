@@ -15,14 +15,14 @@ func (r *Router) GetQuotaHandler(w http.ResponseWriter, req *http.Request) {
 
 	quota, err := r.db.GetUserQuota(userID)
 	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(w, http.StatusNotFound, "user quota not found")
+		writeErrResponse(req, w, http.StatusNotFound, "user quota not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
-	writeMsgResponse(w, "Quota is found", quota)
+	writeMsgResponse(req, w, "Quota is found", quota)
 }

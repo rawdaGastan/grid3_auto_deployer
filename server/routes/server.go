@@ -93,7 +93,7 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc(version+"/voucher/{id}", router.UpdateVoucherHandler).Methods("PUT", "OPTIONS")
 	r.HandleFunc(version+"/voucher", router.ApproveAllVouchers).Methods("PUT", "OPTIONS")
 
-	prometheus.MustRegister(middlewares.Requests)
+	prometheus.MustRegister(middlewares.Requests, middlewares.UserCreations, middlewares.VoucherActivated, middlewares.VoucherApplied, middlewares.Deployments, middlewares.Deletions)
 
 	r.Use(middlewares.LoggingMW)
 	r.Use(middlewares.EnableCors)

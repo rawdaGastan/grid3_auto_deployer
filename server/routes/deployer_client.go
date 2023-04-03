@@ -301,7 +301,7 @@ func validateK8sQuota(k K8sDeployInput, availableResourcesQuota, availablePublic
 	}
 
 	if availableResourcesQuota < neededQuota {
-		return 0, fmt.Errorf("no available quota %d for kubernetes deployment", availableResourcesQuota)
+		return 0, fmt.Errorf("no available quota %d for kubernetes deployment, you can request a new voucher", availableResourcesQuota)
 	}
 	if k.Public && availablePublicIPsQuota < publicQuota {
 		return 0, fmt.Errorf("no available quota %d for public ips", availablePublicIPsQuota)
@@ -317,7 +317,7 @@ func validateVMQuota(vm DeployVMInput, availableResourcesQuota, availablePublicI
 	}
 
 	if availableResourcesQuota < neededQuota {
-		return 0, fmt.Errorf("no available quota %d for deployment for resources %s", availableResourcesQuota, vm.Resources)
+		return 0, fmt.Errorf("no available quota %d for deployment for resources %s, you can request a new voucher", availableResourcesQuota, vm.Resources)
 	}
 	if vm.Public && availablePublicIPsQuota < publicQuota {
 		return 0, fmt.Errorf("no available quota %d for public ips", availablePublicIPsQuota)

@@ -166,8 +166,7 @@ func (d *DB) CreateQuota(q *Quota) error {
 
 // UpdateUserQuota updates quota
 func (d *DB) UpdateUserQuota(userID string, vms int, publicIPs int) error {
-	quota := Quota{userID, vms, publicIPs}
-	return d.db.Model(Quota{}).Where("user_id = ?", userID).Updates(quota).Error
+	return d.db.Model(&Quota{}).Where("user_id = ?", userID).Updates(map[string]interface{}{"vms": vms, "public_ips": publicIPs}).Error
 }
 
 // GetUserQuota gets user quota available vms (vms will be used for both vms and k8s clusters)

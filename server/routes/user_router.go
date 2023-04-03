@@ -3,6 +3,7 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -629,6 +630,11 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	if oldQuota.Vms != 0 {
+		writeErrResponse(w, http.StatusBadRequest, fmt.Sprintf("You have already %d vms in your quota", oldQuota.Vms))
 		return
 	}
 

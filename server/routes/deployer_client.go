@@ -94,13 +94,14 @@ func (r *Router) loadK8s(k8sDeployInput K8sDeployInput, userID string, node uint
 		return models.K8sCluster{}, err
 	}
 	master := models.Master{
-		CRU:      cru,
-		MRU:      mru,
-		SRU:      sru,
-		Public:   k8sDeployInput.Public,
-		PublicIP: resCluster.Master.ComputedIP,
-		Name:     k8sDeployInput.MasterName,
-		YggIP:    resCluster.Master.YggIP,
+		CRU:       cru,
+		MRU:       mru,
+		SRU:       sru,
+		Public:    k8sDeployInput.Public,
+		PublicIP:  resCluster.Master.ComputedIP,
+		Name:      k8sDeployInput.MasterName,
+		YggIP:     resCluster.Master.YggIP,
+		Resources: k8sDeployInput.Resources,
 	}
 	workers := []models.Worker{}
 	for _, worker := range k8sDeployInput.Workers {
@@ -110,10 +111,11 @@ func (r *Router) loadK8s(k8sDeployInput K8sDeployInput, userID string, node uint
 			return models.K8sCluster{}, err
 		}
 		workerModel := models.Worker{
-			Name: worker.Name,
-			CRU:  cru,
-			MRU:  mru,
-			SRU:  sru,
+			Name:      worker.Name,
+			CRU:       cru,
+			MRU:       mru,
+			SRU:       sru,
+			Resources: worker.Resources,
 		}
 		workers = append(workers, workerModel)
 	}

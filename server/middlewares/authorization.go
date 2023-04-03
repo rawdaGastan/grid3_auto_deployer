@@ -61,14 +61,14 @@ func Authorization(excludedRoutes []*mux.Route, secret string, timeout int) func
 				reqToken := r.Header.Get("Authorization")
 				splitToken := strings.Split(reqToken, "Bearer ")
 				if len(splitToken) != 2 {
-					WriteUnAuthorizedResponse(w)
+					WriteUnAuthorizedResponse(r, w)
 					return
 				}
 				reqToken = splitToken[1]
 
 				claims, err := validateToken(reqToken, secret, timeout)
 				if err != nil {
-					WriteUnAuthorizedResponse(w)
+					WriteUnAuthorizedResponse(r, w)
 					return
 				}
 				ctx := context.WithValue(r.Context(), UserIDKey("UserID"), claims.UserID)
@@ -100,7 +100,7 @@ func validateToken(token, secret string, timeout int) (models.Claims, error) {
 }
 
 // WriteUnAuthorizedResponse write error messages in api
-func WriteUnAuthorizedResponse(w http.ResponseWriter) {
+func WriteUnAuthorizedResponse(r *http.Request, w http.ResponseWriter) {
 	jsonErrRes, _ := json.Marshal(map[string]string{"err": "User is not authorized"})
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusUnauthorized)
@@ -108,4 +108,5 @@ func WriteUnAuthorizedResponse(w http.ResponseWriter) {
 	if err != nil {
 		log.Error().Err(err).Msg("write auth error response failed")
 	}
+	Requests.WithLabelValues(r.Method, r.RequestURI, fmt.Sprint(http.StatusUnauthorized)).Inc()
 }

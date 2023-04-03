@@ -34,7 +34,7 @@ func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Confi
         "timeout": 60 
     },
     "account": {
-        "mnemonics": "secret add bag cluster deposit beach illness letter crouch position rain arctic",
+        "mnemonics": "winner giant reward damage expose pulse recipe manual brand volcano dry avoid",
 		"network": "dev"
     },
 	"token": {
@@ -485,7 +485,7 @@ func TestActivateVoucherHandler(t *testing.T) {
 		err = db.CreateQuota(
 			&models.Quota{
 				UserID: user.ID.String(),
-				Vms:    10,
+				Vms:    0,
 			},
 		)
 		assert.NoError(t, err)

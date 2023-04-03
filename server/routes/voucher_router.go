@@ -36,7 +36,7 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 	}
 
 	if !user.Admin {
-		writeErrResponse(w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
+		writeErrResponse(req, w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
 		return
 	}
 	*/
@@ -45,14 +45,14 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusBadRequest, "Failed to read voucher data")
+		writeErrResponse(req, w, http.StatusBadRequest, "Failed to read voucher data")
 		return
 	}
 
 	err = validator.Validate(input)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusBadRequest, "Invalid voucher data")
+		writeErrResponse(req, w, http.StatusBadRequest, "Invalid voucher data")
 		return
 	}
 	voucher := internal.GenerateRandomVoucher(input.Length)
@@ -66,18 +66,18 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 	err = r.db.CreateVoucher(&v)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	_, err = r.db.UpdateVoucher(v.ID, true)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
-	writeMsgResponse(w, "Voucher is generated successfully", map[string]string{"voucher": voucher})
+	writeMsgResponse(req, w, "Voucher is generated successfully", map[string]string{"voucher": voucher})
 }
 
 // ListVouchersHandler lists all vouchers by admin
@@ -90,24 +90,24 @@ func (r *Router) ListVouchersHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !user.Admin {
-		writeErrResponse(w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
+		writeErrResponse(req, w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
 		return
 	}
 	*/
 
 	vouchers, err := r.db.ListAllVouchers()
 	if err == gorm.ErrRecordNotFound || len(vouchers) == 0 {
-		writeMsgResponse(w, "Vouchers are not found", vouchers)
+		writeMsgResponse(req, w, "Vouchers are not found", vouchers)
 		return
 	}
 
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
-	writeMsgResponse(w, "List of all vouchers", vouchers)
+	writeMsgResponse(req, w, "List of all vouchers", vouchers)
 }
 
 // UpdateVoucherHandler approves/rejects a voucher by admin
@@ -121,7 +121,7 @@ func (r *Router) UpdateVoucherHandler(w http.ResponseWriter, req *http.Request) 
 
 
 	if !user.Admin {
-		writeErrResponse(w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
+		writeErrResponse(req, w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
 		return
 	}
 	*/
@@ -130,53 +130,53 @@ func (r *Router) UpdateVoucherHandler(w http.ResponseWriter, req *http.Request) 
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusBadRequest, "Failed to read voucher update data")
+		writeErrResponse(req, w, http.StatusBadRequest, "Failed to read voucher update data")
 		return
 	}
 
 	// get voucher id from url
 	id, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
-		writeErrResponse(w, http.StatusBadRequest, "Failed to read voucher id")
+		writeErrResponse(req, w, http.StatusBadRequest, "Failed to read voucher id")
 		return
 	}
 
 	voucher, err := r.db.GetVoucherByID(id)
 	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(w, http.StatusNotFound, "Voucher is not found")
+		writeErrResponse(req, w, http.StatusNotFound, "Voucher is not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	if voucher.Approved && input.Approved {
-		writeErrResponse(w, http.StatusBadRequest, "Voucher is already approved")
+		writeErrResponse(req, w, http.StatusBadRequest, "Voucher is already approved")
 		return
 	}
 
 	if !voucher.Approved && !input.Approved {
-		writeErrResponse(w, http.StatusBadRequest, "Voucher is already rejected")
+		writeErrResponse(req, w, http.StatusBadRequest, "Voucher is already rejected")
 		return
 	}
 
 	updatedVoucher, err := r.db.UpdateVoucher(id, input.Approved)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	user, err := r.db.GetUserByID(updatedVoucher.UserID)
 	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(w, http.StatusNotFound, "User is not found")
+		writeErrResponse(req, w, http.StatusNotFound, "User is not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -190,10 +190,10 @@ func (r *Router) UpdateVoucherHandler(w http.ResponseWriter, req *http.Request) 
 	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.SendGridKey, user.Email, subject, body)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
-	writeMsgResponse(w, "Update mail has been sent to the user", "")
+	writeMsgResponse(req, w, "Update mail has been sent to the user", "")
 }
 
 // ApproveAllVouchers approves all vouchers by admin
@@ -206,7 +206,7 @@ func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !user.Admin {
-		writeErrResponse(w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
+		writeErrResponse(req, w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
 		return
 	}
 	*/
@@ -214,7 +214,7 @@ func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
 	vouchers, err := r.db.ApproveAllVouchers()
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -225,7 +225,7 @@ func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
 		}
 		if err != nil {
 			log.Error().Err(err).Send()
-			writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+			writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 			return
 		}
 
@@ -233,10 +233,10 @@ func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
 		err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.SendGridKey, user.Email, subject, body)
 		if err != nil {
 			log.Error().Err(err).Send()
-			writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+			writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 			return
 		}
 	}
 
-	writeMsgResponse(w, "All vouchers are approved and confirmation mails has been sent to the user", "")
+	writeMsgResponse(req, w, "All vouchers are approved and confirmation mails has been sent to the user", "")
 }

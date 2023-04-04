@@ -18,18 +18,22 @@ import moshaToast from "mosha-vue-toastify";
 import Default from "./layouts/default/Default.vue";
 import NoNavbar from "./layouts/NoNavbar.vue";
 import "mosha-vue-toastify/dist/style.css";
+import mitt from "mitt";
 
 // Plugins
 import { registerPlugins } from "@/plugins";
 
 library.add(fas, far, fab);
 
+const emitter = mitt();
 const app = createApp(App);
 
 registerPlugins(app);
 
 app.component("Default-Layout", Default);
 app.component("No-Navbar-Layout", NoNavbar);
+
+app.provide("emitter", emitter);
 
 app
   .component("font-awesome-icon", FontAwesomeIcon)

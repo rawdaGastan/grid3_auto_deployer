@@ -4,16 +4,14 @@ import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
 import VM from "@/views/VM.vue";
 import K8s from "@/views/K8s.vue";
+import Profile from "@/views/Profile.vue";
+import Admin from "@/views/Admin.vue";
 
 const routes = [
   {
     path: "/login",
     name: "Login",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "login" */ "@/views/Login.vue"),
+    component: () => import("@/views/Login.vue"),
     meta: {
       requiredAuth: false,
     },
@@ -21,11 +19,7 @@ const routes = [
   {
     path: "/signup",
     name: "Signup",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "login" */ "@/views/Signup.vue"),
+    component: () => import("@/views/Signup.vue"),
     meta: {
       requiredAuth: false,
     },
@@ -33,11 +27,7 @@ const routes = [
   {
     path: "/forgetPassword",
     name: "ForgetPassword",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "login" */ "@/views/Forgetpassword.vue"),
+    component: () => import("@/views/Forgetpassword.vue"),
     meta: {
       requiredAuth: false,
     },
@@ -45,10 +35,7 @@ const routes = [
   {
     path: "/otp",
     name: "OTP",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "login" */ "@/views/Otp.vue"),
+    component: () => import("@/views/Otp.vue"),
     meta: {
       requiredAuth: false,
     },
@@ -56,11 +43,7 @@ const routes = [
   {
     path: "/newPassword",
     name: "NewPassword",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "login" */ "@/views/Newpassword.vue"),
+    component: () => import("@/views/Newpassword.vue"),
     meta: {
       requiredAuth: false,
       layout: "Default",
@@ -84,7 +67,7 @@ const routes = [
       {
         path: "/profile",
         name: "Profile",
-        component: import("@/views/Profile.vue"),
+        component: Profile,
         meta: {
           requiredAuth: true,
         },
@@ -114,6 +97,15 @@ const routes = [
         },
       },
       {
+        path: "admin",
+        name: "Admin",
+        component: Admin,
+        meta: {
+          requiredAuth: true,
+          layout: 'AdminNavbar'
+        },
+      },
+      {
         path: "/logout",
         name: "Logout",
         redirect: "/login",
@@ -129,7 +121,7 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   let token = localStorage.getItem("token");
-  if (to.path != "/login" && to.meta.requiredAuth && !token) {
+  if (to.meta.requiredAuth && !token) {
     next("/login");
   } else {
     next();

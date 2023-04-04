@@ -96,7 +96,7 @@
 import { ref } from "vue";
 import axios from "axios";
 import Toast from "@/components/Toast.vue";
-import router from "@/router";
+import { useRouter } from "vue-router";
 
 export default {
   components: {

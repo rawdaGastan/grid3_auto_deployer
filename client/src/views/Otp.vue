@@ -88,7 +88,7 @@ export default {
     const route = useRoute();
     const router = useRouter();
     const verify = ref(false);
-    const countDown = ref(30);
+    const countDown = ref(route.query.timeout)
     const otpInput = ref(null);
     const loading = ref(false);
     const otp = ref(null);
@@ -115,14 +115,14 @@ export default {
     });
 
     const resetHandler = () => {
-      if (route.query.isForgetpassword) {
+      if (route.query.isForgetPassword) {
         axios
           .post(window.configs.vite_app_endpoint + "/user/forgot_password", {
             email: route.query.email,
           })
           .then((response) => {
             toast.value.toast(response.data.msg);
-            countDown.value = 30;
+            countDown.value = route.query.timeout;
           })
           .catch((error) => {
             toast.value.toast(error.response.data.err, "#FF5252");
@@ -137,7 +137,7 @@ export default {
           })
           .then((response) => {
             toast.value.toast(response.data.msg);
-            countDown.value = 30;
+            countDown.value = route.query.timeout;
           })
           .catch((error) => {
             toast.value.toast(error.response.data.err, "#FF5252");

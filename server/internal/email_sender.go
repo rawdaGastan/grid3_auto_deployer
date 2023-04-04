@@ -33,7 +33,7 @@ func SendMail(sender, sendGridKey, receiver, subject, body string) error {
 
 // SignUpMailContent gets the email content for signup
 func SignUpMailContent(code int, timeout int) (string, string) {
-	subject := "Welcome to Cloud4Students"
+	subject := "Welcome to Cloud4Students 🎉"
 	body := fmt.Sprintf("We are so glad to have you here.\n\nYour code is %s\nThe code will expire in %d seconds.\nPlease don't share it with anyone.", strconv.Itoa(code), timeout)
 
 	return subject, body

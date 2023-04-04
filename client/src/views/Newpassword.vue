@@ -60,94 +60,91 @@
 <script>
 import { ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import axios from "axios";
 import Toast from "@/components/Toast.vue";
+import userService from "@/services/userService";
 
 export default {
-  components: {
-    Toast,
-  },
-  setup() {
-    const verify = ref(false);
-    const newpassword = ref(null);
-    const cnewpassword = ref(null);
-    const showPassword = ref(false);
-    const cshowPassword = ref(false);
-    const toast = ref(null);
-    const loading = ref(false);
-    const passwordError = ref("");
+    components: {
+        Toast,
+    },
+    setup() {
+        const verify = ref(false);
+        const newPassword = ref(null);
+        const cnewpassword = ref(null);
+        const showPassword = ref(false);
+        const cshowPassword = ref(false);
+        const toast = ref(null);
+        const loading = ref(false);
+        const passwordError = ref("");
 
-    const route = useRoute();
-    const router = useRouter();
+        const route = useRoute();
+        const router = useRouter();
 
-    const validatePassword = () => {
-      if (newpassword.value !== cnewpassword.value) {
-        passwordError.value = "Passwords don't match";
-        verify.value = false;
-      } else {
-        passwordError.value = "";
-        verify.value = true;
-      }
-      return verify.value;
-    };
-    const cpasswordRules = ref([
-      validatePassword,
-      (value) => !!value || "Field is required",
-    ]);
-    const passwordRules = ref([
-      validatePassword,
-      (value) => !!value || "Field is required",
-      (value) =>
-        (value && value.length >= 7) ||
-        "Password must be at least 7 characters",
-    ]);
+        const validatePassword = () => {
+            if (newPassword.value !== cnewpassword.value) {
+                passwordError.value = "Passwords don't match";
+                verify.value = false;
+            }
+            else {
+                passwordError.value = "";
+                verify.value = true;
+            }
+            return verify.value;
+        };
 
-    const onSubmit = () => {
-      if (!verify.value) return;
+        const cpasswordRules = ref([
+            validatePassword,
+            value => !!value || 'Field is required',
 
-      loading.value = true;
+        ]);
 
-      axios
-        .put(
-          window.configs.vite_app_endpoint + "/user/change_password",
-          {
-            email: route.query.email,
-            password: newpassword.value,
-            confirm_password: cnewpassword.value,
-          },
-          {
-            headers: {
-              Authorization: "Bearer " + localStorage.getItem("password_token"),
-            },
-          }
-        )
-        .then((response) => {
-          toast.value.toast(response.data.msg);
-          localStorage.removeItem("password_token");
-          router.push({
-            name: "Login",
-          });
-        })
-        .catch((error) => {
-          toast.value.toast(error.response.data.err, "#FF5252", "top-right");
-          loading.value = false;
-        });
-    };
+        const passwordRules = ref([
+            validatePassword,
+            value => !!value || 'Field is required',
+            value => (value && value.length >= 7) || 'Password must be at least 7 characters',
+        ]);
 
-    return {
-      verify,
-      newpassword,
-      cnewpassword,
-      loading,
-      showPassword,
-      cshowPassword,
-      passwordRules,
-      cpasswordRules,
-      toast,
-      passwordError,
-      onSubmit,
-      validatePassword,
-    };
-  },
+        const onSubmit = () => {
+            if (!verify.value) return;
+
+            loading.value = true;
+
+            userService
+                .changePassword(route.query.email, newPassword.value, cnewpassword.value)
+                .then((response) => {
+                    toast.value.toast(response.data.msg);
+                    localStorage.removeItem('password_token');
+                    router.push({
+                        name: 'Login',
+                    });
+                })
+                .catch((error) => {
+                    toast.value.toast(error.response.data.err, "#FF5252", "top-right");
+                    loading.value = false;
+                });
+        };
+
+        const cancelHandler = () => {
+            router.push({
+                name: "Login",
+            });
+        };
+
+        return {
+            verify,
+            newPassword,
+            cnewpassword,
+            loading,
+            showPassword,
+            cshowPassword,
+            passwordRules,
+            cpasswordRules,
+            toast,
+            passwordError,
+            onSubmit,
+            cancelHandler,
+            validatePassword,
+        };
+    }
 };
 </script>

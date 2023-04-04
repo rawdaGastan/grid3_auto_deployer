@@ -17,7 +17,8 @@ async function refresh_token() {
   await authClient
     .post("/user/refresh_token")
     .then((response) => {
-      token = response.data.data.access_token;
+      token = response.data.data.refresh_token;
+      localStorage.setItem("token", token);
       return token;
     })
     .catch(() => {
@@ -44,6 +45,14 @@ export default {
     });
   },
 
+  async changePassword(email, password, confirm_password) {
+    return await authClient.put("/user/change_password", {
+      email,
+      password,
+      confirm_password,
+    });
+  },
+
   async newVoucher(vms, public_ips, reason) {
     return await authClient.post("/user/apply_voucher", {
       vms,
@@ -62,7 +71,7 @@ export default {
   },
 
   async deployVm(name, resources, checked) {
-    return await authClient.post("/vm", { name, resources , public : checked  });
+    return await authClient.post("/vm", { name, resources, public: checked });
   },
 
   async deleteVm(id) {
@@ -83,15 +92,33 @@ export default {
       master_name,
       resources,
       workers,
-      public :checked
+      public: checked,
     });
   },
 
-  async deletek8s(id) {
+  async deleteK8s(id) {
     return await authClient.delete(`/k8s/${id}`);
   },
 
   async deleteAllK8s() {
     return await authClient.delete("/k8s");
+  },
+
+  // Users
+  async getUsers() {
+    return await authClient.get("/user/all");
+  },
+
+  // Vouchers
+  async getVouchers() {
+    return await authClient.get("/voucher");
+  },
+
+  async approveVoucher(id, approved) {
+    return await authClient.put(`/voucher/${id}`, { approved });
+  },
+
+  async approveAllVouchers() {
+    return await authClient.put("/voucher");
   },
 };

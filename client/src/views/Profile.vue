@@ -61,7 +61,7 @@
             density="compact"
           ></v-text-field>
 
-          <v-row no-gutters>
+          <v-row>
             <v-col cols="12" sm="9">
               <v-text-field
                 label="Voucher"
@@ -71,13 +71,13 @@
                 variant="outlined"
                 density="compact"
                 clearable
-                :disabled="!verified"
+                :disabled="!allowVoucher"
               ></v-text-field>
             </v-col>
 
             <v-col cols="12" sm="3">
               <BaseButton
-                :disabled="!verified"
+                :disabled="!allowVoucher"
                 class="bg-primary text-capitalize"
                 text="Apply Voucher"
                 @click="activateVoucher"
@@ -198,7 +198,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, inject } from "vue";
 import userService from "@/services/userService";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import Toast from "@/components/Toast.vue";
@@ -210,17 +210,18 @@ export default {
     Toast,
   },
   setup() {
+    const emitter = inject('emitter');
     const email = ref(null);
     const name = ref(null);
     const college = ref("");
     const team_size = ref(0);
     const project_desc = ref("");
-    const voucher = ref(null);
-    const sshKey = ref(null);
+    const voucher = ref("");
+    const sshKey = ref("");
     const actLoading = ref(false);
-    const sMsg = ref(null);
     const toast = ref(null);
-    const verified = ref(null);
+    const verified = ref(false);
+    const allowVoucher = ref(false);
     const loading = ref(false);
     const newVoucherVerify = ref(false);
     const vms = ref(null);
@@ -241,6 +242,7 @@ export default {
           email.value = user.email;
           name.value = user.name;
           voucher.value = user.voucher;
+          allowVoucher.value = user.voucher == "";
           verified.value = user.verified;
           sshKey.value = user.ssh_key;
           if (!user.college) {
@@ -258,7 +260,6 @@ export default {
           } else {
             project_desc.value = user.project_desc;
           }
-          toast.value.clear();
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -271,7 +272,9 @@ export default {
         .activateVoucher(voucher.value)
         .then((response) => {
           actLoading.value = true;
-          sMsg.value = response.data.msg;
+          emitQuota();
+          getUser();
+          toast.value.toast(response.data.msg, "#388E3C");
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -286,7 +289,8 @@ export default {
       userService
         .updateUser(name.value, sshKey.value)
         .then((response) => {
-          checkUser(name.value);
+          router.go();
+          getUser();
           toast.value.toast(response.data.msg, "#388E3C");
         })
         .catch((response) => {
@@ -321,12 +325,9 @@ export default {
       return true;
     });
 
-    const checkUser = (username) => {
-      if (localStorage.getItem("username") !== username) {
-        localStorage.setItem("username", username);
-        router.go();
-      }
-    };
+    const emitQuota = () => {
+      emitter.emit('userUpdateQuota', true);
+    }
 
     onMounted(() => {
       getUser();
@@ -340,10 +341,11 @@ export default {
       email,
       name,
       voucher,
+      allowVoucher,
       sshKey,
+      verified,
       avatar,
       actLoading,
-      sMsg,
       rules,
       toast,
       loading,
@@ -354,8 +356,8 @@ export default {
       getUser,
       activateVoucher,
       update,
-      checkUser,
       newVoucher,
+      emitQuota,
     };
   },
 };

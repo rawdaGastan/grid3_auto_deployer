@@ -1,7 +1,6 @@
 <template>
   <div class="div-wrapper">
     <Toast ref="toast" />
-
     <v-container>
       <h5
         class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary"
@@ -70,7 +69,7 @@ export default {
     const verify = ref(false);
     const email = ref(null);
     const loading = ref(false);
-    const isForgetpassword = ref(true);
+    const isForgetPassword = ref(true);
     const emailRules = ref([
       (value) => !!value || "Field is required",
       (value) => value.match(emailRegex) || "Invalid email address",
@@ -88,11 +87,8 @@ export default {
         .then((response) => {
           toast.value.toast(response.data.msg);
           router.push({
-            name: "OTP",
-            query: {
-              email: email.value,
-              isForgetpassword: isForgetpassword.value,
-            },
+            name: 'OTP',
+            query: { "email": email.value, "isForgetPassword": isForgetPassword.value, "timeout": response.data.data.timeout }
           });
         })
         .catch((error) => {

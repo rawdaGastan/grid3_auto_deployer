@@ -99,7 +99,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, inject } from "vue";
 import userService from "@/services/userService";
 import BaseSelect from "@/components/Form/BaseSelect.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
@@ -114,6 +114,7 @@ export default {
     Toast,
   },
   setup() {
+    const emitter = inject('emitter');
     const verify = ref(false);
     const checked = ref(false);
 
@@ -160,6 +161,7 @@ export default {
         .then((response) => {
           toast.value.toast(response.data.msg, "#388E3C");
           reset();
+          emitQuota();
           getVMS();
           loading.value = false;
         })
@@ -217,6 +219,10 @@ export default {
         });
     };
 
+    const emitQuota = () => {
+      emitter.emit('userUpdateQuota', true);
+    }
+
     onMounted(() => {
       getVMS();
     });
@@ -240,6 +246,7 @@ export default {
       deployVm,
       deleteVms,
       deleteVm,
+      emitQuota,
     };
   },
 };

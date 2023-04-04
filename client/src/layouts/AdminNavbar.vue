@@ -100,6 +100,10 @@ export default {
         path: "k8s",
         title: "K8s",
       },
+      {
+        path: "admin",
+        title: "Admin",
+      },
     ]);
 
     const user = ref([
@@ -128,7 +132,7 @@ export default {
       }
     };
 
-    const getUserName = () => {
+     const getUserName = () => {
       userService
         .getUser()
         .then((response) => {

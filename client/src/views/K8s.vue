@@ -186,7 +186,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, inject } from "vue";
 import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseSelect from "@/components/Form/BaseSelect.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
@@ -203,6 +203,8 @@ export default {
     Toast,
   },
   setup() {
+    const emitter = inject('emitter');
+
     const verify = ref(false);
     const checked = ref(false);
 
@@ -265,9 +267,11 @@ export default {
       userService
         .deployK8s(k8Name.value, selectedResource.value, worker.value, checked.value)
         .then((response) => {
+          toast.value.toast(response.data.msg, "#388E3C");
           form.value.reset();
-          console.log(response.data);
+          emitQuota();
           getK8s();
+          loading.value = false;
         })
         .catch((response) => {
           form.value.reset();
@@ -309,7 +313,7 @@ export default {
           if (confirm) {
             toast.value.toast(`Deleting ${name}..`, "#FF5252");
             userService
-              .deletek8s(id)
+              .deleteK8s(id)
               .then((response) => {
                 toast.value.toast(response.data.msg, "#388E3C");
                 getK8s();
@@ -321,6 +325,10 @@ export default {
           }
         });
     };
+
+    const emitQuota = () => {
+      emitter.emit('userUpdateQuota', true);
+    }
 
     onMounted(() => {
       getK8s();
@@ -351,6 +359,7 @@ export default {
       deployWorker,
       deleteAllK8s,
       deleteK8s,
+      emitQuota,
     };
   },
 };

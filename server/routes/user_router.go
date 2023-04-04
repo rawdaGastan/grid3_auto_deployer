@@ -171,7 +171,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	writeMsgResponse(req, w, "Verification code has been sent to "+signUp.Email, "")
+	writeMsgResponse(req, w, "Verification code has been sent to "+signUp.Email, map[string]int{"timeout": r.config.MailSender.Timeout})
 }
 
 // VerifySignUpCodeHandler gets verification code to create user
@@ -349,7 +349,7 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
-	writeMsgResponse(req, w, "Verification code has been sent to "+email.Email, "")
+	writeMsgResponse(req, w, "Verification code has been sent to "+email.Email, map[string]int{"timeout": r.config.MailSender.Timeout})
 }
 
 // VerifyForgetPasswordCodeHandler verifies code sent to user when forgetting password

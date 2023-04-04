@@ -62,9 +62,9 @@ func (d *DB) GetUserByID(id string) (User, error) {
 func (d *DB) ListAllUsers() ([]UserUsedQuota, error) {
 	var res []UserUsedQuota
 	query := d.db.Table("users").
-		Select("*, vouchers.vms - quota.vms as used_vms, vouchers.public_ips - quota.public_ips as used_public_ips").
+		Select("*, users.id as user_id, vouchers.vms - quota.vms as used_vms, vouchers.public_ips - quota.public_ips as used_public_ips").
 		Joins("left join quota on quota.user_id = users.id").
-		Joins("left join vouchers on vouchers.user_id = users.id and vouchers.used = true and vouchers.approved = true").
+		Joins("left join vouchers on vouchers.voucher = users.voucher and vouchers.used = true and vouchers.approved = true").
 		Where("verified = true").
 		Scan(&res)
 	return res, query.Error
@@ -166,6 +166,13 @@ func (d *DB) CreateQuota(q *Quota) error {
 
 // UpdateUserQuota updates quota
 func (d *DB) UpdateUserQuota(userID string, vms int, publicIPs int) error {
+	if vms == 0 && publicIPs == 0 {
+		var res User
+		result := d.db.Model(&res).Where("id = ?", userID).Update("voucher", "")
+		if result.Error != nil {
+			return result.Error
+		}
+	}
 	return d.db.Model(&Quota{}).Where("user_id = ?", userID).Updates(map[string]interface{}{"vms": vms, "public_ips": publicIPs}).Error
 }
 

@@ -136,14 +136,12 @@ export default {
     const declineModal = () => {
       checked.value = false;
       isModalVisible.value = false;
-
     };
 
     const closeModal = () => {
-
       isModalVisible.value = false;
-
     }
+
     const onSubmit = () => {
       if (!verify.value) return;
 
@@ -159,19 +157,16 @@ export default {
           college: faculty.value,
         })
         .then(() => {
-
           localStorage.setItem('fullname', fullname.value);
           localStorage.setItem('password', password.value);
           localStorage.setItem('confirm_password', cpassword.value);
           localStorage.setItem('teamSize', Number(teamSize.value));
           localStorage.setItem('projectDescription', projectDescription.value);
           localStorage.setItem('faculty', faculty.value);
-
-
-
+          toast.value.toast(response.data.msg);
           router.push({
             name: 'OTP',
-            query: { "email": email.value, "isSignup": isSignup.value, }
+            query: { "email": email.value, "isSignup": isSignup.value, "timeout": response.data.data.timeout },
           });
 
         })

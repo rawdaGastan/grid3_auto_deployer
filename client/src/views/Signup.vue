@@ -1,78 +1,153 @@
 <template>
-  <v-container fluid>
+  <v-container>
     <Toast ref="toast" />
-
-    <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
+    <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
       Create a new account
     </h5>
     <v-row justify="center">
       <v-col cols="12" sm="6">
         <v-form v-model="verify" @submit.prevent="onSubmit">
-
-          <v-text-field v-model="fullname" :rules="Rules" label="Full Name" placeholder="Enter your fullname"
-            bg-color="accent" variant="outlined" class="my-2">
+          <v-text-field
+            v-model="fullname"
+            :rules="Rules"
+            label="Full Name"
+            placeholder="Enter your fullname"
+            bg-color="accent"
+            variant="outlined"
+            class="my-2"
+            density="compact"
+          >
           </v-text-field>
 
-          <v-text-field v-model="email" :rules="emailRules" label="Email" placeholder="Enter your email" bg-color="accent"
-            variant="outlined" class="my-2">
+          <v-text-field
+            v-model="email"
+            :rules="emailRules"
+            label="Email"
+            placeholder="Enter your email"
+            bg-color="accent"
+            variant="outlined"
+            class="my-2"
+            density="compact"
+          >
           </v-text-field>
 
-
-          <v-text-field v-model="faculty" :rules="Rules" label="Faculty" placeholder="Enter your faculty"
-            bg-color="accent" variant="outlined" class="my-2">
+          <v-text-field
+            v-model="faculty"
+            :rules="Rules"
+            label="Faculty"
+            placeholder="Enter your faculty"
+            bg-color="accent"
+            variant="outlined"
+            class="my-2"
+            density="compact"
+          >
           </v-text-field>
 
-          <v-text-field v-model="teamSize" :rules="teamSizeRules" label="Team Size" placeholder="Enter your team size"
-            bg-color="accent" variant="outlined" class="my-2" >
+          <v-text-field
+            v-model="teamSize"
+            :rules="teamSizeRules"
+            label="Team Size"
+            placeholder="Enter your team size"
+            bg-color="accent"
+            variant="outlined"
+            class="my-2"
+            density="compact"
+          >
           </v-text-field>
 
-       
-
-          <v-textarea v-model="projectDescription" :rules="Rules" label="Project Description"
-            placeholder="Enter your project description" bg-color="accent" variant="outlined" class="my-2">
+          <v-textarea
+            v-model="projectDescription"
+            :rules="Rules"
+            label="Project Description"
+            placeholder="Enter your project description"
+            bg-color="accent"
+            variant="outlined"
+            class="my-2"
+          >
           </v-textarea>
 
-
-          <v-text-field v-model="password" :rules="passwordRules" clearable label="Password"
-            placeholder="Enter your password" bg-color="accent" variant="outlined"
-            :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'" :type="showPassword ? 'text' : 'password'"
-            @click:append-inner="showPassword = !showPassword" style="grid-area: unset;" class="my-2">
+          <v-text-field
+            v-model="password"
+            :rules="passwordRules"
+            clearable
+            label="Password"
+            placeholder="Enter your password"
+            bg-color="accent"
+            variant="outlined"
+            :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+            :type="showPassword ? 'text' : 'password'"
+            @click:append-inner="showPassword = !showPassword"
+            style="grid-area: unset;"
+            class="my-2"
+            density="compact"
+          >
           </v-text-field>
 
-          <v-text-field v-model="cpassword" :rules="cpasswordRules" clearable label="Confirm Password"
-            placeholder="Enter your password" bg-color="accent" variant="outlined"
-            :append-inner-icon="cshowPassword ? 'mdi-eye' : 'mdi-eye-off'" :type="cshowPassword ? 'text' : 'password'"
-            @click:append-inner="cshowPassword = !cshowPassword" style="grid-area: unset;" class="my-2">
+          <v-text-field
+            v-model="cpassword"
+            :rules="cpasswordRules"
+            clearable
+            label="Confirm Password"
+            placeholder="Enter your password"
+            bg-color="accent"
+            variant="outlined"
+            :append-inner-icon="cshowPassword ? 'mdi-eye' : 'mdi-eye-off'"
+            :type="cshowPassword ? 'text' : 'password'"
+            @click:append-inner="cshowPassword = !cshowPassword"
+            style="grid-area: unset;"
+            class="my-2"
+            density="compact"
+          >
           </v-text-field>
-
 
           <v-row justify="center">
-
-            <button type="button" class="btn mb-6" @click="showModal"
-              style="font-weight: bold;text-decoration: underline;">
-              Terms and Conditions </button>
+            <button
+              type="button"
+              class="btn mb-6"
+              @click="showModal"
+              style="font-weight: bold; text-decoration: underline;"
+            >
+              Terms and Conditions
+            </button>
           </v-row>
-          <Modal v-show="isModalVisible" @close="closeModal" @accept="acceptModal" @decline="declineModal" />
+          <Modal
+            v-show="isModalVisible"
+            @close="closeModal"
+            @accept="acceptModal"
+            @decline="declineModal"
+          />
 
-
-          <v-btn min-width="228" size="x-large" type="submit" block :disabled="!verify || !checked" :loading="loading"
-            variant="flat" color="primary" class=" text-capitalize mx-auto bg-primary">
+          <v-btn
+            type="submit"
+            block
+            :disabled="!verify || !checked"
+            :loading="loading"
+            variant="flat"
+            color="primary"
+            class="text-capitalize mx-auto bg-primary"
+          >
             Create Account
           </v-btn>
-
+          <p class="my-2 text-center">
+            Already have an account?
+            <router-link
+              class="text-body-2 text-decoration-none primary"
+              to="/login"
+              >Back to login</router-link
+            >
+          </p>
         </v-form>
       </v-col>
     </v-row>
   </v-container>
 </template>
 
-
 <script>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
 import Toast from "@/components/Toast.vue";
-import Modal from '@/components/Modal.vue';
+import Modal from "@/components/Modal.vue";
 
 export default {
   components: {
@@ -81,7 +156,6 @@ export default {
   },
 
   setup() {
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const router = useRouter();
     const verify = ref(false);
@@ -101,28 +175,28 @@ export default {
     const isModalVisible = ref(false);
 
     const Rules = ref([
-      value => !!value || 'Field is required',
-      value => (value && value.length >= 3) || 'Field should be at least 3 characters',
+      (value) => !!value || "Field is required",
+      (value) =>
+        (value && value.length >= 3) || "Field should be at least 3 characters",
     ]);
     const teamSizeRules = ref([
-      value => !!value || 'Field is required',
-      value => (value && value > 0) || 'Team Size should be more than 0',
+      (value) => !!value || "Field is required",
+      (value) => (value && value > 0) || "Team Size should be more than 0",
     ]);
     const emailRules = ref([
-      value => !!value || 'Field is required',
-      value => (value.match(emailRegex)) || 'Invalid email address',
+      (value) => !!value || "Field is required",
+      (value) => value.match(emailRegex) || "Invalid email address",
     ]);
     const passwordRules = ref([
-      value => !!value || 'Field is required',
-      value => (value && value.length >= 7) || 'Password must be at least 7 characters',
+      (value) => !!value || "Field is required",
+      (value) =>
+        (value && value.length >= 7) ||
+        "Password must be at least 7 characters",
     ]);
     const cpasswordRules = ref([
-      value => !!value || 'Field is required',
-      value => (value == password.value) || "Passwords don't match",
-
+      (value) => !!value || "Field is required",
+      (value) => value == password.value || "Passwords don't match",
     ]);
-
-
 
     const showModal = () => {
       isModalVisible.value = true;
@@ -130,20 +204,16 @@ export default {
     const acceptModal = () => {
       checked.value = true;
       isModalVisible.value = false;
-
     };
 
     const declineModal = () => {
       checked.value = false;
       isModalVisible.value = false;
-
     };
 
     const closeModal = () => {
-
       isModalVisible.value = false;
-
-    }
+    };
     const onSubmit = () => {
       if (!verify.value) return;
 
@@ -159,28 +229,22 @@ export default {
           college: faculty.value,
         })
         .then(() => {
-
-          localStorage.setItem('fullname', fullname.value);
-          localStorage.setItem('password', password.value);
-          localStorage.setItem('confirm_password', cpassword.value);
-          localStorage.setItem('teamSize', Number(teamSize.value));
-          localStorage.setItem('projectDescription', projectDescription.value);
-          localStorage.setItem('faculty', faculty.value);
-
-
+          localStorage.setItem("fullname", fullname.value);
+          localStorage.setItem("password", password.value);
+          localStorage.setItem("confirm_password", cpassword.value);
+          localStorage.setItem("teamSize", Number(teamSize.value));
+          localStorage.setItem("projectDescription", projectDescription.value);
+          localStorage.setItem("faculty", faculty.value);
 
           router.push({
-            name: 'OTP',
-            query: { "email": email.value, "isSignup": isSignup.value, }
+            name: "OTP",
+            query: { email: email.value, isSignup: isSignup.value },
           });
-
         })
         .catch((error) => {
           toast.value.toast(error.response.data.err, "#FF5252", "top-right");
           loading.value = false;
-
         });
-
     };
     return {
       onSubmit,
@@ -207,9 +271,8 @@ export default {
       projectDescription,
       teamSize,
       teamSizeRules,
-      isModalVisible
-
-    }
+      isModalVisible,
+    };
   },
 };
 </script>

@@ -3,32 +3,44 @@
     <Toast ref="toast" />
 
     <v-container>
-      <h5 class="text-h5 text-md-h4 text-center mt-10 mb-0 secondary">
+      <h5
+        class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary"
+      >
         Reset Password
       </h5>
-      <div class="text-body-2 mb-10 text-center font-weight-light">The verification code will be sent to your mailbox.
-      </div>
-
+      <p class="text-center mb-10">
+        The verification code will be sent to your mailbox
+      </p>
 
       <v-row justify="center">
         <v-col cols="12" sm="6">
           <v-form v-model="verify" @submit.prevent="onSubmit">
+            <v-text-field
+              v-model="email"
+              :rules="emailRules"
+              class="mb-2"
+              clearable
+              placeholder="Enter your email"
+              label="Email"
+              bg-color="accent"
+              variant="outlined"
+              density="compact"
+            ></v-text-field>
 
-
-            <v-text-field v-model="email" :rules="emailRules" class="mb-2" clearable placeholder="Enter your email"
-              label="Email" bg-color="accent" variant="outlined"></v-text-field>
-
-
-
-
-            <v-btn min-width="228" size="x-large" type="submit" block :disabled="!verify" :loading="loading"
-              variant="flat" color="primary" class="text-capitalize mx-auto bg-primary">
+            <v-btn
+              type="submit"
+              block
+              :disabled="!verify"
+              :loading="loading"
+              variant="flat"
+              color="primary"
+              class="text-capitalize mx-auto bg-primary"
+            >
               Send
             </v-btn>
-            <div class="text-body-2 mb-n1 mt-1 text-center">
+            <div class="text-body-2 my-3 text-center">
               <a class="text-body-2" href="/" color="primary">Back to Login</a>
             </div>
-
           </v-form>
         </v-col>
       </v-row>
@@ -36,8 +48,7 @@
     <img src="@/assets/cpass.png" />
   </div>
 </template>
-    
-  
+
 <script>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
@@ -59,8 +70,8 @@ export default {
     const loading = ref(false);
     const isForgetpassword = ref(true);
     const emailRules = ref([
-      value => !!value || 'Field is required',
-      value => (value.match(emailRegex)) || 'Invalid email address',
+      (value) => !!value || "Field is required",
+      (value) => value.match(emailRegex) || "Invalid email address",
     ]);
 
     const onSubmit = () => {
@@ -69,24 +80,23 @@ export default {
       loading.value = true;
 
       axios
-        .post(window.configs.vite_app_endpoint+"/user/forgot_password", {
+        .post(window.configs.vite_app_endpoint + "/user/forgot_password", {
           email: email.value,
         })
         .then((response) => {
           toast.value.toast(response.data.msg);
           router.push({
-            name: 'OTP',
-            query: { "email": email.value, "isForgetpassword": isForgetpassword.value, }
-
+            name: "OTP",
+            query: {
+              email: email.value,
+              isForgetpassword: isForgetpassword.value,
+            },
           });
-
         })
         .catch((error) => {
           toast.value.toast(error.response.data.err, "#FF5252");
           loading.value = false;
-
         });
-
     };
     return {
       verify,
@@ -95,8 +105,8 @@ export default {
       loading,
       toast,
       onSubmit,
-    }
-  }
+    };
+  },
 };
 </script>
 
@@ -114,4 +124,3 @@ export default {
   bottom: 0;
 }
 </style>
-  

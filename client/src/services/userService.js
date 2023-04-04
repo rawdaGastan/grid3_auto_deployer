@@ -18,6 +18,7 @@ async function refresh_token() {
     .post("/user/refresh_token")
     .then((response) => {
       token = response.data.data.refresh_token;
+      localStorage.setItem("token", token);
       return token;
     })
     .catch(() => {
@@ -103,21 +104,21 @@ export default {
     return await authClient.delete("/k8s");
   },
 
-    // Users
-    async getUsers() {
-      return await authClient.get("/user/all");
-    },
+  // Users
+  async getUsers() {
+    return await authClient.get("/user/all");
+  },
 
-    // Vouchers
-    async getVouchers() {
-      return await authClient.get("/voucher");
-    },
+  // Vouchers
+  async getVouchers() {
+    return await authClient.get("/voucher");
+  },
 
-    async approveVoucher(id, approved) {
-      return await authClient.put(`/voucher/${id}`, {approved});
-    },
+  async approveVoucher(id, approved) {
+    return await authClient.put(`/voucher/${id}`, { approved });
+  },
 
-    async approveAllVouchers() {
-      return await authClient.put("/voucher");
-    },
+  async approveAllVouchers() {
+    return await authClient.put("/voucher");
+  },
 };

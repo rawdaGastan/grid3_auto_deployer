@@ -62,9 +62,9 @@ func (d *DB) GetUserByID(id string) (User, error) {
 func (d *DB) ListAllUsers() ([]UserUsedQuota, error) {
 	var res []UserUsedQuota
 	query := d.db.Table("users").
-		Select("*, vouchers.vms - quota.vms as used_vms, vouchers.public_ips - quota.public_ips as used_public_ips").
+		Select("*, users.id as user_id, vouchers.vms - quota.vms as used_vms, vouchers.public_ips - quota.public_ips as used_public_ips").
 		Joins("left join quota on quota.user_id = users.id").
-		Joins("left join vouchers on vouchers.user_id = users.id and vouchers.used = true and vouchers.approved = true").
+		Joins("left join vouchers on vouchers.voucher = users.voucher and vouchers.used = true and vouchers.approved = true").
 		Where("verified = true").
 		Scan(&res)
 	return res, query.Error

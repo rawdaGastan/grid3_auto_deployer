@@ -75,12 +75,13 @@
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import userService from "@/services/userService";
 
 export default {
   setup() {
     const drawer = ref(false);
-    const username = ref(localStorage.getItem("username"));
+    const username = ref("");
     const isActive = ref(null);
     const items = ref([
       {
@@ -131,7 +132,24 @@ export default {
       }
     };
 
-    return { drawer, items, user, username, isActive, setActive, checkTitle };
+     const getUserName = () => {
+      userService
+        .getUser()
+        .then((response) => {
+          const { user } = response.data.data;
+          username.value = user.name;
+        })
+        .catch((response) => {
+          const { err } = response.response.data;
+          console.log(err);
+        });
+    };
+
+    onMounted(() => {
+      getUserName();
+    });
+
+    return { drawer, items, user, username, isActive, setActive, checkTitle, getUserName };
   },
 };
 </script>

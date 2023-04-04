@@ -293,7 +293,7 @@ export default {
       userService
         .updateUser(name.value, sshKey.value)
         .then((response) => {
-          checkUser(name.value);
+          router.go();
           getUser();
           toast.value.toast(response.data.msg, "#388E3C");
         })
@@ -329,13 +329,6 @@ export default {
       return true;
     });
 
-    const checkUser = (username) => {
-      if (localStorage.getItem("username") !== username) {
-        localStorage.setItem("username", username);
-        router.go();
-      }
-    };
-
     const emitQuota = () => {
       emitter.emit('userUpdateQuota', true);
     }
@@ -367,7 +360,6 @@ export default {
       getUser,
       activateVoucher,
       update,
-      checkUser,
       newVoucher,
       emitQuota,
     };

@@ -88,18 +88,15 @@ export default {
                     password: password.value,
                 })
                 .then((response) => {
-                    localStorage.setItem('token', response.data.data.access_token);
+                    localStorage.setItem("token", response.data.data.access_token);
                     toast.value.toast(response.data.msg);
                     router.push({
                         name: 'Home',
-
                     });
-
                 })
                 .catch((error) => {
                     toast.value.toast(error.response.data.err, "#FF5252");
                     loading.value = false;
-
                 });
 
         };

@@ -94,7 +94,7 @@ func TestSignUpHandler(t *testing.T) {
 		response := httptest.NewRecorder()
 		router.SignUpHandler(response, request)
 		got := response.Body.String()
-		want := `{"msg":"Verification code has been sent to name@gmail.com","data":""}`
+		want := `{"msg":"Verification code has been sent to name@gmail.com","data":{"timeout":60}}`
 		if got != want {
 			t.Errorf("error : got %q, want %q", got, want)
 		}
@@ -249,7 +249,7 @@ func TestForgotPasswordHandler(t *testing.T) {
 		response := httptest.NewRecorder()
 		router.ForgotPasswordHandler(response, request)
 		got := response.Body.String()
-		want := `{"msg":"Verification code has been sent to name@gmail.com","data":""}`
+		want := `{"msg":"Verification code has been sent to name@gmail.com","data":{"timeout":60}}`
 		assert.Equal(t, got, want)
 		assert.Equal(t, response.Code, http.StatusOK)
 	})

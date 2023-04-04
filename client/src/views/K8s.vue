@@ -194,7 +194,6 @@
 
 <script>
 import { ref, onMounted, inject } from "vue";
-import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseSelect from "@/components/Form/BaseSelect.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import userService from "@/services/userService";

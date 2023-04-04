@@ -372,7 +372,7 @@ export default {
           project_desc: projectDescription.value,
           college: faculty.value,
         })
-        .then(() => {
+        .then((response) => {
           localStorage.setItem('fullname', fullname.value);
           localStorage.setItem('password', password.value);
           localStorage.setItem('confirm_password', cpassword.value);

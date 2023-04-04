@@ -224,8 +224,8 @@ export default {
     const allowVoucher = ref(false);
     const loading = ref(false);
     const newVoucherVerify = ref(false);
-    const vms = ref(null);
-    const ips = ref(null);
+    const vms = ref(0);
+    const ips = ref(0);
     const reason = ref(null);
     const rules = ref([
       (value) => {
@@ -301,7 +301,7 @@ export default {
 
     const newVoucher = () => {
       userService
-        .newVoucher(vms.value, ips.value, reason.value)
+        .newVoucher(Number(vms.value), Number(ips.value), reason.value)
         .then((response) => {
           toast.value.toast(response.data.msg, "#388E3C");
         })

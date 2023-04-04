@@ -102,7 +102,7 @@ const routes = [
         component: Admin,
         meta: {
           requiredAuth: true,
-          layout: 'AdminNavbar'
+          layout: "AdminNavbar",
         },
       },
       {

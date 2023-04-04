@@ -102,7 +102,8 @@ export default {
   components: {
     Toast,
   },
-  setup() {
+    setup() {
+    const router = useRouter();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const verify = ref(false);
     const toast = ref(null);

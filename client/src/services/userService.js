@@ -85,4 +85,22 @@ export default {
   async deleteAllK8s() {
     return await authClient.delete("/k8s");
   },
+
+    // Users
+    async getUsers() {
+      return await authClient.get("/user/all");
+    },
+
+    // Vouchers
+    async getVouchers() {
+      return await authClient.get("/voucher");
+    },
+
+    async approveVoucher(id, approved) {
+      return await authClient.put(`/voucher/${id}`, {approved});
+    },
+
+    async approveAllVouchers() {
+      return await authClient.put("/voucher");
+    },
 };

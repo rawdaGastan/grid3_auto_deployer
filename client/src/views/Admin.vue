@@ -98,7 +98,6 @@
       </v-col>
       <v-col cols="12" md="4">
         <div
-          v-show="usedResources > 0"
           class="resources text-white text-center rounded-lg bg-primary py-5 shadow"
         >
           <p>
@@ -154,7 +153,7 @@
 <script>
 import { ref, onMounted, computed } from "vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
-import adminService from "@/services/adminService.js";
+import userService from "@/services/userService.js";
 import Toast from "@/components/Toast.vue";
 
 export default {
@@ -189,7 +188,7 @@ export default {
     itemsPerPage.value = 10;
 
     const getVouchers = () => {
-      adminService
+      userService
         .getVouchers()
         .then((response) => {
           const { data } = response.data;
@@ -200,8 +199,6 @@ export default {
           );
 
           for (let voucher of data) {
-            usedResources.value += voucher.vms;
-
             if (!voucher?.approved) {
               approveAllCount.value++;
             }
@@ -227,19 +224,22 @@ export default {
     };
 
     const approveVoucher = (id, approved) => {
-      adminService.approveVoucher(id, approved);
+      userService.approveVoucher(id, approved);
     };
 
     const approveAllVouchers = () => {
-      adminService.approveAllVouchers();
+      userService.approveAllVouchers();
     };
 
     const getUsers = () => {
-      adminService
+      userService
         .getUsers()
         .then((response) => {
           const { data } = response.data;
           users.value = data;
+          users.value.map((usedvms) => {
+            usedResources.value += usedvms.used_vms;
+          });
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -286,11 +286,11 @@ export default {
     };
   },
   beforeRouteEnter(to, from, next) {
-    adminService
-      .getUsers()
+    userService
+      .getUser()
       .then((response) => {
-        const { data } = response.data;
-        const isAdmin = data.admin;
+        const { user } = response.data.data.user;
+        const isAdmin = user.admin;
         if (isAdmin) {
           next();
         } else {

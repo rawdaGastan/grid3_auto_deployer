@@ -1,5 +1,5 @@
 <template>
-  <v-card color="primary" theme="dark">
+  <v-card color="primary" theme="dark" :key="rerenderKey">
     <div class="d-flex flex-no-wrap justify-space-between">
       <div>
         <v-card-title class="text-body-1">
@@ -23,7 +23,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, inject } from "vue";
 import userService from "@/services/userService";
 
 export default {
@@ -31,6 +31,14 @@ export default {
   setup() {
     const vm = ref(0);
     const ips = ref(0);
+    const rerenderKey = ref(0);
+    const emitter = inject('emitter');
+
+    emitter.on('userUpdateQuota', () => {
+      rerenderKey.value += 1
+      getQuota();
+    })
+
     const getQuota = () => {
       userService
         .getQuota()
@@ -48,7 +56,7 @@ export default {
       getQuota();
     });
 
-    return { vm, ips, getQuota };
+    return { vm, ips, rerenderKey, getQuota };
   },
 };
 </script>

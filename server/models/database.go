@@ -166,6 +166,13 @@ func (d *DB) CreateQuota(q *Quota) error {
 
 // UpdateUserQuota updates quota
 func (d *DB) UpdateUserQuota(userID string, vms int, publicIPs int) error {
+	if vms == 0 && publicIPs == 0 {
+		var res User
+		result := d.db.Model(&res).Where("id = ?", userID).Update("voucher", "")
+		if result.Error != nil {
+			return result.Error
+		}
+	}
 	return d.db.Model(&Quota{}).Where("user_id = ?", userID).Updates(map[string]interface{}{"vms": vms, "public_ips": publicIPs}).Error
 }
 

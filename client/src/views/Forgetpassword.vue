@@ -39,7 +39,9 @@
               Send
             </v-btn>
             <div class="text-body-2 my-3 text-center">
-              <a class="text-body-2" href="/" color="primary">Back to Login</a>
+              <router-link class="text-body-2 primary text-decoration-none" to="/"
+                >Back to Login</router-link
+              >
             </div>
           </v-form>
         </v-col>

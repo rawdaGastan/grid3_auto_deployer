@@ -1,9 +1,9 @@
 <template>
-  <v-container style="max-width: 1600px;">
+  <v-container style="max-width: 1600px;" fill-height>
     <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
       Admin Panel
     </h5>
-    <v-row class="overflow-hidden">
+    <v-row>
       <v-col cols="12" md="8">
         <section class="rounded shadow" v-if="vouchers.length > 0">
           <v-sheet>
@@ -110,10 +110,9 @@
         </div>
         <section class="my-5 shadow">
           <v-sheet rounded class="bg-grey-lighten-5">
-            <h3 class="text-grey-darken-1 bg-primary text-center pa-2">
+            <h5 class="text-grey-darken-1 text-h5 bg-primary text-center pa-4">
               Users
-            </h3>
-            <hr />
+            </h5>
             <div v-if="users.length > 0">
               <v-table class="rounded-lg">
                 <thead class="bg-grey-lighten-5">
@@ -148,6 +147,7 @@
         </section>
       </v-col>
     </v-row>
+    <Toast ref="toast" />
   </v-container>
 </template>
 
@@ -155,10 +155,12 @@
 import { ref, onMounted, computed } from "vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import adminService from "@/services/adminService.js";
+import Toast from "@/components/Toast.vue";
 
 export default {
   components: {
     BaseButton,
+    Toast,
   },
   setup() {
     const confirm = ref(null);
@@ -219,7 +221,7 @@ export default {
           }
         })
         .catch((response) => {
-          const { err } = response;
+          const { err } = response.response.data;
           toast.value.toast(err, "#FF5252");
         });
     };
@@ -283,31 +285,37 @@ export default {
       itemsPerPage,
     };
   },
+  beforeRouteEnter(to, from, next) {
+    adminService
+      .getUsers()
+      .then((response) => {
+        const { data } = response.data;
+        const isAdmin = data.admin;
+        if (isAdmin) {
+          next();
+        } else {
+          next("/");
+        }
+      })
+      .catch((response) => {
+        console.log(response);
+      });
+  },
 };
 </script>
 
 <style>
-section {
-  margin-bottom: 3rem;
-}
-
 .resources {
   margin-top: 0.5rem;
-}
-
-.resources_p {
-  height: 100%;
-  padding: 2rem;
-  font-size: 1.8rem;
 }
 
 td {
   line-height: 1em;
 }
-
 .actions {
   position: relative;
 }
+
 .approve {
   position: absolute;
   right: 5px;

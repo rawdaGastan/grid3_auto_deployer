@@ -120,7 +120,10 @@ const routes = [
         path: "admin",
         name: "Admin",
         component: Admin,
-
+        meta: {
+          requiredAuth: true,
+          layout: 'AdminNavbar'
+        },
       },
       {
         path: "/logout",

@@ -99,6 +99,10 @@ export default {
         path: "k8s",
         title: "K8s",
       },
+      {
+        path: "admin",
+        title: "Admin",
+      },
     ]);
 
     const user = ref([

@@ -289,7 +289,7 @@ export default {
     userService
       .getUser()
       .then((response) => {
-        const { user } = response.data.data.user;
+        const { user } = response.data.data;
         const isAdmin = user.admin;
         if (isAdmin) {
           next();

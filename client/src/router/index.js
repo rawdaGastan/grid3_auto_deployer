@@ -5,6 +5,7 @@ import About from "@/views/About.vue";
 import VM from "@/views/VM.vue";
 import K8s from "@/views/K8s.vue";
 import Profile from "@/views/Profile.vue";
+import Admin from "@/views/Admin.vue";
 
 const routes = [
   {
@@ -93,6 +94,15 @@ const routes = [
         component: K8s,
         meta: {
           requiredAuth: true,
+        },
+      },
+      {
+        path: "admin",
+        name: "Admin",
+        component: Admin,
+        meta: {
+          requiredAuth: true,
+          layout: 'AdminNavbar'
         },
       },
       {

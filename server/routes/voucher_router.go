@@ -157,11 +157,6 @@ func (r *Router) UpdateVoucherHandler(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	if !voucher.Approved && !input.Approved {
-		writeErrResponse(req, w, http.StatusBadRequest, "Voucher is already rejected")
-		return
-	}
-
 	updatedVoucher, err := r.db.UpdateVoucher(id, input.Approved)
 	if err != nil {
 		log.Error().Err(err).Send()

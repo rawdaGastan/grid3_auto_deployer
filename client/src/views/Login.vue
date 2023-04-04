@@ -53,13 +53,14 @@
 import { ref } from "vue";
 import axios from "axios";
 import Toast from "@/components/Toast.vue";
-import router from "@/router";
+import { useRouter } from "vue-router";
 
 export default {
     components: {
         Toast,
     },
     setup() {
+        const router = useRouter();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const verify = ref(false);
         const toast = ref(null);

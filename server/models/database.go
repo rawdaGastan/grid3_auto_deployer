@@ -64,7 +64,7 @@ func (d *DB) ListAllUsers() ([]UserUsedQuota, error) {
 	query := d.db.Table("users").
 		Select("*, vouchers.vms - quota.vms as used_vms, vouchers.public_ips - quota.public_ips as used_public_ips").
 		Joins("left join quota on quota.user_id = users.id").
-		Joins("left join vouchers on vouchers.user_id = users.id").
+		Joins("left join vouchers on vouchers.user_id = users.id and vouchers.used = true and vouchers.approved = true").
 		Where("verified = true").
 		Scan(&res)
 	return res, query.Error

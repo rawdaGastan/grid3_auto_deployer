@@ -94,7 +94,7 @@ func NewServer(file string) (server *Server, err error) {
 	listVouchers := r.HandleFunc(version+"/voucher", router.ListVouchersHandler).Methods("GET", "OPTIONS")
 	updateVoucherRequest := r.HandleFunc(version+"/voucher/{id}", router.UpdateVoucherHandler).Methods("PUT", "OPTIONS")
 	approveAllVouchers := r.HandleFunc(version+"/voucher", router.ApproveAllVouchers).Methods("PUT", "OPTIONS")
-  updateMaintenance := r.HandleFunc(version+"/maintenance", router.UpdateMaintenanceHandler).Methods("PUT", "OPTIONS")
+	updateMaintenance := r.HandleFunc(version+"/maintenance", router.UpdateMaintenanceHandler).Methods("PUT", "OPTIONS")
 
 	prometheus.MustRegister(middlewares.Requests, middlewares.UserCreations, middlewares.VoucherActivated, middlewares.VoucherApplied, middlewares.Deployments, middlewares.Deletions)
 

@@ -74,6 +74,19 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// unique names
+	available, err := r.db.AvailableVMName(input.Name)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	if !available {
+		writeErrResponse(req, w, http.StatusBadRequest, "VM name is not available, please choose a different name")
+		return
+	}
+
 	vm, contractID, networkContractID, diskSize, err := r.deployVM(req.Context(), input, user.SSHKey)
 	if err != nil {
 		log.Error().Err(err).Send()

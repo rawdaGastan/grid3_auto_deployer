@@ -86,21 +86,24 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc(version+"/k8s/{id}", router.K8sGetHandler).Methods("GET", "OPTIONS")
 	r.HandleFunc(version+"/k8s/{id}", router.K8sDeleteHandler).Methods("DELETE", "OPTIONS")
 
+	maintenance := r.HandleFunc(version+"/maintenance", router.GetMaintenanceHandler).Methods("GET", "OPTIONS")
+
 	// ADMIN ACCESS
 	listUsers := r.HandleFunc(version+"/user/all", router.GetAllUsersHandler).Methods("GET", "OPTIONS")
 	generateVoucher := r.HandleFunc(version+"/voucher", router.GenerateVoucherHandler).Methods("POST", "OPTIONS")
 	listVouchers := r.HandleFunc(version+"/voucher", router.ListVouchersHandler).Methods("GET", "OPTIONS")
 	updateVoucherRequest := r.HandleFunc(version+"/voucher/{id}", router.UpdateVoucherHandler).Methods("PUT", "OPTIONS")
-	ApproveAllVouchers := r.HandleFunc(version+"/voucher", router.ApproveAllVouchers).Methods("PUT", "OPTIONS")
+	approveAllVouchers := r.HandleFunc(version+"/voucher", router.ApproveAllVouchers).Methods("PUT", "OPTIONS")
+  updateMaintenance := r.HandleFunc(version+"/maintenance", router.UpdateMaintenanceHandler).Methods("PUT", "OPTIONS")
 
 	prometheus.MustRegister(middlewares.Requests, middlewares.UserCreations, middlewares.VoucherActivated, middlewares.VoucherApplied, middlewares.Deployments, middlewares.Deletions)
 
 	// middlewares
 	r.Use(middlewares.LoggingMW)
 	r.Use(middlewares.EnableCors)
-	excludedRoutes := []*mux.Route{signUp, signUpVerify, signIn, refreshToken, forgetPass, forgetPassVerify}
+	excludedRoutes := []*mux.Route{maintenance, signUp, signUpVerify, signIn, refreshToken, forgetPass, forgetPassVerify}
 	r.Use(middlewares.Authorization(excludedRoutes, configuration.Token.Secret, configuration.Token.Timeout))
-	includedRoutes := []*mux.Route{listUsers, generateVoucher, listVouchers, updateVoucherRequest, ApproveAllVouchers}
+	includedRoutes := []*mux.Route{listUsers, generateVoucher, listVouchers, updateVoucherRequest, approveAllVouchers, updateMaintenance}
 	r.Use(middlewares.AdminAccess(includedRoutes, db))
 
 	http.Handle("/metrics", promhttp.Handler())

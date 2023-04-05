@@ -2,7 +2,7 @@
   <v-container>
     <Toast ref="toast" />
     <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
-      Verfication Code
+      Verification Code
     </h5>
     <v-row justify="center">
       <v-col cols="12" sm="6">
@@ -15,7 +15,8 @@
                   : 'transition: transform .5s;'
               "
               transition="transform .2s"
-              src="@/assets/otp.png"
+              src="@/assets/verfication_code.png"
+              class="w-75 mx-auto"
               :class="{ 'on-hover': isHovering }"
               v-bind="props"
             />
@@ -24,7 +25,7 @@
           <div>
             <v-otp-input
               ref="otpInput"
-              class="justify-center"
+              class="justify-center my-5"
               input-classes="otp-input"
               separator="-"
               :num-inputs="4"

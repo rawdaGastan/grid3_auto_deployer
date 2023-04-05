@@ -10,11 +10,14 @@
       <v-col cols="12" sm="6">
         <v-form v-model="verify" class="my-5" @submit.prevent="update">
           <v-text-field
+            class="my-2"
             label="Name"
             v-model="name"
             bg-color="accent"
             variant="outlined"
             density="compact"
+            :rules="nameValidation"
+
           ></v-text-field>
           <v-row>
             <v-col cols="12" sm="6">
@@ -215,7 +218,8 @@ export default {
     Toast,
   },
   setup() {
-    const emitter = inject("emitter");
+    const emitter = inject('emitter');
+    const verify= ref(null)
     const email = ref(null);
     const name = ref(null);
     const college = ref("");
@@ -232,6 +236,14 @@ export default {
     const vms = ref(0);
     const ips = ref(0);
     const reason = ref(null);
+    const nameRegex = /^(\w+\s){0,3}\w*$/;
+    const nameValidation = ref([
+      (value) => {
+        if (value.match(nameRegex)) return true;
+        return "Must be at most four names";
+      },
+    ]);
+
     const rules = ref([
       (value) => {
         if (value) return true;
@@ -291,6 +303,8 @@ export default {
     };
 
     const update = () => {
+      if (!verify.value) return;
+
       userService
         .updateUser(name.value, sshKey.value)
         .then((response) => {
@@ -327,11 +341,6 @@ export default {
       return val.charAt(0);
     });
 
-    const verify = computed(() => {
-      if (name.value && sshKey.value)
-        return name.value.length > 0 && sshKey.value.length > 0;
-      return true;
-    });
 
     const emitQuota = () => {
       emitter.emit("userUpdateQuota", true);
@@ -361,6 +370,7 @@ export default {
       vms,
       ips,
       reason,
+      nameValidation,
       getUser,
       activateVoucher,
       update,

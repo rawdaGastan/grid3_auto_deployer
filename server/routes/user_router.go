@@ -536,36 +536,6 @@ func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
 	writeMsgResponse(req, w, "User exists", map[string]interface{}{"user": user})
 }
 
-// GetAllUsersHandler returns all users
-func (r *Router) GetAllUsersHandler(w http.ResponseWriter, req *http.Request) {
-	/*userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
-	user, err := r.db.GetUserByID(userID)
-	if err != nil {
-		writeNotFoundResponse(w, err)
-		return
-	}
-
-	if !user.Admin {
-		writeErrResponse(req, w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
-		return
-	}
-	*/
-
-	users, err := r.db.ListAllUsers()
-	if err == gorm.ErrRecordNotFound || len(users) == 0 {
-		writeMsgResponse(req, w, "Users are not found", users)
-		return
-	}
-
-	if err != nil {
-		log.Error().Err(err).Send()
-		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
-		return
-	}
-
-	writeMsgResponse(req, w, "Users are found", users)
-}
-
 // ApplyForVoucherHandler makes user apply for voucher that would be accepted by admin
 func (r *Router) ApplyForVoucherHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)

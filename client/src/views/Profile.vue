@@ -90,7 +90,12 @@
             left
           >
             <template v-slot:activator="{ props }">
-              <v-icon v-bind="props" color="primary" dark class="d-block ml-auto">
+              <v-icon
+                v-bind="props"
+                color="primary"
+                dark
+                class="d-block ml-auto"
+              >
                 mdi-information
               </v-icon>
             </template>
@@ -210,7 +215,7 @@ export default {
     Toast,
   },
   setup() {
-    const emitter = inject('emitter');
+    const emitter = inject("emitter");
     const email = ref(null);
     const name = ref(null);
     const college = ref("");
@@ -311,6 +316,9 @@ export default {
         })
         .finally(() => {
           actLoading.value = false;
+          vms.value = 0;
+          ips.value = 0;
+          reason.value = null;
         });
     };
 
@@ -326,8 +334,8 @@ export default {
     });
 
     const emitQuota = () => {
-      emitter.emit('userUpdateQuota', true);
-    }
+      emitter.emit("userUpdateQuota", true);
+    };
 
     onMounted(() => {
       getUser();

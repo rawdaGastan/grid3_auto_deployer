@@ -174,7 +174,6 @@ func TestSignInHandler(t *testing.T) {
 		request := httptest.NewRequest("POST", version+"/user/signin", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
 		router.SignInHandler(response, request)
-		fmt.Printf("response: %v\n", response)
 		assert.Equal(t, response.Code, http.StatusOK)
 
 	})

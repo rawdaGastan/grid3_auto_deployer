@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <default-bar />
-    <Quota class="quota" v-if="!isAdmin" />
+    <Quota class="quota" v-if="!isAdmin && isAuthenticated" />
     <default-view />
   </v-app>
 </template>
@@ -12,6 +12,8 @@ import DefaultView from "./View.vue";
 import Quota from "@/components/Quota.vue";
 import { useRoute } from "vue-router";
 import { computed } from "vue";
+import { ref } from "vue";
+
 
 export default {
   components: {
@@ -22,6 +24,11 @@ export default {
 
   setup() {
     const route = useRoute();
+    const isAuthenticated=ref(false);
+
+    if(localStorage.getItem("token")!==null){
+      isAuthenticated.value=true;
+    }
 
     const isAdmin = computed(() => {
       if (route.path !== "/admin") {
@@ -30,7 +37,7 @@ export default {
       return true;
     });
 
-    return { isAdmin };
+    return { isAdmin ,isAuthenticated};
   },
 };
 </script>

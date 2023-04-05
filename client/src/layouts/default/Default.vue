@@ -1,7 +1,7 @@
 <template>
   <v-app>
-    <default-bar v-if="!maintenance || !noNavBar"/>
-    <Quota class="quota" v-if="!isAdmin && !maintenance && !noNavBar" />
+    <default-bar v-if="!maintenance"/>
+    <Quota class="quota" v-if="!isAdmin && !maintenance && !noQuota" />
     <default-view />
   </v-app>
 </template>
@@ -24,33 +24,29 @@ export default {
   setup() {
     const route = useRoute();
     const router = useRouter();
-    const maintenance = ref("");
-    const noNavBar = ref(false);
-    const excludedRoutes = ref(["/login", "/signup", "/forgetPassword", "/otp"])
+    const maintenance = ref(false);
+    const noQuota = ref(false);
+    const excludedRoutes = ref(["/login", "/signup", "/forgetPassword", "/otp", "/newPassword"])
 
     userService.maintenance();
-    maintenance.value = localStorage.getItem("maintenance");
+    maintenance.value = localStorage.getItem("maintenance") == "true";
 
     const isAdmin = computed(() => {
-      if (
-        route.path !== "/admin" &&
-        route.path !== "/forgetPassword" &&
-        route.path !== "/newPassword"
-      ) {
+      if (route.path !== "/admin") {
         return false;
       }
       return true;
     });
 
     if (excludedRoutes.value.includes(route.path)) {
-      noNavBar.value = true;
+      noQuota.value = true;
     }
 
-    if (maintenance.value == "true") {
+    if (maintenance.value) {
       router.push({name: "Maintenance"})
     }
 
-    return { isAdmin, maintenance, noNavBar };
+    return { isAdmin, maintenance, noQuota };
   },
 };
 </script>

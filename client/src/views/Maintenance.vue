@@ -1,7 +1,7 @@
 <template>
-  <v-container v-if="maintenance">
+  <v-container>
     <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
-      Sorry, we are under maintenance now
+      Sorry, we are under maintenance now!
     </h5>
     <v-row justify="center">
       <v-col cols="12" sm="6">
@@ -19,9 +19,15 @@
 
 <script>
 import { ref } from "vue";
+import { useRouter } from "vue-router";
+
 export default {
   setup() {
+    const router = useRouter();
     const maintenance = ref(localStorage.getItem("maintenance") == "true");
+    if (!maintenance.value) {
+      router.push({ name: "Home" })
+    }
     return { maintenance };
   },
 };

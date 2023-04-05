@@ -6,6 +6,7 @@ import VM from "@/views/VM.vue";
 import K8s from "@/views/K8s.vue";
 import Profile from "@/views/Profile.vue";
 import Admin from "@/views/Admin.vue";
+import NewPassword from "@/views/Newpassword.vue";
 import userService from "@/services/userService.js";
 
 const routes = [
@@ -51,6 +52,7 @@ const routes = [
     component: () => import("@/views/Newpassword.vue"),
     meta: {
       requiredAuth: false,
+      layout: "Default",
     },
   },
   {
@@ -59,6 +61,7 @@ const routes = [
     component: () => import("@/views/Maintenance.vue"),
     meta: {
       requiredAuth: false,
+      layout: "Default",
     },
   },
   {
@@ -85,11 +88,19 @@ const routes = [
         },
       },
       {
+        path: "/changePassword",
+        name: "ChangePassword",
+        component: NewPassword,
+        meta: {
+          requiredAuth: true,
+        },
+      },
+      {
         path: "/about",
         name: "About",
         component: About,
         meta: {
-          requiredAuth: false,
+          requiredAuth: true,
         },
       },
       {
@@ -114,7 +125,6 @@ const routes = [
         component: Admin,
         meta: {
           requiredAuth: true,
-          layout: "AdminNavbar",
         },
       },
       {

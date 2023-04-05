@@ -87,18 +87,21 @@ func NewServer(file string) (server *Server, err error) {
 	r.HandleFunc(version+"/k8s/{id}", router.K8sDeleteHandler).Methods("DELETE", "OPTIONS")
 
 	// ADMIN ACCESS
-	r.HandleFunc(version+"/user/all", router.GetAllUsersHandler).Methods("GET", "OPTIONS")
-	r.HandleFunc(version+"/voucher", router.GenerateVoucherHandler).Methods("POST", "OPTIONS")
-	r.HandleFunc(version+"/voucher", router.ListVouchersHandler).Methods("GET", "OPTIONS")
-	r.HandleFunc(version+"/voucher/{id}", router.UpdateVoucherHandler).Methods("PUT", "OPTIONS")
-	r.HandleFunc(version+"/voucher", router.ApproveAllVouchers).Methods("PUT", "OPTIONS")
+	listUsers := r.HandleFunc(version+"/user/all", router.GetAllUsersHandler).Methods("GET", "OPTIONS")
+	generateVoucher := r.HandleFunc(version+"/voucher", router.GenerateVoucherHandler).Methods("POST", "OPTIONS")
+	listVouchers := r.HandleFunc(version+"/voucher", router.ListVouchersHandler).Methods("GET", "OPTIONS")
+	updateVoucherRequest := r.HandleFunc(version+"/voucher/{id}", router.UpdateVoucherHandler).Methods("PUT", "OPTIONS")
+	ApproveAllVouchers := r.HandleFunc(version+"/voucher", router.ApproveAllVouchers).Methods("PUT", "OPTIONS")
 
 	prometheus.MustRegister(middlewares.Requests, middlewares.UserCreations, middlewares.VoucherActivated, middlewares.VoucherApplied, middlewares.Deployments, middlewares.Deletions)
 
+	// middlewares
 	r.Use(middlewares.LoggingMW)
 	r.Use(middlewares.EnableCors)
 	excludedRoutes := []*mux.Route{signUp, signUpVerify, signIn, refreshToken, forgetPass, forgetPassVerify}
 	r.Use(middlewares.Authorization(excludedRoutes, configuration.Token.Secret, configuration.Token.Timeout))
+	includedRoutes := []*mux.Route{listUsers, generateVoucher, listVouchers, updateVoucherRequest, ApproveAllVouchers}
+	r.Use(middlewares.AdminAccess(includedRoutes, db))
 
 	http.Handle("/metrics", promhttp.Handler())
 	http.Handle("/", r)

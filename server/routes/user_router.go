@@ -133,6 +133,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		TeamSize:       signUp.TeamSize,
 		ProjectDesc:    signUp.ProjectDesc,
 		College:        signUp.College,
+		Admin:          internal.Contains(r.config.Admins, signUp.Email),
 	}
 
 	// update code if user is not verified but exists
@@ -186,7 +187,7 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 
 	user, err := r.db.GetUserByEmail(data.Email)
 	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(req, w, http.StatusNotFound, "Account not found")
+		writeErrResponse(req, w, http.StatusNotFound, "User is not found")
 		return
 	}
 	if err != nil {
@@ -221,7 +222,6 @@ func (r *Router) VerifySignUpCodeHandler(w http.ResponseWriter, req *http.Reques
 
 // SignInHandler allows user to sign in to the system
 func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
-
 	var input SignInInput
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
@@ -232,7 +232,7 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 
 	user, err := r.db.GetUserByEmail(input.Email)
 	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(req, w, http.StatusNotFound, err.Error())
+		writeErrResponse(req, w, http.StatusNotFound, "User is not found")
 		return
 	}
 	if err != nil {
@@ -364,7 +364,7 @@ func (r *Router) VerifyForgetPasswordCodeHandler(w http.ResponseWriter, req *htt
 
 	user, err := r.db.GetUserByEmail(data.Email)
 	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(req, w, http.StatusNotFound, "User not found")
+		writeErrResponse(req, w, http.StatusNotFound, "User is not found")
 		return
 	}
 	if err != nil {
@@ -508,7 +508,7 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		},
 	)
 	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(req, w, http.StatusNotFound, "User not found")
+		writeErrResponse(req, w, http.StatusNotFound, "User is not found")
 		return
 	}
 	if err != nil {
@@ -525,7 +525,7 @@ func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	user, err := r.db.GetUserByID(userID)
 	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(req, w, http.StatusNotFound, "User not found")
+		writeErrResponse(req, w, http.StatusNotFound, "User is not found")
 		return
 	}
 	if err != nil {
@@ -538,19 +538,6 @@ func (r *Router) GetUserHandler(w http.ResponseWriter, req *http.Request) {
 
 // GetAllUsersHandler returns all users
 func (r *Router) GetAllUsersHandler(w http.ResponseWriter, req *http.Request) {
-	/*userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
-	user, err := r.db.GetUserByID(userID)
-	if err != nil {
-		writeNotFoundResponse(w, err)
-		return
-	}
-
-	if !user.Admin {
-		writeErrResponse(req, w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
-		return
-	}
-	*/
-
 	users, err := r.db.ListAllUsers()
 	if err == gorm.ErrRecordNotFound || len(users) == 0 {
 		writeMsgResponse(req, w, "Users are not found", users)
@@ -571,7 +558,7 @@ func (r *Router) ApplyForVoucherHandler(w http.ResponseWriter, req *http.Request
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	userVoucher, err := r.db.GetNotUsedVoucherByUserID(userID)
 	if err != nil && err != gorm.ErrRecordNotFound {
-		writeErrResponse(req, w, http.StatusNotFound, "Voucher not found")
+		writeErrResponse(req, w, http.StatusNotFound, "Voucher is not found")
 		return
 	}
 	if userVoucher.Voucher != "" {

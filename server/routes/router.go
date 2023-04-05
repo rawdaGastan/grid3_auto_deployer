@@ -15,7 +15,7 @@ import (
 	"gopkg.in/validator.v2"
 )
 
-const internalServerErrorMsg = "Something Went Wrong"
+const internalServerErrorMsg = "Something went wrong"
 
 // Router struct holds db model and configurations
 type Router struct {

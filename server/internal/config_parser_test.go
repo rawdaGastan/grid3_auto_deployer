@@ -52,7 +52,8 @@ func TestParseConf(t *testing.T) {
 	"database": {
         "file": "testing.db"
     },
-	"version": "v1"
+	"version": "v1",
+	"salt": "salt"
 }
 	`
 	dir := t.TempDir()

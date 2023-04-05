@@ -17,6 +17,7 @@ type Configuration struct {
 	Account    GridAccount `json:"account"`
 	Version    string      `json:"version"`
 	Salt       string      `json:"salt"`
+	Admins     []string    `json:"admins"`
 }
 
 // Server struct to hold server's information
@@ -94,6 +95,10 @@ func ParseConf(conf []byte) (Configuration, error) {
 
 	if myConf.Version == "" {
 		return myConf, errors.New("version is required")
+	}
+
+	if myConf.Salt == "" {
+		return myConf, errors.New("salt is required")
 	}
 
 	return myConf, nil

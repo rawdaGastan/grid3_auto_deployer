@@ -44,7 +44,8 @@ func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Confi
 	"database": {
         "file": "testing.db"
     },
-	"version": "v1"
+	"version": "v1",
+	"salt": "salt"
 }
 	`
 	dir := t.TempDir()
@@ -173,6 +174,7 @@ func TestSignInHandler(t *testing.T) {
 		request := httptest.NewRequest("POST", version+"/user/signin", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
 		router.SignInHandler(response, request)
+		fmt.Printf("response: %v\n", response)
 		assert.Equal(t, response.Code, http.StatusOK)
 
 	})

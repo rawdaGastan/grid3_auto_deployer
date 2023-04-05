@@ -141,8 +141,8 @@ export default {
     const form = ref(null);
     const nameValidation = ref([
       (value) => {
-        if (value.length > 3 && value.length < 20) return true;
-        return "Name needs to be at least 4 characters.";
+        if (value.length >= 3 && value.length <= 20) return true;
+        return "Name needs to be more than 2 characters and less than 20.";
       },
     ]);
     const getVMS = () => {

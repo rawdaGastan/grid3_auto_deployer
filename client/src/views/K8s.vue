@@ -120,6 +120,9 @@
                 {{ head }}
               </th>
               <th class="text-left text-white">
+                Public IP
+              </th>
+              <th class="text-left text-white">
                 Actions
               </th>
             </tr>
@@ -131,7 +134,9 @@
               <td>{{ item.master.sru }}GB</td>
               <td>{{ item.master.mru }}MB</td>
               <td>{{ item.master.cru }}</td>
-              <td>{{ item.master.ip }}</td>
+              <td>{{ item.master.ygg_ip }}</td>
+              <td v-if="item.master.public_ip">{{ item.master.public_ip }}</td>
+              <td v-else>-</td>
               <td>
                 <v-dialog
                   transition="dialog-top-transition"
@@ -165,9 +170,8 @@
                           <td>{{ item.master.mru }}MB</td>
                           <td>{{ item.master.cru }}</td>
                           <td>{{ item.master.ygg_ip }}</td>
-                          <td v-if="item.master.public_ip">
-                            {{ item.master.public_ip }}
-                          </td>
+
+
                         </tr>
                       </tbody>
                     </v-table>

@@ -10,43 +10,18 @@
     <v-row justify="center">
       <v-col cols="12" sm="6">
         <v-form v-model="verify" ref="form" @submit.prevent="deployVm">
-          <v-text-field
-            label="Name"
-            :rules="rules"
-            class="my-2"
-            v-model="name"
-            bg-color="accent"
-            variant="outlined"
-            density="compact"
-          ></v-text-field>
-          <BaseSelect
-            :modelValue="selectedResource"
-            :items="resources"
-            :reduce="(sel) => sel.value"
-            placeholder="Resources"
-            :rules="rules"
-            @update:modelValue="selectedResource = $event"
-          />
+          <v-text-field label="Name" :rules="rules" class="my-2" v-model="name" bg-color="accent" variant="outlined"
+            density="compact"></v-text-field>
+          <BaseSelect :modelValue="selectedResource" :items="resources" :reduce="(sel) => sel.value"
+            placeholder="Resources" :rules="rules" @update:modelValue="selectedResource = $event" />
           <v-checkbox v-model="checked" label="Public IP"></v-checkbox>
-          <BaseButton
-            type="submit"
-            block
-            class="bg-primary"
-            :loading="loading"
-            :disabled="!verify"
-            text="Deploy"
-          />
+          <BaseButton type="submit" block class="bg-primary" :loading="loading" :disabled="!verify" text="Deploy" />
         </v-form>
       </v-col>
     </v-row>
     <v-row v-if="results.length > 0">
       <v-col class="d-flex justify-end">
-        <BaseButton
-          color="red-accent-2"
-          :loading="deLoading"
-          @click="deleteVms"
-          text="Delete All"
-        />
+        <BaseButton color="red-accent-2" :loading="deLoading" @click="deleteVms" text="Delete All" />
       </v-col>
     </v-row>
     <v-row v-if="results.length > 0">
@@ -54,12 +29,11 @@
         <v-table>
           <thead class="bg-primary">
             <tr>
-              <th
-                class="text-left text-white"
-                v-for="head in headers"
-                :key="head"
-              >
+              <th class="text-left text-white" v-for="head in headers" :key="head">
                 {{ head }}
+              </th>
+              <th class="text-left text-white">
+                Public IP
               </th>
               <th class="text-left text-white">
                 Actions
@@ -75,13 +49,12 @@
               <td>{{ item.cru }}</td>
               <td>{{ item.ygg_ip }}</td>
               <td v-if="item.public_ip">{{ item.public_ip }}</td>
+              <td v-else>-</td>
+
 
               <td>
-                <font-awesome-icon
-                  class="text-red-accent-2"
-                  @click="deleteVm(item.id, item.name)"
-                  icon="fa-solid fa-trash"
-                />
+                <font-awesome-icon class="text-red-accent-2" @click="deleteVm(item.id, item.name)"
+                  icon="fa-solid fa-trash" />
               </td>
             </tr>
           </tbody>
@@ -133,6 +106,7 @@ export default {
       { title: "Large VM (4 CPU, 8MB, 15GB)", value: "large" },
     ]);
     const headers = ref(["ID", "Name", "Disk (SSD)", "RAM (GB)", "CPU", "IP"]);
+
     const toast = ref(null);
     const loading = ref(false);
     const results = ref([]);
@@ -140,12 +114,14 @@ export default {
     const message = ref(null);
     const form = ref(null);
 
+
     const getVMS = () => {
       userService
         .getVms()
         .then((response) => {
           const { data } = response.data;
           results.value = data;
+   
         })
         .catch((response) => {
           const { err } = response.response.data;

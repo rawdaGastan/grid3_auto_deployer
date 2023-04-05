@@ -219,7 +219,7 @@ export default {
   },
   setup() {
     const emitter = inject('emitter');
-    const verify= ref(null)
+    const verify = ref(null);
     const email = ref(null);
     const name = ref(null);
     const college = ref("");

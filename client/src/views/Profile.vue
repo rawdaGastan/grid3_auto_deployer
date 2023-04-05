@@ -120,7 +120,7 @@
               />
             </v-col>
             <v-col>
-              <v-dialog transition="dialog-top-transition" max-width="500">
+              <v-dialog persistent transition="dialog-top-transition" max-width="500" >
                 <template v-slot:activator="{ props }">
                   <BaseButton
                     v-bind="props"
@@ -128,7 +128,7 @@
                     text="Request New Voucher"
                   />
                 </template>
-                <template v-slot:default="{ isActive }">
+                <template  v-slot:default="{ isActive }">
                   <v-card width="100%" size="100%" class="mx-auto pa-5">
                     <v-form
                       v-model="newVoucherVerify"

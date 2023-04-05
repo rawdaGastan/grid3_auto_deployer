@@ -93,7 +93,12 @@
             left
           >
             <template v-slot:activator="{ props }">
-              <v-icon v-bind="props" color="primary" dark class="d-block ml-auto">
+              <v-icon
+                v-bind="props"
+                color="primary"
+                dark
+                class="d-block ml-auto"
+              >
                 mdi-information
               </v-icon>
             </template>
@@ -118,7 +123,7 @@
               />
             </v-col>
             <v-col>
-              <v-dialog transition="dialog-top-transition" max-width="500">
+              <v-dialog persistent transition="dialog-top-transition" max-width="500" >
                 <template v-slot:activator="{ props }">
                   <BaseButton
                     v-bind="props"
@@ -126,7 +131,7 @@
                     text="Request New Voucher"
                   />
                 </template>
-                <template v-slot:default="{ isActive }">
+                <template  v-slot:default="{ isActive }">
                   <v-card width="100%" size="100%" class="mx-auto pa-5">
                     <v-form
                       v-model="newVoucherVerify"
@@ -176,7 +181,7 @@
                       <v-card-actions class="justify-center">
                         <BaseButton
                           class="bg-primary mr-5"
-                          @click="isActive.value = false"
+                          @click="{ isActive.value = false; vms = 0; ips = 0; reason = null; }"
                           text="Cancel"
                         />
                         <BaseButton
@@ -214,7 +219,7 @@ export default {
   },
   setup() {
     const emitter = inject('emitter');
-    const verify= ref(null)
+    const verify = ref(null);
     const email = ref(null);
     const name = ref(null);
     const college = ref("");
@@ -325,6 +330,9 @@ export default {
         })
         .finally(() => {
           actLoading.value = false;
+          vms.value = 0;
+          ips.value = 0;
+          reason.value = null;
         });
     };
 
@@ -335,8 +343,8 @@ export default {
 
 
     const emitQuota = () => {
-      emitter.emit('userUpdateQuota', true);
-    }
+      emitter.emit("userUpdateQuota", true);
+    };
 
     onMounted(() => {
       getUser();

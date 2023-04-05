@@ -51,7 +51,6 @@ const routes = [
     component: () => import("@/views/Newpassword.vue"),
     meta: {
       requiredAuth: false,
-      layout: "Default",
     },
   },
   {

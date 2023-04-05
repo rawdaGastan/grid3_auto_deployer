@@ -32,7 +32,11 @@ export default {
     maintenance.value = localStorage.getItem("maintenance");
 
     const isAdmin = computed(() => {
-      if (route.path !== "/admin") {
+      if (
+        route.path !== "/admin" &&
+        route.path !== "/forgetPassword" &&
+        route.path !== "/newPassword"
+      ) {
         return false;
       }
       return true;

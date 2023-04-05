@@ -94,11 +94,11 @@ export default {
       },
       {
         path: "vm",
-        title: "VM",
+        title: "Virtual Machines",
       },
       {
         path: "k8s",
-        title: "K8s",
+        title: "Kubernetes",
       },
       {
         path: "admin",

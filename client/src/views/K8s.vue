@@ -11,7 +11,7 @@
         <v-form v-model="verify" ref="form" @submit.prevent="deployK8s">
           <v-text-field
             label="Name"
-            :rules="rules"
+            :rules="nameValidation"
             class="my-2"
             v-model="k8Name"
             bg-color="accent"
@@ -58,12 +58,14 @@
                     <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
                       Worker
                     </h5>
-                    <BaseInput
-                      placeholder="Name"
-                      :modelValue="workerName"
-                      :rules="rules"
-                      @update:modelValue="workerName = $event"
-                    />
+                    <v-text-field
+                      label="Name"
+                      bg-color="accent"
+                      variant="outlined"
+                      v-model="workerName"
+                      density="compact"
+                      :rules="nameValidation"
+                    ></v-text-field>
                     <BaseSelect
                       placeholder="Resources"
                       :modelValue="workerSelResources"
@@ -118,6 +120,9 @@
                 {{ head }}
               </th>
               <th class="text-left text-white">
+                Public IP
+              </th>
+              <th class="text-left text-white">
                 Actions
               </th>
             </tr>
@@ -129,7 +134,9 @@
               <td>{{ item.master.sru }}GB</td>
               <td>{{ item.master.mru }}MB</td>
               <td>{{ item.master.cru }}</td>
-              <td>{{ item.master.ip }}</td>
+              <td>{{ item.master.ygg_ip }}</td>
+              <td v-if="item.master.public_ip">{{ item.master.public_ip }}</td>
+              <td v-else>-</td>
               <td>
                 <v-dialog
                   transition="dialog-top-transition"
@@ -163,9 +170,8 @@
                           <td>{{ item.master.mru }}MB</td>
                           <td>{{ item.master.cru }}</td>
                           <td>{{ item.master.ygg_ip }}</td>
-                          <td v-if="item.master.public_ip">
-                            {{ item.master.public_ip }}
-                          </td>
+
+
                         </tr>
                       </tbody>
                     </v-table>
@@ -208,13 +214,19 @@ export default {
     Toast,
   },
   setup() {
-    const emitter = inject('emitter');
+    const emitter = inject("emitter");
 
     const verify = ref(false);
     const checked = ref(false);
 
     const workerVerify = ref(false);
     const k8Name = ref(null);
+    const nameValidation = ref([
+      (value) => {
+        if (value.length >= 3 && value.length <= 20) return true;
+        return "Name needs to be more than 2 characters and less than 20";
+      },
+    ]);
     const rules = ref([
       (value) => {
         if (value) return true;
@@ -263,7 +275,13 @@ export default {
         name: workerName.value,
         resources: workerSelResources.value,
       });
-      wForm.value.reset();
+    };
+
+    const resetInputs = () => {
+      k8Name.value = null;
+      selectedResource.value = null;
+      worker.value = null;
+      checked.value = false;
     };
 
     const deployK8s = () => {
@@ -278,21 +296,21 @@ export default {
         )
         .then((response) => {
           toast.value.toast(response.data.msg, "#388E3C");
-          form.value.reset();
           emitQuota();
           getK8s();
-          loading.value = false;
+          form.value.reset();
         })
         .catch((response) => {
-          form.value.reset();
           const { err } = response.response.data;
           toast.value.toast(err, "#FF5252");
+          form.value.reset();
+        })
+        .finally(() => {
+          resetInputs();
           loading.value = false;
         });
     };
-    const reset = () => {
-      form.value.reset();
-    };
+
     const deleteAllK8s = () => {
       confirm.value
         .open("Delete All K8s", "Are you sure?", { color: "red-accent-2" })
@@ -337,8 +355,8 @@ export default {
     };
 
     const emitQuota = () => {
-      emitter.emit('userUpdateQuota', true);
-    }
+      emitter.emit("userUpdateQuota", true);
+    };
 
     onMounted(() => {
       getK8s();
@@ -364,7 +382,8 @@ export default {
       form,
       wForm,
       toast,
-      reset,
+      nameValidation,
+      resetInputs,
       deployK8s,
       deployWorker,
       deleteAllK8s,

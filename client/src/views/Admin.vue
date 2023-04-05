@@ -34,11 +34,7 @@
                     <div>
                       <p>{{ item.name }}</p>
                       <p>
-                        <a
-                          href="email"
-                          class="secondary text-decoration-none"
-                          >{{ item.email }}</a
-                        >
+                        {{ item.email }}
                       </p>
                     </div>
                   </td>
@@ -130,9 +126,7 @@
                     <td>{{ ++index }}</td>
                     <td>{{ item.name }}</td>
                     <td>
-                      <a href="email" class="secondary text-decoration-none">{{
-                        item.email
-                      }}</a>
+                      {{ item.email }}
                     </td>
                     <td>
                       <span class="text-red">{{ item.used_vms }}</span> /

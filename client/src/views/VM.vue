@@ -10,10 +10,23 @@
     <v-row justify="center">
       <v-col cols="12" sm="6">
         <v-form v-model="verify" ref="form" @submit.prevent="deployVm">
-          <v-text-field label="Name" :rules="rules" class="my-2" v-model="name" bg-color="accent" variant="outlined"
-            density="compact"></v-text-field>
-          <BaseSelect :modelValue="selectedResource" :items="resources" :reduce="(sel) => sel.value"
-            placeholder="Resources" :rules="rules" @update:modelValue="selectedResource = $event" />
+          <v-text-field
+            label="Name"
+            :rules="nameValidation"
+            class="my-2"
+            v-model="name"
+            bg-color="accent"
+            variant="outlined"
+            density="compact"
+          ></v-text-field>
+          <BaseSelect
+            :modelValue="selectedResource"
+            :items="resources"
+            :reduce="(sel) => sel.value"
+            placeholder="Resources"
+            :rules="rules"
+            @update:modelValue="selectedResource = $event"
+          />
           <v-checkbox v-model="checked" label="Public IP"></v-checkbox>
           <BaseButton type="submit" block class="bg-primary" :loading="loading" :disabled="!verify" text="Deploy" />
         </v-form>
@@ -113,8 +126,12 @@ export default {
     const deLoading = ref(false);
     const message = ref(null);
     const form = ref(null);
-
-
+    const nameValidation = ref([
+      (value) => {
+        if (value.length >= 3 && value.length <= 20) return true;
+        return "Name needs to be more than 2 characters and less than 20.";
+      },
+    ]);
     const getVMS = () => {
       userService
         .getVms()
@@ -217,6 +234,7 @@ export default {
       message,
       form,
       checked,
+      nameValidation,
       reset,
       getVMS,
       deployVm,

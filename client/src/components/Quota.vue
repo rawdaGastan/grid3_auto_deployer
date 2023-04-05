@@ -8,6 +8,8 @@
             <br />large: 3 vms</v-tooltip
           >
           <div class="my-1">
+            <div class="my-1">Available quota:</div>
+            
             <font-awesome-icon icon="fa-cube" />
             <span class="pa-2"> VMs: {{ vm }}</span>
           </div>

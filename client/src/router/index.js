@@ -15,6 +15,7 @@ const routes = [
     component: () => import("@/views/Login.vue"),
     meta: {
       requiredAuth: false,
+      layout: "Default",
     },
   },
   {
@@ -23,6 +24,7 @@ const routes = [
     component: () => import("@/views/Signup.vue"),
     meta: {
       requiredAuth: false,
+      layout: "Default",
     },
   },
   {
@@ -31,6 +33,7 @@ const routes = [
     component: () => import("@/views/Forgetpassword.vue"),
     meta: {
       requiredAuth: false,
+      layout: "Default",
     },
   },
   {
@@ -39,6 +42,7 @@ const routes = [
     component: () => import("@/views/Otp.vue"),
     meta: {
       requiredAuth: false,
+      layout: "Default",
     },
   },
   {

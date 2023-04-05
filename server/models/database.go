@@ -38,7 +38,10 @@ func (d *DB) Migrate() error {
 	}
 
 	// add maintenance
-	return d.db.Create(&Maintenance{false, time.Now()}).Error
+	if err := d.db.Delete(&Maintenance{}, "1 = 1").Error; err != nil {
+		return err
+	}
+	return d.db.Create(&Maintenance{}).Error
 }
 
 // CreateUser creates new user

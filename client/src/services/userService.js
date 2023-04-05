@@ -1,31 +1,17 @@
 import axios from "axios";
-import { useRoute } from "vue-router";
 
+const baseClient = () =>
+  axios.create({
+    baseURL: window.configs.vite_app_endpoint,
+  });
 
-const authClient = () => axios.create({
-  baseURL: window.configs.vite_app_endpoint,
-  headers: {
-    Authorization: "Bearer " + localStorage.getItem("token"),
-  },
-});
-
-if (localStorage.getItem("token")) {
-  refresh_token();
-}
-
-async function refresh_token() {
-  await authClient()
-    .post("/user/refresh_token")
-    .then((response) => {
-      let token = response.data.data.refresh_token;
-      localStorage.setItem("token", token);
-    })
-    .catch(() => {
-      const router = useRoute();
-      localStorage.removeItem("token");
-      router.push({ name: "Login" });
-    });
-}
+const authClient = () =>
+  axios.create({
+    baseURL: window.configs.vite_app_endpoint,
+    headers: {
+      Authorization: "Bearer " + localStorage.getItem("token"),
+    },
+  });
 
 export default {
   // user
@@ -119,5 +105,30 @@ export default {
 
   async approveAllVouchers() {
     return await authClient().put("/voucher");
+  },
+
+  async refresh_token() {
+    await authClient()
+      .post("/user/refresh_token")
+      .then((response) => {
+        let token = response.data.data.refresh_token;
+        localStorage.setItem("token", token);
+      })
+      .catch(() => {
+        localStorage.removeItem("token");
+      });
+  },
+
+  async maintenance() {
+    await baseClient()
+      .get("/maintenance")
+      .then((response) => {
+        const { data } = response.data;
+        localStorage.setItem("maintenance", data.active);
+      })
+      .catch((response) => {
+        const { err } = response.response.data;
+        console.log(err);
+      });
   },
 };

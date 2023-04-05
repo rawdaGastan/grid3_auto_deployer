@@ -178,7 +178,7 @@
                       <v-card-actions class="justify-center">
                         <BaseButton
                           class="bg-primary mr-5"
-                          @click="isActive.value = false"
+                          @click="{ isActive.value = false; vms = 0; ips = 0; reason = null; }"
                           text="Cancel"
                         />
                         <BaseButton

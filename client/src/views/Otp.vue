@@ -15,7 +15,8 @@
                   : 'transition: transform .5s;'
               "
               transition="transform .2s"
-              src="@/assets/otp.png"
+              src="@/assets/verfication_code.png"
+              class="w-75 mx-auto"
               :class="{ 'on-hover': isHovering }"
               v-bind="props"
             />
@@ -24,7 +25,7 @@
           <div>
             <v-otp-input
               ref="otpInput"
-              class="justify-center"
+              class="justify-center my-5"
               input-classes="otp-input"
               separator="-"
               :num-inputs="4"

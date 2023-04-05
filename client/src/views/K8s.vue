@@ -166,6 +166,8 @@
                           <td v-if="item.master.public_ip">
                             {{ item.master.public_ip }}
                           </td>
+                          <td v-else>-</td>
+
                         </tr>
                       </tbody>
                     </v-table>

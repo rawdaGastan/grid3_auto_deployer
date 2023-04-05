@@ -21,7 +21,7 @@
 import { ref } from "vue";
 export default {
   setup() {
-    const maintenance = ref(Boolean(localStorage.getItem("maintenance")));
+    const maintenance = ref(localStorage.getItem("maintenance") == "true");
     return { maintenance };
   },
 };

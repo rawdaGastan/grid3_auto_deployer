@@ -1,17 +1,24 @@
 <template>
   <v-container>
-    <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
+    <h5 class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary">
       Virtual Machine Deployment
     </h5>
+    <p class="text-center mb-10">
+      Optimize VM resources with customized processor and memory values for
+      improved price performance.
+    </p>
     <v-row justify="center">
       <v-col cols="12" sm="6">
         <v-form v-model="verify" ref="form" @submit.prevent="deployVm">
-          <BaseInput
-            placeholder="Name"
+          <v-text-field
+            label="Name"
             :rules="rules"
-            :modelValue="name"
-            @update:modelValue="name = $event"
-          />
+            class="my-2"
+            v-model="name"
+            bg-color="accent"
+            variant="outlined"
+            density="compact"
+          ></v-text-field>
           <BaseSelect
             :modelValue="selectedResource"
             :items="resources"
@@ -23,7 +30,8 @@
           <v-checkbox v-model="checked" label="Public IP"></v-checkbox>
           <BaseButton
             type="submit"
-            class="d-block mx-auto bg-primary"
+            block
+            class="bg-primary"
             :loading="loading"
             :disabled="!verify"
             text="Deploy"
@@ -68,7 +76,6 @@
               <td>{{ item.ygg_ip }}</td>
               <td v-if="item.public_ip">{{ item.public_ip }}</td>
 
-              
               <td>
                 <font-awesome-icon
                   class="text-red-accent-2"
@@ -94,7 +101,6 @@
 <script>
 import { ref, onMounted, inject } from "vue";
 import userService from "@/services/userService";
-import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseSelect from "@/components/Form/BaseSelect.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import Confirm from "@/components/Confirm.vue";
@@ -102,7 +108,6 @@ import Toast from "@/components/Toast.vue";
 
 export default {
   components: {
-    BaseInput,
     BaseSelect,
     BaseButton,
     Confirm,
@@ -111,7 +116,7 @@ export default {
   setup() {
     const emitter = inject('emitter');
     const verify = ref(false);
-    const checked= ref(false);
+    const checked = ref(false);
 
     const name = ref(null);
     const rules = ref([
@@ -127,14 +132,7 @@ export default {
       { title: "Medium VM (2 CPU, 4MB, 10GB)", value: "medium" },
       { title: "Large VM (4 CPU, 8MB, 15GB)", value: "large" },
     ]);
-    const headers = ref([
-      "ID",
-      "Name",
-      "Disk (SSD)",
-      "RAM (GB)",
-      "CPU",
-      "IP",
-    ]);
+    const headers = ref(["ID", "Name", "Disk (SSD)", "RAM (GB)", "CPU", "IP"]);
     const toast = ref(null);
     const loading = ref(false);
     const results = ref([]);
@@ -159,7 +157,7 @@ export default {
       loading.value = true;
       toast.value.toast("Deploying..");
       userService
-        .deployVm(name.value, selectedResource.value , checked.value)
+        .deployVm(name.value, selectedResource.value, checked.value)
         .then((response) => {
           toast.value.toast(response.data.msg, "#388E3C");
           reset();

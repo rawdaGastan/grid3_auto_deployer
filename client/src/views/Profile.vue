@@ -1,6 +1,6 @@
 <template>
   <v-container>
-    <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
+    <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
       Account Settings
     </h5>
     <v-avatar color="primary" size="50" class="d-flex mx-auto mt-5 mb-3">
@@ -84,31 +84,27 @@
               />
             </v-col>
           </v-row>
-          <div
-            class="d-flex justify-space-between"
-            style="align-items: baseline;"
+          <v-tooltip
+            block
+            text="You can generate SSH key using 'ssh-keygen' command. Once generated, your public key will be stored in ~/.ssh/id_rsa.pub"
+            left
           >
-            <v-textarea
-              clearable
-              label="SSH Key"
-              v-model="sshKey"
-              variant="outlined"
-              bg-color="accent"
-              class="my-2"
-              :rules="rules"
-              auto-grow
-            ></v-textarea>
-            <v-tooltip
-              text="You can generate SSH key using 'ssh-keygen' command. Once generated, your public key will be stored in ~/.ssh/id_rsa.pub"
-              right
-            >
-              <template v-slot:activator="{ props }">
-                <v-icon v-bind="props" color="primary" dark>
-                  mdi-information
-                </v-icon>
-              </template>
-            </v-tooltip>
-          </div>
+            <template v-slot:activator="{ props }">
+              <v-icon v-bind="props" color="primary" dark class="d-block ml-auto">
+                mdi-information
+              </v-icon>
+            </template>
+          </v-tooltip>
+          <v-textarea
+            clearable
+            label="SSH Key"
+            v-model="sshKey"
+            variant="outlined"
+            bg-color="accent"
+            class="my-2"
+            :rules="rules"
+            auto-grow
+          ></v-textarea>
           <v-row>
             <v-col>
               <BaseButton
@@ -228,8 +224,8 @@ export default {
     const allowVoucher = ref(false);
     const loading = ref(false);
     const newVoucherVerify = ref(false);
-    const vms = ref(null);
-    const ips = ref(null);
+    const vms = ref(0);
+    const ips = ref(0);
     const reason = ref(null);
     const rules = ref([
       (value) => {
@@ -305,7 +301,7 @@ export default {
 
     const newVoucher = () => {
       userService
-        .newVoucher(vms.value, ips.value, reason.value)
+        .newVoucher(Number(vms.value), Number(ips.value), reason.value)
         .then((response) => {
           toast.value.toast(response.data.msg, "#388E3C");
         })

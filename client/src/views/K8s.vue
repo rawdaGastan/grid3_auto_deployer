@@ -1,37 +1,51 @@
 <template>
   <v-container>
-    <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
-      Master
+    <h5 class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary">
+      Kubernetes Cluster
     </h5>
+    <p class="text-center mb-10">
+      Create and deploy a Kubernetes cluster on virtual machine
+    </p>
     <v-row justify="center">
       <v-col cols="12" sm="6">
         <v-form v-model="verify" ref="form" @submit.prevent="deployK8s">
-          <BaseInput
-            placeholder="Name"
-            :modelValue="k8Name"
+          <v-text-field
+            label="Name"
             :rules="rules"
-            @update:modelValue="k8Name = $event"
-          />
+            class="my-2"
+            v-model="k8Name"
+            bg-color="accent"
+            variant="outlined"
+            density="compact"
+          ></v-text-field>
           <BaseSelect
             :modelValue="selectedResource"
             :items="resources"
             placeholder="Resources"
             :rules="rules"
-            class="my-3"
+            class="mt-3"
             @update:modelValue="selectedResource = $event"
           />
           <v-checkbox v-model="checked" label="Public IP"></v-checkbox>
 
           <v-dialog transition="dialog-top-transition" max-width="500">
             <template v-slot:activator="{ props }">
-              <BaseButton
-                color="primary"
-                class="d-block ml-auto"
-                v-bind="props"
-                variant="text"
-                icon="fa-plus"
-                text="workers"
-              />
+              <div class="mx-auto d-flex justify-center">
+                <BaseButton
+                  type="submit"
+                  :disabled="!verify"
+                  class="w-25 d-inline-block bg-primary mr-2"
+                  :loading="loading"
+                  text="Deploy"
+                />
+                <BaseButton
+                  color="primary"
+                  class="w-25 d-inline-block"
+                  v-bind="props"
+                  icon="fa-plus"
+                  text="workers"
+                />
+              </div>
             </template>
             <template v-slot:default="{ isActive }">
               <v-card width="100%" size="100%" class="mx-auto pa-5">
@@ -72,20 +86,12 @@
                       class="bg-primary"
                       @click="isActive.value = false"
                       text="Save"
-
                     />
                   </v-card-actions>
                 </v-form>
               </v-card>
             </template>
           </v-dialog>
-          <BaseButton
-            type="submit"
-            :disabled="!verify"
-            class="d-block mx-auto bg-primary"
-            :loading="loading"
-            text="Deploy"
-          />
         </v-form>
       </v-col>
     </v-row>
@@ -157,8 +163,9 @@
                           <td>{{ item.master.mru }}MB</td>
                           <td>{{ item.master.cru }}</td>
                           <td>{{ item.master.ygg_ip }}</td>
-                          <td v-if=" item.master.public_ip ">{{  item.master.public_ip  }}</td>
-
+                          <td v-if="item.master.public_ip">
+                            {{ item.master.public_ip }}
+                          </td>
                         </tr>
                       </tbody>
                     </v-table>
@@ -187,7 +194,6 @@
 
 <script>
 import { ref, onMounted, inject } from "vue";
-import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseSelect from "@/components/Form/BaseSelect.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import userService from "@/services/userService";
@@ -196,7 +202,6 @@ import Toast from "@/components/Toast.vue";
 
 export default {
   components: {
-    BaseInput,
     BaseSelect,
     BaseButton,
     Confirm,
@@ -265,7 +270,12 @@ export default {
       loading.value = true;
       toast.value.toast("Deploying..");
       userService
-        .deployK8s(k8Name.value, selectedResource.value, worker.value, checked.value)
+        .deployK8s(
+          k8Name.value,
+          selectedResource.value,
+          worker.value,
+          checked.value
+        )
         .then((response) => {
           toast.value.toast(response.data.msg, "#388E3C");
           form.value.reset();

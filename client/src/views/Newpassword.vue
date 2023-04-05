@@ -1,37 +1,61 @@
 <template>
-    <v-container>
-        <Toast ref="toast" />
-        <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
-            Change Password
-        </h5>
-        <v-row justify="center">
-            <v-col cols="12" sm="6">
-                <v-form v-model="verify" @submit.prevent="onSubmit">
+  <v-container>
+    <Toast ref="toast" />
+    <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
+      Change Password
+    </h5>
+    <v-row justify="center">
+      <v-col cols="12" sm="6">
+        <v-form v-model="verify" @submit.prevent="onSubmit">
+          <v-text-field
+            v-model="newpassword"
+            clearable
+            label="Password"
+            placeholder="Enter your password"
+            bg-color="accent"
+            variant="outlined"
+            :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+            :type="showPassword ? 'text' : 'password'"
+            @click:append-inner="showPassword = !showPassword"
+            style="grid-area: unset;"
+            class="my-3"
+            :rules="passwordRules"
+            density="compact"
+          >
+          </v-text-field>
 
-                    <v-text-field v-model="newPassword" clearable label="Password" placeholder="Enter your password"
-                        bg-color="accent" variant="outlined" :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-                        :type="showPassword ? 'text' : 'password'" @click:append-inner="showPassword = !showPassword"
-                        style="grid-area: unset;" class="my-3" :rules="passwordRules">
-                    </v-text-field>
+          <v-text-field
+            v-model="cnewpassword"
+            :rules="cpasswordRules"
+            :error-messages="passwordError"
+            clearable
+            label="Confirm Password"
+            placeholder="Enter your password"
+            bg-color="accent"
+            variant="outlined"
+            :append-inner-icon="cshowPassword ? 'mdi-eye' : 'mdi-eye-off'"
+            :type="cshowPassword ? 'text' : 'password'"
+            @click:append-inner="cshowPassword = !cshowPassword"
+            style="grid-area: unset;"
+            class="mt-2 mb-0"
+            density="compact"
+          >
+          </v-text-field>
 
-                    <v-text-field v-model="cnewpassword" :rules="cpasswordRules" :error-messages="passwordError" clearable
-                        label="Confirm Password" placeholder="Enter your password" bg-color="accent" variant="outlined"
-                        :append-inner-icon="cshowPassword ? 'mdi-eye' : 'mdi-eye-off'"
-                        :type="cshowPassword ? 'text' : 'password'" @click:append-inner="cshowPassword = !cshowPassword"
-                        style="grid-area: unset;" class="mt-2 mb-0">
-                    </v-text-field>
-
-                    <v-card-actions class="justify-center">
-                        <v-btn variant="flat" :size="size" class="mx-auto bg-primary" @click="cancelHandler">Cancel</v-btn>
-                        <v-btn type="submit" :size="size" :disabled="!verify" :loading="loading" variant="flat"
-                            class="mx-auto bg-primary">Save</v-btn>
-                    </v-card-actions>
-                </v-form>
-            </v-col>
-        </v-row>
-    </v-container>
+          <v-btn
+            type="submit"
+            block
+            :disabled="!verify"
+            :loading="loading"
+            variant="flat"
+            class="bg-primary"
+            >Save</v-btn
+          >
+        </v-form>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
-
 
 <script>
 import { ref } from "vue";
@@ -124,5 +148,3 @@ export default {
     }
 };
 </script>
-
-

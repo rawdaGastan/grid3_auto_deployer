@@ -16,6 +16,7 @@
               "
               transition="transform .2s"
               src="@/assets/verfication_code.png"
+              class="w-75 mx-auto"
               :class="{ 'on-hover': isHovering }"
               v-bind="props"
             />

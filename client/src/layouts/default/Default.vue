@@ -24,7 +24,11 @@ export default {
     const route = useRoute();
 
     const isAdmin = computed(() => {
-      if (route.path !== "/admin" || route.path !== "/forgetPassword") {
+      if (
+        route.path !== "/admin" &&
+        route.path !== "/forgetPassword" &&
+        route.path !== "/newPassword"
+      ) {
         return false;
       }
       return true;

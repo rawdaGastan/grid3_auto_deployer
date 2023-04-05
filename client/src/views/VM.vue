@@ -12,7 +12,7 @@
         <v-form v-model="verify" ref="form" @submit.prevent="deployVm">
           <v-text-field
             label="Name"
-            :rules="rules"
+            :rules="nameValidation"
             class="my-2"
             v-model="name"
             bg-color="accent"
@@ -139,7 +139,12 @@ export default {
     const deLoading = ref(false);
     const message = ref(null);
     const form = ref(null);
-
+    const nameValidation = ref([
+      (value) => {
+        if (value.length > 3 && value.length < 20) return true;
+        return "Name needs to be at least 4 characters.";
+      },
+    ]);
     const getVMS = () => {
       userService
         .getVms()
@@ -241,6 +246,7 @@ export default {
       message,
       form,
       checked,
+      nameValidation,
       reset,
       getVMS,
       deployVm,

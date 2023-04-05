@@ -2,7 +2,7 @@
   <v-container>
     <Toast ref="toast" />
     <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
-      Verfication Code
+      Verification Code
     </h5>
     <v-row justify="center">
       <v-col cols="12" sm="6">

@@ -2,6 +2,8 @@
 package models
 
 import (
+	"time"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm/clause"
 
@@ -30,12 +32,13 @@ func (d *DB) Connect(file string) error {
 
 // Migrate migrates db schema
 func (d *DB) Migrate() error {
-	err := d.db.AutoMigrate(&User{}, &Quota{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{})
+	err := d.db.AutoMigrate(&User{}, &Quota{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{}, &Maintenance{})
 	if err != nil {
 		return err
 	}
 
-	return nil
+	// add maintenance
+	return d.db.Create(&Maintenance{false, time.Now()}).Error
 }
 
 // CreateUser creates new user
@@ -291,4 +294,16 @@ func (d *DB) DeleteAllK8s(userID string) error {
 		return err
 	}
 	return d.db.Select("Master", "Workers").Delete(&k8sClusters).Error
+}
+
+// UpdateMaintenance updates if maintenance is on or off
+func (d *DB) UpdateMaintenance(on bool) error {
+	return d.db.Model(&Maintenance{}).Where("active = ?", !on).Updates(map[string]interface{}{"active": on, "updated_at": time.Now()}).Error
+}
+
+// GetMaintenance gets if maintenance is on or off
+func (d *DB) GetMaintenance() (Maintenance, error) {
+	var res Maintenance
+	query := d.db.First(&res)
+	return res, query.Error
 }

@@ -642,7 +642,7 @@ func TestGetK8s(t *testing.T) {
 		k8s2 := K8sCluster{
 			UserID: "new-user",
 			Master: Master{
-				Name: "master",
+				Name: "master2",
 			},
 			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
 		}
@@ -676,14 +676,14 @@ func TestGetAllK8s(t *testing.T) {
 		k8s2 := K8sCluster{
 			UserID: "user",
 			Master: Master{
-				Name: "master",
+				Name: "master2",
 			},
 			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
 		}
 		k8s3 := K8sCluster{
 			UserID: "new-user",
 			Master: Master{
-				Name: "master",
+				Name: "master3",
 			},
 			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
 		}

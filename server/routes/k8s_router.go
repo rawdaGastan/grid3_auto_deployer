@@ -79,6 +79,19 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	// unique names
+	available, err := r.db.AvailableK8sName(k8sDeployInput.MasterName)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	if !available {
+		writeErrResponse(req, w, http.StatusBadRequest, "Kubernetes master name is not available, please choose a different name")
+		return
+	}
+
 	// deploy network and cluster
 	node, networkContractID, k8sContractID, err := r.deployK8sClusterWithNetwork(k8sDeployInput, user.SSHKey)
 	if err != nil {

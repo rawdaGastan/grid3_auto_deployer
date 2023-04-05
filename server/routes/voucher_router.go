@@ -28,19 +28,6 @@ type UpdateVoucherInput struct {
 
 // GenerateVoucherHandler generates a voucher by admin
 func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request) {
-	/*userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
-	user, err := r.db.GetUserByID(userID)
-	if err != nil {
-		writeNotFoundResponse(w, err)
-		return
-	}
-
-	if !user.Admin {
-		writeErrResponse(req, w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
-		return
-	}
-	*/
-
 	var input GenerateVoucherInput
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
@@ -82,19 +69,6 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 
 // ListVouchersHandler lists all vouchers by admin
 func (r *Router) ListVouchersHandler(w http.ResponseWriter, req *http.Request) {
-	/*userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
-	user, err := r.db.GetUserByID(userID)
-	if err != nil {
-		writeNotFoundResponse(w, err)
-		return
-	}
-
-	if !user.Admin {
-		writeErrResponse(req, w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
-		return
-	}
-	*/
-
 	vouchers, err := r.db.ListAllVouchers()
 	if err == gorm.ErrRecordNotFound || len(vouchers) == 0 {
 		writeMsgResponse(req, w, "Vouchers are not found", vouchers)
@@ -112,20 +86,6 @@ func (r *Router) ListVouchersHandler(w http.ResponseWriter, req *http.Request) {
 
 // UpdateVoucherHandler approves/rejects a voucher by admin
 func (r *Router) UpdateVoucherHandler(w http.ResponseWriter, req *http.Request) {
-	/*userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
-	user, err := r.db.GetUserByID(userID)
-	if err != nil {
-		writeNotFoundResponse(w, err.Error())
-		return
-	}
-
-
-	if !user.Admin {
-		writeErrResponse(req, w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
-		return
-	}
-	*/
-
 	var input UpdateVoucherInput
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
@@ -164,6 +124,11 @@ func (r *Router) UpdateVoucherHandler(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	if updatedVoucher.UserID == "" && !input.Approved {
+		writeMsgResponse(req, w, "Voucher is rejected successfully", "")
+		return
+	}
+
 	user, err := r.db.GetUserByID(updatedVoucher.UserID)
 	if err == gorm.ErrRecordNotFound {
 		writeErrResponse(req, w, http.StatusNotFound, "User is not found")
@@ -193,19 +158,6 @@ func (r *Router) UpdateVoucherHandler(w http.ResponseWriter, req *http.Request) 
 
 // ApproveAllVouchers approves all vouchers by admin
 func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
-	/*userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
-	user, err := r.db.GetUserByID(userID)
-	if err != nil {
-		writeNotFoundResponse(w, err)
-		return
-	}
-
-	if !user.Admin {
-		writeErrResponse(req, w, fmt.Errorf("user '%s' doesn't have an admin access", user.Name))
-		return
-	}
-	*/
-
 	vouchers, err := r.db.ApproveAllVouchers()
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -233,5 +185,5 @@ func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	writeMsgResponse(req, w, "All vouchers are approved and confirmation mails has been sent to the user", "")
+	writeMsgResponse(req, w, "All vouchers are approved and confirmation mails has been sent to the users", "")
 }

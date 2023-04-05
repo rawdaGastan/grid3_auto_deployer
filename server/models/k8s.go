@@ -14,7 +14,7 @@ type K8sCluster struct {
 // Master struct for kubernetes master data
 type Master struct {
 	ClusterID int    `json:"clusterID"`
-	Name      string `json:"name"`
+	Name      string `json:"name" gorm:"unique" binding:"required"`
 	CRU       uint64 `json:"cru"`
 	MRU       uint64 `json:"mru"`
 	SRU       uint64 `json:"sru"`

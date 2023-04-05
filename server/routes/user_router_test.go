@@ -44,7 +44,8 @@ func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Confi
 	"database": {
         "file": "testing.db"
     },
-	"version": "v1"
+	"version": "v1",
+	"salt": "salt"
 }
 	`
 	dir := t.TempDir()
@@ -152,17 +153,19 @@ func TestVerifySignUpCodeHandler(t *testing.T) {
 }
 
 func TestSignInHandler(t *testing.T) {
-	router, db, _, version := SetUp(t)
+	router, db, config, version := SetUp(t)
+
+	hashedPass, err := internal.HashAndSaltPassword("strongpass", config.Salt)
+	assert.NoError(t, err)
+
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
-		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		HashedPassword: hashedPass,
 		Verified:       true,
 	}
-	err := db.CreateUser(&u)
-	if err != nil {
-		t.Error(err)
-	}
+	err = db.CreateUser(&u)
+	assert.NoError(t, err)
 
 	t.Run("signIn successfully", func(t *testing.T) {
 		body := []byte(`{

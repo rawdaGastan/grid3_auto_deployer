@@ -148,6 +148,7 @@ func TestListVMsHandler(t *testing.T) {
 			CRU:       2,
 			MRU:       2,
 		}
+		vm.Name = vm.Name + "0"
 		err = db.CreateVM(&vm)
 		assert.NoError(t, err)
 
@@ -205,6 +206,7 @@ func TestDeleteVM(t *testing.T) {
 			CRU:       2,
 			MRU:       2,
 		}
+		vm.Name = vm.Name + "1"
 		err = db.CreateVM(&vm)
 		assert.NoError(t, err)
 
@@ -250,7 +252,7 @@ func TestDeleteDeleteAllVMs(t *testing.T) {
 		vm := models.VM{
 			ID:        1,
 			UserID:    user.ID.String(),
-			Name:      "vm",
+			Name:      "vm2",
 			YggIP:     "10.1.0.0",
 			Resources: "small",
 			SRU:       5,
@@ -261,6 +263,7 @@ func TestDeleteDeleteAllVMs(t *testing.T) {
 		assert.NoError(t, err)
 
 		vm.ID = 2
+		vm.Name = vm.Name + "3"
 		err = db.CreateVM(&vm)
 		assert.NoError(t, err)
 

@@ -8,7 +8,7 @@
       <v-col cols="12" sm="6">
         <v-form v-model="verify" @submit.prevent="onSubmit">
           <v-text-field
-            v-model="newpassword"
+            v-model="newPassword"
             clearable
             label="Password"
             placeholder="Enter your password"

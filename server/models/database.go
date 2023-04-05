@@ -150,6 +150,20 @@ func (d *DB) GetAllVms(userID string) ([]VM, error) {
 	return vms, result.Error
 }
 
+// AvailableVMName returns if name available
+func (d *DB) AvailableVMName(name string) (bool, error) {
+	var names []string
+	query := d.db.Table("vms").
+		Select("name").
+		Where("name = ?", name).
+		Scan(&names)
+
+	if query.Error != nil {
+		return false, query.Error
+	}
+	return len(names) == 0, query.Error
+}
+
 // DeleteVMByID deletes vm by its id
 func (d *DB) DeleteVMByID(id int) error {
 	var vm VM
@@ -297,6 +311,20 @@ func (d *DB) DeleteAllK8s(userID string) error {
 		return err
 	}
 	return d.db.Select("Master", "Workers").Delete(&k8sClusters).Error
+}
+
+// AvailableK8sName returns if name available
+func (d *DB) AvailableK8sName(name string) (bool, error) {
+	var names []string
+	query := d.db.Table("masters").
+		Select("name").
+		Where("name = ?", name).
+		Scan(&names)
+
+	if query.Error != nil {
+		return false, query.Error
+	}
+	return len(names) == 0, query.Error
 }
 
 // UpdateMaintenance updates if maintenance is on or off

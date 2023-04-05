@@ -9,7 +9,7 @@
         <v-form v-model="verify" @submit.prevent="onSubmit">
           <v-text-field
             v-model="fullname"
-            :rules="Rules"
+            :rules="nameValidation"
             label="Full Name"
             placeholder="Enter your fullname"
             bg-color="accent"
@@ -333,29 +333,60 @@ export default {
     const toast = ref(null);
     const checked = ref(false);
     const dialog = ref(false);
+    const nameRegex = /^(\w+\s){0,3}\w*$/;
+    const nameValidation = ref([
+      (value) => {
+        if (!value.match(nameRegex)) return "Must be at most four names";
+        if(value.length < 3) return "Field should be at least 3 characters";
+        if(value.length >20) return "Field should be at most 20 characters";
 
+
+        return true;
+      },
+    ]);
     const Rules = ref([
-      (value) => !!value || "Field is required",
-      (value) =>
-        (value && value.length >= 3) || "Field should be at least 3 characters",
+    (value) => {
+        if (!value) return "Field is required";
+        if(value.length < 3) return "Field should be at least 3 characters";
+        return true;
+      },
+      
     ]);
     const teamSizeRules = ref([
-      (value) => !!value || "Field is required",
-      (value) => (value && value > 0) || "Team Size should be more than 0",
+
+    (value) => {
+        if (!value) return "Field is required";
+        if(value < 1) return "Team Size should at least 1";
+        return true;
+      },
+    
     ]);
     const emailRules = ref([
-      (value) => !!value || "Field is required",
-      (value) => value.match(emailRegex) || "Invalid email address",
+
+    (value) => {
+        if (!value) return "Field is required";
+        if(!value.match(emailRegex)) return "Invalid email address";
+        return true;
+      },
+
     ]);
     const passwordRules = ref([
-      (value) => !!value || "Field is required",
-      (value) =>
-        (value && value.length >= 7) ||
-        "Password must be at least 7 characters",
+
+    (value) => {
+        if (!value) return "Field is required";
+        if(value.length < 7) return "Password must be at least 7 characters";
+        return true;
+      },
+
     ]);
     const cpasswordRules = ref([
-      (value) => !!value || "Field is required",
-      (value) => value == password.value || "Passwords don't match",
+    (value) => {
+        if (!value) return "Field is required";
+        if(value.length < 7) return "Password must be at least 7 characters";
+        if(value === password.value) return "Passwords don't match";
+
+        return true;
+      },
     ]);
 
     const onSubmit = () => {
@@ -414,6 +445,7 @@ export default {
       fullname,
       Rules,
       emailRules,
+      nameValidation,
       passwordRules,
       cpasswordRules,
       isSignup,

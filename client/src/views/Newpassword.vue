@@ -62,6 +62,7 @@ import { ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import Toast from "@/components/Toast.vue";
 import userService from "@/services/userService";
+import axios from "axios";
 
 export default {
     components: {
@@ -109,7 +110,9 @@ export default {
 
             loading.value = true;
 
-            userService
+            if(localStorage.getItem("token")){
+
+              userService
                 .changePassword(route.query.email, newPassword.value, cnewpassword.value)
                 .then((response) => {
                     toast.value.toast(response.data.msg);
@@ -122,6 +125,32 @@ export default {
                     toast.value.toast(error.response.data.err, "#FF5252", "top-right");
                     loading.value = false;
                 });
+
+            }else{
+              axios
+                .put(window.configs.vite_app_endpoint + "/user/change_password", {
+                    email: route.query.email,
+                    password: newPassword.value,
+                    confirm_password: cnewpassword.value,
+                }, {
+                    headers: {
+                        Authorization: "Bearer " + localStorage.getItem('password_token'),
+                    }
+                }
+                ).then((response) => {
+                    toast.value.toast(response.data.msg);
+                    localStorage.removeItem('password_token');
+                    router.push({
+                        name: 'Login',
+                    });
+                })
+                .catch((error) => {
+                    toast.value.toast(error.response.data.err, "#FF5252", "top-right");
+                    loading.value = false;
+                });
+            }
+
+        
         };
 
         const cancelHandler = () => {

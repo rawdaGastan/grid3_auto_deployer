@@ -33,7 +33,7 @@
                 <v-row>
                   <v-col cols="12" class="d-flex justify-start">
                     <router-link
-                      :to="{ name: 'Profile' }"
+                      :to="{ name: 'Profile', query: { voucher: true }}"
                       class="text-h5 primary text-decoration-none"
                     >
                       <font-awesome-icon

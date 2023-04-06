@@ -1,5 +1,13 @@
 <template>
   <v-container>
+    <v-alert v-model="alert"
+      outlined
+      type="warning"
+      prominent
+      border="left"
+    >
+      You will not be able to deploy. Please add your public SSH key in your profile settings.
+    </v-alert>
     <h5 class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary">
       Virtual Machines
     </h5>
@@ -32,7 +40,7 @@
             block
             class="bg-primary"
             :loading="loading"
-            :disabled="!verify"
+            :disabled="!verify || alert"
             text="Deploy"
           />
         </v-form>
@@ -122,6 +130,7 @@ export default {
     const emitter = inject("emitter");
     const verify = ref(false);
     const checked = ref(false);
+    const alert = ref(false);
 
     const name = ref(null);
     const rules = ref([
@@ -234,6 +243,17 @@ export default {
         });
     };
 
+    userService
+      .getUser()
+      .then((response) => {
+        const { user } = response.data.data;
+        alert.value = user.ssh_key == "";
+      })
+      .catch((response) => {
+        const { err } = response.response.data;
+        toast.value.toast(err, "#FF5252");
+      });
+
     const emitQuota = () => {
       emitter.emit("userUpdateQuota", true);
     };
@@ -245,6 +265,7 @@ export default {
     return {
       verify,
       name,
+      alert,
       selectedResource,
       resources,
       loading,

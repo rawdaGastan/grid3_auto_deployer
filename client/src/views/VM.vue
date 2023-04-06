@@ -166,7 +166,6 @@ export default {
 
     const deployVm = () => {
       loading.value = true;
-      toast.value.toast("Deploying..");
       userService
         .deployVm(name.value, selectedResource.value, checked.value)
         .then((response) => {
@@ -174,13 +173,15 @@ export default {
           reset();
           emitQuota();
           getVMS();
-          loading.value = false;
         })
         .catch((response) => {
           reset();
           const { err } = response.response.data;
           toast.value.toast(err, "#FF5252");
+        })
+        .finally(() => {
           loading.value = false;
+          checked.value = false;
         });
     };
 
@@ -196,12 +197,15 @@ export default {
               .then((response) => {
                 toast.value.toast(response.data.msg, "#388E3C");
                 getVMS();
-                deLoading.value = false;
               })
               .catch((response) => {
                 const { err } = response.response.data;
                 toast.value.toast(err, "#FF5252");
                 deLoading.value = false;
+              })
+              .finally(() => {
+                deLoading.value = false;
+                checked.value = false;
               });
           }
         });

@@ -383,7 +383,7 @@ export default {
     (value) => {
         if (!value) return "Field is required";
         if(value.length < 7) return "Password must be at least 7 characters";
-        if(value === password.value) return "Passwords don't match";
+        if(value !== password.value) return "Passwords don't match";
 
         return true;
       },

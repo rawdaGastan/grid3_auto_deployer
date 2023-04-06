@@ -5,7 +5,7 @@
     </h5>
     <v-row>
       <v-col cols="12" md="8">
-        <section class="rounded shadow" v-if="vouchers.length > 0">
+        <section class="rounded shadow">
           <v-sheet>
             <v-table class="rounded-sm" style="margin-top: 0.5rem;">
               <thead class="bg-grey-lighten-5">
@@ -218,11 +218,27 @@ export default {
     };
 
     const approveVoucher = (id, approved) => {
-      userService.approveVoucher(id, approved);
+      userService.approveVoucher(id, approved)
+        .then((response) => {
+          toast.value.toast(response.data.msg, "#388E3C");
+          getVouchers();
+        })
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
+        });
     };
 
     const approveAllVouchers = () => {
-      userService.approveAllVouchers();
+      userService.approveAllVouchers()
+      .then((response) => {
+          toast.value.toast(response.data.msg, "#388E3C");
+          getVouchers();
+        })
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
+        });
     };
 
     const getUsers = () => {
@@ -253,8 +269,11 @@ export default {
     };
 
     onMounted(() => {
-      getUsers();
-      getVouchers();
+      let token = localStorage.getItem("token");
+      if (token) {
+        getUsers();
+        getVouchers();
+      }
     });
 
     return {

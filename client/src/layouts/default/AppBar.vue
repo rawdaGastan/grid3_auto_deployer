@@ -159,7 +159,8 @@ export default {
     }
 
     onMounted(() => {
-      getUserName();
+      let token = localStorage.getItem("token");
+      if (token) getUserName();
     });
 
     return { drawer, items, user, username, isActive, setActive, checkTitle, getUserName };

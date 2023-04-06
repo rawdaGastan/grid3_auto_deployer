@@ -1,10 +1,10 @@
 <template>
   <v-container>
     <h5 class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary">
-      Kubernetes Cluster
+      Kubernetes Clusters Management
     </h5>
     <p class="text-center mb-10">
-      Create and deploy a Kubernetes cluster on virtual machine
+      Deploy a new Kubernetes cluster
     </p>
     <v-row justify="center">
       <v-col cols="12" sm="6">
@@ -170,8 +170,6 @@
                           <td>{{ item.master.mru }}MB</td>
                           <td>{{ item.master.cru }}</td>
                           <td>{{ item.master.ygg_ip }}</td>
-
-
                         </tr>
                       </tbody>
                     </v-table>

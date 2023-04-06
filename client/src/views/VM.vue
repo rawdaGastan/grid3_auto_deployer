@@ -1,11 +1,10 @@
 <template>
   <v-container>
     <h5 class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary">
-      Virtual Machine Deployment
+      Virtual Machines
     </h5>
     <p class="text-center mb-10">
-      Optimize VM resources with customized processor and memory values for
-      improved price performance.
+      Deploy a new virtual machine
     </p>
     <v-row justify="center">
       <v-col cols="12" sm="6">
@@ -28,13 +27,25 @@
             @update:modelValue="selectedResource = $event"
           />
           <v-checkbox v-model="checked" label="Public IP"></v-checkbox>
-          <BaseButton type="submit" block class="bg-primary" :loading="loading" :disabled="!verify" text="Deploy" />
+          <BaseButton
+            type="submit"
+            block
+            class="bg-primary"
+            :loading="loading"
+            :disabled="!verify"
+            text="Deploy"
+          />
         </v-form>
       </v-col>
     </v-row>
     <v-row v-if="results.length > 0">
       <v-col class="d-flex justify-end">
-        <BaseButton color="red-accent-2" :loading="deLoading" @click="deleteVms" text="Delete All" />
+        <BaseButton
+          color="red-accent-2"
+          :loading="deLoading"
+          @click="deleteVms"
+          text="Delete All"
+        />
       </v-col>
     </v-row>
     <v-row v-if="results.length > 0">
@@ -42,7 +53,11 @@
         <v-table>
           <thead class="bg-primary">
             <tr>
-              <th class="text-left text-white" v-for="head in headers" :key="head">
+              <th
+                class="text-left text-white"
+                v-for="head in headers"
+                :key="head"
+              >
                 {{ head }}
               </th>
               <th class="text-left text-white">
@@ -64,10 +79,12 @@
               <td v-if="item.public_ip">{{ item.public_ip }}</td>
               <td v-else>-</td>
 
-
               <td>
-                <font-awesome-icon class="text-red-accent-2" @click="deleteVm(item.id, item.name)"
-                  icon="fa-solid fa-trash" />
+                <font-awesome-icon
+                  class="text-red-accent-2"
+                  @click="deleteVm(item.id, item.name)"
+                  icon="fa-solid fa-trash"
+                />
               </td>
             </tr>
           </tbody>
@@ -76,7 +93,9 @@
     </v-row>
     <v-row v-else>
       <v-col>
-        <p class="my-5 text-center">VMs are not found</p>
+        <p class="my-5 text-center">
+          You don't have any Virtual machines deployed yet
+        </p>
       </v-col>
     </v-row>
     <Confirm ref="confirm" />
@@ -100,7 +119,7 @@ export default {
     Toast,
   },
   setup() {
-    const emitter = inject('emitter');
+    const emitter = inject("emitter");
     const verify = ref(false);
     const checked = ref(false);
 
@@ -138,7 +157,6 @@ export default {
         .then((response) => {
           const { data } = response.data;
           results.value = data;
-   
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -213,8 +231,8 @@ export default {
     };
 
     const emitQuota = () => {
-      emitter.emit('userUpdateQuota', true);
-    }
+      emitter.emit("userUpdateQuota", true);
+    };
 
     onMounted(() => {
       let token = localStorage.getItem("token");

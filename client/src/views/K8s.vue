@@ -231,7 +231,7 @@ export default {
         return "This field is required.";
       },
     ]);
-    const headers = ref(["ID", "Name", "Disk (SSD)", "RAM (GB)", "CPU", "IP"]);
+    const headers = ref(["ID", "Name", "Disk (GB)", "RAM (MB)", "CPU", "IP"]);
     const selectedResource = ref(null);
     const resources = ref([
       { title: "Small K8s (1 CPU, 2GB, 5GB)", value: "small" },

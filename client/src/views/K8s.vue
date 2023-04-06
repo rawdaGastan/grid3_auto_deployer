@@ -284,7 +284,6 @@ export default {
 
     const deployK8s = () => {
       loading.value = true;
-      toast.value.toast("Deploying..");
       userService
         .deployK8s(
           k8Name.value,
@@ -306,6 +305,7 @@ export default {
         .finally(() => {
           resetInputs();
           loading.value = false;
+          checked.value = false;
         });
     };
 

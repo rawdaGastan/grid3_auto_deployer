@@ -1,6 +1,6 @@
 <template>
   <v-container style="max-width: 1600px;" fill-height>
-    <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
+    <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
       Admin Panel
     </h5>
     <v-row>
@@ -24,7 +24,7 @@
               </thead>
               <tbody>
                 <tr v-for="(item, index) in usersPerPage" :key="index">
-                  <td>{{ ++index }}</td>
+                  <td>{{ item.id }}</td>
                   <td v-if="item.name" class="d-flex align-center">
                     <v-avatar color="primary" size="30" class="mr-2">
                       <span class="text-uppercase">{{
@@ -80,6 +80,7 @@
               <v-pagination
                 v-model="currentPage"
                 :length="totalPages"
+                :total-visible="totalPages"
               ></v-pagination>
               <BaseButton
                 v-if="approveAllCount > 0"

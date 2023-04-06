@@ -2,9 +2,7 @@
   <div class="div-wrapper">
     <Toast ref="toast" />
     <v-container>
-      <h5
-        class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary"
-      >
+      <h5 class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary">
         Reset Password
       </h5>
       <p class="text-center mb-10">
@@ -14,33 +12,15 @@
       <v-row justify="center">
         <v-col cols="12" sm="6">
           <v-form v-model="verify" @submit.prevent="onSubmit">
-            <v-text-field
-              v-model="email"
-              :rules="emailRules"
-              class="mb-2"
-              clearable
-              placeholder="Enter your email"
-              label="Email"
-              bg-color="accent"
-              variant="outlined"
-              density="compact"
-            ></v-text-field>
+            <v-text-field v-model="email" :rules="emailRules" class="mb-2" clearable placeholder="Enter your email"
+              label="Email" bg-color="accent" variant="outlined" density="compact"></v-text-field>
 
-            <v-btn
-              type="submit"
-              block
-              :disabled="!verify"
-              :loading="loading"
-              variant="flat"
-              color="primary"
-              class="text-capitalize mx-auto bg-primary"
-            >
+            <v-btn type="submit" block :disabled="!verify" :loading="loading" variant="flat" color="primary"
+              class="text-capitalize mx-auto bg-primary">
               Send
             </v-btn>
             <div class="text-body-2 my-3 text-center">
-              <router-link class="text-body-2 primary text-decoration-none" to="/"
-                >Back to Login</router-link
-              >
+              <router-link class="text-body-2 primary text-decoration-none" to="/">Back to Login</router-link>
             </div>
           </v-form>
         </v-col>
@@ -71,8 +51,13 @@ export default {
     const loading = ref(false);
     const isForgetPassword = ref(true);
     const emailRules = ref([
-      (value) => !!value || "Field is required",
-      (value) => value.match(emailRegex) || "Invalid email address",
+
+      (value) => {
+        if (!value) return "Field is required";
+        if (!value.match(emailRegex)) return "Invalid email address";
+        return true;
+      },
+
     ]);
 
     const onSubmit = () => {

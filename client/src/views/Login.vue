@@ -112,8 +112,12 @@ export default {
     const password = ref(null);
     const loading = ref(false);
     const emailRules = ref([
-      (value) => !!value || "Field is required",
-      (value) => value.match(emailRegex) || "Invalid email address",
+    (value) => {
+        if (!value) return "Field is required";
+        if(!value.match(emailRegex)) return "Invalid email address";
+        return true;
+      },
+
     ]);
     const rules = ref([
       (value) => {

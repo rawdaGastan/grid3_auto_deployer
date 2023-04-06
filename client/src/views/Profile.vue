@@ -123,7 +123,7 @@
               />
             </v-col>
             <v-col>
-              <v-dialog persistent transition="dialog-top-transition" max-width="500" >
+              <v-dialog persistent transition="dialog-top-transition" max-width="500" v-model="openVoucher">
                 <template v-slot:activator="{ props }">
                   <BaseButton
                     v-bind="props"
@@ -211,6 +211,7 @@ import userService from "@/services/userService";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import Toast from "@/components/Toast.vue";
 import router from "@/router";
+import { useRoute } from "vue-router";
 
 export default {
   components: {
@@ -218,6 +219,8 @@ export default {
     Toast,
   },
   setup() {
+    const route = useRoute();
+    const openVoucher = ref(Boolean(route.query.voucher));
     const emitter = inject('emitter');
     const verify = ref(null);
     const email = ref(null);
@@ -374,6 +377,7 @@ export default {
       ips,
       reason,
       nameValidation,
+      openVoucher,
       getUser,
       activateVoucher,
       update,

@@ -19,7 +19,7 @@
               :key="index"
               :to="item.path"
               class="pa-5 primary text-decoration-none"
-              @click="setActive(index)"
+              @click="setActive(index, item)"
               :class="{ active: isActive == index }"
             >
               {{ item.title }}
@@ -32,6 +32,7 @@
             <v-btn
               class="primary ml-1 mt-2 pt-0 mt-md-3 text-capitalize"
               v-bind="props"
+              @click="setActive(index, props)"
             >
               <font-awesome-icon icon="fa-user" class="mr-3 fa-l" />
               {{ username }}
@@ -46,7 +47,7 @@
                   :to="item.path"
                   class="d-flex my-3 primary text-decoration-none"
                 >
-                  <span @click="checkTitle(item.title)">{{ item.title }}</span>
+                  <span @click="isActive == null">{{ item.title }}</span>
                 </router-link>
               </v-list-item-title>
             </v-list-item>
@@ -86,8 +87,15 @@ export default {
     const route = useRoute();
     const drawer = ref(false);
     const username = ref("");
-    const isActive = ref(null);
-    const excludedRoutes = ref(["/login", "/signup", "/forgetPassword", "/otp", "/newPassword", "/maintenance"])
+    const isActive = ref(0);
+    const excludedRoutes = ref([
+      "/login",
+      "/signup",
+      "/forgetPassword",
+      "/otp",
+      "/newPassword",
+      "/maintenance",
+    ]);
     const items = ref([
       {
         path: "/",
@@ -123,8 +131,12 @@ export default {
       },
     ]);
 
-    const setActive = (index) => {
-      isActive.value = index;
+    const setActive = (index, item) => {
+      if (item.title == null) {
+        isActive.value = null;
+      } else {
+        isActive.value = index;
+      }
     };
 
     const checkTitle = (title) => {
@@ -151,7 +163,7 @@ export default {
           const { err } = response.response.data;
           console.log(err);
         });
-    }; 
+    };
 
     if (excludedRoutes.value.includes(route.path)) {
       items.value = [];
@@ -162,7 +174,16 @@ export default {
       getUserName();
     });
 
-    return { drawer, items, user, username, isActive, setActive, checkTitle, getUserName };
+    return {
+      drawer,
+      items,
+      user,
+      username,
+      isActive,
+      setActive,
+      checkTitle,
+      getUserName,
+    };
   },
 };
 </script>

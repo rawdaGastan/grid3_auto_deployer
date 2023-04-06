@@ -239,8 +239,10 @@ export default {
     const nameRegex = /^(\w+\s){0,3}\w*$/;
     const nameValidation = ref([
       (value) => {
-        if (value.match(nameRegex)) return true;
-        return "Must be at most four names";
+        if (!value.match(nameRegex)) return "Must be at most four names";
+        if(value.length < 3) return "Field should be at least 3 characters";
+        if(value.length >20) return "Field should be at most 20 characters";
+        return true;
       },
     ]);
 

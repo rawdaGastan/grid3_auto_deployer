@@ -1,7 +1,7 @@
 <template>
   <v-container>
     <h5 class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary">
-      Kubernetes Clusters Management
+      Kubernetes Clusters
     </h5>
     <p class="text-center mb-10">
       Deploy a new Kubernetes cluster
@@ -234,15 +234,15 @@ export default {
     const headers = ref(["ID", "Name", "Disk (SSD)", "RAM (GB)", "CPU", "IP"]);
     const selectedResource = ref(null);
     const resources = ref([
-      { title: "Small K8s (1 CPU, 2MB, 5GB)", value: "small" },
-      { title: "Medium K8s (2 CPU, 4MB, 10GB)", value: "medium" },
-      { title: "Large K8s (4 CPU, 8MB, 15GB)", value: "large" },
+      { title: "Small K8s (1 CPU, 2GB, 5GB)", value: "small" },
+      { title: "Medium K8s (2 CPU, 4GB, 10GB)", value: "medium" },
+      { title: "Large K8s (4 CPU, 8GB, 15GB)", value: "large" },
     ]);
     const workerName = ref(null);
     const workerResources = ref([
-      { title: "Small K8s (1 CPU, 2MB, 5GB)", value: "small" },
-      { title: "Medium K8s (2 CPU, 4MB, 10GB)", value: "medium" },
-      { title: "Large K8s (4 CPU, 8MB, 15GB)", value: "large" },
+      { title: "Small K8s (1 CPU, 2GB, 5GB)", value: "small" },
+      { title: "Medium K8s (2 CPU, 4GB, 10GB)", value: "medium" },
+      { title: "Large K8s (4 CPU, 8GB, 15GB)", value: "large" },
     ]);
     const workerSelResources = ref(null);
     const worker = ref([]);

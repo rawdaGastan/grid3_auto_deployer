@@ -46,6 +46,7 @@
           <v-text-field
             v-model="teamSize"
             :rules="teamSizeRules"
+            type="number"
             label="Team Size"
             placeholder="Enter your team size"
             bg-color="accent"

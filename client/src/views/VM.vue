@@ -217,7 +217,8 @@ export default {
     }
 
     onMounted(() => {
-      getVMS();
+      let token = localStorage.getItem("token");
+      if (token) getVMS();
     });
     return {
       verify,

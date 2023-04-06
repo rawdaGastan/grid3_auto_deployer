@@ -349,7 +349,8 @@ export default {
     };
 
     onMounted(() => {
-      getUser();
+      let token = localStorage.getItem("token");
+      if (token) getUser();
     });
 
     return {

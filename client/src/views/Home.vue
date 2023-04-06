@@ -137,7 +137,8 @@ export default {
     };
 
     onMounted(() => {
-      checkVoucher();
+      let token = localStorage.getItem("token");
+      if (token) checkVoucher();
     });
     return { items, voucher, toast, checkVoucher };
   },

@@ -135,6 +135,9 @@ export default {
             email: route.query.email,
             password: localStorage.getItem("password"),
             confirm_password: localStorage.getItem("confirm_password"),
+            team_size: Number(localStorage.getItem("teamSize")),
+            project_desc: localStorage.getItem("projectDescription"),
+            college: localStorage.getItem("faculty"),
           })
           .then((response) => {
             toast.value.toast(response.data.msg);

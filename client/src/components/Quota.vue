@@ -55,7 +55,8 @@ export default {
     };
 
     onMounted(() => {
-      getQuota();
+      let token = localStorage.getItem("token");
+      if (token) getQuota();
     });
 
     return { vm, ips, rerenderKey, getQuota };

@@ -359,7 +359,8 @@ export default {
     };
 
     onMounted(() => {
-      getK8s();
+      let token = localStorage.getItem("token");
+      if (token) getK8s();
     });
     return {
       checked,

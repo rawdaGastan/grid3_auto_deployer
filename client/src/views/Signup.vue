@@ -101,20 +101,23 @@
           >
           </v-text-field>
 
-          <v-row justify="center">
+          <v-row>
             <v-dialog
               v-model="dialog"
               transition="dialog-top-transition"
               width="800"
             >
               <template v-slot:activator="{ props }">
-                <v-btn
-                  variant="text"
-                  class="mb-5 text-decoration-underline"
-                  v-bind="props"
-                >
-                  Terms and Conditions
-                </v-btn>
+                <v-checkbox v-model="checked">
+                  <template v-slot:label>
+                    <a
+                      class="grey-darken-4 text-uppercase text-decoration-underline"
+                      v-bind="props"
+                    >
+                      Terms and Conditions
+                    </a>
+                  </template>
+                </v-checkbox>
               </template>
               <v-card class="pa-5">
                 <v-card-title class="text-center">
@@ -338,51 +341,44 @@ export default {
     const nameValidation = ref([
       (value) => {
         if (!value.match(nameRegex)) return "Must be at most four names";
-        if(value.length < 3) return "Field should be at least 3 characters";
-        if(value.length >20) return "Field should be at most 20 characters";
+        if (value.length < 3) return "Field should be at least 3 characters";
+        if (value.length > 20) return "Field should be at most 20 characters";
         return true;
       },
     ]);
     const Rules = ref([
-    (value) => {
+      (value) => {
         if (!value) return "Field is required";
-        if(value.length < 3) return "Field should be at least 3 characters";
+        if (value.length < 3) return "Field should be at least 3 characters";
         return true;
       },
-      
     ]);
     const teamSizeRules = ref([
-
-    (value) => {
+      (value) => {
         if (!value) return "Field is required";
-        if(value < 1) return "Team Size should at least 1";
+        if (value < 1) return "Team Size should at least 1";
         return true;
       },
-    
     ]);
     const emailRules = ref([
-
-    (value) => {
+      (value) => {
         if (!value) return "Field is required";
-        if(!value.match(emailRegex)) return "Invalid email address";
+        if (!value.match(emailRegex)) return "Invalid email address";
         return true;
       },
-
     ]);
     const passwordRules = ref([
-
-    (value) => {
+      (value) => {
         if (!value) return "Field is required";
-        if(value.length < 7) return "Password must be at least 7 characters";
+        if (value.length < 7) return "Password must be at least 7 characters";
         return true;
       },
-
     ]);
     const cpasswordRules = ref([
-    (value) => {
+      (value) => {
         if (!value) return "Field is required";
-        if(value.length < 7) return "Password must be at least 7 characters";
-        if(value !== password.value) return "Passwords don't match";
+        if (value.length < 7) return "Password must be at least 7 characters";
+        if (value !== password.value) return "Passwords don't match";
 
         return true;
       },
@@ -403,16 +399,20 @@ export default {
           college: faculty.value,
         })
         .then((response) => {
-          localStorage.setItem('fullname', fullname.value);
-          localStorage.setItem('password', password.value);
-          localStorage.setItem('confirm_password', cpassword.value);
-          localStorage.setItem('teamSize', Number(teamSize.value));
-          localStorage.setItem('projectDescription', projectDescription.value);
-          localStorage.setItem('faculty', faculty.value);
+          localStorage.setItem("fullname", fullname.value);
+          localStorage.setItem("password", password.value);
+          localStorage.setItem("confirm_password", cpassword.value);
+          localStorage.setItem("teamSize", Number(teamSize.value));
+          localStorage.setItem("projectDescription", projectDescription.value);
+          localStorage.setItem("faculty", faculty.value);
           toast.value.toast(response.data.msg);
           router.push({
-            name: 'OTP',
-            query: { "email": email.value, "isSignup": isSignup.value, "timeout": response.data.data.timeout },
+            name: "OTP",
+            query: {
+              email: email.value,
+              isSignup: isSignup.value,
+              timeout: response.data.data.timeout,
+            },
           });
         })
         .catch((error) => {
@@ -422,12 +422,12 @@ export default {
     };
 
     const actions = (action) => {
-      if(action == 'accept') {
-        dialog.value = false
-        checked.value = true
+      if (action == "accept") {
+        dialog.value = false;
+        checked.value = true;
       } else {
-        dialog.value = false
-        checked.value = false
+        dialog.value = false;
+        checked.value = false;
       }
     };
     return {
@@ -458,3 +458,9 @@ export default {
   },
 };
 </script>
+
+<style>
+.v-dialog .v-label{
+  opacity: 1;
+}
+</style>

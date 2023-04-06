@@ -9,10 +9,10 @@
       You will not be able to deploy. Please add your public SSH key in your profile settings.
     </v-alert>
     <h5 class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary">
-      Kubernetes Cluster
+      Kubernetes Clusters
     </h5>
     <p class="text-center mb-10">
-      Create and deploy a Kubernetes cluster on virtual machine
+      Deploy a new Kubernetes cluster
     </p>
     <v-row justify="center">
       <v-col cols="12" sm="6">
@@ -178,8 +178,6 @@
                           <td>{{ item.master.mru }}MB</td>
                           <td>{{ item.master.cru }}</td>
                           <td>{{ item.master.ygg_ip }}</td>
-
-
                         </tr>
                       </tbody>
                     </v-table>
@@ -242,18 +240,18 @@ export default {
         return "This field is required.";
       },
     ]);
-    const headers = ref(["ID", "Name", "Disk (SSD)", "RAM (GB)", "CPU", "IP"]);
+    const headers = ref(["ID", "Name", "Disk (GB)", "RAM (MB)", "CPU", "IP"]);
     const selectedResource = ref(null);
     const resources = ref([
-      { title: "Small K8s (1 CPU, 2MB, 5GB)", value: "small" },
-      { title: "Medium K8s (2 CPU, 4MB, 10GB)", value: "medium" },
-      { title: "Large K8s (4 CPU, 8MB, 15GB)", value: "large" },
+      { title: "Small K8s (1 CPU, 2GB, 5GB)", value: "small" },
+      { title: "Medium K8s (2 CPU, 4GB, 10GB)", value: "medium" },
+      { title: "Large K8s (4 CPU, 8GB, 15GB)", value: "large" },
     ]);
     const workerName = ref(null);
     const workerResources = ref([
-      { title: "Small K8s (1 CPU, 2MB, 5GB)", value: "small" },
-      { title: "Medium K8s (2 CPU, 4MB, 10GB)", value: "medium" },
-      { title: "Large K8s (4 CPU, 8MB, 15GB)", value: "large" },
+      { title: "Small K8s (1 CPU, 2GB, 5GB)", value: "small" },
+      { title: "Medium K8s (2 CPU, 4GB, 10GB)", value: "medium" },
+      { title: "Large K8s (4 CPU, 8GB, 15GB)", value: "large" },
     ]);
     const workerSelResources = ref(null);
     const worker = ref([]);

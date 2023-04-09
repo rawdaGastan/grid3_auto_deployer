@@ -14,7 +14,6 @@ type User struct {
 	Name           string    `json:"name" binding:"required"`
 	Email          string    `json:"email" gorm:"unique" binding:"required"`
 	HashedPassword string    `json:"hashed_password" binding:"required"`
-	Voucher        string    `json:"voucher"`
 	UpdatedAt      time.Time `json:"updated_at"`
 	Code           int       `json:"code"`
 	SSHKey         string    `json:"ssh_key"`

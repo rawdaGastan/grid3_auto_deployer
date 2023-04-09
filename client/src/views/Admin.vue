@@ -51,7 +51,7 @@
                   <td v-else>-</td>
                   <td>{{ item.vms }}</td>
                   <td>{{ item.public_ips }}</td>
-                  <td v-if="!item.approved">
+                  <td v-if="!item.approved && !item.rejected">
                     <BaseButton
                       color="primary"
                       text="Approve"
@@ -69,6 +69,9 @@
                       variant="flat"
                       @click="approveVoucher(item.id, false)"
                     />
+                  </td>
+                  <td v-else-if="item.rejected">
+                    <span class="text-error">Rejected</span>
                   </td>
                   <td v-else>
                     <span class="text-success">Approved</span>

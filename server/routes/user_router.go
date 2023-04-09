@@ -535,12 +535,7 @@ func (r *Router) ApplyForVoucherHandler(w http.ResponseWriter, req *http.Request
 		writeErrResponse(req, w, http.StatusNotFound, "Voucher is not found")
 		return
 	}
-	if userVoucher.Voucher != "" {
-		if userVoucher.Approved {
-			writeErrResponse(req, w, http.StatusBadRequest, "You have already a voucher")
-			return
-		}
-
+	if userVoucher.Voucher != "" && !userVoucher.Approved && !userVoucher.Rejected {
 		writeErrResponse(req, w, http.StatusBadRequest, "You have already a voucher request, please wait for the confirmation mail")
 		return
 	}
@@ -595,11 +590,6 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	if oldQuota.Vms != 0 {
-		writeErrResponse(req, w, http.StatusBadRequest, fmt.Sprintf("You have already %d vms in your quota", oldQuota.Vms))
-		return
-	}
-
 	voucherQuota, err := r.db.GetVoucher(input.Voucher)
 	if err == gorm.ErrRecordNotFound {
 		writeErrResponse(req, w, http.StatusNotFound, "User voucher not found")
@@ -611,8 +601,13 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
+	if voucherQuota.Rejected {
+		writeErrResponse(req, w, http.StatusBadRequest, "Voucher is rejected yet")
+		return
+	}
+
 	if !voucherQuota.Approved {
-		writeErrResponse(req, w, http.StatusBadRequest, "Voucher is not Approved yet")
+		writeErrResponse(req, w, http.StatusBadRequest, "Voucher is not approved yet")
 		return
 	}
 
@@ -621,7 +616,7 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	err = r.db.AddUserVoucher(userID, input.Voucher)
+	err = r.db.DeactivateVoucher(userID, input.Voucher)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)

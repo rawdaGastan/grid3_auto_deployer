@@ -48,6 +48,8 @@
             :rules="teamSizeRules"
             type="number"
             label="Team Size"
+            min="0"
+            oninput="validity.valid||(value='')"
             placeholder="Enter your team size"
             bg-color="accent"
             variant="outlined"

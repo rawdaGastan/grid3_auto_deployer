@@ -602,7 +602,7 @@ func (r *Router) ActivateVoucherHandler(w http.ResponseWriter, req *http.Request
 	}
 
 	if voucherQuota.Rejected {
-		writeErrResponse(req, w, http.StatusBadRequest, "Voucher is rejected yet")
+		writeErrResponse(req, w, http.StatusBadRequest, "Voucher is rejected")
 		return
 	}
 

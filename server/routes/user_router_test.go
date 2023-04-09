@@ -84,8 +84,8 @@ func TestSignUpHandler(t *testing.T) {
 	body := []byte(`{
 		"name": "name",
 		"email": "name@gmail.com",
-		"password": "123456",
-		"confirm_password": "123456",
+		"password": "1234567",
+		"confirm_password": "1234567",
 		"team_size":5,
 		"project_desc":"desc",
 		"college":"clg"

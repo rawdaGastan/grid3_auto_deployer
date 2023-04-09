@@ -56,7 +56,9 @@ export default {
 
 <style>
 .quota {
-  position: absolute;
-  top: 35%;
+  position: fixed;
+  top: 15%;
+  right: 0;
+  z-index: 999;
 }
 </style>

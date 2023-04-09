@@ -97,16 +97,36 @@
         </section>
       </v-col>
       <v-col cols="12" md="4">
-        <div
-          class="resources text-white text-center rounded-lg bg-primary py-5 shadow"
-        >
-          <p>
-            <strong style="font-size: 2.5rem;">{{ usedResources }} VM</strong>
-          </p>
-          <p class="mx-lg-auto font-weight-medium">
-            Numbers of Used Reasources
-          </p>
-        </div>
+        <v-row>
+          <v-col>
+            <div
+              class="resources text-white text-center rounded-lg bg-primary py-5 shadow"
+            >
+              <p>
+                <strong style="font-size: 2.5rem;"
+                  >{{ usedResources }}</strong
+                >
+              </p>
+              <p class="mx-lg-auto font-weight-medium">
+                Used VMs
+              </p>
+            </div>
+          </v-col>
+          <v-col>
+            <div
+              class="resources text-white text-center rounded-lg bg-primary py-5 shadow"
+            >
+              <p>
+                <strong style="font-size: 2.5rem;"
+                  >{{ usedIPs }}</strong
+                >
+              </p>
+              <p class="mx-lg-auto font-weight-medium">
+                Used IPs
+              </p>
+            </div>
+          </v-col>
+        </v-row>
         <section class="my-5 shadow">
           <v-sheet rounded class="bg-grey-lighten-5">
             <h5 class="text-grey-darken-1 text-h5 bg-primary text-center pa-4">
@@ -178,6 +198,7 @@ export default {
     const toast = ref(null);
     const loading = ref(false);
     const usedResources = ref(null);
+    const usedIPs = ref(null);
     const approveAllCount = ref(null);
     const currentPage = ref(null);
     const totalPages = ref(null);
@@ -224,11 +245,29 @@ export default {
     };
 
     const approveVoucher = (id, approved) => {
-      userService.approveVoucher(id, approved);
+      userService
+        .approveVoucher(id, approved)
+        .then((response) => {
+          toast.value.toast(response.data.msg, "#388E3C");
+          getVouchers();
+        })
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
+        });
     };
 
     const approveAllVouchers = () => {
-      userService.approveAllVouchers();
+      userService
+        .approveAllVouchers()
+        .then((response) => {
+          toast.value.toast(response.data.msg, "#388E3C");
+          getVouchers();
+        })
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
+        });
     };
 
     const getUsers = () => {
@@ -237,8 +276,9 @@ export default {
         .then((response) => {
           const { data } = response.data;
           users.value = data;
-          users.value.map((usedvms) => {
-            usedResources.value += usedvms.used_vms;
+          users.value.map((usedData) => {
+            usedResources.value += usedData.used_vms;
+            usedIPs.value += usedData.used_public_ips;
           });
         })
         .catch((response) => {
@@ -283,6 +323,7 @@ export default {
       currentPage,
       totalPages,
       itemsPerPage,
+      usedIPs,
     };
   },
   beforeRouteEnter(to, from, next) {

@@ -121,6 +121,14 @@ const routes = [
         },
       },
       {
+        path: "/about",
+        name: "About",
+        component: About,
+        meta: {
+          requiredAuth: false,
+        },
+      },
+      {
         path: "admin",
         name: "Admin",
         component: Admin,

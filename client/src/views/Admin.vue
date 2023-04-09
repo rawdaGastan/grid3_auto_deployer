@@ -1,5 +1,5 @@
 <template>
-  <v-container style="max-width: 1600px;" fill-height>
+  <v-container style="max-width: 1700px;" fill-height>
     <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
       Admin Panel
     </h5>
@@ -82,8 +82,8 @@
             <div class="actions d-flex justify-center align-center">
               <v-pagination
                 v-model="currentPage"
-                :length="currentPage"
-                :total-visible="totalPages"
+                :length="Math.ceil(totalPages / itemsPerPage)"
+                :total-visible="Math.ceil(totalPages / itemsPerPage)"
               ></v-pagination>
               <BaseButton
                 v-if="approveAllCount > 0"
@@ -97,16 +97,32 @@
         </section>
       </v-col>
       <v-col cols="12" md="4">
-        <div
-          class="resources text-white text-center rounded-lg bg-primary py-5 shadow"
-        >
-          <p>
-            <strong style="font-size: 2.5rem;">{{ usedResources }} VM</strong>
-          </p>
-          <p class="mx-lg-auto font-weight-medium">
-            Numbers of Used Reasources
-          </p>
-        </div>
+        <v-row>
+          <v-col>
+            <div
+              class="resources text-white text-center rounded-lg bg-primary py-5 shadow"
+            >
+              <p>
+                <strong style="font-size: 2.5rem;">{{ usedResources }}</strong>
+              </p>
+              <p class="mx-lg-auto font-weight-medium">
+                Used VMs
+              </p>
+            </div>
+          </v-col>
+          <v-col>
+            <div
+              class="resources text-white text-center rounded-lg bg-primary py-5 shadow"
+            >
+              <p>
+                <strong style="font-size: 2.5rem;">{{ usedIPs }}</strong>
+              </p>
+              <p class="mx-lg-auto font-weight-medium">
+                Used IPs
+              </p>
+            </div>
+          </v-col>
+        </v-row>
         <section class="my-5 shadow">
           <v-sheet rounded class="bg-grey-lighten-5">
             <h5 class="text-grey-darken-1 text-h5 bg-primary text-center pa-4">
@@ -133,8 +149,12 @@
                       {{ item.email }}
                     </td>
                     <td>
-                      <span class="text-red">{{ item.used_vms }}</span> /
-                      <span>{{ item.vms }}</span>
+                      <span class="text-red">{{ item.used_vms }}</span
+                      >/<span>{{ item.vms }}</span>
+                    </td>
+                    <td>
+                      <span class="text-red">{{ item.used_public_ips }}</span
+                      >/<span>{{ item.public_ips }}</span>
                     </td>
                   </tr>
                 </tbody>
@@ -169,13 +189,14 @@ export default {
       "Public IPs",
     ]);
 
-    const usersHeaders = ref(["No", "Name", "Email", "Used"]);
+    const usersHeaders = ref(["No", "Name", "Email", "VMs", "IPs"]);
 
     const vouchers = ref([]);
     const users = ref([]);
     const toast = ref(null);
     const loading = ref(false);
     const usedResources = ref(null);
+    const usedIPs = ref(null);
     const approveAllCount = ref(null);
     const currentPage = ref(null);
     const totalPages = ref(null);
@@ -191,10 +212,8 @@ export default {
         .then((response) => {
           const { data } = response.data;
           vouchers.value = data;
+          totalPages.value = data.length;
           approveAllCount.value = 0;
-          totalPages.value = Math.ceil(
-            vouchers.value.length / itemsPerPage.value
-          );
 
           for (let voucher of data) {
             if (!voucher?.approved) {
@@ -222,7 +241,8 @@ export default {
     };
 
     const approveVoucher = (id, approved) => {
-      userService.approveVoucher(id, approved)
+      userService
+        .approveVoucher(id, approved)
         .then((response) => {
           toast.value.toast(response.data.msg, "#388E3C");
           getVouchers();
@@ -234,8 +254,9 @@ export default {
     };
 
     const approveAllVouchers = () => {
-      userService.approveAllVouchers()
-      .then((response) => {
+      userService
+        .approveAllVouchers()
+        .then((response) => {
           toast.value.toast(response.data.msg, "#388E3C");
           getVouchers();
         })
@@ -251,8 +272,9 @@ export default {
         .then((response) => {
           const { data } = response.data;
           users.value = data;
-          users.value.map((usedvms) => {
-            usedResources.value += usedvms.used_vms;
+          users.value.map((usedData) => {
+            usedResources.value += usedData.used_vms;
+            usedIPs.value += usedData.used_public_ips;
           });
         })
         .catch((response) => {
@@ -300,6 +322,7 @@ export default {
       currentPage,
       totalPages,
       itemsPerPage,
+      usedIPs,
     };
   },
   beforeRouteEnter(to, from, next) {

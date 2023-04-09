@@ -1,5 +1,13 @@
 <template>
   <v-container>
+    <v-alert v-if="alert"
+      outlined
+      type="warning"
+      prominent
+      border="left"
+    >
+      You will not be able to deploy. Please add your public SSH key in your profile settings.
+    </v-alert>
     <h5 class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary">
       Kubernetes Clusters
     </h5>
@@ -33,7 +41,7 @@
               <div class="mx-auto d-flex justify-center">
                 <BaseButton
                   type="submit"
-                  :disabled="!verify"
+                  :disabled="!verify || alert"
                   class="w-25 d-inline-block bg-primary mr-2"
                   :loading="loading"
                   text="Deploy"
@@ -216,6 +224,7 @@ export default {
 
     const verify = ref(false);
     const checked = ref(false);
+    const alert = ref(false);
 
     const workerVerify = ref(false);
     const k8Name = ref(null);
@@ -231,7 +240,7 @@ export default {
         return "This field is required.";
       },
     ]);
-    const headers = ref(["ID", "Name", "Disk (SSD)", "RAM (GB)", "CPU", "IP"]);
+    const headers = ref(["ID", "Name", "Disk (GB)", "RAM (MB)", "CPU", "IP"]);
     const selectedResource = ref(null);
     const resources = ref([
       { title: "Small K8s (1 CPU, 2GB, 5GB)", value: "small" },
@@ -284,7 +293,6 @@ export default {
 
     const deployK8s = () => {
       loading.value = true;
-      toast.value.toast("Deploying..");
       userService
         .deployK8s(
           k8Name.value,
@@ -306,6 +314,7 @@ export default {
         .finally(() => {
           resetInputs();
           loading.value = false;
+          checked.value = false;
         });
     };
 
@@ -352,6 +361,17 @@ export default {
         });
     };
 
+    userService
+      .getUser()
+      .then((response) => {
+        const { user } = response.data.data;
+        alert.value = user.ssh_key == "";
+      })
+      .catch((response) => {
+        const { err } = response.response.data;
+        toast.value.toast(err, "#FF5252");
+      });
+
     const emitQuota = () => {
       emitter.emit("userUpdateQuota", true);
     };
@@ -365,6 +385,7 @@ export default {
       verify,
       workerVerify,
       k8Name,
+      alert,
       selectedResource,
       resources,
       headers,

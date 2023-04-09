@@ -1,5 +1,13 @@
 <template>
   <v-container>
+    <v-alert v-model="alert"
+      outlined
+      type="warning"
+      prominent
+      border="left"
+    >
+      You will not be able to deploy. Please add your public SSH key in your profile settings.
+    </v-alert>
     <h5 class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary">
       Virtual Machines
     </h5>
@@ -32,7 +40,7 @@
             block
             class="bg-primary"
             :loading="loading"
-            :disabled="!verify"
+            :disabled="!verify || alert"
             text="Deploy"
           />
         </v-form>
@@ -122,6 +130,7 @@ export default {
     const emitter = inject("emitter");
     const verify = ref(false);
     const checked = ref(false);
+    const alert = ref(false);
 
     const name = ref(null);
     const rules = ref([
@@ -137,7 +146,7 @@ export default {
       { title: "Medium VM (2 CPU, 4GB, 10GB)", value: "medium" },
       { title: "Large VM (4 CPU, 8GB, 15GB)", value: "large" },
     ]);
-    const headers = ref(["ID", "Name", "Disk (SSD)", "RAM (GB)", "CPU", "IP"]);
+    const headers = ref(["ID", "Name", "Disk (GB)", "RAM (MB)", "CPU", "IP"]);
 
     const toast = ref(null);
     const loading = ref(false);
@@ -166,7 +175,6 @@ export default {
 
     const deployVm = () => {
       loading.value = true;
-      toast.value.toast("Deploying..");
       userService
         .deployVm(name.value, selectedResource.value, checked.value)
         .then((response) => {
@@ -174,13 +182,15 @@ export default {
           reset();
           emitQuota();
           getVMS();
-          loading.value = false;
         })
         .catch((response) => {
           reset();
           const { err } = response.response.data;
           toast.value.toast(err, "#FF5252");
+        })
+        .finally(() => {
           loading.value = false;
+          checked.value = false;
         });
     };
 
@@ -196,12 +206,15 @@ export default {
               .then((response) => {
                 toast.value.toast(response.data.msg, "#388E3C");
                 getVMS();
-                deLoading.value = false;
               })
               .catch((response) => {
                 const { err } = response.response.data;
                 toast.value.toast(err, "#FF5252");
                 deLoading.value = false;
+              })
+              .finally(() => {
+                deLoading.value = false;
+                checked.value = false;
               });
           }
         });
@@ -230,6 +243,17 @@ export default {
         });
     };
 
+    userService
+      .getUser()
+      .then((response) => {
+        const { user } = response.data.data;
+        alert.value = user.ssh_key == "";
+      })
+      .catch((response) => {
+        const { err } = response.response.data;
+        toast.value.toast(err, "#FF5252");
+      });
+
     const emitQuota = () => {
       emitter.emit("userUpdateQuota", true);
     };
@@ -241,6 +265,7 @@ export default {
     return {
       verify,
       name,
+      alert,
       selectedResource,
       resources,
       loading,

@@ -48,6 +48,7 @@ func (r *Router) GenerateVoucherHandler(w http.ResponseWriter, req *http.Request
 		Voucher:   voucher,
 		VMs:       input.VMs,
 		PublicIPs: input.PublicIPs,
+		Approved:  true,
 	}
 
 	err = r.db.CreateVoucher(&v)
@@ -117,15 +118,15 @@ func (r *Router) UpdateVoucherHandler(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	if voucher.Rejected && !input.Approved {
+		writeErrResponse(req, w, http.StatusBadRequest, "Voucher is already rejected")
+		return
+	}
+
 	updatedVoucher, err := r.db.UpdateVoucher(id, input.Approved)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
-		return
-	}
-
-	if updatedVoucher.UserID == "" && !input.Approved {
-		writeMsgResponse(req, w, "Voucher is rejected successfully", "")
 		return
 	}
 
@@ -158,7 +159,7 @@ func (r *Router) UpdateVoucherHandler(w http.ResponseWriter, req *http.Request) 
 
 // ApproveAllVouchers approves all vouchers by admin
 func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
-	vouchers, err := r.db.ApproveAllVouchers()
+	vouchers, err := r.db.GetAllVouchers()
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -166,6 +167,17 @@ func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
 	}
 
 	for _, v := range vouchers {
+		if v.Approved || v.Rejected {
+			continue
+		}
+
+		_, err := r.db.UpdateVoucher(v.ID, true)
+		if err != nil {
+			log.Error().Err(err).Send()
+			writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
+			return
+		}
+
 		user, err := r.db.GetUserByID(v.UserID)
 		if err == gorm.ErrRecordNotFound {
 			continue

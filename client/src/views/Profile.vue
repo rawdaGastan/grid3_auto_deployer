@@ -74,13 +74,11 @@
                 variant="outlined"
                 density="compact"
                 clearable
-                :disabled="!allowVoucher"
               ></v-text-field>
             </v-col>
 
             <v-col cols="12" sm="3">
               <BaseButton
-                :disabled="!allowVoucher"
                 class="bg-primary text-capitalize"
                 text="Apply Voucher"
                 @click="activateVoucher"
@@ -233,7 +231,6 @@ export default {
     const actLoading = ref(false);
     const toast = ref(null);
     const verified = ref(false);
-    const allowVoucher = ref(false);
     const loading = ref(false);
     const newVoucherVerify = ref(false);
     const vms = ref(0);
@@ -263,8 +260,6 @@ export default {
           const { user } = response.data.data;
           email.value = user.email;
           name.value = user.name;
-          voucher.value = user.voucher;
-          allowVoucher.value = user.voucher == "";
           verified.value = user.verified;
           sshKey.value = user.ssh_key;
           if (!user.college) {
@@ -364,7 +359,6 @@ export default {
       email,
       name,
       voucher,
-      allowVoucher,
       sshKey,
       verified,
       avatar,

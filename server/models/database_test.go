@@ -132,7 +132,6 @@ func TestUpdateUserByID(t *testing.T) {
 	t.Run("user found", func(t *testing.T) {
 		user := User{
 			Email:          "email",
-			Voucher:        "voucher",
 			HashedPassword: "pass",
 		}
 		err := db.CreateUser(&user)
@@ -140,7 +139,6 @@ func TestUpdateUserByID(t *testing.T) {
 		err = db.UpdateUserByID(User{
 			ID:             user.ID,
 			Email:          "",
-			Voucher:        "voucher",
 			HashedPassword: "new-pass",
 			Name:           "name",
 		})
@@ -149,7 +147,6 @@ func TestUpdateUserByID(t *testing.T) {
 		err = db.db.First(&u).Error
 		// shouldn't change
 		assert.Equal(t, u.Email, user.Email)
-		assert.Equal(t, u.Voucher, user.Voucher)
 		// should change
 		assert.Equal(t, u.HashedPassword, "new-pass")
 		assert.Equal(t, u.Name, "name")
@@ -186,7 +183,7 @@ func TestUpdateVerification(t *testing.T) {
 func TestAddUserVoucher(t *testing.T) {
 	db := setupDB(t)
 	t.Run("user and voucher not found so nothing updated", func(t *testing.T) {
-		err := db.AddUserVoucher("id", "voucher")
+		err := db.DeactivateVoucher("id", "voucher")
 		assert.NoError(t, err)
 		var user User
 		var voucher Voucher
@@ -212,13 +209,12 @@ func TestAddUserVoucher(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, voucher.Used, false)
 
-		err = db.AddUserVoucher(user.ID.String(), "voucher")
+		err = db.DeactivateVoucher(user.ID.String(), "voucher")
 		assert.NoError(t, err)
 		var u User
 		var v Voucher
 		err = db.db.First(&u).Error
 		assert.NoError(t, err)
-		assert.Equal(t, u.Voucher, "voucher")
 
 		err = db.db.First(&v).Error
 		assert.NoError(t, err)
@@ -234,15 +230,13 @@ func TestGetNotUsedVoucherByUserID(t *testing.T) {
 	})
 	t.Run("voucher is used", func(t *testing.T) {
 		user := User{
-			Email:   "email1",
-			Voucher: "voucher1",
+			Email: "email1",
 		}
 		err := db.CreateUser(&user)
 		assert.NoError(t, err)
 		voucher := Voucher{
-			UserID:  user.ID.String(),
-			Voucher: "voucher1",
-			Used:    true,
+			UserID: user.ID.String(),
+			Used:   true,
 		}
 
 		err = db.db.Create(&voucher).Error
@@ -253,8 +247,7 @@ func TestGetNotUsedVoucherByUserID(t *testing.T) {
 	})
 	t.Run("voucher found", func(t *testing.T) {
 		user := User{
-			Email:   "email2",
-			Voucher: "voucher2",
+			Email: "email2",
 		}
 		err := db.CreateUser(&user)
 		assert.NoError(t, err)
@@ -541,39 +534,11 @@ func TestApproveVoucher(t *testing.T) {
 		assert.Equal(t, v, resVoucher)
 	})
 }
-func TestApproveAllVouchers(t *testing.T) {
-	db := setupDB(t)
-	t.Run("vouchers not found", func(t *testing.T) {
-		_, err := db.ApproveAllVouchers()
-		// missing where error because gorm uses the returned vouchers as the where clause
-		// since no vouchers exist where clause is empty
-		assert.Equal(t, err, gorm.ErrMissingWhereClause)
-	})
-	t.Run("vouchers found", func(t *testing.T) {
-		voucher1 := Voucher{Voucher: "voucher1", UserID: "user"}
-		voucher2 := Voucher{Voucher: "voucher2", UserID: "new-user"}
 
-		err := db.CreateVoucher(&voucher1)
-		assert.NoError(t, err)
-		err = db.CreateVoucher(&voucher2)
-		assert.NoError(t, err)
-
-		v, err := db.ApproveAllVouchers()
-		assert.NoError(t, err)
-		assert.Len(t, v, 2)
-		assert.True(t, v[0].Approved)
-		assert.True(t, v[1].Approved)
-
-		var vouchers []Voucher
-		err = db.db.Find(&vouchers).Error
-		assert.NoError(t, err)
-		assert.Equal(t, v, vouchers)
-	})
-}
 func TestDeactivateVoucher(t *testing.T) {
 	db := setupDB(t)
 	t.Run("voucher not found so no voucher updated", func(t *testing.T) {
-		err := db.DeactivateVoucher("voucher")
+		err := db.DeactivateVoucher("user", "voucher")
 		assert.NoError(t, err)
 	})
 	t.Run("vouchers found", func(t *testing.T) {
@@ -585,7 +550,7 @@ func TestDeactivateVoucher(t *testing.T) {
 		err = db.CreateVoucher(&voucher2)
 		assert.NoError(t, err)
 
-		err = db.DeactivateVoucher("voucher1")
+		err = db.DeactivateVoucher("user", "voucher1")
 		assert.NoError(t, err)
 
 		var v Voucher

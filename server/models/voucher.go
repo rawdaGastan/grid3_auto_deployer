@@ -11,4 +11,5 @@ type Voucher struct {
 	Reason    string `json:"reason" binding:"required"`
 	Used      bool   `json:"used" binding:"required"`
 	Approved  bool   `json:"approved" binding:"required"`
+	Rejected  bool   `json:"rejected" binding:"required"`
 }

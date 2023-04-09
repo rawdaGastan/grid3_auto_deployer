@@ -20,7 +20,7 @@
               Send
             </v-btn>
             <div class="text-body-2 my-3 text-center">
-              <router-link class="text-body-2 primary text-decoration-none" to="/">Back to Login</router-link>
+              <router-link class="text-body-2 primary text-decoration-none" to="/login">Back to Login</router-link>
             </div>
           </v-form>
         </v-col>

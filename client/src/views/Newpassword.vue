@@ -103,6 +103,7 @@ export default {
             validatePassword,
             value => !!value || 'Field is required',
             value => (value && value.length >= 7) || 'Password must be at least 7 characters',
+            value => (value && value.length <= 12) || 'Password must be at most 12 characters',
         ]);
 
         const onSubmit = () => {

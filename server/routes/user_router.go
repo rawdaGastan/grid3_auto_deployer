@@ -276,18 +276,9 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 	tkn, err := jwt.ParseWithClaims(reqToken, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(r.config.Token.Secret), nil
 	})
-	if err != nil {
-		log.Error().Err(err).Send()
-		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
-		return
-	}
-	if !tkn.Valid {
-		writeErrResponse(req, w, http.StatusUnauthorized, "Invalid token")
-		return
-	}
 
 	// if token didn't expire
-	if time.Until(claims.ExpiresAt.Time) < time.Duration(r.config.Token.Timeout)*time.Minute {
+	if err == nil && time.Until(claims.ExpiresAt.Time) < time.Duration(r.config.Token.Timeout)*time.Minute && tkn.Valid {
 		writeMsgResponse(req, w, "Access Token still valid", map[string]string{"access_token": reqToken, "refresh_token": reqToken})
 		return
 	}

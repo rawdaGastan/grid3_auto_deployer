@@ -41,7 +41,7 @@ func ValidatePassword(v interface{}, param string) error {
 // ValidatePass used for validating passwords before creating user
 func ValidatePass(pass string) error {
 	// password should be ASCII , min 5 , max 10
-	validator := password.NewValidator(true, 5, 10)
+	validator := password.NewValidator(true, 7, 12)
 	err := validator.ValidatePassword(pass)
 	if err != nil {
 		return err

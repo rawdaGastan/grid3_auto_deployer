@@ -88,6 +88,7 @@ export default {
     const drawer = ref(false);
     const username = ref("");
     const isActive = ref(0);
+    const token = ref(localStorage.getItem("token"))
     const excludedRoutes = ref([
       "/login",
       "/signup",
@@ -95,6 +96,7 @@ export default {
       "/otp",
       "/newPassword",
       "/maintenance",
+      "/about"
     ]);
     const items = ref([
       {
@@ -127,7 +129,6 @@ export default {
       {
         title: "Logout",
         path: "/logout",
-        redirect: "/login",
       },
     ]);
 
@@ -143,6 +144,13 @@ export default {
       if (title == "Logout") {
         localStorage.removeItem("token");
         localStorage.removeItem("username");
+        items.value = [
+          {
+            path: "about",
+            title: "About",
+          },
+        ];
+        user.value = [];
       }
     };
 
@@ -165,14 +173,22 @@ export default {
         });
     };
 
-    if (excludedRoutes.value.includes(route.path)) {
-      items.value = [];
-      user.value = [];
-    }
+    const checkExcludedFromNavBar = (path) => {
+      if (excludedRoutes.value.includes(path) && !token.value) {
+        items.value = [
+          {
+            path: "about",
+            title: "About",
+          },
+        ];
+        user.value = [];
+      }
+    };
 
     onMounted(() => {
-      let token = localStorage.getItem("token");
-      if (token) getUserName();
+      if (route.redirectedFrom) checkTitle(route.redirectedFrom.name);
+      checkExcludedFromNavBar(route.path);
+      if (token.value) getUserName();
     });
 
     return {
@@ -181,9 +197,11 @@ export default {
       user,
       username,
       isActive,
+      token,
       setActive,
       checkTitle,
       getUserName,
+      checkExcludedFromNavBar,
     };
   },
 };

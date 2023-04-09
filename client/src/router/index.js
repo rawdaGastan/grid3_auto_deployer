@@ -56,6 +56,15 @@ const routes = [
     },
   },
   {
+    path: "/about",
+    name: "About",
+    component: About,
+    meta: {
+      requiredAuth: false,
+      layout: "Default",
+    },
+  },
+  {
     path: "/maintenance",
     name: "Maintenance",
     component: () => import("@/views/Maintenance.vue"),
@@ -91,14 +100,6 @@ const routes = [
         path: "/changePassword",
         name: "ChangePassword",
         component: NewPassword,
-        meta: {
-          requiredAuth: true,
-        },
-      },
-      {
-        path: "/about",
-        name: "About",
-        component: About,
         meta: {
           requiredAuth: true,
         },

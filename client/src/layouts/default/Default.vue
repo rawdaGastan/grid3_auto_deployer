@@ -3,7 +3,7 @@
     <default-bar v-if="!maintenance"/>
     <Quota class="quota" v-if="!isAdmin && !maintenance && !noQuota" />
     <default-view />
-    <FooterComponent />
+    <FooterComponent/>
   </v-app>
 </template>
 
@@ -29,7 +29,7 @@ export default {
     const router = useRouter();
     const maintenance = ref(false);
     const noQuota = ref(false);
-    const excludedRoutes = ref(["/login", "/signup", "/forgetPassword", "/otp", "/newPassword"])
+    const excludedRoutes = ref(["/login", "/signup", "/forgetPassword", "/otp", "/newPassword", "/about"])
 
     userService.maintenance();
     maintenance.value = localStorage.getItem("maintenance") == "true";

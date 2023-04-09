@@ -171,6 +171,13 @@ func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
+		_, err := r.db.UpdateVoucher(v.ID, true)
+		if err != nil {
+			log.Error().Err(err).Send()
+			writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
+			return
+		}
+
 		user, err := r.db.GetUserByID(v.UserID)
 		if err == gorm.ErrRecordNotFound {
 			continue

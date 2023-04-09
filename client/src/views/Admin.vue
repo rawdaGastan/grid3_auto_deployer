@@ -79,7 +79,7 @@
             <div class="actions d-flex justify-center align-center">
               <v-pagination
                 v-model="currentPage"
-                :length="totalPages"
+                :length="currentPage"
                 :total-visible="totalPages"
               ></v-pagination>
               <BaseButton

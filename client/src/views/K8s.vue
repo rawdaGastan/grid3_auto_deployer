@@ -1,12 +1,8 @@
 <template>
   <v-container>
-    <v-alert v-if="alert"
-      outlined
-      type="warning"
-      prominent
-      border="left"
-    >
-      You will not be able to deploy. Please add your public SSH key in your profile settings.
+    <v-alert v-if="alert" outlined type="warning" prominent border="left">
+      You will not be able to deploy. Please add your public SSH key in your
+      profile settings.
     </v-alert>
     <h5 class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary">
       Kubernetes Clusters
@@ -117,81 +113,92 @@
     </v-row>
     <v-row v-if="results.length > 0">
       <v-col>
-        <v-table>
-          <thead class="bg-primary text-white">
-            <tr>
-              <th
-                class="text-left text-white"
-                v-for="head in headers"
-                :key="head"
-              >
-                {{ head }}
-              </th>
-              <th class="text-left text-white">
-                Public IP
-              </th>
-              <th class="text-left text-white">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in results" :key="item.name">
-              <td>{{ item.master.clusterID }}</td>
-              <td>{{ item.master.name }}</td>
-              <td>{{ item.master.sru }}GB</td>
-              <td>{{ item.master.mru }}MB</td>
-              <td>{{ item.master.cru }}</td>
-              <td>{{ item.master.ygg_ip }}</td>
-              <td v-if="item.master.public_ip">{{ item.master.public_ip }}</td>
-              <td v-else>-</td>
-              <td>
-                <v-dialog
-                  transition="dialog-top-transition"
-                  v-if="workers.length > 0"
+        <v-sheet>
+          <v-table>
+            <thead class="bg-primary text-white">
+              <tr>
+                <th
+                  class="text-left text-white"
+                  v-for="head in headers"
+                  :key="head"
                 >
-                  <template v-slot:activator="{ props }">
-                    <font-awesome-icon
-                      class="text-primary mr-5"
-                      v-bind="props"
-                      icon="fa-solid fa-eye"
-                    />
-                  </template>
-                  <v-card width="100%" size="100%" class="mx-auto pa-5">
-                    <v-table>
-                      <thead class="bg-primary">
-                        <tr>
-                          <th
-                            class="text-left text-white"
-                            v-for="head in headers"
-                            :key="head"
-                          >
-                            {{ head }}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="item in results" :key="item.name">
-                          <td>{{ item.master.clusterID }}</td>
-                          <td>{{ item.master.name }}</td>
-                          <td>{{ item.master.sru }}GB</td>
-                          <td>{{ item.master.mru }}MB</td>
-                          <td>{{ item.master.cru }}</td>
-                          <td>{{ item.master.ygg_ip }}</td>
-                        </tr>
-                      </tbody>
-                    </v-table>
-                  </v-card>
-                </v-dialog>
-                <font-awesome-icon
-                  class="text-red-accent-2"
-                  @click="deleteK8s(item.master.clusterID, item.master.name)"
-                  icon="fa-solid fa-trash"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
+                  {{ head }}
+                </th>
+                <th class="text-left text-white">
+                  Public IP
+                </th>
+                <th class="text-left text-white">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in dataPerPage" :key="item.name">
+                <td>{{ item.master.clusterID }}</td>
+                <td>{{ item.master.name }}</td>
+                <td>{{ item.master.sru }}GB</td>
+                <td>{{ item.master.mru }}MB</td>
+                <td>{{ item.master.cru }}</td>
+                <td>{{ item.master.ygg_ip }}</td>
+                <td v-if="item.master.public_ip">
+                  {{ item.master.public_ip }}
+                </td>
+                <td v-else>-</td>
+                <td>
+                  <v-dialog
+                    transition="dialog-top-transition"
+                    v-if="workers.length > 0"
+                  >
+                    <template v-slot:activator="{ props }">
+                      <font-awesome-icon
+                        class="text-primary mr-5"
+                        v-bind="props"
+                        icon="fa-solid fa-eye"
+                      />
+                    </template>
+                    <v-card width="100%" size="100%" class="mx-auto pa-5">
+                      <v-table>
+                        <thead class="bg-primary">
+                          <tr>
+                            <th
+                              class="text-left text-white"
+                              v-for="head in headers"
+                              :key="head"
+                            >
+                              {{ head }}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="item in results" :key="item.name">
+                            <td>{{ item.master.clusterID }}</td>
+                            <td>{{ item.master.name }}</td>
+                            <td>{{ item.master.sru }}GB</td>
+                            <td>{{ item.master.mru }}MB</td>
+                            <td>{{ item.master.cru }}</td>
+                            <td>{{ item.master.ygg_ip }}</td>
+                          </tr>
+                        </tbody>
+                      </v-table>
+                    </v-card>
+                  </v-dialog>
+                  <font-awesome-icon
+                    class="text-red-accent-2"
+                    @click="deleteK8s(item.master.clusterID, item.master.name)"
+                    icon="fa-solid fa-trash"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+          <div class="actions d-flex justify-center align-center">
+            <v-pagination
+              v-model="currentPage"
+              :length="totalPages"
+              :total-visible="totalPages"
+            ></v-pagination>
+          </div>
+        </v-sheet>
       </v-col>
     </v-row>
     <v-row v-else>
@@ -205,7 +212,7 @@
 </template>
 
 <script>
-import { ref, onMounted, inject } from "vue";
+import { ref, onMounted, inject, computed } from "vue";
 import BaseSelect from "@/components/Form/BaseSelect.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import userService from "@/services/userService";
@@ -225,7 +232,9 @@ export default {
     const verify = ref(false);
     const checked = ref(false);
     const alert = ref(false);
-
+    const currentPage = ref(null);
+    const totalPages = ref(null);
+    const itemsPerPage = ref(null);
     const workerVerify = ref(false);
     const k8Name = ref(null);
     const nameValidation = ref([
@@ -263,6 +272,9 @@ export default {
     const form = ref(null);
     const wForm = ref(null);
     const deLoading = ref(false);
+    
+    currentPage.value = 1;
+    itemsPerPage.value = 5;
 
     const getK8s = () => {
       userService
@@ -270,6 +282,9 @@ export default {
         .then((response) => {
           const { data } = response.data;
           results.value = data;
+          totalPages.value = Math.ceil(
+            results.value.length / itemsPerPage.value
+          );
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -376,6 +391,13 @@ export default {
       emitter.emit("userUpdateQuota", true);
     };
 
+    const dataPerPage = computed(() => {
+      return results.value.slice(
+        (currentPage.value - 1) * itemsPerPage.value,
+        currentPage.value * itemsPerPage.value
+      );
+    });
+
     onMounted(() => {
       let token = localStorage.getItem("token");
       if (token) getK8s();
@@ -403,6 +425,10 @@ export default {
       wForm,
       toast,
       nameValidation,
+      currentPage,
+      totalPages,
+      itemsPerPage,
+      dataPerPage,
       resetInputs,
       deployK8s,
       deployWorker,

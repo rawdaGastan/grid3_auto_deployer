@@ -3,7 +3,7 @@
     class="bg-primary pa-0"
     absolute
     app
-    height="75"
+    height="50"
   >
     <v-row class="text-center">
       <v-col cols="12">

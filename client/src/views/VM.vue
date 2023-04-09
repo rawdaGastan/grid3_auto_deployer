@@ -1,12 +1,8 @@
 <template>
   <v-container>
-    <v-alert v-model="alert"
-      outlined
-      type="warning"
-      prominent
-      border="left"
-    >
-      You will not be able to deploy. Please add your public SSH key in your profile settings.
+    <v-alert v-model="alert" outlined type="warning" prominent border="left">
+      You will not be able to deploy. Please add your public SSH key in your
+      profile settings.
     </v-alert>
     <h5 class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary">
       Virtual Machines
@@ -58,45 +54,54 @@
     </v-row>
     <v-row v-if="results.length > 0">
       <v-col>
-        <v-table>
-          <thead class="bg-primary">
-            <tr>
-              <th
-                class="text-left text-white"
-                v-for="head in headers"
-                :key="head"
-              >
-                {{ head }}
-              </th>
-              <th class="text-left text-white">
-                Public IP
-              </th>
-              <th class="text-left text-white">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in results" :key="item.name">
-              <td>{{ item.id }}</td>
-              <td>{{ item.name }}</td>
-              <td>{{ item.sru }}GB</td>
-              <td>{{ item.mru }}MB</td>
-              <td>{{ item.cru }}</td>
-              <td>{{ item.ygg_ip }}</td>
-              <td v-if="item.public_ip">{{ item.public_ip }}</td>
-              <td v-else>-</td>
+        <v-sheet>
+          <v-table>
+            <thead class="bg-primary">
+              <tr>
+                <th
+                  class="text-left text-white"
+                  v-for="head in headers"
+                  :key="head"
+                >
+                  {{ head }}
+                </th>
+                <th class="text-left text-white">
+                  Public IP
+                </th>
+                <th class="text-left text-white">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in dataPerPage" :key="item.name">
+                <td>{{ item.id }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.sru }}GB</td>
+                <td>{{ item.mru }}MB</td>
+                <td>{{ item.cru }}</td>
+                <td>{{ item.ygg_ip }}</td>
+                <td v-if="item.public_ip">{{ item.public_ip }}</td>
+                <td v-else>-</td>
 
-              <td>
-                <font-awesome-icon
-                  class="text-red-accent-2"
-                  @click="deleteVm(item.id, item.name)"
-                  icon="fa-solid fa-trash"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
+                <td>
+                  <font-awesome-icon
+                    class="text-red-accent-2"
+                    @click="deleteVm(item.id, item.name)"
+                    icon="fa-solid fa-trash"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+          <div class="actions d-flex justify-center align-center">
+            <v-pagination
+              v-model="currentPage"
+              :length="currentPage"
+              :total-visible="totalPages"
+            ></v-pagination>
+          </div>
+        </v-sheet>
       </v-col>
     </v-row>
     <v-row v-else>
@@ -112,7 +117,7 @@
 </template>
 
 <script>
-import { ref, onMounted, inject } from "vue";
+import { ref, onMounted, inject, computed } from "vue";
 import userService from "@/services/userService";
 import BaseSelect from "@/components/Form/BaseSelect.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
@@ -131,7 +136,9 @@ export default {
     const verify = ref(false);
     const checked = ref(false);
     const alert = ref(false);
-
+    const currentPage = ref(null);
+    const totalPages = ref(null);
+    const itemsPerPage = ref(null);
     const name = ref(null);
     const rules = ref([
       (value) => {
@@ -160,12 +167,18 @@ export default {
         return "Name needs to be more than 2 characters and less than 20.";
       },
     ]);
+    currentPage.value = 1;
+    itemsPerPage.value = 5;
+
     const getVMS = () => {
       userService
         .getVms()
         .then((response) => {
           const { data } = response.data;
           results.value = data;
+          totalPages.value = Math.ceil(
+            results.value.length / itemsPerPage.value
+          );
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -257,6 +270,12 @@ export default {
     const emitQuota = () => {
       emitter.emit("userUpdateQuota", true);
     };
+    const dataPerPage = computed(() => {
+      return results.value.slice(
+        (currentPage.value - 1) * itemsPerPage.value,
+        currentPage.value * itemsPerPage.value
+      );
+    });
 
     onMounted(() => {
       let token = localStorage.getItem("token");
@@ -279,6 +298,10 @@ export default {
       form,
       checked,
       nameValidation,
+      currentPage,
+      totalPages,
+      itemsPerPage,
+      dataPerPage,
       reset,
       getVMS,
       deployVm,

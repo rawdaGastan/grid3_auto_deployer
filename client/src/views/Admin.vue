@@ -1,5 +1,5 @@
 <template>
-  <v-container style="max-width: 1600px;" fill-height>
+  <v-container style="max-width: 1700px;" fill-height>
     <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
       Admin Panel
     </h5>
@@ -79,8 +79,8 @@
             <div class="actions d-flex justify-center align-center">
               <v-pagination
                 v-model="currentPage"
-                :length="currentPage"
-                :total-visible="totalPages"
+                :length="Math.ceil(totalPages / itemsPerPage)"
+                :total-visible="Math.ceil(totalPages / itemsPerPage)"
               ></v-pagination>
               <BaseButton
                 v-if="approveAllCount > 0"
@@ -100,9 +100,7 @@
               class="resources text-white text-center rounded-lg bg-primary py-5 shadow"
             >
               <p>
-                <strong style="font-size: 2.5rem;"
-                  >{{ usedResources }}</strong
-                >
+                <strong style="font-size: 2.5rem;">{{ usedResources }}</strong>
               </p>
               <p class="mx-lg-auto font-weight-medium">
                 Used VMs
@@ -114,9 +112,7 @@
               class="resources text-white text-center rounded-lg bg-primary py-5 shadow"
             >
               <p>
-                <strong style="font-size: 2.5rem;"
-                  >{{ usedIPs }}</strong
-                >
+                <strong style="font-size: 2.5rem;">{{ usedIPs }}</strong>
               </p>
               <p class="mx-lg-auto font-weight-medium">
                 Used IPs
@@ -150,8 +146,12 @@
                       {{ item.email }}
                     </td>
                     <td>
-                      <span class="text-red">{{ item.used_vms }}</span> /
-                      <span>{{ item.vms }}</span>
+                      <span class="text-red">{{ item.used_vms }}</span
+                      >/<span>{{ item.vms }}</span>
+                    </td>
+                    <td>
+                      <span class="text-red">{{ item.used_public_ips }}</span
+                      >/<span>{{ item.public_ips }}</span>
                     </td>
                   </tr>
                 </tbody>
@@ -186,7 +186,7 @@ export default {
       "Public IPs",
     ]);
 
-    const usersHeaders = ref(["No", "Name", "Email", "Used"]);
+    const usersHeaders = ref(["No", "Name", "Email", "VMs", "IPs"]);
 
     const vouchers = ref([]);
     const users = ref([]);
@@ -209,10 +209,8 @@ export default {
         .then((response) => {
           const { data } = response.data;
           vouchers.value = data;
+          totalPages.value = data.length;
           approveAllCount.value = 0;
-          totalPages.value = Math.ceil(
-            vouchers.value.length / itemsPerPage.value
-          );
 
           for (let voucher of data) {
             if (!voucher?.approved) {

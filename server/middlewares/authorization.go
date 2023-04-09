@@ -3,7 +3,6 @@ package middlewares
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -13,7 +12,6 @@ import (
 	"github.com/codescalers/cloud4students/models"
 	"github.com/golang-jwt/jwt"
 	"github.com/gorilla/mux"
-	"github.com/rs/zerolog/log"
 )
 
 // UserIDKey key saved in request context
@@ -61,14 +59,14 @@ func Authorization(excludedRoutes []*mux.Route, secret string, timeout int) func
 				reqToken := r.Header.Get("Authorization")
 				splitToken := strings.Split(reqToken, "Bearer ")
 				if len(splitToken) != 2 {
-					WriteUnAuthorizedResponse(w)
+					writeErrResponse(r, w, http.StatusUnauthorized, "User is not authorized")
 					return
 				}
 				reqToken = splitToken[1]
 
 				claims, err := validateToken(reqToken, secret, timeout)
 				if err != nil {
-					WriteUnAuthorizedResponse(w)
+					writeErrResponse(r, w, http.StatusUnauthorized, "User is not authorized")
 					return
 				}
 				ctx := context.WithValue(r.Context(), UserIDKey("UserID"), claims.UserID)
@@ -97,15 +95,4 @@ func validateToken(token, secret string, timeout int) (models.Claims, error) {
 	}
 
 	return *claims, nil
-}
-
-// WriteUnAuthorizedResponse write error messages in api
-func WriteUnAuthorizedResponse(w http.ResponseWriter) {
-	jsonErrRes, _ := json.Marshal(map[string]string{"err": "User is not authorized"})
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusUnauthorized)
-	_, err := w.Write(jsonErrRes)
-	if err != nil {
-		log.Error().Err(err).Msg("write auth error response failed")
-	}
 }

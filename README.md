@@ -49,14 +49,16 @@ example `config.json`:
         "file": "./database.db"
     },
     "token": {
-        "secret": "mysecret",
+        "secret": "<secret>",
         "timeout": 100
     },
     "account": {
         "mnemonics": "<mnemonics>",
         "network": "<grid-network>"
     },
-    "version": "v1"
+    "version": "v1",
+    "salt": "<salt>",
+    "admins": []
 }
 ```
 

@@ -1,20 +1,23 @@
 <template>
   <v-container>
-    <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
+    <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
       Account Settings
     </h5>
-    <v-avatar color="primary" size="75" class="d-flex mx-auto mt-5 mb-3">
-      <span class="text-h4 text-uppercase">{{ name ? avatar : "?" }}</span>
+    <v-avatar color="primary" size="50" class="d-flex mx-auto mt-5 mb-3">
+      <span class="text-h5 text-uppercase">{{ name ? avatar : "?" }}</span>
     </v-avatar>
     <v-row justify="center">
       <v-col cols="12" sm="6">
         <v-form v-model="verify" class="my-5" @submit.prevent="update">
           <v-text-field
+            class="my-2"
             label="Name"
             v-model="name"
             bg-color="accent"
             variant="outlined"
             density="compact"
+            :rules="nameValidation"
+
           ></v-text-field>
           <v-row>
             <v-col cols="12" sm="6">
@@ -46,12 +49,12 @@
                 v-model="project_desc"
                 variant="outlined"
                 bg-color="accent"
+                rows="2"
                 auto-grow
                 disabled
               ></v-textarea>
             </v-col>
           </v-row>
-
           <v-text-field
             label="E-mail"
             v-model="email"
@@ -61,55 +64,140 @@
             density="compact"
           ></v-text-field>
 
-          <div class="d-flex">
-            <v-text-field
-              label="Voucher"
-              v-model="voucher"
-              :loading="actLoading"
-              bg-color="accent"
-              variant="outlined"
-              density="compact"
-              class="mr-2"
-              clearable
-            ></v-text-field>
+          <v-row>
+            <v-col cols="12" sm="9">
+              <v-text-field
+                label="Voucher"
+                v-model="voucher"
+                :loading="actLoading"
+                bg-color="accent"
+                variant="outlined"
+                density="compact"
+                clearable
+                :disabled="!allowVoucher"
+              ></v-text-field>
+            </v-col>
 
-            <BaseButton
-              class="bg-primary text-capitalize"
-              text="Apply Voucher"
-              @click="activateVoucher"
-            />
-          </div>
-
-          <div class="d-flex justify-space-between" style="align-items: baseline;">
-            <v-textarea
-              clearable
-              label="SSH Key"
-              v-model="sshKey"
-              variant="outlined"
-              bg-color="accent"
-              class="my-2"
-              :rules="rules"
-              auto-grow
-              ></v-textarea>
-              <v-tooltip text="You can generate SSH key using 'ssh-keygen' command. Once generated, your public key will be stored in ~/.ssh/id_rsa.pub" right>
+            <v-col cols="12" sm="3">
+              <BaseButton
+                :disabled="!allowVoucher"
+                class="bg-primary text-capitalize"
+                text="Apply Voucher"
+                @click="activateVoucher"
+              />
+            </v-col>
+          </v-row>
+          <v-tooltip
+            block
+            text="You can generate SSH key using 'ssh-keygen' command. Once generated, your public key will be stored in ~/.ssh/id_rsa.pub"
+            left
+          >
+            <template v-slot:activator="{ props }">
+              <v-icon
+                v-bind="props"
+                color="primary"
+                dark
+                class="d-block ml-auto"
+              >
+                mdi-information
+              </v-icon>
+            </template>
+          </v-tooltip>
+          <v-textarea
+            clearable
+            label="SSH Key"
+            v-model="sshKey"
+            variant="outlined"
+            bg-color="accent"
+            class="my-2"
+            :rules="rules"
+            auto-grow
+          ></v-textarea>
+          <v-row>
+            <v-col>
+              <BaseButton
+                type="submit"
+                :disabled="!verify"
+                class="w-100 bg-primary text-capitalize"
+                text="Update"
+              />
+            </v-col>
+            <v-col>
+              <v-dialog persistent transition="dialog-top-transition" max-width="500" v-model="openVoucher">
                 <template v-slot:activator="{ props }">
-                  <v-icon
-                  v-bind="props"
-                  color="primary"
-                  dark
-                  >
-                    mdi-information
-                  </v-icon>
+                  <BaseButton
+                    v-bind="props"
+                    class="w-100 bg-primary text-capitalize"
+                    text="Request New Voucher"
+                  />
                 </template>
-            </v-tooltip>
-          
-          </div>
-          <BaseButton
-            type="submit"
-            :disabled="!verify"
-            class="w-100 bg-primary text-capitalize"
-            text="Update"
-          />
+                <template  v-slot:default="{ isActive }">
+                  <v-card width="100%" size="100%" class="mx-auto pa-5">
+                    <v-form
+                      v-model="newVoucherVerify"
+                      @submit.prevent="newVoucher"
+                    >
+                      <v-card-text>
+                        <h5
+                          class="text-h5 text-md-h4 text-center my-10 secondary"
+                        >
+                          Request New Voucher
+                        </h5>
+                        <v-row>
+                          <v-col>
+                            <v-text-field
+                              label="VMs"
+                              v-model="vms"
+                              :rules="rules"
+                              type="number"
+                              bg-color="accent"
+                              variant="outlined"
+                              density="compact"
+                            ></v-text-field>
+                          </v-col>
+                          <v-col>
+                            <v-text-field
+                              label="IPs"
+                              v-model="ips"
+                              :rules="rules"
+                              type="number"
+                              bg-color="accent"
+                              variant="outlined"
+                              density="compact"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+
+                        <v-text-field
+                          label="Reason"
+                          v-model="reason"
+                          bg-color="accent"
+                          :rules="rules"
+                          variant="outlined"
+                          density="compact"
+                          clearable
+                        ></v-text-field>
+                      </v-card-text>
+                      <v-card-actions class="justify-center">
+                        <BaseButton
+                          class="bg-primary mr-5"
+                          @click="{ isActive.value = false; vms = 0; ips = 0; reason = null; }"
+                          text="Cancel"
+                        />
+                        <BaseButton
+                          type="submit"
+                          :disabled="!newVoucherVerify"
+                          class="bg-primary"
+                          text="Request"
+                          @click="isActive.value = false"
+                        />
+                      </v-card-actions>
+                    </v-form>
+                  </v-card>
+                </template>
+              </v-dialog>
+            </v-col>
+          </v-row>
         </v-form>
       </v-col>
     </v-row>
@@ -118,11 +206,12 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, inject } from "vue";
 import userService from "@/services/userService";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import Toast from "@/components/Toast.vue";
 import router from "@/router";
+import { useRoute } from "vue-router";
 
 export default {
   components: {
@@ -130,19 +219,36 @@ export default {
     Toast,
   },
   setup() {
+    const route = useRoute();
+    const openVoucher = ref(Boolean(route.query.voucher));
+    const emitter = inject('emitter');
+    const verify = ref(null);
     const email = ref(null);
     const name = ref(null);
     const college = ref("");
     const team_size = ref(0);
     const project_desc = ref("");
-    const voucher = ref(null);
-    const sshKey = ref(null);
+    const voucher = ref("");
+    const sshKey = ref("");
     const actLoading = ref(false);
-    const sMsg = ref(null);
-    const eMsg = ref(null);
-    const sshSMsg = ref(null);
-    const sshEMsg = ref(null);
     const toast = ref(null);
+    const verified = ref(false);
+    const allowVoucher = ref(false);
+    const loading = ref(false);
+    const newVoucherVerify = ref(false);
+    const vms = ref(0);
+    const ips = ref(0);
+    const reason = ref(null);
+    const nameRegex = /^(\w+\s){0,3}\w*$/;
+    const nameValidation = ref([
+      (value) => {
+        if (!value.match(nameRegex)) return "Must be at most four names";
+        if(value.length < 3) return "Field should be at least 3 characters";
+        if(value.length >20) return "Field should be at most 20 characters";
+        return true;
+      },
+    ]);
+
     const rules = ref([
       (value) => {
         if (value) return true;
@@ -158,6 +264,8 @@ export default {
           email.value = user.email;
           name.value = user.name;
           voucher.value = user.voucher;
+          allowVoucher.value = user.voucher == "";
+          verified.value = user.verified;
           sshKey.value = user.ssh_key;
           if (!user.college) {
             college.value = "-";
@@ -174,7 +282,6 @@ export default {
           } else {
             project_desc.value = user.project_desc;
           }
-          toast.value.clear();
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -187,7 +294,9 @@ export default {
         .activateVoucher(voucher.value)
         .then((response) => {
           actLoading.value = true;
-          sMsg.value = response.data.msg;
+          emitQuota();
+          getUser();
+          toast.value.toast(response.data.msg, "#388E3C");
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -199,10 +308,13 @@ export default {
     };
 
     const update = () => {
+      if (!verify.value) return;
+
       userService
         .updateUser(name.value, sshKey.value)
         .then((response) => {
-          checkUser(name.value);
+          router.go();
+          getUser();
           toast.value.toast(response.data.msg, "#388E3C");
         })
         .catch((response) => {
@@ -211,26 +323,37 @@ export default {
         });
     };
 
+    const newVoucher = () => {
+      userService
+        .newVoucher(Number(vms.value), Number(ips.value), reason.value)
+        .then((response) => {
+          toast.value.toast(response.data.msg, "#388E3C");
+        })
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
+        })
+        .finally(() => {
+          actLoading.value = false;
+          vms.value = 0;
+          ips.value = 0;
+          reason.value = null;
+        });
+    };
+
     const avatar = computed(() => {
       let val = String(name.value);
       return val.charAt(0);
     });
 
-    const verify = computed(() => {
-      if (name.value && sshKey.value)
-        return name.value.length > 0 && sshKey.value.length > 0;
-      return true;
-    });
 
-    const checkUser = (username) => {
-      if (localStorage.getItem("username") !== username) {
-        localStorage.setItem("username", username);
-        router.go();
-      }
+    const emitQuota = () => {
+      emitter.emit("userUpdateQuota", true);
     };
 
     onMounted(() => {
-      getUser();
+      let token = localStorage.getItem("token");
+      if (token) getUser();
     });
 
     return {
@@ -241,20 +364,32 @@ export default {
       email,
       name,
       voucher,
+      allowVoucher,
       sshKey,
+      verified,
       avatar,
       actLoading,
-      sMsg,
-      eMsg,
-      sshSMsg,
-      sshEMsg,
       rules,
       toast,
+      loading,
+      newVoucherVerify,
+      vms,
+      ips,
+      reason,
+      nameValidation,
+      openVoucher,
       getUser,
       activateVoucher,
       update,
-      checkUser,
+      newVoucher,
+      emitQuota,
     };
   },
 };
 </script>
+
+<style>
+.pointer {
+  cursor: pointer;
+}
+</style>

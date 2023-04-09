@@ -34,7 +34,7 @@ func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Confi
         "timeout": 60 
     },
     "account": {
-        "mnemonics": "secret add bag cluster deposit beach illness letter crouch position rain arctic",
+        "mnemonics": "winner giant reward damage expose pulse recipe manual brand volcano dry avoid",
 		"network": "dev"
     },
 	"token": {
@@ -44,7 +44,8 @@ func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Confi
 	"database": {
         "file": "testing.db"
     },
-	"version": "v1"
+	"version": "v1",
+	"salt": "salt"
 }
 	`
 	dir := t.TempDir()
@@ -83,8 +84,8 @@ func TestSignUpHandler(t *testing.T) {
 	body := []byte(`{
 		"name": "name",
 		"email": "name@gmail.com",
-		"password": "123456",
-		"confirm_password": "123456",
+		"password": "1234567",
+		"confirm_password": "1234567",
 		"team_size":5,
 		"project_desc":"desc",
 		"college":"clg"
@@ -94,7 +95,7 @@ func TestSignUpHandler(t *testing.T) {
 		response := httptest.NewRecorder()
 		router.SignUpHandler(response, request)
 		got := response.Body.String()
-		want := `{"msg":"Verification code has been sent to name@gmail.com","data":""}`
+		want := `{"msg":"Verification code has been sent to name@gmail.com","data":{"timeout":60}}`
 		if got != want {
 			t.Errorf("error : got %q, want %q", got, want)
 		}
@@ -152,17 +153,19 @@ func TestVerifySignUpCodeHandler(t *testing.T) {
 }
 
 func TestSignInHandler(t *testing.T) {
-	router, db, _, version := SetUp(t)
+	router, db, config, version := SetUp(t)
+
+	hashedPass, err := internal.HashAndSaltPassword("strongpass", config.Salt)
+	assert.NoError(t, err)
+
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
-		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		HashedPassword: hashedPass,
 		Verified:       true,
 	}
-	err := db.CreateUser(&u)
-	if err != nil {
-		t.Error(err)
-	}
+	err = db.CreateUser(&u)
+	assert.NoError(t, err)
 
 	t.Run("signIn successfully", func(t *testing.T) {
 		body := []byte(`{
@@ -249,7 +252,7 @@ func TestForgotPasswordHandler(t *testing.T) {
 		response := httptest.NewRecorder()
 		router.ForgotPasswordHandler(response, request)
 		got := response.Body.String()
-		want := `{"msg":"Verification code has been sent to name@gmail.com","data":""}`
+		want := `{"msg":"Verification code has been sent to name@gmail.com","data":{"timeout":60}}`
 		assert.Equal(t, got, want)
 		assert.Equal(t, response.Code, http.StatusOK)
 	})
@@ -485,7 +488,7 @@ func TestActivateVoucherHandler(t *testing.T) {
 		err = db.CreateQuota(
 			&models.Quota{
 				UserID: user.ID.String(),
-				Vms:    10,
+				Vms:    0,
 			},
 		)
 		assert.NoError(t, err)

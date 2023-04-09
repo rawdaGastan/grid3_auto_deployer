@@ -14,13 +14,14 @@ type K8sCluster struct {
 // Master struct for kubernetes master data
 type Master struct {
 	ClusterID int    `json:"clusterID"`
-	Name      string `json:"name"`
+	Name      string `json:"name" gorm:"unique" binding:"required"`
 	CRU       uint64 `json:"cru"`
 	MRU       uint64 `json:"mru"`
 	SRU       uint64 `json:"sru"`
 	YggIP     string `json:"ygg_ip"`
 	Public    bool   `json:"public"`
 	PublicIP  string `json:"public_ip"`
+	Resources string `json:"resources"`
 }
 
 // Worker struct for k8s workers data
@@ -30,4 +31,5 @@ type Worker struct {
 	CRU       uint64 `json:"cru"`
 	MRU       uint64 `json:"mru"`
 	SRU       uint64 `json:"sru"`
+	Resources string `json:"resources"`
 }

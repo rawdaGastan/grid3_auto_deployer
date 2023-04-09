@@ -2,6 +2,8 @@
 package models
 
 import (
+	"time"
+
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm/clause"
 
@@ -30,12 +32,16 @@ func (d *DB) Connect(file string) error {
 
 // Migrate migrates db schema
 func (d *DB) Migrate() error {
-	err := d.db.AutoMigrate(&User{}, &Quota{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{})
+	err := d.db.AutoMigrate(&User{}, &Quota{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{}, &Maintenance{})
 	if err != nil {
 		return err
 	}
 
-	return nil
+	// add maintenance
+	if err := d.db.Delete(&Maintenance{}, "1 = 1").Error; err != nil {
+		return err
+	}
+	return d.db.Create(&Maintenance{}).Error
 }
 
 // CreateUser creates new user
@@ -62,9 +68,9 @@ func (d *DB) GetUserByID(id string) (User, error) {
 func (d *DB) ListAllUsers() ([]UserUsedQuota, error) {
 	var res []UserUsedQuota
 	query := d.db.Table("users").
-		Select("*, vouchers.vms - quota.vms as used_vms, vouchers.public_ips - quota.public_ips as used_public_ips").
+		Select("*, users.id as user_id, vouchers.vms - quota.vms as used_vms, vouchers.public_ips - quota.public_ips as used_public_ips").
 		Joins("left join quota on quota.user_id = users.id").
-		Joins("left join vouchers on vouchers.user_id = users.id").
+		Joins("left join vouchers on vouchers.voucher = users.voucher and vouchers.used = true and vouchers.approved = true").
 		Where("verified = true").
 		Scan(&res)
 	return res, query.Error
@@ -144,6 +150,20 @@ func (d *DB) GetAllVms(userID string) ([]VM, error) {
 	return vms, result.Error
 }
 
+// AvailableVMName returns if name available
+func (d *DB) AvailableVMName(name string) (bool, error) {
+	var names []string
+	query := d.db.Table("vms").
+		Select("name").
+		Where("name = ?", name).
+		Scan(&names)
+
+	if query.Error != nil {
+		return false, query.Error
+	}
+	return len(names) == 0, query.Error
+}
+
 // DeleteVMByID deletes vm by its id
 func (d *DB) DeleteVMByID(id int) error {
 	var vm VM
@@ -166,8 +186,14 @@ func (d *DB) CreateQuota(q *Quota) error {
 
 // UpdateUserQuota updates quota
 func (d *DB) UpdateUserQuota(userID string, vms int, publicIPs int) error {
-	quota := Quota{userID, vms, publicIPs}
-	return d.db.Model(Quota{}).Where("user_id = ?", userID).Updates(quota).Error
+	if vms == 0 && publicIPs == 0 {
+		var res User
+		result := d.db.Model(&res).Where("id = ?", userID).Update("voucher", "")
+		if result.Error != nil {
+			return result.Error
+		}
+	}
+	return d.db.Model(&Quota{}).Where("user_id = ?", userID).Updates(map[string]interface{}{"vms": vms, "public_ips": publicIPs}).Error
 }
 
 // GetUserQuota gets user quota available vms (vms will be used for both vms and k8s clusters)
@@ -285,4 +311,30 @@ func (d *DB) DeleteAllK8s(userID string) error {
 		return err
 	}
 	return d.db.Select("Master", "Workers").Delete(&k8sClusters).Error
+}
+
+// AvailableK8sName returns if name available
+func (d *DB) AvailableK8sName(name string) (bool, error) {
+	var names []string
+	query := d.db.Table("masters").
+		Select("name").
+		Where("name = ?", name).
+		Scan(&names)
+
+	if query.Error != nil {
+		return false, query.Error
+	}
+	return len(names) == 0, query.Error
+}
+
+// UpdateMaintenance updates if maintenance is on or off
+func (d *DB) UpdateMaintenance(on bool) error {
+	return d.db.Model(&Maintenance{}).Where("active = ?", !on).Updates(map[string]interface{}{"active": on, "updated_at": time.Now()}).Error
+}
+
+// GetMaintenance gets if maintenance is on or off
+func (d *DB) GetMaintenance() (Maintenance, error) {
+	var res Maintenance
+	query := d.db.First(&res)
+	return res, query.Error
 }

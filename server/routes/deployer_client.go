@@ -94,13 +94,14 @@ func (r *Router) loadK8s(k8sDeployInput K8sDeployInput, userID string, node uint
 		return models.K8sCluster{}, err
 	}
 	master := models.Master{
-		CRU:      cru,
-		MRU:      mru,
-		SRU:      sru,
-		Public:   k8sDeployInput.Public,
-		PublicIP: resCluster.Master.ComputedIP,
-		Name:     k8sDeployInput.MasterName,
-		YggIP:    resCluster.Master.YggIP,
+		CRU:       cru,
+		MRU:       mru,
+		SRU:       sru,
+		Public:    k8sDeployInput.Public,
+		PublicIP:  resCluster.Master.ComputedIP,
+		Name:      k8sDeployInput.MasterName,
+		YggIP:     resCluster.Master.YggIP,
+		Resources: k8sDeployInput.Resources,
 	}
 	workers := []models.Worker{}
 	for _, worker := range k8sDeployInput.Workers {
@@ -110,10 +111,11 @@ func (r *Router) loadK8s(k8sDeployInput K8sDeployInput, userID string, node uint
 			return models.K8sCluster{}, err
 		}
 		workerModel := models.Worker{
-			Name: worker.Name,
-			CRU:  cru,
-			MRU:  mru,
-			SRU:  sru,
+			Name:      worker.Name,
+			CRU:       cru,
+			MRU:       mru,
+			SRU:       sru,
+			Resources: worker.Resources,
 		}
 		workers = append(workers, workerModel)
 	}
@@ -301,7 +303,7 @@ func validateK8sQuota(k K8sDeployInput, availableResourcesQuota, availablePublic
 	}
 
 	if availableResourcesQuota < neededQuota {
-		return 0, fmt.Errorf("no available quota %d for kubernetes deployment", availableResourcesQuota)
+		return 0, fmt.Errorf("no available quota %d for kubernetes deployment, you can request a new voucher", availableResourcesQuota)
 	}
 	if k.Public && availablePublicIPsQuota < publicQuota {
 		return 0, fmt.Errorf("no available quota %d for public ips", availablePublicIPsQuota)
@@ -317,7 +319,7 @@ func validateVMQuota(vm DeployVMInput, availableResourcesQuota, availablePublicI
 	}
 
 	if availableResourcesQuota < neededQuota {
-		return 0, fmt.Errorf("no available quota %d for deployment for resources %s", availableResourcesQuota, vm.Resources)
+		return 0, fmt.Errorf("no available quota %d for deployment for resources %s, you can request a new voucher", availableResourcesQuota, vm.Resources)
 	}
 	if vm.Public && availablePublicIPsQuota < publicQuota {
 		return 0, fmt.Errorf("no available quota %d for public ips", availablePublicIPsQuota)

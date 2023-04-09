@@ -27,57 +27,70 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	user, err := r.db.GetUserByID(userID)
 	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(w, http.StatusNotFound, "User not found")
+		writeErrResponse(req, w, http.StatusNotFound, "User not found")
 		return
 	}
 
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	var input DeployVMInput
 	err = json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
-		writeErrResponse(w, http.StatusBadRequest, "Failed to read vm data")
+		writeErrResponse(req, w, http.StatusBadRequest, "Failed to read vm data")
 		return
 	}
 
 	err = validator.Validate(input)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusBadRequest, "Invalid vm data")
+		writeErrResponse(req, w, http.StatusBadRequest, "Invalid vm data")
 		return
 	}
 
 	// check quota of user
 	quota, err := r.db.GetUserQuota(userID)
 	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(w, http.StatusNotFound, "User quota not found")
+		writeErrResponse(req, w, http.StatusNotFound, "User quota not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	neededQuota, err := validateVMQuota(input, quota.Vms, quota.PublicIPs)
 	if err != nil {
-		writeErrResponse(w, http.StatusBadRequest, err.Error())
+		writeErrResponse(req, w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if len(strings.TrimSpace(user.SSHKey)) == 0 {
-		writeErrResponse(w, http.StatusBadRequest, "ssh key is required")
+		writeErrResponse(req, w, http.StatusBadRequest, "ssh key is required")
+		return
+	}
+
+	// unique names
+	available, err := r.db.AvailableVMName(input.Name)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	if !available {
+		writeErrResponse(req, w, http.StatusBadRequest, "VM name is not available, please choose a different name")
 		return
 	}
 
 	vm, contractID, networkContractID, diskSize, err := r.deployVM(req.Context(), input, user.SSHKey)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -98,7 +111,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 	err = r.db.CreateVM(&userVM)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -109,16 +122,17 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 	// update quota of user
 	err = r.db.UpdateUserQuota(userID, quota.Vms-neededQuota, publicIPsQuota)
 	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(w, http.StatusNotFound, "User quota not found")
+		writeErrResponse(req, w, http.StatusNotFound, "User quota not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
-	writeMsgResponse(w, "Virtual machine is deployed successfully", map[string]int{"ID": userVM.ID})
+	middlewares.Deployments.WithLabelValues(userID, input.Resources, "vm").Inc()
+	writeMsgResponse(req, w, "Virtual machine is deployed successfully", map[string]int{"ID": userVM.ID})
 }
 
 // GetVMHandler returns vm by its id
@@ -126,27 +140,27 @@ func (r *Router) GetVMHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	id, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
-		writeErrResponse(w, http.StatusBadRequest, "Failed to read vm id")
+		writeErrResponse(req, w, http.StatusBadRequest, "Failed to read vm id")
 		return
 	}
 
 	vm, err := r.db.GetVMByID(id)
 	if err == gorm.ErrRecordNotFound {
-		writeErrResponse(w, http.StatusNotFound, "Virtual machine not found")
+		writeErrResponse(req, w, http.StatusNotFound, "Virtual machine not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	if vm.UserID != userID {
-		writeErrResponse(w, http.StatusNotFound, "Virtual machine not found")
+		writeErrResponse(req, w, http.StatusNotFound, "Virtual machine not found")
 		return
 	}
 
-	writeMsgResponse(w, "Virtual machine found", vm)
+	writeMsgResponse(req, w, "Virtual machine found", vm)
 }
 
 // ListVMsHandler returns all vms of user
@@ -155,16 +169,16 @@ func (r *Router) ListVMsHandler(w http.ResponseWriter, req *http.Request) {
 
 	vms, err := r.db.GetAllVms(userID)
 	if err == gorm.ErrRecordNotFound || len(vms) == 0 {
-		writeMsgResponse(w, "Virtual machines not found", vms)
+		writeMsgResponse(req, w, "Virtual machines not found", vms)
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
-	writeMsgResponse(w, "Virtual machines found", vms)
+	writeMsgResponse(req, w, "Virtual machines found", vms)
 }
 
 // DeleteVM deletes vm by its id
@@ -172,36 +186,37 @@ func (r *Router) DeleteVM(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	id, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
-		writeErrResponse(w, http.StatusBadRequest, "Failed to read vm id")
+		writeErrResponse(req, w, http.StatusBadRequest, "Failed to read vm id")
 		return
 	}
 
 	vm, err := r.db.GetVMByID(id)
 	if err == gorm.ErrRecordNotFound || vm.UserID != userID {
-		writeErrResponse(w, http.StatusNotFound, "VM not found")
+		writeErrResponse(req, w, http.StatusNotFound, "VM not found")
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	err = r.cancelDeployment(vm.ContractID, vm.NetworkContractID)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
 	err = r.db.DeleteVMByID(id)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
-	writeMsgResponse(w, "Virtual machine is deleted successfully", "")
+	middlewares.Deletions.WithLabelValues(userID, "vms").Inc()
+	writeMsgResponse(req, w, "Virtual machine is deleted successfully", "")
 }
 
 // DeleteAllVMs deletes all vms of user
@@ -209,12 +224,12 @@ func (r *Router) DeleteAllVMs(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	vms, err := r.db.GetAllVms(userID)
 	if err == gorm.ErrRecordNotFound || len(vms) == 0 {
-		writeMsgResponse(w, "Virtual machines not found", nil)
+		writeMsgResponse(req, w, "Virtual machines not found", nil)
 		return
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
@@ -222,7 +237,7 @@ func (r *Router) DeleteAllVMs(w http.ResponseWriter, req *http.Request) {
 		err = r.cancelDeployment(vm.ContractID, vm.NetworkContractID)
 		if err != nil {
 			log.Error().Err(err).Send()
-			writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+			writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 			return
 		}
 	}
@@ -230,9 +245,14 @@ func (r *Router) DeleteAllVMs(w http.ResponseWriter, req *http.Request) {
 	err = r.db.DeleteAllVms(userID)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
-	writeMsgResponse(w, "All Virtual machines are deleted successfully", "")
+	// metrics
+	for _, vm := range vms {
+		middlewares.Deletions.WithLabelValues(vm.UserID, "vms").Inc()
+	}
+
+	writeMsgResponse(req, w, "All Virtual machines are deleted successfully", "")
 }

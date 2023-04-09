@@ -3,9 +3,11 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/codescalers/cloud4students/internal"
+	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
 	"github.com/codescalers/cloud4students/validators"
 	"github.com/rs/zerolog/log"
@@ -13,7 +15,7 @@ import (
 	"gopkg.in/validator.v2"
 )
 
-const internalServerErrorMsg = "Something Went Wrong"
+const internalServerErrorMsg = "Something went wrong"
 
 // Router struct holds db model and configurations
 type Router struct {
@@ -52,7 +54,7 @@ type ResponseMsg struct {
 }
 
 // writeErrResponse write error messages in api
-func writeErrResponse(w http.ResponseWriter, statusCode int, errStr string) {
+func writeErrResponse(r *http.Request, w http.ResponseWriter, statusCode int, errStr string) {
 	jsonErrRes, _ := json.Marshal(ErrorMsg{Error: errStr})
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
@@ -60,14 +62,16 @@ func writeErrResponse(w http.ResponseWriter, statusCode int, errStr string) {
 	if err != nil {
 		log.Error().Err(err).Msg("write error response failed")
 	}
+	middlewares.Requests.WithLabelValues(r.Method, r.RequestURI, fmt.Sprint(statusCode)).Inc()
 }
 
 // writeMsgResponse write response messages for api
-func writeMsgResponse(w http.ResponseWriter, message string, data interface{}) {
+func writeMsgResponse(r *http.Request, w http.ResponseWriter, message string, data interface{}) {
 	contentJSON, err := json.Marshal(ResponseMsg{Message: message, Data: data})
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(r, w, http.StatusInternalServerError, internalServerErrorMsg)
+		middlewares.Requests.WithLabelValues(r.Method, r.RequestURI, fmt.Sprint(http.StatusInternalServerError)).Inc()
 		return
 	}
 
@@ -76,6 +80,10 @@ func writeMsgResponse(w http.ResponseWriter, message string, data interface{}) {
 	_, err = w.Write(contentJSON)
 	if err != nil {
 		log.Error().Err(err).Msg("write error response failed")
-		writeErrResponse(w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(r, w, http.StatusInternalServerError, internalServerErrorMsg)
+		middlewares.Requests.WithLabelValues(r.Method, r.RequestURI, fmt.Sprint(http.StatusInternalServerError)).Inc()
+		return
 	}
+
+	middlewares.Requests.WithLabelValues(r.Method, r.RequestURI, fmt.Sprint(http.StatusOK)).Inc()
 }

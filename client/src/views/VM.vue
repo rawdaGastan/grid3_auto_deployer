@@ -1,17 +1,27 @@
 <template>
   <v-container>
-    <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
-      Virtual Machine Deployment
+    <v-alert v-model="alert" outlined type="warning" prominent border="left">
+      You will not be able to deploy. Please add your public SSH key in your
+      profile settings.
+    </v-alert>
+    <h5 class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary">
+      Virtual Machines
     </h5>
+    <p class="text-center mb-10">
+      Deploy a new virtual machine
+    </p>
     <v-row justify="center">
       <v-col cols="12" sm="6">
         <v-form v-model="verify" ref="form" @submit.prevent="deployVm">
-          <BaseInput
-            placeholder="Name"
-            :rules="rules"
-            :modelValue="name"
-            @update:modelValue="name = $event"
-          />
+          <v-text-field
+            label="Name"
+            :rules="nameValidation"
+            class="my-2"
+            v-model="name"
+            bg-color="accent"
+            variant="outlined"
+            density="compact"
+          ></v-text-field>
           <BaseSelect
             :modelValue="selectedResource"
             :items="resources"
@@ -20,11 +30,13 @@
             :rules="rules"
             @update:modelValue="selectedResource = $event"
           />
+          <v-checkbox v-model="checked" label="Public IP"></v-checkbox>
           <BaseButton
             type="submit"
-            class="d-block mx-auto bg-primary"
+            block
+            class="bg-primary"
             :loading="loading"
-            :disabled="!verify"
+            :disabled="!verify || alert"
             text="Deploy"
           />
         </v-form>
@@ -42,44 +54,61 @@
     </v-row>
     <v-row v-if="results.length > 0">
       <v-col>
-        <v-table>
-          <thead class="bg-primary">
-            <tr>
-              <th
-                class="text-left text-white"
-                v-for="head in headers"
-                :key="head"
-              >
-                {{ head }}
-              </th>
-              <th class="text-left text-white">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in results" :key="item.name">
-              <td>{{ item.id }}</td>
-              <td>{{ item.name }}</td>
-              <td>{{ item.sru }}GB</td>
-              <td>{{ item.mru }}MB</td>
-              <td>{{ item.cru }}</td>
-              <td>{{ item.ip }}</td>
-              <td>
-                <font-awesome-icon
-                  class="text-red-accent-2"
-                  @click="deleteVm(item.id, item.name)"
-                  icon="fa-solid fa-trash"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
+        <v-sheet>
+          <v-table>
+            <thead class="bg-primary">
+              <tr>
+                <th
+                  class="text-left text-white"
+                  v-for="head in headers"
+                  :key="head"
+                >
+                  {{ head }}
+                </th>
+                <th class="text-left text-white">
+                  Public IP
+                </th>
+                <th class="text-left text-white">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in dataPerPage" :key="item.name">
+                <td>{{ item.id }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.sru }}GB</td>
+                <td>{{ item.mru }}MB</td>
+                <td>{{ item.cru }}</td>
+                <td>{{ item.ygg_ip }}</td>
+                <td v-if="item.public_ip">{{ item.public_ip }}</td>
+                <td v-else>-</td>
+
+                <td>
+                  <font-awesome-icon
+                    class="text-red-accent-2"
+                    @click="deleteVm(item.id, item.name)"
+                    icon="fa-solid fa-trash"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+          <div class="actions d-flex justify-center align-center">
+            <v-pagination
+              v-model="currentPage"
+              :length="currentPage"
+              :total-visible="totalPages"
+            ></v-pagination>
+          </div>
+        </v-sheet>
       </v-col>
     </v-row>
     <v-row v-else>
       <v-col>
-        <p class="my-5 text-center">VMs are not found</p>
+        <p class="my-5 text-center">
+          You don't have any Virtual machines deployed yet
+        </p>
       </v-col>
     </v-row>
     <Confirm ref="confirm" />
@@ -88,9 +117,8 @@
 </template>
 
 <script>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, inject, computed } from "vue";
 import userService from "@/services/userService";
-import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseSelect from "@/components/Form/BaseSelect.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import Confirm from "@/components/Confirm.vue";
@@ -98,14 +126,19 @@ import Toast from "@/components/Toast.vue";
 
 export default {
   components: {
-    BaseInput,
     BaseSelect,
     BaseButton,
     Confirm,
     Toast,
   },
   setup() {
+    const emitter = inject("emitter");
     const verify = ref(false);
+    const checked = ref(false);
+    const alert = ref(false);
+    const currentPage = ref(null);
+    const totalPages = ref(null);
+    const itemsPerPage = ref(null);
     const name = ref(null);
     const rules = ref([
       (value) => {
@@ -116,24 +149,26 @@ export default {
     const confirm = ref(null);
     const selectedResource = ref(undefined);
     const resources = ref([
-      { title: "Small VM (1 CPU, 2MB, 5GB)", value: "small" },
-      { title: "Medium VM (2 CPU, 4MB, 10GB)", value: "medium" },
-      { title: "Large VM (4 CPU, 8MB, 15GB)", value: "large" },
+      { title: "Small VM (1 CPU, 2GB, 5GB)", value: "small" },
+      { title: "Medium VM (2 CPU, 4GB, 10GB)", value: "medium" },
+      { title: "Large VM (4 CPU, 8GB, 15GB)", value: "large" },
     ]);
-    const headers = ref([
-      "ID",
-      "Name",
-      "Disk (SSD)",
-      "RAM (GB)",
-      "CPU",
-      "IP",
-    ]);
+    const headers = ref(["ID", "Name", "Disk (GB)", "RAM (MB)", "CPU", "IP"]);
+
     const toast = ref(null);
     const loading = ref(false);
     const results = ref([]);
     const deLoading = ref(false);
     const message = ref(null);
     const form = ref(null);
+    const nameValidation = ref([
+      (value) => {
+        if (value.length >= 3 && value.length <= 20) return true;
+        return "Name needs to be more than 2 characters and less than 20.";
+      },
+    ]);
+    currentPage.value = 1;
+    itemsPerPage.value = 5;
 
     const getVMS = () => {
       userService
@@ -141,6 +176,9 @@ export default {
         .then((response) => {
           const { data } = response.data;
           results.value = data;
+          totalPages.value = Math.ceil(
+            results.value.length / itemsPerPage.value
+          );
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -150,20 +188,22 @@ export default {
 
     const deployVm = () => {
       loading.value = true;
-      toast.value.toast("Deploying..");
       userService
-        .deployVm(name.value, selectedResource.value)
+        .deployVm(name.value, selectedResource.value, checked.value)
         .then((response) => {
           toast.value.toast(response.data.msg, "#388E3C");
           reset();
+          emitQuota();
           getVMS();
-          loading.value = false;
         })
         .catch((response) => {
           reset();
           const { err } = response.response.data;
           toast.value.toast(err, "#FF5252");
+        })
+        .finally(() => {
           loading.value = false;
+          checked.value = false;
         });
     };
 
@@ -179,12 +219,15 @@ export default {
               .then((response) => {
                 toast.value.toast(response.data.msg, "#388E3C");
                 getVMS();
-                deLoading.value = false;
               })
               .catch((response) => {
                 const { err } = response.response.data;
                 toast.value.toast(err, "#FF5252");
                 deLoading.value = false;
+              })
+              .finally(() => {
+                deLoading.value = false;
+                checked.value = false;
               });
           }
         });
@@ -213,12 +256,35 @@ export default {
         });
     };
 
+    userService
+      .getUser()
+      .then((response) => {
+        const { user } = response.data.data;
+        alert.value = user.ssh_key == "";
+      })
+      .catch((response) => {
+        const { err } = response.response.data;
+        toast.value.toast(err, "#FF5252");
+      });
+
+    const emitQuota = () => {
+      emitter.emit("userUpdateQuota", true);
+    };
+    const dataPerPage = computed(() => {
+      return results.value.slice(
+        (currentPage.value - 1) * itemsPerPage.value,
+        currentPage.value * itemsPerPage.value
+      );
+    });
+
     onMounted(() => {
-      getVMS();
+      let token = localStorage.getItem("token");
+      if (token) getVMS();
     });
     return {
       verify,
       name,
+      alert,
       selectedResource,
       resources,
       loading,
@@ -230,11 +296,18 @@ export default {
       toast,
       message,
       form,
+      checked,
+      nameValidation,
+      currentPage,
+      totalPages,
+      itemsPerPage,
+      dataPerPage,
       reset,
       getVMS,
       deployVm,
       deleteVms,
       deleteVm,
+      emitQuota,
     };
   },
 };

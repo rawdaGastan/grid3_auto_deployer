@@ -1,72 +1,76 @@
 // Composables
 import { createRouter, createWebHistory } from "vue-router";
-import Profile from "@/views/Profile.vue";
 import Home from "@/views/Home.vue";
 import About from "@/views/About.vue";
 import VM from "@/views/VM.vue";
 import K8s from "@/views/K8s.vue";
+import Profile from "@/views/Profile.vue";
 import Admin from "@/views/Admin.vue";
-
+import NewPassword from "@/views/Newpassword.vue";
+import userService from "@/services/userService.js";
 
 const routes = [
   {
     path: "/login",
     name: "Login",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "login" */ "@/views/Login.vue"),
+    component: () => import("@/views/Login.vue"),
     meta: {
       requiredAuth: false,
+      layout: "Default",
     },
   },
   {
     path: "/signup",
     name: "Signup",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "login" */ "@/views/Signup.vue"),
+    component: () => import("@/views/Signup.vue"),
     meta: {
       requiredAuth: false,
+      layout: "Default",
     },
   },
   {
     path: "/forgetPassword",
     name: "ForgetPassword",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "login" */ "@/views/Forgetpassword.vue"),
+    component: () => import("@/views/Forgetpassword.vue"),
     meta: {
       requiredAuth: false,
+      layout: "Default",
     },
   },
   {
     path: "/otp",
     name: "OTP",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "login" */ "@/views/Otp.vue"),
+    component: () => import("@/views/Otp.vue"),
     meta: {
       requiredAuth: false,
+      layout: "Default",
     },
   },
   {
     path: "/newPassword",
     name: "NewPassword",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "login" */ "@/views/Newpassword.vue"),
+    component: () => import("@/views/Newpassword.vue"),
     meta: {
       requiredAuth: false,
-      layout : 'Default'
+      layout: "Default",
+    },
+  },
+  {
+    path: "/about",
+    name: "About",
+    component: About,
+    meta: {
+      requiredAuth: false,
+      layout: "Default",
+    },
+  },
+  {
+    path: "/maintenance",
+    name: "Maintenance",
+    component: () => import("@/views/Maintenance.vue"),
+    meta: {
+      requiredAuth: false,
+      layout: "Default",
     },
   },
   {
@@ -93,11 +97,11 @@ const routes = [
         },
       },
       {
-        path: "/about",
-        name: "About",
-        component: About,
+        path: "/changePassword",
+        name: "ChangePassword",
+        component: NewPassword,
         meta: {
-          requiredAuth: false,
+          requiredAuth: true,
         },
       },
       {
@@ -117,12 +121,19 @@ const routes = [
         },
       },
       {
+        path: "/about",
+        name: "About",
+        component: About,
+        meta: {
+          requiredAuth: false,
+        },
+      },
+      {
         path: "admin",
         name: "Admin",
         component: Admin,
         meta: {
           requiredAuth: true,
-          layout: 'AdminNavbar'
         },
       },
       {
@@ -141,8 +152,13 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   let token = localStorage.getItem("token");
-  if (to.path != "/login" && to.meta.requiredAuth && !token) {
+  userService.maintenance();
+
+  if (to.meta.requiredAuth && !token) {
     next("/login");
+  } else if (to.meta.requiredAuth) {
+    userService.refresh_token();
+    next();
   } else {
     next();
   }

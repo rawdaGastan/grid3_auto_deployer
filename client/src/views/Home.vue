@@ -8,10 +8,24 @@
               >Cloud for Students</span
             >
           </h5>
+
+          <p
+            class="px-15 pl-0 text-subtitle-1 mb-5 font-weight-regular secondary"
+          >
+            <a
+              href="https://codescalers-egypt.com/"
+              class="primary text-decoration-none font-weight-bold"
+              >CodeScalers</a
+            >
+            is an international software development house specializing in Cloud
+            Computing, working with startups to help them achieve their goals.
+          </p>
+
           <p class="px-15 pl-0 text-subtitle-1 font-weight-regular secondary">
-            We are an international software development house specialized in
-            Cloud Computing, working with startups to help them achieve their
-            goals.
+            <strong>Cloud for Students</strong> Cloud for Students provides
+            fast, flexible, and affordable computing capacity to fit any
+            workload need, from high performance bare metal servers and flexible
+            Virtual Machines to lightweight containers and serverless computing.
           </p>
           <v-expansion-panels class="my-3">
             <v-expansion-panel v-if="!voucher" bg-color="transparent">
@@ -19,7 +33,7 @@
                 <v-row>
                   <v-col cols="12" class="d-flex justify-start">
                     <router-link
-                      :to="{ name: 'Profile' }"
+                      :to="{ name: 'Profile', query: { voucher: true }}"
                       class="text-h5 primary text-decoration-none"
                     >
                       <font-awesome-icon
@@ -114,7 +128,6 @@ export default {
         .then((response) => {
           const { user } = response.data.data;
           voucher.value = user.voucher;
-          localStorage.setItem("username", user.name);
         })
         .catch((response) => {
           const { status } = response.response;
@@ -127,7 +140,8 @@ export default {
     };
 
     onMounted(() => {
-      checkVoucher();
+      let token = localStorage.getItem("token");
+      if (token) checkVoucher();
     });
     return { items, voucher, toast, checkVoucher };
   },

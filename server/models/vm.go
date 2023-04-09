@@ -5,7 +5,7 @@ package models
 type VM struct {
 	ID                int    `json:"id" gorm:"primaryKey"`
 	UserID            string `json:"user_id"`
-	Name              string `json:"name"`
+	Name              string `json:"name" gorm:"unique" binding:"required"`
 	YggIP             string `json:"ygg_ip"`
 	Public            bool   `json:"public"`
 	PublicIP          string `json:"public_ip"`

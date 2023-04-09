@@ -1,11 +1,11 @@
 <template>
   <v-container style="max-width: 1600px;" fill-height>
-    <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
+    <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
       Admin Panel
     </h5>
     <v-row>
       <v-col cols="12" md="8">
-        <section class="rounded shadow" v-if="vouchers.length > 0">
+        <section class="rounded shadow">
           <v-sheet>
             <v-table class="rounded-sm" style="margin-top: 0.5rem;">
               <thead class="bg-grey-lighten-5">
@@ -24,7 +24,7 @@
               </thead>
               <tbody>
                 <tr v-for="(item, index) in usersPerPage" :key="index">
-                  <td>{{ ++index }}</td>
+                  <td>{{ item.id }}</td>
                   <td v-if="item.name" class="d-flex align-center">
                     <v-avatar color="primary" size="30" class="mr-2">
                       <span class="text-uppercase">{{
@@ -34,11 +34,7 @@
                     <div>
                       <p>{{ item.name }}</p>
                       <p>
-                        <a
-                          href="email"
-                          class="secondary text-decoration-none"
-                          >{{ item.email }}</a
-                        >
+                        {{ item.email }}
                       </p>
                     </div>
                   </td>
@@ -83,7 +79,8 @@
             <div class="actions d-flex justify-center align-center">
               <v-pagination
                 v-model="currentPage"
-                :length="totalPages"
+                :length="currentPage"
+                :total-visible="totalPages"
               ></v-pagination>
               <BaseButton
                 v-if="approveAllCount > 0"
@@ -150,9 +147,7 @@
                     <td>{{ ++index }}</td>
                     <td>{{ item.name }}</td>
                     <td>
-                      <a href="email" class="secondary text-decoration-none">{{
-                        item.email
-                      }}</a>
+                      {{ item.email }}
                     </td>
                     <td>
                       <span class="text-red">{{ item.used_vms }}</span> /
@@ -299,8 +294,11 @@ export default {
     };
 
     onMounted(() => {
-      getUsers();
-      getVouchers();
+      let token = localStorage.getItem("token");
+      if (token) {
+        getUsers();
+        getVouchers();
+      }
     });
 
     return {

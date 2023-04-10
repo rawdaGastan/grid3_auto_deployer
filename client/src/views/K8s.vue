@@ -134,7 +134,7 @@
                 <td>{{ item.master.clusterID }}</td>
                 <td>{{ item.master.name }}</td>
                 <td>{{ item.master.sru }}GB</td>
-                <td>{{ item.master.mru }}MB</td>
+                <td>{{ item.master.mru }}GB</td>
                 <td>{{ item.master.cru }}</td>
                 <td>{{ item.master.ygg_ip }}</td>
                 <td v-if="item.master.public_ip">
@@ -171,7 +171,7 @@
                             <td>{{ item.master.clusterID }}</td>
                             <td>{{ item.master.name }}</td>
                             <td>{{ item.master.sru }}GB</td>
-                            <td>{{ item.master.mru }}MB</td>
+                            <td>{{ item.master.mru }}GB</td>
                             <td>{{ item.master.cru }}</td>
                             <td>{{ item.master.ygg_ip }}</td>
                           </tr>

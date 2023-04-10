@@ -56,6 +56,15 @@ const routes = [
     },
   },
   {
+    path: "/about",
+    name: "About",
+    component: About,
+    meta: {
+      requiredAuth: false,
+      layout: "Default",
+    },
+  },
+  {
     path: "/maintenance",
     name: "Maintenance",
     component: () => import("@/views/Maintenance.vue"),
@@ -96,14 +105,6 @@ const routes = [
         },
       },
       {
-        path: "/about",
-        name: "About",
-        component: About,
-        meta: {
-          requiredAuth: true,
-        },
-      },
-      {
         path: "/vm",
         name: "VM",
         component: VM,
@@ -117,6 +118,14 @@ const routes = [
         component: K8s,
         meta: {
           requiredAuth: true,
+        },
+      },
+      {
+        path: "/about",
+        name: "About",
+        component: About,
+        meta: {
+          requiredAuth: false,
         },
       },
       {
@@ -141,14 +150,14 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   let token = localStorage.getItem("token");
   userService.maintenance();
 
   if (to.meta.requiredAuth && !token) {
     next("/login");
   } else if (to.meta.requiredAuth) {
-    userService.refresh_token();
+    await userService.refresh_token();
     next();
   } else {
     next();

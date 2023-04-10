@@ -68,10 +68,11 @@ func (d *DB) GetUserByID(id string) (User, error) {
 func (d *DB) ListAllUsers() ([]UserUsedQuota, error) {
 	var res []UserUsedQuota
 	query := d.db.Table("users").
-		Select("*, users.id as user_id, vouchers.vms - quota.vms as used_vms, vouchers.public_ips - quota.public_ips as used_public_ips").
+		Select("*, users.id as user_id, sum(vouchers.vms) as vms, sum(vouchers.public_ips) as public_ips, sum(vouchers.vms) - quota.vms as used_vms, sum(vouchers.public_ips) - quota.public_ips as used_public_ips").
 		Joins("left join quota on quota.user_id = users.id").
-		Joins("left join vouchers on vouchers.voucher = users.voucher and vouchers.used = true and vouchers.approved = true").
+		Joins("left join vouchers on vouchers.used = true and vouchers.user_id = users.id").
 		Where("verified = true").
+		Group("users.id").
 		Scan(&res)
 	return res, query.Error
 }
@@ -107,22 +108,10 @@ func (d *DB) UpdateVerification(id string, verified bool) error {
 	return result.Error
 }
 
-// AddUserVoucher applies voucher for user
-func (d *DB) AddUserVoucher(id string, voucher string) error {
-	var res User
-	result := d.db.Model(&res).Where("id = ?", id).Update("voucher", voucher)
-
-	if result.Error != nil {
-		return result.Error
-	}
-
-	return d.DeactivateVoucher(voucher)
-}
-
 // GetNotUsedVoucherByUserID returns not used voucher by its user id
 func (d *DB) GetNotUsedVoucherByUserID(id string) (Voucher, error) {
 	var res Voucher
-	query := d.db.First(&res, "user_id = ? AND used = false", id)
+	query := d.db.Last(&res, "user_id = ? AND used = false", id)
 	return res, query.Error
 }
 
@@ -233,19 +222,19 @@ func (d *DB) ListAllVouchers() ([]Voucher, error) {
 // UpdateVoucher approves voucher by voucher id
 func (d *DB) UpdateVoucher(id int, approved bool) (Voucher, error) {
 	var voucher Voucher
-	query := d.db.First(&voucher, id).Update("approved", approved)
+	query := d.db.First(&voucher, id).Updates(map[string]interface{}{"approved": approved, "rejected": !approved})
 	return voucher, query.Error
 }
 
-// ApproveAllVouchers approves all vouchers
-func (d *DB) ApproveAllVouchers() ([]Voucher, error) {
+// GetAllVouchers gets all vouchers
+func (d *DB) GetAllVouchers() ([]Voucher, error) {
 	var vouchers []Voucher
-	return vouchers, d.db.Find(&vouchers).Update("approved", true).Error
+	return vouchers, d.db.Find(&vouchers).Error
 }
 
 // DeactivateVoucher if it is used
-func (d *DB) DeactivateVoucher(voucher string) error {
-	return d.db.Model(Voucher{}).Where("voucher = ?", voucher).Update("used", true).Error
+func (d *DB) DeactivateVoucher(userID string, voucher string) error {
+	return d.db.Model(Voucher{}).Where("voucher = ?", voucher).Updates(map[string]interface{}{"used": true, "user_id": userID}).Error
 }
 
 // CreateK8s creates a new k8s cluster

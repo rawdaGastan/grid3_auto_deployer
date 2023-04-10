@@ -9,7 +9,7 @@
           >
           <div class="my-1">
             <div class="my-1">Available quota</div>
-            
+
             <font-awesome-icon icon="fa-cube" />
             <span class="pa-2"> VMs: {{ vm }}</span>
           </div>
@@ -34,12 +34,12 @@ export default {
     const vm = ref(0);
     const ips = ref(0);
     const rerenderKey = ref(0);
-    const emitter = inject('emitter');
+    const emitter = inject("emitter");
 
-    emitter.on('userUpdateQuota', () => {
-      rerenderKey.value += 1
+    emitter.on("userUpdateQuota", () => {
+      rerenderKey.value += 1;
       getQuota();
-    })
+    });
 
     const getQuota = () => {
       userService

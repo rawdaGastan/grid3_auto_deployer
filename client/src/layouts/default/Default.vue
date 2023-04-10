@@ -3,6 +3,7 @@
     <default-bar v-if="!maintenance"/>
     <Quota class="quota" v-if="!isAdmin && !maintenance && !noQuota" />
     <default-view />
+    <FooterComponent/>
   </v-app>
 </template>
 
@@ -13,12 +14,14 @@ import Quota from "@/components/Quota.vue";
 import { useRoute, useRouter } from "vue-router";
 import { computed, ref } from "vue";
 import userService from "@/services/userService.js";
+import FooterComponent from "@/components/Footer.vue";
 
 export default {
   components: {
     DefaultBar,
     DefaultView,
     Quota,
+    FooterComponent
   },
 
   setup() {
@@ -26,7 +29,7 @@ export default {
     const router = useRouter();
     const maintenance = ref(false);
     const noQuota = ref(false);
-    const excludedRoutes = ref(["/login", "/signup", "/forgetPassword", "/otp", "/newPassword"])
+    const excludedRoutes = ref(["/login", "/signup", "/forgetPassword", "/otp", "/newPassword", "/about"])
 
     userService.maintenance();
     maintenance.value = localStorage.getItem("maintenance") == "true";
@@ -53,7 +56,9 @@ export default {
 
 <style>
 .quota {
-  position: absolute;
-  top: 35%;
+  position: fixed;
+  top: 15%;
+  right: 0;
+  z-index: 999;
 }
 </style>

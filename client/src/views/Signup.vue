@@ -371,6 +371,7 @@ export default {
       (value) => {
         if (!value) return "Field is required";
         if (value.length < 7) return "Password must be at least 7 characters";
+        if (value.length > 12) return 'Password must be at most 12 characters';
         return true;
       },
     ]);
@@ -378,8 +379,8 @@ export default {
       (value) => {
         if (!value) return "Field is required";
         if (value.length < 7) return "Password must be at least 7 characters";
+        if (value.length > 12) return 'Password must be at most 12 characters';
         if (value !== password.value) return "Passwords don't match";
-
         return true;
       },
     ]);

@@ -33,7 +33,7 @@
                 <v-row>
                   <v-col cols="12" class="d-flex justify-start">
                     <router-link
-                      :to="{ name: 'Profile' }"
+                      :to="{ name: 'Profile', query: { voucher: true }}"
                       class="text-h5 primary text-decoration-none"
                     >
                       <font-awesome-icon
@@ -109,8 +109,8 @@
 <script>
 import { ref, onMounted } from "vue";
 import userService from "@/services/userService";
-import router from "@/router";
 import Toast from "@/components/Toast.vue";
+
 export default {
   components: {
     Toast,
@@ -124,16 +124,12 @@ export default {
     const toast = ref(null);
     const checkVoucher = () => {
       userService
-        .getUser()
+        .getQuota()
         .then((response) => {
-          const { user } = response.data.data;
-          voucher.value = user.voucher;
+          const { vms } = response.data.data;
+          voucher.value = vms > 0;
         })
         .catch((response) => {
-          const { status } = response.response;
-          if (status == 401) {
-            router.push("/login");
-          }
           const { err } = response.response.data;
           toast.value.toast(err, "#FF5252");
         });

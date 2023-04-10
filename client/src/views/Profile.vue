@@ -74,13 +74,11 @@
                 variant="outlined"
                 density="compact"
                 clearable
-                :disabled="!allowVoucher"
               ></v-text-field>
             </v-col>
 
             <v-col cols="12" sm="3">
               <BaseButton
-                :disabled="!allowVoucher"
                 class="bg-primary text-capitalize"
                 text="Apply Voucher"
                 @click="activateVoucher"
@@ -123,7 +121,7 @@
               />
             </v-col>
             <v-col>
-              <v-dialog persistent transition="dialog-top-transition" max-width="500" >
+              <v-dialog persistent transition="dialog-top-transition" max-width="500" v-model="openVoucher">
                 <template v-slot:activator="{ props }">
                   <BaseButton
                     v-bind="props"
@@ -211,6 +209,7 @@ import userService from "@/services/userService";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import Toast from "@/components/Toast.vue";
 import router from "@/router";
+import { useRoute } from "vue-router";
 
 export default {
   components: {
@@ -218,6 +217,8 @@ export default {
     Toast,
   },
   setup() {
+    const route = useRoute();
+    const openVoucher = ref(Boolean(route.query.voucher));
     const emitter = inject('emitter');
     const verify = ref(null);
     const email = ref(null);
@@ -230,7 +231,6 @@ export default {
     const actLoading = ref(false);
     const toast = ref(null);
     const verified = ref(false);
-    const allowVoucher = ref(false);
     const loading = ref(false);
     const newVoucherVerify = ref(false);
     const vms = ref(0);
@@ -260,8 +260,6 @@ export default {
           const { user } = response.data.data;
           email.value = user.email;
           name.value = user.name;
-          voucher.value = user.voucher;
-          allowVoucher.value = user.voucher == "";
           verified.value = user.verified;
           sshKey.value = user.ssh_key;
           if (!user.college) {
@@ -361,7 +359,6 @@ export default {
       email,
       name,
       voucher,
-      allowVoucher,
       sshKey,
       verified,
       avatar,
@@ -374,6 +371,7 @@ export default {
       ips,
       reason,
       nameValidation,
+      openVoucher,
       getUser,
       activateVoucher,
       update,

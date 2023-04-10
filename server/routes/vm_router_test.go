@@ -50,9 +50,6 @@ func TestDeployVMHandler(t *testing.T) {
 		)
 		assert.NoError(t, err)
 
-		err = db.AddUserVoucher(user.ID.String(), v.Voucher)
-		assert.NoError(t, err)
-
 		body := []byte(`{
 		"name" : "myvm",
 		"resources" : "medium"

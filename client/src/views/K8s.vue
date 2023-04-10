@@ -125,9 +125,6 @@
                   {{ head }}
                 </th>
                 <th class="text-left text-white">
-                  Public IP
-                </th>
-                <th class="text-left text-white">
                   Actions
                 </th>
               </tr>
@@ -137,7 +134,7 @@
                 <td>{{ item.master.clusterID }}</td>
                 <td>{{ item.master.name }}</td>
                 <td>{{ item.master.sru }}GB</td>
-                <td>{{ item.master.mru }}MB</td>
+                <td>{{ item.master.mru }}GB</td>
                 <td>{{ item.master.cru }}</td>
                 <td>{{ item.master.ygg_ip }}</td>
                 <td v-if="item.master.public_ip">
@@ -174,7 +171,7 @@
                             <td>{{ item.master.clusterID }}</td>
                             <td>{{ item.master.name }}</td>
                             <td>{{ item.master.sru }}GB</td>
-                            <td>{{ item.master.mru }}MB</td>
+                            <td>{{ item.master.mru }}GB</td>
                             <td>{{ item.master.cru }}</td>
                             <td>{{ item.master.ygg_ip }}</td>
                           </tr>
@@ -249,7 +246,15 @@ export default {
         return "This field is required.";
       },
     ]);
-    const headers = ref(["ID", "Name", "Disk (GB)", "RAM (MB)", "CPU", "IP"]);
+    const headers = ref([
+      "ID",
+      "Name",
+      "Disk (GB)",
+      "RAM (GB)",
+      "CPU",
+      "Yggdrasil IP",
+      "Public IP",
+    ]);
     const selectedResource = ref(null);
     const resources = ref([
       { title: "Small K8s (1 CPU, 2GB, 5GB)", value: "small" },

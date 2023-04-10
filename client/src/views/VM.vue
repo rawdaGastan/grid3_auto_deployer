@@ -66,9 +66,6 @@
                   {{ head }}
                 </th>
                 <th class="text-left text-white">
-                  Public IP
-                </th>
-                <th class="text-left text-white">
                   Actions
                 </th>
               </tr>
@@ -153,7 +150,15 @@ export default {
       { title: "Medium VM (2 CPU, 4GB, 10GB)", value: "medium" },
       { title: "Large VM (4 CPU, 8GB, 15GB)", value: "large" },
     ]);
-    const headers = ref(["ID", "Name", "Disk (GB)", "RAM (MB)", "CPU", "IP"]);
+    const headers = ref([
+      "ID",
+      "Name",
+      "Disk (GB)",
+      "RAM (MB)",
+      "CPU",
+      "Yggdrasil IP",
+      "Public IP",
+    ]);
 
     const toast = ref(null);
     const loading = ref(false);

@@ -70,7 +70,7 @@
               <td>{{ item.id }}</td>
               <td>{{ item.name }}</td>
               <td>{{ item.sru }}GB</td>
-              <td>{{ item.mru }}GB</td>
+              <td>{{ item.mru }}MB</td>
               <td>{{ item.cru }}</td>
               <td>{{ item.ygg_ip }}</td>
               <td v-if="item.public_ip">{{ item.public_ip }}</td>
@@ -138,7 +138,7 @@ export default {
       "ID",
       "Name",
       "Disk (GB)",
-      "RAM (GB)",
+      "RAM (MB)",
       "CPU",
       "Yggdrasil IP",
       "Public IP",

@@ -150,14 +150,14 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   let token = localStorage.getItem("token");
   userService.maintenance();
 
   if (to.meta.requiredAuth && !token) {
     next("/login");
   } else if (to.meta.requiredAuth) {
-    userService.refresh_token();
+    await userService.refresh_token();
     next();
   } else {
     next();

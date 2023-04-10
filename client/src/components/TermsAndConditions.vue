@@ -1,7 +1,7 @@
 <template>
   <v-dialog v-model="dialog" transition="dialog-top-transition" width="800">
     <template v-slot:activator="{ props }">
-      <v-checkbox v-model="checked">
+      <v-checkbox :checked="checked" @change="actions($event.target.checked)">
         <template v-slot:label>
           <a
             class="grey-darken-4 text-uppercase text-decoration-underline"
@@ -30,7 +30,7 @@
           Agreement including, without limitation, any agreement User/Users have
           with a third-party service provider.
         </p>
-        <v-list lines="one">
+        <v-list lines="two">
           <v-list-item>
             User/users will use and operate the resources in strict compliance
             with terms of this Agreement and any applicable laws or regulations,
@@ -132,7 +132,7 @@
           of this Agreement and in no other manner. Without limiting the
           generality of the foregoing, User/Users will not:
         </p>
-        <v-list lines="one">
+        <v-list lines="two">
           <v-list-item>
             access or use the resources: (i) in violation of applicable laws;
             (ii) to send or store material knowingly or intentionally containing
@@ -220,22 +220,21 @@
 </template>
 
 <script>
-import { ref, defineEmits } from "vue";
+import { ref } from "vue";
 export default {
-  setup() {
+  setup(props, { emit }) {
     const dialog = ref(false);
     const checked = ref(false);
-    const emit = defineEmits(["checked"]);
 
     const actions = (action) => {
-      if (action == "accept") {
+      if (action == "accept" || action == true) {
         dialog.value = false;
         checked.value = true;
-        emit(checked, true);
+        emit("setChecked", checked.value);
       } else {
         dialog.value = false;
         checked.value = false;
-        emit(checked, false);
+        emit("setChecked", checked.value);
       }
     };
     return { dialog, checked, actions };

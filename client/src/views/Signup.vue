@@ -104,7 +104,7 @@
           </v-text-field>
 
           <v-row>
-            <TermsAndConditions @checked="action" />
+            <TermsAndConditions @setChecked="actions" />
           </v-row>
 
           <v-btn
@@ -246,13 +246,13 @@ export default {
         });
     };
 
-    const action = (payload) => {
-      checked.value = payload;
+    const actions = (event) => {
+      checked.value = event;
     };
 
     return {
       onSubmit,
-      action,
+      actions,
       loading,
       verify,
       showPassword,

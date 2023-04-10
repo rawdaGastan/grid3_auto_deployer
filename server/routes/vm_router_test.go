@@ -28,7 +28,7 @@ func TestDeployVMHandler(t *testing.T) {
 	err := db.CreateUser(&u)
 	assert.NoError(t, err)
 
-	t.Run("deploy medium vm successfully", func(t *testing.T) {
+	t.Run("deploy small vm successfully", func(t *testing.T) {
 		user, err := db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
@@ -36,8 +36,14 @@ func TestDeployVMHandler(t *testing.T) {
 		assert.NoError(t, err)
 
 		v := models.Voucher{
+			UserID: user.ID.String(),
 			Voucher: "voucher",
 			VMs:     10,
+			PublicIPs: 1,
+			Reason: "reason",
+			Used: false,
+			Approved: true,
+			Rejected: false,
 		}
 		err = db.CreateVoucher(&v)
 		assert.NoError(t, err)
@@ -46,13 +52,14 @@ func TestDeployVMHandler(t *testing.T) {
 			&models.Quota{
 				UserID: user.ID.String(),
 				Vms:    10,
+				PublicIPs: 1,
 			},
 		)
 		assert.NoError(t, err)
-
 		body := []byte(`{
-		"name" : "myvm",
-		"resources" : "medium"
+		"name": "name",
+		"resources": "small",
+		"public": false
 		}`)
 		request := httptest.NewRequest("POST", version+"/vm", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))

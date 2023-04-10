@@ -40,10 +40,10 @@ func TestDeployVMHandler(t *testing.T) {
 			Voucher:   "voucher",
 			VMs:       10,
 			PublicIPs: 1,
-			Reason: "reason",
-			Used: false,
-			Approved: true,
-			Rejected: false,
+			Reason:    "reason",
+			Used:      false,
+			Approved:  true,
+			Rejected:  false,
 		}
 		err = db.CreateVoucher(&v)
 		assert.NoError(t, err)

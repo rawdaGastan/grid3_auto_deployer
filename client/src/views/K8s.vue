@@ -123,6 +123,19 @@
                   :key="head"
                 >
                   {{ head }}
+
+                  <v-tooltip
+                    v-if="head === 'Yggdrasil IP'"
+                    text="install Yggdrasil through yggdrasil.com"
+                    location="top"
+                  >
+                    <template v-slot:activator="{ props }">
+                      <font-awesome-icon
+                        v-bind="props"
+                        :icon="['fas', 'circle-exclamation']"
+                      />
+                    </template>
+                  </v-tooltip>
                 </th>
                 <th class="text-left text-white">
                   Actions
@@ -163,6 +176,18 @@
                               :key="head"
                             >
                               {{ head }}
+                              <v-tooltip
+                                v-if="head === 'Yggdrasil IP'"
+                                text="install Yggdrasil through yggdrasil.com"
+                                location="top"
+                              >
+                                <template v-slot:activator="{ props }">
+                                  <font-awesome-icon
+                                    v-bind="props"
+                                    :icon="['fas', 'circle-exclamation']"
+                                  />
+                                </template>
+                              </v-tooltip>
                             </th>
                           </tr>
                         </thead>
@@ -277,7 +302,7 @@ export default {
     const form = ref(null);
     const wForm = ref(null);
     const deLoading = ref(false);
-    
+
     currentPage.value = 1;
     itemsPerPage.value = 5;
 

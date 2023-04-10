@@ -36,9 +36,9 @@ func TestDeployVMHandler(t *testing.T) {
 		assert.NoError(t, err)
 
 		v := models.Voucher{
-			UserID: user.ID.String(),
-			Voucher: "voucher",
-			VMs:     10,
+			UserID:    user.ID.String(),
+			Voucher:   "voucher",
+			VMs:       10,
 			PublicIPs: 1,
 			Reason: "reason",
 			Used: false,
@@ -50,8 +50,8 @@ func TestDeployVMHandler(t *testing.T) {
 
 		err = db.CreateQuota(
 			&models.Quota{
-				UserID: user.ID.String(),
-				Vms:    10,
+				UserID:    user.ID.String(),
+				Vms:       10,
 				PublicIPs: 1,
 			},
 		)

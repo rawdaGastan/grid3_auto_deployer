@@ -163,7 +163,7 @@
                 <td>
                   <v-dialog
                     transition="dialog-top-transition"
-                    v-if="workers.length > 0"
+                    v-if="item.workers.length > 0"
                   >
                     <template v-slot:activator="{ props }">
                       <font-awesome-icon
@@ -172,45 +172,27 @@
                         icon="fa-solid fa-eye"
                       />
                     </template>
-                    <v-card width="100%" size="100%" class="mx-auto pa-5">
+                    <v-card width="50%" class="mx-auto">
                       <v-table>
                         <thead class="bg-primary">
                           <tr>
                             <th
                               class="text-left text-white"
-                              v-for="head in headers"
+                              v-for="head in workerHeaders"
                               :key="head"
                             >
                               {{ head }}
-                              <v-tooltip
-                                v-if="head === 'Yggdrasil IP'"
-                                text="visit https://yggdrasil-network.github.io/installation.html to get connected to yggdrasil network"
-                                location="top"
-                              >
-                                <template v-slot:activator="{ props }">
-                                  <a
-                                    href="https://yggdrasil-network.github.io/installation.html"
-                                    target="_blank"
-                                  >
-                                    <font-awesome-icon
-                                      v-bind="props"
-                                      :icon="['fas', 'circle-exclamation']"
-                                      color="white"
-                                    />
-                                  </a>
-                                </template>
-                              </v-tooltip>
                             </th>
                           </tr>
                         </thead>
-                        <tbody>
-                          <tr v-for="item in results" :key="item.name">
-                            <td>{{ item.master.clusterID }}</td>
-                            <td>{{ item.master.name }}</td>
-                            <td>{{ item.master.sru }}GB</td>
-                            <td>{{ item.master.mru }}GB</td>
-                            <td>{{ item.master.cru }}</td>
-                            <td>{{ item.master.ygg_ip }}</td>
+                        <tbody v-for="item in item.workers" :key="item.id">
+                          <tr>
+                            <td>{{ item.clusterID }}</td>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.sru }}GB</td>
+                            <td>{{ item.mru }}GB</td>
+                            <td>{{ item.cru }}</td>
+                            <td>{{ item.resources }}</td>
                           </tr>
                         </tbody>
                       </v-table>
@@ -291,6 +273,14 @@ export default {
       "CPU",
       "Yggdrasil IP",
       "Public IP",
+    ]);
+    const workerHeaders = ref([
+      "ID",
+      "Name",
+      "Disk (GB)",
+      "RAM (GB)",
+      "CPU",
+      "Resources",
     ]);
     const selectedResource = ref(null);
     const resources = ref([
@@ -471,6 +461,7 @@ export default {
       totalPages,
       itemsPerPage,
       dataPerPage,
+      workerHeaders,
       resetInputs,
       deployK8s,
       deployWorker,

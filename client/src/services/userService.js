@@ -14,99 +14,6 @@ const authClient = () =>
   });
 
 export default {
-  // user
-  async getUser() {
-    return await authClient().get("/user");
-  },
-
-  async activateVoucher(voucher) {
-    return await authClient().put("/user/activate_voucher", { voucher });
-  },
-
-  async updateUser(name, ssh_key) {
-    return await authClient().put("/user", {
-      name,
-      ssh_key,
-    });
-  },
-
-  async changePassword(email, password, confirm_password) {
-    return await authClient().put("/user/change_password", {
-      email,
-      password,
-      confirm_password,
-    });
-  },
-
-  async newVoucher(vms, public_ips, reason) {
-    return await authClient().post("/user/apply_voucher", {
-      vms,
-      public_ips,
-      reason,
-    });
-  },
-
-  async getQuota() {
-    return await authClient().get("/quota");
-  },
-
-  // VM
-  async getVms() {
-    return await authClient().get("/vm");
-  },
-
-  async deployVm(name, resources, checked) {
-    return await authClient().post("/vm", { name, resources, public: checked });
-  },
-
-  async deleteVm(id) {
-    return await authClient().delete(`/vm/${id}`);
-  },
-
-  async deleteAllVms() {
-    return await authClient().delete("/vm");
-  },
-
-  // K8s
-  async getK8s() {
-    return await authClient().get("/k8s");
-  },
-
-  async deployK8s(master_name, resources, workers, checked) {
-    return await authClient().post("/k8s", {
-      master_name,
-      resources,
-      workers,
-      public: checked,
-    });
-  },
-
-  async deleteK8s(id) {
-    return await authClient().delete(`/k8s/${id}`);
-  },
-
-  async deleteAllK8s() {
-    return await authClient().delete("/k8s");
-  },
-
-  // Users
-  async getUsers() {
-    return await authClient().get("/user/all");
-  },
-
-  // Vouchers
-  async getVouchers() {
-    return await authClient().get("/voucher");
-  },
-
-  async approveVoucher(id, approved) {
-    return await authClient().put(`/voucher/${id}`, { approved });
-  },
-
-  async approveAllVouchers() {
-    return await authClient().put("/voucher");
-  },
-
   async refresh_token() {
     await authClient()
       .post("/user/refresh_token")
@@ -117,6 +24,117 @@ export default {
       .catch(() => {
         localStorage.removeItem("token");
       });
+  },
+
+  // user
+  async getUser() {
+    await this.refresh_token();
+    return await authClient().get("/user");
+  },
+
+  async activateVoucher(voucher) {
+    await this.refresh_token();
+    return await authClient().put("/user/activate_voucher", { voucher });
+  },
+
+  async updateUser(name, ssh_key) {
+    await this.refresh_token();
+    return await authClient().put("/user", {
+      name,
+      ssh_key,
+    });
+  },
+
+  async changePassword(email, password, confirm_password) {
+    await this.refresh_token();
+    return await authClient().put("/user/change_password", {
+      email,
+      password,
+      confirm_password,
+    });
+  },
+
+  async newVoucher(vms, public_ips, reason) {
+    await this.refresh_token();
+    return await authClient().post("/user/apply_voucher", {
+      vms,
+      public_ips,
+      reason,
+    });
+  },
+
+  async getQuota() {
+    await this.refresh_token();
+    return await authClient().get("/quota");
+  },
+
+  // VM
+  async getVms() {
+    await this.refresh_token();
+    return await authClient().get("/vm");
+  },
+
+  async deployVm(name, resources, checked) {
+    await this.refresh_token();
+    return await authClient().post("/vm", { name, resources, public: checked });
+  },
+
+  async deleteVm(id) {
+    await this.refresh_token();
+    return await authClient().delete(`/vm/${id}`);
+  },
+
+  async deleteAllVms() {
+    await this.refresh_token();
+    return await authClient().delete("/vm");
+  },
+
+  // K8s
+  async getK8s() {
+    await this.refresh_token();
+    return await authClient().get("/k8s");
+  },
+
+  async deployK8s(master_name, resources, workers, checked) {
+    await this.refresh_token();
+    return await authClient().post("/k8s", {
+      master_name,
+      resources,
+      workers,
+      public: checked,
+    });
+  },
+
+  async deleteK8s(id) {
+    await this.refresh_token();
+    return await authClient().delete(`/k8s/${id}`);
+  },
+
+  async deleteAllK8s() {
+    await this.refresh_token();
+    return await authClient().delete("/k8s");
+  },
+
+  // Users
+  async getUsers() {
+    await this.refresh_token();
+    return await authClient().get("/user/all");
+  },
+
+  // Vouchers
+  async getVouchers() {
+    await this.refresh_token();
+    return await authClient().get("/voucher");
+  },
+
+  async approveVoucher(id, approved) {
+    await this.refresh_token();
+    return await authClient().put(`/voucher/${id}`, { approved });
+  },
+
+  async approveAllVouchers() {
+    await this.refresh_token();
+    return await authClient().put("/voucher");
   },
 
   async maintenance() {

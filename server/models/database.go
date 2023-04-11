@@ -125,7 +125,7 @@ func (d *DB) CreateVM(vm *VM) error {
 // GetVMByID return vm by its id
 func (d *DB) GetVMByID(id int) (VM, error) {
 	var vm VM
-	query := d.db.Model(VM{ID: id}).First(&vm)
+	query := d.db.First(&vm, id)
 	return vm, query.Error
 }
 

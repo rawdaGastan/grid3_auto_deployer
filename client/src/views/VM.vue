@@ -95,13 +95,17 @@
                 <td>{{ item.sru }}GB</td>
                 <td>{{ item.mru }}MB</td>
                 <td>{{ item.cru }}</td>
-                <td>{{ item.ygg_ip }}</td>
-                <td v-if="item.public_ip">{{ item.public_ip }}</td>
+                <td class="cursor-pointer" @click="copyIP(item.ygg_ip)">
+                  {{ item.ygg_ip }}
+                </td>
+                <td v-if="item.public_ip" @click="copyIP(item.public_ip)">
+                  {{ item.public_ip }}
+                </td>
                 <td v-else>-</td>
 
                 <td>
                   <font-awesome-icon
-                    class="text-red-accent-2"
+                    class="text-red-accent-2 cursor-pointer"
                     @click="deleteVm(item.id, item.name)"
                     icon="fa-solid fa-trash"
                   />
@@ -300,6 +304,11 @@ export default {
       );
     });
 
+    const copyIP = (ip) => {
+      navigator.clipboard.writeText(ip);
+      toast.value.toast("IP Copied", "#388E3C");
+    };
+
     onMounted(() => {
       let token = localStorage.getItem("token");
       if (token) getVMS();
@@ -331,13 +340,14 @@ export default {
       deleteVms,
       deleteVm,
       emitQuota,
+      copyIP,
     };
   },
 };
 </script>
 
 <style>
-table svg {
+.cursor-pointer {
   cursor: pointer;
 }
 </style>

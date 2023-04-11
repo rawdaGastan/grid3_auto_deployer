@@ -1,11 +1,12 @@
 <template>
   <v-dialog v-model="dialog" transition="dialog-top-transition" width="800">
     <template v-slot:activator="{ props }">
-      <v-checkbox :checked="checked" @change="actions($event.target.checked)">
+      <v-checkbox v-model="checked">
         <template v-slot:label>
           <a
             class="grey-darken-4 text-uppercase text-decoration-underline"
             v-bind="props"
+            @click.stop
           >
             Terms and Conditions
           </a>
@@ -211,7 +212,14 @@
         <v-btn color="green-darken-1" variant="text" @click="actions('accept')">
           Accept
         </v-btn>
-        <v-btn color="red-darken-1" variant="text" @click="actions('decline')">
+        <v-btn
+          color="red-darken-1"
+          variant="text"
+          @click="
+            actions('decline');
+            checked = false;
+          "
+        >
           Decline
         </v-btn>
       </v-card-actions>
@@ -227,7 +235,7 @@ export default {
     const checked = ref(false);
 
     const actions = (action) => {
-      if (action == "accept" || action == true) {
+      if (action == "accept" || checked.value == true) {
         dialog.value = false;
         checked.value = true;
         emit("setChecked", checked.value);

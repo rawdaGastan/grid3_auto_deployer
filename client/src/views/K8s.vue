@@ -167,18 +167,31 @@
                 </td>
                 <td v-else>-</td>
                 <td>
-                  <v-dialog
-                    transition="dialog-top-transition"
-                    v-if="item.workers.length > 0"
-                  >
+                  <v-dialog transition="dialog-top-transition">
                     <template v-slot:activator="{ props }">
                       <font-awesome-icon
-                        class="text-primary mr-5"
+                        v-if="item.workers.length > 0"
+                        class="text-primary mr-5 cursor-pointer"
                         v-bind="props"
                         icon="fa-solid fa-eye"
                       />
+                      <font-awesome-icon
+                        v-else
+                        class="text-primary mr-5 fa-disabled"
+                        icon="fa-solid fa-eye"
+                      />
+                      <v-tooltip activator="parent" location="start"
+                        >Workers</v-tooltip
+                      >
                     </template>
-                    <v-card width="50%" class="mx-auto">
+                    <v-card width="50%" class="mx-auto pa-5">
+                      <v-card-text>
+                        <h5
+                          class="text-h5 text-md-h4 text-center my-10 secondary"
+                        >
+                          Workers
+                        </h5>
+                      </v-card-text>
                       <v-table>
                         <thead class="bg-primary">
                           <tr>
@@ -205,7 +218,7 @@
                     </v-card>
                   </v-dialog>
                   <font-awesome-icon
-                    class="text-red-accent-2"
+                    class="text-red-accent-2 cursor-pointer"
                     @click="deleteK8s(item.master.clusterID, item.master.name)"
                     icon="fa-solid fa-trash"
                   />
@@ -484,3 +497,10 @@ export default {
   },
 };
 </script>
+
+<style>
+.fa-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+</style>

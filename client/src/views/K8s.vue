@@ -126,14 +126,20 @@
 
                   <v-tooltip
                     v-if="head === 'Yggdrasil IP'"
-                    text="install Yggdrasil through yggdrasil.com"
+                    text="visit https://yggdrasil-network.github.io/installation.html to get connected to yggdrasil network"
                     location="top"
                   >
                     <template v-slot:activator="{ props }">
-                      <font-awesome-icon
-                        v-bind="props"
-                        :icon="['fas', 'circle-exclamation']"
-                      />
+                      <a
+                        href="https://yggdrasil-network.github.io/installation.html"
+                        target="_blank"
+                      >
+                        <font-awesome-icon
+                          v-bind="props"
+                          :icon="['fas', 'circle-exclamation']"
+                          color="white"
+                        />
+                      </a>
                     </template>
                   </v-tooltip>
                 </th>
@@ -178,14 +184,20 @@
                               {{ head }}
                               <v-tooltip
                                 v-if="head === 'Yggdrasil IP'"
-                                text="install Yggdrasil through yggdrasil.com"
+                                text="visit https://yggdrasil-network.github.io/installation.html to get connected to yggdrasil network"
                                 location="top"
                               >
                                 <template v-slot:activator="{ props }">
-                                  <font-awesome-icon
-                                    v-bind="props"
-                                    :icon="['fas', 'circle-exclamation']"
-                                  />
+                                  <a
+                                    href="https://yggdrasil-network.github.io/installation.html"
+                                    target="_blank"
+                                  >
+                                    <font-awesome-icon
+                                      v-bind="props"
+                                      :icon="['fas', 'circle-exclamation']"
+                                      color="white"
+                                    />
+                                  </a>
                                 </template>
                               </v-tooltip>
                             </th>

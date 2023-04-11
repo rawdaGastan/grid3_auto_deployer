@@ -17,7 +17,6 @@
             variant="outlined"
             density="compact"
             :rules="nameValidation"
-
           ></v-text-field>
           <v-row>
             <v-col cols="12" sm="6">
@@ -121,7 +120,12 @@
               />
             </v-col>
             <v-col>
-              <v-dialog persistent transition="dialog-top-transition" max-width="500" v-model="openVoucher">
+              <v-dialog
+                persistent
+                transition="dialog-top-transition"
+                max-width="500"
+                v-model="openVoucher"
+              >
                 <template v-slot:activator="{ props }">
                   <BaseButton
                     v-bind="props"
@@ -129,7 +133,7 @@
                     text="Request New Voucher"
                   />
                 </template>
-                <template  v-slot:default="{ isActive }">
+                <template v-slot:default="{ isActive }">
                   <v-card width="100%" size="100%" class="mx-auto pa-5">
                     <v-form
                       v-model="newVoucherVerify"
@@ -146,8 +150,9 @@
                             <v-text-field
                               label="VMs"
                               v-model="vms"
-                              :rules="rules"
+                              :rules="vmRules"
                               type="number"
+                              oninput="validity.valid||(value='')"
                               bg-color="accent"
                               variant="outlined"
                               density="compact"
@@ -158,6 +163,7 @@
                               label="IPs"
                               v-model="ips"
                               :rules="rules"
+                              oninput="validity.valid||(value='')"
                               type="number"
                               bg-color="accent"
                               variant="outlined"
@@ -174,12 +180,20 @@
                           variant="outlined"
                           density="compact"
                           clearable
+                          class="my-3"
                         ></v-text-field>
                       </v-card-text>
                       <v-card-actions class="justify-center">
                         <BaseButton
                           class="bg-primary mr-5"
-                          @click="{ isActive.value = false; vms = 0; ips = 0; reason = null; }"
+                          @click="
+                            {
+                              isActive.value = false;
+                              vms = '';
+                              ips = '';
+                              reason = null;
+                            }
+                          "
                           text="Cancel"
                         />
                         <BaseButton
@@ -219,7 +233,7 @@ export default {
   setup() {
     const route = useRoute();
     const openVoucher = ref(Boolean(route.query.voucher));
-    const emitter = inject('emitter');
+    const emitter = inject("emitter");
     const verify = ref(null);
     const email = ref(null);
     const name = ref(null);
@@ -233,15 +247,23 @@ export default {
     const verified = ref(false);
     const loading = ref(false);
     const newVoucherVerify = ref(false);
-    const vms = ref(0);
-    const ips = ref(0);
+    const vms = ref(null);
+    const ips = ref(null);
     const reason = ref(null);
     const nameRegex = /^(\w+\s){0,3}\w*$/;
     const nameValidation = ref([
       (value) => {
         if (!value.match(nameRegex)) return "Must be at most four names";
-        if(value.length < 3) return "Field should be at least 3 characters";
-        if(value.length >20) return "Field should be at most 20 characters";
+        if (value.length < 3) return "Field should be at least 3 characters";
+        if (value.length > 20) return "Field should be at most 20 characters";
+        return true;
+      },
+    ]);
+
+    const vmRules = ref([
+      (value) => {
+        if (!value) return "Field is required";
+        if (value < 1) return "VM should at least 1";
         return true;
       },
     ]);
@@ -341,7 +363,6 @@ export default {
       return val.charAt(0);
     });
 
-
     const emitQuota = () => {
       emitter.emit("userUpdateQuota", true);
     };
@@ -372,6 +393,7 @@ export default {
       reason,
       nameValidation,
       openVoucher,
+      vmRules,
       getUser,
       activateVoucher,
       update,

@@ -177,7 +177,7 @@ func (r *Router) deployVM(ctx context.Context, vmInput DeployVMInput, sshKey str
 	}
 
 	// deploy vm
-	dl := workloads.NewDeployment("vm", nodeID, "", nil, network.Name, []workloads.Disk{disk}, nil, []workloads.VM{vm}, nil)
+	dl := workloads.NewDeployment(vmInput.Name, nodeID, "", nil, network.Name, []workloads.Disk{disk}, nil, []workloads.VM{vm}, nil)
 	err = r.tfPluginClient.DeploymentDeployer.Deploy(ctx, &dl)
 	if err != nil {
 		return nil, 0, 0, 0, err

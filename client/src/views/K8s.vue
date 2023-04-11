@@ -136,8 +136,14 @@
                 <td>{{ item.master.sru }}GB</td>
                 <td>{{ item.master.mru }}GB</td>
                 <td>{{ item.master.cru }}</td>
-                <td>{{ item.master.ygg_ip }}</td>
-                <td v-if="item.master.public_ip">
+                <td class="cursor-pointer" @click="copyIP(item.master.ygg_ip)">
+                  {{ item.master.ygg_ip }}
+                </td>
+                <td
+                  v-if="item.master.public_ip"
+                  class="cursor-pointer"
+                  @click="copyIP(item.master.public_ip)"
+                >
                   {{ item.master.public_ip }}
                 </td>
                 <td v-else>-</td>
@@ -277,7 +283,7 @@ export default {
     const form = ref(null);
     const wForm = ref(null);
     const deLoading = ref(false);
-    
+
     currentPage.value = 1;
     itemsPerPage.value = 5;
 
@@ -403,6 +409,11 @@ export default {
       );
     });
 
+    const copyIP = (ip) => {
+      navigator.clipboard.writeText(ip);
+      toast.value.toast("IP Copied", "#388E3C");
+    };
+
     onMounted(() => {
       let token = localStorage.getItem("token");
       if (token) getK8s();
@@ -434,6 +445,7 @@ export default {
       totalPages,
       itemsPerPage,
       dataPerPage,
+      copyIP,
       resetInputs,
       deployK8s,
       deployWorker,

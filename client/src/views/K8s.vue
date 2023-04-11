@@ -123,6 +123,25 @@
                   :key="head"
                 >
                   {{ head }}
+
+                  <v-tooltip
+                    v-if="head === 'Yggdrasil IP'"
+                    text="visit https://yggdrasil-network.github.io/installation.html to get connected to yggdrasil network"
+                    location="top"
+                  >
+                    <template v-slot:activator="{ props }">
+                      <a
+                        href="https://yggdrasil-network.github.io/installation.html"
+                        target="_blank"
+                      >
+                        <font-awesome-icon
+                          v-bind="props"
+                          :icon="['fas', 'circle-exclamation']"
+                          color="white"
+                        />
+                      </a>
+                    </template>
+                  </v-tooltip>
                 </th>
                 <th class="text-left text-white">
                   Actions
@@ -163,6 +182,24 @@
                               :key="head"
                             >
                               {{ head }}
+                              <v-tooltip
+                                v-if="head === 'Yggdrasil IP'"
+                                text="visit https://yggdrasil-network.github.io/installation.html to get connected to yggdrasil network"
+                                location="top"
+                              >
+                                <template v-slot:activator="{ props }">
+                                  <a
+                                    href="https://yggdrasil-network.github.io/installation.html"
+                                    target="_blank"
+                                  >
+                                    <font-awesome-icon
+                                      v-bind="props"
+                                      :icon="['fas', 'circle-exclamation']"
+                                      color="white"
+                                    />
+                                  </a>
+                                </template>
+                              </v-tooltip>
                             </th>
                           </tr>
                         </thead>
@@ -277,7 +314,7 @@ export default {
     const form = ref(null);
     const wForm = ref(null);
     const deLoading = ref(false);
-    
+
     currentPage.value = 1;
     itemsPerPage.value = 5;
 

@@ -17,6 +17,8 @@ func TestReadConfFile(t *testing.T) {
 	}
 }
 	`
+	// TODO: change file permissions test errors
+	// t.Run("", func(t *testing.T) {})
 	dir := t.TempDir()
 	configPath := dir + "/config.json"
 
@@ -93,4 +95,7 @@ func TestParseConf(t *testing.T) {
 	assert.Equal(t, got.Server, expected.Server)
 	assert.Equal(t, got.MailSender.Email, expected.MailSender.Email)
 	assert.Equal(t, got.Account.Mnemonics, expected.Account.Mnemonics)
+	assert.Equal(t, got.Token, expected.Token)
+	assert.Equal(t, got.Database, expected.Database)
+	assert.Equal(t, got.Version, expected.Version)
 }

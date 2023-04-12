@@ -262,6 +262,22 @@ func TestApproveAllVouchers(t *testing.T) {
 	err := db.CreateUser(&admin)
 	assert.NoError(t, err)
 
+	t.Run("no vouchers found", func(t *testing.T) {
+		userAdmin, err := db.GetUserByEmail("admin@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+		request := httptest.NewRequest("PUT", version+"/voucher", nil)
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), userAdmin.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.ApproveAllVouchers(response, newRequest)
+		assert.Equal(t, response.Code, http.StatusOK)
+
+	})
+
 	t.Run("admin approve all vouchers ", func(t *testing.T) {
 		userAdmin, err := db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
@@ -329,6 +345,8 @@ func TestApproveAllVouchers(t *testing.T) {
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
 		router.ApproveAllVouchers(response, newRequest)
+		want := `{"msg":"All vouchers are approved and confirmation mails has been sent to the users","data":""}`
+		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusOK)
 
 	})

@@ -167,7 +167,7 @@
                 </td>
                 <td v-else>-</td>
                 <td>
-                  <v-dialog transition="dialog-top-transition">
+                  <v-dialog transition="dialog-top-transition" v-model="dialog">
                     <template v-slot:activator="{ props }">
                       <font-awesome-icon
                         v-if="item.workers.length > 0"
@@ -180,14 +180,14 @@
                         class="text-primary mr-5 fa-disabled"
                         icon="fa-solid fa-eye"
                       />
-                      <v-tooltip activator="parent" location="start"
-                        >Workers</v-tooltip
-                      >
                     </template>
                     <v-card width="50%" class="mx-auto pa-5">
+                      <v-icon class="ml-auto" @click="dialog = false"
+                        >mdi-close</v-icon
+                      >
                       <v-card-text>
                         <h5
-                          class="text-h5 text-md-h4 text-center my-10 secondary"
+                          class="text-h5 text-md-h4 font-weight-bold text-center my-5 secondary"
                         >
                           Workers
                         </h5>
@@ -215,6 +215,13 @@
                           </tr>
                         </tbody>
                       </v-table>
+                      <v-pagination
+                        v-model="currentPage"
+                        :length="totalPages"
+                        :total-visible="
+                          Math.ceil(item.workers.length / itemsPerPage)
+                        "
+                      ></v-pagination>
                     </v-card>
                   </v-dialog>
                   <font-awesome-icon
@@ -323,6 +330,7 @@ export default {
     const form = ref(null);
     const wForm = ref(null);
     const deLoading = ref(false);
+    const dialog = ref(false);
 
     currentPage.value = 1;
     itemsPerPage.value = 5;
@@ -486,6 +494,7 @@ export default {
       itemsPerPage,
       dataPerPage,
       workerHeaders,
+      dialog,
       copyIP,
       resetInputs,
       deployK8s,

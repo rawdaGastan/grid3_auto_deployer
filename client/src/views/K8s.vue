@@ -167,66 +167,67 @@
                 </td>
                 <td v-else>-</td>
                 <td>
+                  <font-awesome-icon
+                    class="text-red-accent-2 mr-5 cursor-pointer"
+                    @click="deleteK8s(item.master.clusterID, item.master.name)"
+                    icon="fa-solid fa-trash"
+                  />
                   <v-dialog
-                    transition="dialog-top-transition"
-                    v-if="workers.length > 0"
+                    transition="dialog-top-transition workers"
+                    v-model="dialog"
+                    v-if="item.workers.length > 0"
                   >
                     <template v-slot:activator="{ props }">
                       <font-awesome-icon
-                        class="text-primary mr-5"
+                        v-if="item.workers.length > 0"
+                        class="text-primary cursor-pointer"
                         v-bind="props"
                         icon="fa-solid fa-eye"
                       />
                     </template>
-                    <v-card width="100%" size="100%" class="mx-auto pa-5">
+                    <v-card width="50%" class="mx-auto pa-5">
+                      <v-icon class="ml-auto" @click="dialog = false"
+                        >mdi-close</v-icon
+                      >
+                      <v-card-text>
+                        <h5
+                          class="text-h5 text-md-h4 font-weight-bold text-center my-5 secondary"
+                        >
+                          Workers
+                        </h5>
+                      </v-card-text>
                       <v-table>
                         <thead class="bg-primary">
                           <tr>
                             <th
                               class="text-left text-white"
-                              v-for="head in headers"
+                              v-for="head in workerHeaders"
                               :key="head"
                             >
                               {{ head }}
-                              <v-tooltip
-                                v-if="head === 'Yggdrasil IP'"
-                                text="visit https://yggdrasil-network.github.io/installation.html to get connected to yggdrasil network"
-                                location="top"
-                              >
-                                <template v-slot:activator="{ props }">
-                                  <a
-                                    href="https://yggdrasil-network.github.io/installation.html"
-                                    target="_blank"
-                                  >
-                                    <font-awesome-icon
-                                      v-bind="props"
-                                      :icon="['fas', 'circle-exclamation']"
-                                      color="white"
-                                    />
-                                  </a>
-                                </template>
-                              </v-tooltip>
                             </th>
                           </tr>
                         </thead>
-                        <tbody>
-                          <tr v-for="item in results" :key="item.name">
-                            <td>{{ item.master.clusterID }}</td>
-                            <td>{{ item.master.name }}</td>
-                            <td>{{ item.master.sru }}GB</td>
-                            <td>{{ item.master.mru }}GB</td>
-                            <td>{{ item.master.cru }}</td>
-                            <td>{{ item.master.ygg_ip }}</td>
+                        <tbody v-for="item in item.workers" :key="item.id">
+                          <tr>
+                            <td>{{ item.clusterID }}</td>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.sru }}GB</td>
+                            <td>{{ item.mru }}GB</td>
+                            <td>{{ item.cru }}</td>
+                            <td>{{ item.resources }}</td>
                           </tr>
                         </tbody>
                       </v-table>
+                      <v-pagination
+                        v-model="currentPage"
+                        :length="totalPages"
+                        :total-visible="
+                          Math.ceil(item.workers.length / itemsPerPage)
+                        "
+                      ></v-pagination>
                     </v-card>
                   </v-dialog>
-                  <font-awesome-icon
-                    class="text-red-accent-2"
-                    @click="deleteK8s(item.master.clusterID, item.master.name)"
-                    icon="fa-solid fa-trash"
-                  />
                 </td>
               </tr>
             </tbody>
@@ -298,6 +299,14 @@ export default {
       "Yggdrasil IP",
       "Public IP",
     ]);
+    const workerHeaders = ref([
+      "ID",
+      "Name",
+      "Disk (GB)",
+      "RAM (GB)",
+      "CPU",
+      "Resources",
+    ]);
     const selectedResource = ref(null);
     const resources = ref([
       { title: "Small K8s (1 CPU, 2GB, 5GB)", value: "small" },
@@ -320,6 +329,7 @@ export default {
     const form = ref(null);
     const wForm = ref(null);
     const deLoading = ref(false);
+    const dialog = ref(false);
 
     currentPage.value = 1;
     itemsPerPage.value = 5;
@@ -482,6 +492,8 @@ export default {
       totalPages,
       itemsPerPage,
       dataPerPage,
+      workerHeaders,
+      dialog,
       copyIP,
       resetInputs,
       deployK8s,

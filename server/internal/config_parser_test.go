@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"io/fs"
 	"os"
 	"testing"
 
@@ -17,17 +18,43 @@ func TestReadConfFile(t *testing.T) {
 	}
 }
 	`
-	// TODO: change file permissions test errors
-	// t.Run("", func(t *testing.T) {})
-	dir := t.TempDir()
-	configPath := dir + "/config.json"
+	t.Run("read config file ", func(t *testing.T) {
+		dir := t.TempDir()
+		configPath := dir + "/config.json"
 
-	err := os.WriteFile(configPath, []byte(config), 0644)
-	assert.NoError(t, err)
+		err := os.WriteFile(configPath, []byte(config), 0644)
+		assert.NoError(t, err)
 
-	data, err := ReadConfFile(configPath)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, data)
+		data, err := ReadConfFile(configPath)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, data)
+
+	})
+
+	t.Run("change permissions of file", func(t *testing.T) {
+		dir := t.TempDir()
+		configPath := dir + "/config.json"
+
+		err := os.WriteFile(configPath, []byte(config), fs.FileMode(os.O_RDONLY))
+		assert.NoError(t, err)
+
+		data, err := ReadConfFile(configPath)
+		assert.Error(t, err)
+		assert.Empty(t, data)
+
+	})
+
+	t.Run("no file exists", func(t *testing.T) {
+
+		err := os.WriteFile("./config.json", []byte(config), fs.FileMode(os.O_RDONLY))
+		assert.NoError(t, err)
+
+		data, err := ReadConfFile("./config.json")
+		assert.Error(t, err)
+		assert.Empty(t, data)
+
+	})
+
 }
 
 func TestParseConf(t *testing.T) {

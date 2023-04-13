@@ -18,7 +18,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/threefoldtech/grid3-go/deployer"
+	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 )
 
 // Server struct holds port of server

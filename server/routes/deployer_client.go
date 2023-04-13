@@ -10,9 +10,9 @@ import (
 
 	"github.com/codescalers/cloud4students/models"
 	"github.com/pkg/errors"
-	"github.com/threefoldtech/grid3-go/deployer"
-	"github.com/threefoldtech/grid3-go/workloads"
-	"github.com/threefoldtech/grid_proxy_server/pkg/types"
+	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
+	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/workloads"
+	"github.com/threefoldtech/tfgrid-sdk-go/grid-proxy/pkg/types"
 	"github.com/threefoldtech/zos/pkg/gridtypes"
 )
 
@@ -76,14 +76,7 @@ func (r *Router) deployK8sClusterWithNetwork(k8sDeployInput K8sDeployInput, sshK
 
 func (r *Router) loadK8s(k8sDeployInput K8sDeployInput, userID string, node uint32, networkContractID uint64, k8sContractID uint64) (models.K8sCluster, error) {
 	// load cluster
-	masterNode := map[uint32]string{node: k8sDeployInput.MasterName}
-	workerNodes := make(map[uint32][]string)
-	workersNames := []string{}
-	for _, worker := range k8sDeployInput.Workers {
-		workersNames = append(workersNames, worker.Name)
-	}
-	workerNodes[node] = workersNames
-	resCluster, err := r.tfPluginClient.State.LoadK8sFromGrid(masterNode, workerNodes, k8sDeployInput.MasterName)
+	resCluster, err := r.tfPluginClient.State.LoadK8sFromGrid([]uint32{node}, k8sDeployInput.MasterName)
 	if err != nil {
 		return models.K8sCluster{}, err
 	}

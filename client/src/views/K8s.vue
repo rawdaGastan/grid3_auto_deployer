@@ -167,17 +167,21 @@
                 </td>
                 <td v-else>-</td>
                 <td>
-                  <v-dialog transition="dialog-top-transition" v-model="dialog">
+                  <font-awesome-icon
+                    class="text-red-accent-2 mr-5 cursor-pointer"
+                    @click="deleteK8s(item.master.clusterID, item.master.name)"
+                    icon="fa-solid fa-trash"
+                  />
+                  <v-dialog
+                    transition="dialog-top-transition workers"
+                    v-model="dialog"
+                    v-if="item.workers.length > 0"
+                  >
                     <template v-slot:activator="{ props }">
                       <font-awesome-icon
                         v-if="item.workers.length > 0"
-                        class="text-primary mr-5 cursor-pointer"
+                        class="text-primary cursor-pointer"
                         v-bind="props"
-                        icon="fa-solid fa-eye"
-                      />
-                      <font-awesome-icon
-                        v-else
-                        class="text-primary mr-5 fa-disabled"
                         icon="fa-solid fa-eye"
                       />
                     </template>
@@ -224,11 +228,6 @@
                       ></v-pagination>
                     </v-card>
                   </v-dialog>
-                  <font-awesome-icon
-                    class="text-red-accent-2 cursor-pointer"
-                    @click="deleteK8s(item.master.clusterID, item.master.name)"
-                    icon="fa-solid fa-trash"
-                  />
                 </td>
               </tr>
             </tbody>
@@ -506,10 +505,3 @@ export default {
   },
 };
 </script>
-
-<style>
-.fa-disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-</style>

@@ -911,3 +911,20 @@ func TestAvailableK8sName(t *testing.T) {
 	})
 
 }
+
+func TestUpdateMaintenance(t *testing.T) {
+	db := setupDB(t)
+	err := db.UpdateMaintenance(true)
+	assert.NoError(t, err)
+
+}
+
+func TestGetMaintenance(t *testing.T) {
+	db := setupDB(t)
+	err := db.UpdateMaintenance(true)
+	assert.NoError(t, err)
+
+	m, err := db.GetMaintenance()
+	assert.NoError(t, err)
+	assert.Equal(t, true, m.Active)
+}

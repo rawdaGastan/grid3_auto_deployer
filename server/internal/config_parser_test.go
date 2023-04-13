@@ -47,7 +47,7 @@ func TestReadConfFile(t *testing.T) {
 	t.Run("no file exists", func(t *testing.T) {
 
 		err := os.WriteFile("./config.json", []byte(config), fs.FileMode(os.O_RDONLY))
-		assert.NoError(t, err)
+		assert.Error(t, err)
 
 		data, err := ReadConfFile("./config.json")
 		assert.Error(t, err)

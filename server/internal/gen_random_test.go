@@ -14,4 +14,4 @@ func TestGenerateRandomCode(t *testing.T) {
 	if code < 1000 || code > 9999 {
 		t.Errorf("Expected code to be between 1000 and 9999, got %d", code)
 	}
-}	
+}

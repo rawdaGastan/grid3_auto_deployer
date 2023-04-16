@@ -215,7 +215,6 @@ func TestK8sDeployHandler(t *testing.T) {
 		"public": false
 		}`)
 
-
 		request := httptest.NewRequest("POST", version+"/k8s", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())

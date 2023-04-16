@@ -372,6 +372,7 @@ func TestGetAllVMs(t *testing.T) {
 		assert.Equal(t, vms, []VM{vm3})
 		assert.NoError(t, err)
 	})
+
 }
 
 func TestAvailableVMName(t *testing.T) {
@@ -504,6 +505,15 @@ func TestUpdateUserQuota(t *testing.T) {
 		err = db.db.First(&q, "user_id = 'new-user'").Error
 		assert.NoError(t, err)
 		assert.Equal(t, q.Vms, 0)
+
+	})
+
+	t.Run("quota found with zero values", func(t *testing.T) {
+		quota := Quota{UserID: "1"}
+		err := db.CreateQuota(&quota)
+		assert.NoError(t, err)
+		err = db.UpdateUserQuota("1", 0, 0)
+		assert.Error(t, err)
 
 	})
 }
@@ -776,6 +786,7 @@ func TestGetAllK8s(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, k, []K8sCluster{k8s3})
 	})
+
 }
 func TestDeleteK8s(t *testing.T) {
 	db := setupDB(t)
@@ -865,6 +876,11 @@ func TestDeleteAllK8s(t *testing.T) {
 		k, err = db.GetAllK8s("new-user")
 		assert.NoError(t, err)
 		assert.Equal(t, k, []K8sCluster{k8s3})
+	})
+
+	t.Run("test with no id", func(t *testing.T) {
+		err := db.DeleteAllK8s("")
+		assert.Error(t, err)
 	})
 }
 

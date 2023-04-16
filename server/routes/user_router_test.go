@@ -79,7 +79,7 @@ func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Confi
 }
 
 func TestSignUpHandler(t *testing.T) {
-	router, _, _, version := SetUp(t)
+	router, db, _, version := SetUp(t)
 	// json Body of request
 	body := []byte(`{
 		"name": "name",
@@ -102,10 +102,75 @@ func TestSignUpHandler(t *testing.T) {
 		assert.Equal(t, response.Code, http.StatusOK)
 	})
 
+	t.Run("invalid sign up data", func(t *testing.T) {
+		body = []byte(`{
+		"name": "",
+		"email": "name@gmail.com",
+		"password": "",
+		"confirm_password": "",
+		"team_size":5,
+		"project_desc":"desc",
+		"college":"clg"
+		
+	}`)
+
+		request := httptest.NewRequest("POST", version+"/user/signup", bytes.NewBuffer(body))
+		response := httptest.NewRecorder()
+		router.SignUpHandler(response, request)
+		want := `{"err":"Invalid sign up data"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
+
+	})
+
 	t.Run("send empty data", func(t *testing.T) {
 		request := httptest.NewRequest("POST", version+"/user/signup", nil)
 		response := httptest.NewRecorder()
 		router.SignUpHandler(response, request)
+		want := `{"err":"Failed to read sign up data"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
+	})
+
+	t.Run("password and confirm_password don't match", func(t *testing.T) {
+		body = []byte(`{
+		"name": "newName",
+		"email": "newname@gmail.com",
+		"password": "1234567",
+		"confirm_password": "7891011",
+		"team_size":5,
+		"project_desc":"desc",
+		"college":"clg"
+		
+	}`)
+
+		request := httptest.NewRequest("POST", version+"/user/signup", bytes.NewBuffer(body))
+		response := httptest.NewRecorder()
+		router.SignUpHandler(response, request)
+		want := `{"err":"Password and confirm password don't match"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
+
+	})
+
+	t.Run("user already exists", func(t *testing.T) {
+		body = []byte(`{
+		"name": "aaaa",
+		"email": "aaaa@gmail.com",
+		"password": "1234567",
+		"confirm_password": "1234567",
+		"team_size":5,
+		"project_desc":"desc",
+		"college":"clg"
+	}`)
+		err := db.CreateUser(
+			&models.User{Name: "aaaa", Email: "aaaa@gmail.com", HashedPassword: "$2a$04$3WF5ZN8c5OXmFwbj8oFsN.BdRvJRDUt8zfP0vS2A7Zzx6K2rMrmg.", TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: true})
+		assert.NoError(t, err)
+		request := httptest.NewRequest("POST", version+"/user/signup", bytes.NewBuffer(body))
+		response := httptest.NewRecorder()
+		router.SignUpHandler(response, request)
+		want := `{"err":"User already exists"}`
+		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})
 

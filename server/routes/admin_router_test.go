@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//TODO: Error: all admin functions can be accessed by any user without token
+
 func TestGetAllUsersHandler(t *testing.T) {
 	router, db, config, version := SetUp(t)
 	admin := models.User{
@@ -26,6 +28,37 @@ func TestGetAllUsersHandler(t *testing.T) {
 	}
 	err := db.CreateUser(&admin)
 	assert.NoError(t, err)
+
+	t.Run("users not found", func(t *testing.T) {
+		user, err := db.GetUserByEmail("admin@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		request := httptest.NewRequest("GET", version+"/user/all", nil)
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.GetAllUsersHandler(response, newRequest)
+		want := `{"msg":"Users are not found","data":null}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusOK)
+
+	})
+
+	// TODO: Error, api is passed without token
+	// t.Run("send request without token", func(t *testing.T) {
+	// 	request := httptest.NewRequest("GET", version+"/user/all", nil)
+	// 	// request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", nil))
+	// 	// ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"),"")
+	// 	// newRequest := request.WithContext(ctx)
+	// 	response := httptest.NewRecorder()
+	// 	router.GetAllUsersHandler(response, request)
+	// 	assert.Equal(t, response.Code, http.StatusOK)
+
+	// })
 
 	t.Run("Get all users", func(t *testing.T) {
 		u := models.User{
@@ -87,6 +120,25 @@ func TestUpdateMaintenanceHandler(t *testing.T) {
 		response := httptest.NewRecorder()
 		router.UpdateMaintenanceHandler(response, newRequest)
 		assert.Equal(t, response.Code, http.StatusOK)
+
+	})
+
+	t.Run("send empty body", func(t *testing.T) {
+		user, err := db.GetUserByEmail("admin@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		request := httptest.NewRequest("PUT", version+"/maintenance", nil)
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.UpdateMaintenanceHandler(response, newRequest)
+		want := `{"err":"Failed to read maintenance update data"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
 
 	})
 

@@ -58,8 +58,10 @@ func TestReadConfFile(t *testing.T) {
 }
 
 func TestParseConf(t *testing.T) {
-	config :=
-		`
+
+	t.Run("parse config file", func(t *testing.T) {
+		config :=
+			`
 {
 	"server": {
 		"host": "localhost",
@@ -85,44 +87,223 @@ func TestParseConf(t *testing.T) {
 	"salt": "salt"
 }
 	`
-	dir := t.TempDir()
-	configPath := dir + "/config.json"
+		dir := t.TempDir()
+		configPath := dir + "/config.json"
 
-	err := os.WriteFile(configPath, []byte(config), 0644)
-	assert.NoError(t, err)
+		err := os.WriteFile(configPath, []byte(config), 0644)
+		assert.NoError(t, err)
 
-	data, err := ReadConfFile(configPath)
-	assert.NoError(t, err)
+		data, err := ReadConfFile(configPath)
+		assert.NoError(t, err)
 
-	expected := Configuration{
-		Server: Server{
-			Host: "localhost",
-			Port: ":3000",
-		},
-		MailSender: MailSender{
-			Email:       "email",
-			SendGridKey: "my sendgrid_key",
-			Timeout:     60,
-		},
-		Account: GridAccount{
-			Mnemonics: "my mnemonics",
-		},
-		Token: JwtToken{
-			Secret:  "secret",
-			Timeout: 10,
-		},
-		Database: DB{
-			File: "testing.db",
-		},
-		Version: "v1",
+		expected := Configuration{
+			Server: Server{
+				Host: "localhost",
+				Port: ":3000",
+			},
+			MailSender: MailSender{
+				Email:       "email",
+				SendGridKey: "my sendgrid_key",
+				Timeout:     60,
+			},
+			Account: GridAccount{
+				Mnemonics: "my mnemonics",
+			},
+			Token: JwtToken{
+				Secret:  "secret",
+				Timeout: 10,
+			},
+			Database: DB{
+				File: "testing.db",
+			},
+			Version: "v1",
+		}
+
+		got, err := ParseConf(data)
+		assert.NoError(t, err)
+		assert.Equal(t, got.Server, expected.Server)
+		assert.Equal(t, got.MailSender.Email, expected.MailSender.Email)
+		assert.Equal(t, got.Account.Mnemonics, expected.Account.Mnemonics)
+		assert.Equal(t, got.Token, expected.Token)
+		assert.Equal(t, got.Database, expected.Database)
+		assert.Equal(t, got.Version, expected.Version)
+	})
+
+	t.Run("no file", func(t *testing.T) {
+		_, err := ReadConfFile("config.json")
+		assert.Error(t, err)
+
+	})
+
+	t.Run("no server configuration", func(t *testing.T) {
+		config :=
+			`
+{
+	"server": {
+		"host": "",
+		"port": ""
 	}
+}
+	`
 
-	got, err := ParseConf(data)
-	assert.NoError(t, err)
-	assert.Equal(t, got.Server, expected.Server)
-	assert.Equal(t, got.MailSender.Email, expected.MailSender.Email)
-	assert.Equal(t, got.Account.Mnemonics, expected.Account.Mnemonics)
-	assert.Equal(t, got.Token, expected.Token)
-	assert.Equal(t, got.Database, expected.Database)
-	assert.Equal(t, got.Version, expected.Version)
+		dir := t.TempDir()
+		configPath := dir + "/config.json"
+
+		err := os.WriteFile(configPath, []byte(config), 0644)
+		assert.NoError(t, err)
+
+		data, err := ReadConfFile(configPath)
+		assert.NoError(t, err)
+
+		_, err = ParseConf(data)
+		assert.Error(t, err, "server configuration is required")
+
+	})
+
+	//TODO: error
+	t.Run("no mail sender configuration", func(t *testing.T) {
+		config :=
+			`
+{
+	"mailSender": {
+        "email": "",
+        "sendgrid_key": "",
+        "timeout": 0
+    }
+}
+	`
+
+		dir := t.TempDir()
+		configPath := dir + "/config.json"
+
+		err := os.WriteFile(configPath, []byte(config), 0644)
+		assert.NoError(t, err)
+
+		data, err := ReadConfFile(configPath)
+		assert.NoError(t, err)
+
+		_, err = ParseConf(data)
+		assert.Error(t, err, "mail sender configuration is required")
+
+	})
+
+	t.Run("no database configuration", func(t *testing.T) {
+		config :=
+			`
+{
+	"database": {
+        "file": ""
+    }
+}
+	`
+
+		dir := t.TempDir()
+		configPath := dir + "/config.json"
+
+		err := os.WriteFile(configPath, []byte(config), 0644)
+		assert.NoError(t, err)
+
+		data, err := ReadConfFile(configPath)
+		assert.NoError(t, err)
+
+		_, err = ParseConf(data)
+		assert.Error(t, err, "database configuration is required")
+
+	})
+
+	t.Run("no account configuration", func(t *testing.T) {
+		config :=
+			`
+{
+    "account": {
+        "mnemonics": "",
+		"network": ""
+    }
+}
+	`
+
+		dir := t.TempDir()
+		configPath := dir + "/config.json"
+
+		err := os.WriteFile(configPath, []byte(config), 0644)
+		assert.NoError(t, err)
+
+		data, err := ReadConfFile(configPath)
+		assert.NoError(t, err)
+
+		_, err = ParseConf(data)
+		assert.Error(t, err, "account configuration is required")
+
+	})
+
+	t.Run("no jwt token configuration", func(t *testing.T) {
+		config :=
+			`
+{
+	"token": {
+        "secret": "",
+        "timeout": 0
+    }
+}
+	`
+
+		dir := t.TempDir()
+		configPath := dir + "/config.json"
+
+		err := os.WriteFile(configPath, []byte(config), 0644)
+		assert.NoError(t, err)
+
+		data, err := ReadConfFile(configPath)
+		assert.NoError(t, err)
+
+		_, err = ParseConf(data)
+		assert.Error(t, err, "jwt token configuration is required")
+
+	})
+
+	t.Run("no version configuration", func(t *testing.T) {
+		config :=
+			`
+{
+	"version": "",
+
+}
+	`
+
+		dir := t.TempDir()
+		configPath := dir + "/config.json"
+
+		err := os.WriteFile(configPath, []byte(config), 0644)
+		assert.NoError(t, err)
+
+		data, err := ReadConfFile(configPath)
+		assert.NoError(t, err)
+
+		_, err = ParseConf(data)
+		assert.Error(t, err, "version is required")
+
+	})
+
+	t.Run("no salt configuration", func(t *testing.T) {
+		config :=
+			`
+{
+	"salt": "",
+
+}
+	`
+
+		dir := t.TempDir()
+		configPath := dir + "/config.json"
+
+		err := os.WriteFile(configPath, []byte(config), 0644)
+		assert.NoError(t, err)
+
+		data, err := ReadConfFile(configPath)
+		assert.NoError(t, err)
+
+		_, err = ParseConf(data)
+		assert.Error(t, err, "salt is required")
+
+	})
 }

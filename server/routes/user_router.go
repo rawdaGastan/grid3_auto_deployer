@@ -226,7 +226,7 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(req, w, http.StatusBadRequest, "Failed to read sing in data")
+		writeErrResponse(req, w, http.StatusBadRequest, "Failed to read sign in data")
 		return
 	}
 
@@ -479,8 +479,11 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		updates++
 	}
 
+
+	//TODO:
 	if updates == 0 {
 		writeMsgResponse(req, w, "Nothing to update", "")
+		// return
 	}
 
 	userUUID, err := uuid.Parse(userID)

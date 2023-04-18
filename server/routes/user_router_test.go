@@ -889,10 +889,105 @@ func TestGetUserHandler(t *testing.T) {
 	})
 }
 
-//TODO:
-// func TestApplyForVoucherHandler(t *testing.T) {
+func TestApplyForVoucherHandler(t *testing.T) {
+	router, db, config, version := SetUp(t)
+	u := models.User{
+		Name:           "name",
+		Email:          "name@gmail.com",
+		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		Verified:       true,
+	}
+	err := db.CreateUser(&u)
+	assert.NoError(t, err)
 
-// }
+	t.Run("failed to read voucher data", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		body := []byte(`{
+			"vms":10
+			"public_ips":0
+			"reason:"strongReason"
+
+		}`)
+
+		request := httptest.NewRequest("POST", version+"/user/apply_voucher", bytes.NewBuffer(body))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.ApplyForVoucherHandler(response, newRequest)
+		want := `{"err":"Failed to read voucher data"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
+	})
+
+	t.Run("apply for voucher", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		body := []byte(`{
+			"vms":10,
+			"public_ips":1,
+			"reason":"strongReason"
+
+		}`)
+
+		request := httptest.NewRequest("POST", version+"/user/apply_voucher", bytes.NewBuffer(body))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.ApplyForVoucherHandler(response, newRequest)
+		want := `{"msg":"Voucher request is being reviewed, you'll receive a confirmation mail soon","data":""}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusOK)
+
+	})
+
+	t.Run("user already applied before", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		v := models.Voucher{
+			UserID:   user.ID.String(),
+			Voucher:  "voucher",
+			VMs:      10,
+			Approved: false,
+			Rejected: false,
+		}
+		err = db.CreateVoucher(&v)
+		assert.NoError(t, err)
+
+		body := []byte(`{
+			"vms":10,
+			"public_ips":1,
+			"reason":"strongReason"
+
+		}`)
+
+		request := httptest.NewRequest("POST", version+"/user/apply_voucher", bytes.NewBuffer(body))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.ApplyForVoucherHandler(response, newRequest)
+		want := `{"err":"You have already a voucher request, please wait for the confirmation mail"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
+
+	})
+
+}
 
 func TestActivateVoucherHandler(t *testing.T) {
 	router, db, config, version := SetUp(t)

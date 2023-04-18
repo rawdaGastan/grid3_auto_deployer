@@ -165,6 +165,10 @@ func TestParseConf(t *testing.T) {
 		config :=
 			`
 {
+	"server": {
+		"host": "localhost",
+		"port": ":3000"
+	},
 	"mailSender": {
         "email": "",
         "sendgrid_key": "",
@@ -191,6 +195,15 @@ func TestParseConf(t *testing.T) {
 		config :=
 			`
 {
+	"server": {
+		"host": "localhost",
+		"port": ":3000"
+	},
+	"mailSender": {
+        "email": "email",
+        "sendgrid_key": "my sendgrid_key",
+        "timeout": 60 
+    },
 	"database": {
         "file": ""
     }
@@ -215,6 +228,18 @@ func TestParseConf(t *testing.T) {
 		config :=
 			`
 {
+	"server": {
+		"host": "localhost",
+		"port": ":3000"
+	},
+	"mailSender": {
+        "email": "email",
+        "sendgrid_key": "my sendgrid_key",
+        "timeout": 60 
+    },
+	"database": {
+        "file": "testing.db"
+    },
     "account": {
         "mnemonics": "",
 		"network": ""
@@ -240,6 +265,22 @@ func TestParseConf(t *testing.T) {
 		config :=
 			`
 {
+	"server": {
+		"host": "localhost",
+		"port": ":3000"
+	},
+	"mailSender": {
+        "email": "email",
+        "sendgrid_key": "my sendgrid_key",
+        "timeout": 60 
+    },
+	"database": {
+        "file": "testing.db"
+    },
+    "account": {
+        "mnemonics": "my mnemonics",
+		"network": "my network"
+    },	
 	"token": {
         "secret": "",
         "timeout": 0
@@ -265,8 +306,27 @@ func TestParseConf(t *testing.T) {
 		config :=
 			`
 {
-	"version": "",
-
+	"server": {
+		"host": "localhost",
+		"port": ":3000"
+	},
+	"mailSender": {
+        "email": "email",
+        "sendgrid_key": "my sendgrid_key",
+        "timeout": 60 
+    },
+    "account": {
+        "mnemonics": "my mnemonics",
+		"network": "my network"
+    },
+	"database": {
+        "file": "testing.db"
+    },
+	"token": {
+        "secret": "secret",
+        "timeout": 10
+    },	
+	"version": ""
 }
 	`
 
@@ -288,11 +348,30 @@ func TestParseConf(t *testing.T) {
 		config :=
 			`
 {
-	"salt": "",
-
+	"server": {
+		"host": "localhost",
+		"port": ":3000"
+	},
+	"mailSender": {
+        "email": "email",
+        "sendgrid_key": "my sendgrid_key",
+        "timeout": 60 
+    },
+    "account": {
+        "mnemonics": "my mnemonics",
+		"network": "my network"
+    },
+	"database": {
+        "file": "testing.db"
+    },
+	"token": {
+        "secret": "secret",
+        "timeout": 10
+    },	
+	"version": "v1",	
+	"salt": ""
 }
 	`
-
 		dir := t.TempDir()
 		configPath := dir + "/config.json"
 

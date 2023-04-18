@@ -93,9 +93,6 @@ func TestK8sDeployHandler(t *testing.T) {
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
 		router.K8sDeployHandler(response, newRequest)
-		// if response.Code == http.StatusInternalServerError {
-		// 	return
-		// }
 		want := `{"err":"User not found"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusNotFound)
@@ -124,30 +121,29 @@ func TestK8sDeployHandler(t *testing.T) {
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})
 
-	//TODO: ERROR
-	// t.Run("Invalid kubernetes data", func(t *testing.T) {
-	// 	user, err := db.GetUserByEmail("name@gmail.com")
-	// 	assert.NoError(t, err)
+	t.Run("Invalid kubernetes data", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
 
-	// 	token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
-	// 	assert.NoError(t, err)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
 
-	// 	body := []byte(`{
-	// 	"master_name": "name",
-	// 	"resources": "huge",
-	// 	"public": false
-	// 	}`)
-	// 	request := httptest.NewRequest("POST", version+"/k8s", bytes.NewBuffer(body))
-	// 	request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
-	// 	ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
-	// 	newRequest := request.WithContext(ctx)
-	// 	response := httptest.NewRecorder()
-	// 	router.K8sDeployHandler(response, newRequest)
-	// 	want := `{"err":"Invalid Kubernetes data"}`
-	// 	assert.Equal(t, response.Body.String(), want)
-	// 	assert.Equal(t, response.Code, http.StatusBadRequest)
+		body := []byte(`{
+		"master_name": "",
+		"resources": "",
+		"public": false
+		}`)
+		request := httptest.NewRequest("POST", version+"/k8s", bytes.NewBuffer(body))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.K8sDeployHandler(response, newRequest)
+		want := `{"err":"Invalid Kubernetes data"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
 
-	// })
+	})
 
 	t.Run("user quota not found", func(t *testing.T) {
 		newUser := models.User{
@@ -227,6 +223,62 @@ func TestK8sDeployHandler(t *testing.T) {
 
 	})
 
+	t.Run("k8s name not available", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		v := models.Voucher{
+			UserID:    user.ID.String(),
+			Voucher:   "testingvoucher",
+			VMs:       20,
+			PublicIPs: 1,
+			Reason:    "reason",
+			Used:      false,
+			Approved:  true,
+			Rejected:  false,
+		}
+		err = db.CreateVoucher(&v)
+		assert.NoError(t, err)
+
+		err = db.CreateQuota(
+			&models.Quota{
+				UserID:    user.ID.String(),
+				Vms:       20,
+				PublicIPs: 1,
+			},
+		)
+		assert.NoError(t, err)
+
+		err = db.CreateK8s(&models.K8sCluster{
+			ID:     2,
+			UserID: user.ID.String(),
+			Master: models.Master{
+				ClusterID: 2,
+				Name:      "testingmaster",
+				Resources: "small",
+			},
+		})
+		assert.NoError(t, err)
+
+		body := []byte(`{
+		"master_name": "testingmaster",
+		"resources": "small",
+		"public": false
+		}`)
+
+		request := httptest.NewRequest("POST", version+"/k8s", bytes.NewBuffer(body))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.K8sDeployHandler(response, newRequest)
+		want := `{"err":"Kubernetes master name is not available, please choose a different name"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
+	})
 }
 
 func TestK8sGetAllHandler(t *testing.T) {
@@ -241,6 +293,23 @@ func TestK8sGetAllHandler(t *testing.T) {
 	err := db.CreateUser(&u)
 	assert.NoError(t, err)
 
+	t.Run("no clusters for user", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		request := httptest.NewRequest("GET", version+"/k8s", nil)
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.K8sGetAllHandler(response, newRequest)
+		want := `{"msg":"Kubernetes clusters not found","data":[]}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusOK)
+	})
 	t.Run("get all k8s ", func(t *testing.T) {
 		user, err := db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
@@ -293,22 +362,6 @@ func TestK8sGetAllHandler(t *testing.T) {
 
 	})
 
-	t.Run("no clusters for user", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
-		assert.NoError(t, err)
-
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
-		assert.NoError(t, err)
-
-		request := httptest.NewRequest("GET", version+"/k8s", nil)
-		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
-		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
-		newRequest := request.WithContext(ctx)
-		response := httptest.NewRecorder()
-		router.K8sGetAllHandler(response, newRequest)
-		assert.Equal(t, response.Code, http.StatusOK)
-	})
-
 }
 
 func TestK8sDeleteAllHandler(t *testing.T) {
@@ -322,6 +375,25 @@ func TestK8sDeleteAllHandler(t *testing.T) {
 	}
 	err := db.CreateUser(&u)
 	assert.NoError(t, err)
+
+	t.Run("no clusters found", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		request := httptest.NewRequest("DELETE", version+"/k8s", nil)
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.K8sDeleteAllHandler(response, newRequest)
+		want := `{"msg":"Kubernetes clusters not found"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusOK)
+
+	})
 
 	t.Run("delete all k8s of user ", func(t *testing.T) {
 		user, err := db.GetUserByEmail("name@gmail.com")
@@ -437,6 +509,51 @@ func TestK8sGetHandler(t *testing.T) {
 		assert.Equal(t, response.Code, http.StatusOK)
 
 	})
+
+	t.Run("failed to read cluster id", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest("GET", version+"/k8s/", nil)
+		request := mux.SetURLVars(req, map[string]string{
+			"id": "",
+		})
+
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.K8sGetHandler(response, newRequest)
+		want := `{"err":"Failed to read cluster id"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
+	})
+
+	t.Run("k8s cluster not found", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest("GET", version+"/k8s/10", nil)
+		request := mux.SetURLVars(req, map[string]string{
+			"id": "10",
+		})
+
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.K8sGetHandler(response, newRequest)
+		want := `{"err":"Kubernetes cluster not found"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusNotFound)
+
+	})
 }
 
 func TestK8sDeleteHandler(t *testing.T) {
@@ -498,6 +615,73 @@ func TestK8sDeleteHandler(t *testing.T) {
 		response := httptest.NewRecorder()
 		router.K8sDeleteHandler(response, newRequest)
 		assert.Equal(t, response.Code, http.StatusOK)
+
+	})
+
+	t.Run("failed to read k8s id", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest("DELETE", version+"/k8s/", nil)
+		request := mux.SetURLVars(req, map[string]string{
+			"id": "",
+		})
+
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.K8sDeleteHandler(response, newRequest)
+		want := `{"err":"Failed to read cluster id"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
+
+	})
+
+	t.Run("k8s cluster not found", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		cluster := models.K8sCluster{
+			ID:     2,
+			UserID: "userID",
+			Master: models.Master{
+				Name: "name",
+			},
+			Workers: []models.Worker{
+				models.Worker{
+					ClusterID: 2,
+					Name:      "worker1",
+					Resources: "small",
+					SRU:       5,
+					CRU:       2,
+					MRU:       2,
+				},
+			},
+		}
+
+		err = db.CreateK8s(&cluster)
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest("DELETE", version+"/k8s/2", nil)
+		request := mux.SetURLVars(req, map[string]string{
+			"id": "2",
+		})
+
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.K8sDeleteHandler(response, newRequest)
+		want := `{"err":"Kubernetes cluster not found"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusNotFound)
 
 	})
 

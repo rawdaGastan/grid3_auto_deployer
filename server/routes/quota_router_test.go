@@ -63,4 +63,19 @@ func TestQuotaRouter(t *testing.T) {
 		assert.Equal(t, response.Code, http.StatusOK)
 	})
 
+	t.Run("user quota not found", func(t *testing.T) {
+		token, err := internal.CreateJWT("wrongID", "wrong@gmail.com", config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		request := httptest.NewRequest("GET", version+"/quota", nil)
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), "wrongID")
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.GetQuotaHandler(response, newRequest)
+		want := `{"err":"user quota not found"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusNotFound)
+
+	})
 }

@@ -27,6 +27,23 @@ func TestGetAllUsersHandler(t *testing.T) {
 	err := db.CreateUser(&admin)
 	assert.NoError(t, err)
 
+	t.Run("users not found", func(t *testing.T) {
+		user, err := db.GetUserByEmail("admin@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		request := httptest.NewRequest("GET", version+"/user/all", nil)
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.GetAllUsersHandler(response, newRequest)
+		assert.Equal(t, response.Code, http.StatusOK)
+
+	})
+
 	t.Run("Get all users", func(t *testing.T) {
 		u := models.User{
 			Name:           "name",
@@ -87,6 +104,25 @@ func TestUpdateMaintenanceHandler(t *testing.T) {
 		response := httptest.NewRecorder()
 		router.UpdateMaintenanceHandler(response, newRequest)
 		assert.Equal(t, response.Code, http.StatusOK)
+
+	})
+
+	t.Run("send empty body", func(t *testing.T) {
+		user, err := db.GetUserByEmail("admin@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		request := httptest.NewRequest("PUT", version+"/maintenance", nil)
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.UpdateMaintenanceHandler(response, newRequest)
+		want := `{"err":"Failed to read maintenance update data"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
 
 	})
 

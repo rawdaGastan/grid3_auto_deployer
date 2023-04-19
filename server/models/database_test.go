@@ -93,6 +93,58 @@ func TestGetUserByID(t *testing.T) {
 	})
 }
 
+func TestListAllUsers(t *testing.T) {
+	db := setupDB(t)
+	t.Run("no users in list", func(t *testing.T) {
+		users, err := db.ListAllUsers()
+		assert.NoError(t, err)
+		assert.Empty(t, users)
+	})
+
+	t.Run("list all users for admin", func(t *testing.T) {
+		user1 := User{
+			Name:           "user1",
+			Email:          "user1@gmail.com",
+			HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+			Verified:       true,
+		}
+
+		err := db.CreateUser(&user1)
+		assert.NoError(t, err)
+		users, err := db.ListAllUsers()
+		assert.NoError(t, err)
+		assert.Equal(t, users[0].Name, user1.Name)
+		assert.Equal(t, users[0].Email, user1.Email)
+		assert.Equal(t, users[0].HashedPassword, user1.HashedPassword)
+
+	})
+}
+
+func TestGetCodeByEmail(t *testing.T) {
+	db := setupDB(t)
+	t.Run("user not found", func(t *testing.T) {
+		_, err := db.GetCodeByEmail("email@gmail.com")
+		assert.Equal(t, err, gorm.ErrRecordNotFound)
+	})
+
+	t.Run("get code of user", func(t *testing.T) {
+		user := User{
+			Name:           "user",
+			Email:          "user@gmail.com",
+			HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+			Verified:       true,
+			Code:           1234,
+		}
+
+		err := db.CreateUser(&user)
+		assert.NoError(t, err)
+		code, err := db.GetCodeByEmail("user@gmail.com")
+		assert.NoError(t, err)
+		assert.Equal(t, code, user.Code)
+	})
+
+}
+
 func TestUpdatePassword(t *testing.T) {
 	db := setupDB(t)
 	t.Run("user not found so nothing updated", func(t *testing.T) {
@@ -320,6 +372,39 @@ func TestGetAllVMs(t *testing.T) {
 		assert.Equal(t, vms, []VM{vm3})
 		assert.NoError(t, err)
 	})
+
+}
+
+func TestAvailableVMName(t *testing.T) {
+	db := setupDB(t)
+	t.Run("no vms", func(t *testing.T) {
+		valid, err := db.AvailableVMName("user")
+		assert.NoError(t, err)
+		assert.Empty(t, false, valid)
+	})
+
+	t.Run("test with existing name", func(t *testing.T) {
+		vm := VM{UserID: "user", Name: "vm1"}
+		err := db.CreateVM(&vm)
+		assert.NoError(t, err)
+
+		valid, err := db.AvailableVMName("vm1")
+		assert.NoError(t, err)
+		assert.Equal(t, false, valid)
+
+	})
+
+	t.Run("test with new name", func(t *testing.T) {
+		vm := VM{UserID: "user", Name: "vm2"}
+		err := db.CreateVM(&vm)
+		assert.NoError(t, err)
+
+		valid, err := db.AvailableVMName("vm")
+		assert.NoError(t, err)
+		assert.Equal(t, true, valid)
+
+	})
+
 }
 func TestDeleteVMByID(t *testing.T) {
 	db := setupDB(t)
@@ -420,6 +505,15 @@ func TestUpdateUserQuota(t *testing.T) {
 		err = db.db.First(&q, "user_id = 'new-user'").Error
 		assert.NoError(t, err)
 		assert.Equal(t, q.Vms, 0)
+
+	})
+
+	t.Run("quota found with zero values", func(t *testing.T) {
+		quota := Quota{UserID: "1"}
+		err := db.CreateQuota(&quota)
+		assert.NoError(t, err)
+		err = db.UpdateUserQuota("1", 0, 0)
+		assert.Error(t, err)
 
 	})
 }
@@ -533,6 +627,30 @@ func TestApproveVoucher(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, v, resVoucher)
 	})
+}
+
+func TestGetAllVouchers(t *testing.T) {
+	db := setupDB(t)
+	t.Run("no vouchers", func(t *testing.T) {
+		vouchers, err := db.GetAllVouchers()
+		assert.NoError(t, err)
+		assert.Empty(t, vouchers)
+	})
+
+	t.Run("get all vouchers", func(t *testing.T) {
+		voucher1 := Voucher{Voucher: "voucher1", UserID: "user"}
+		voucher2 := Voucher{Voucher: "voucher2", UserID: "new-user"}
+
+		err := db.CreateVoucher(&voucher1)
+		assert.NoError(t, err)
+		err = db.CreateVoucher(&voucher2)
+		assert.NoError(t, err)
+
+		vouchers, err := db.GetAllVouchers()
+		assert.NoError(t, err)
+		assert.Equal(t, vouchers, []Voucher{voucher1, voucher2})
+	})
+
 }
 
 func TestDeactivateVoucher(t *testing.T) {
@@ -668,6 +786,7 @@ func TestGetAllK8s(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, k, []K8sCluster{k8s3})
 	})
+
 }
 func TestDeleteK8s(t *testing.T) {
 	db := setupDB(t)
@@ -758,4 +877,70 @@ func TestDeleteAllK8s(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, k, []K8sCluster{k8s3})
 	})
+
+	t.Run("test with no id", func(t *testing.T) {
+		err := db.DeleteAllK8s("")
+		assert.Error(t, err)
+	})
+}
+
+func TestAvailableK8sName(t *testing.T) {
+	db := setupDB(t)
+	t.Run("no k8s", func(t *testing.T) {
+		valid, err := db.AvailableK8sName("k8s")
+		assert.NoError(t, err)
+		assert.Empty(t, false, valid)
+	})
+
+	t.Run("test with existing name", func(t *testing.T) {
+		k8s := K8sCluster{
+			UserID: "user",
+			Master: Master{
+				Name: "master",
+			},
+			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+		}
+		err := db.CreateK8s(&k8s)
+		assert.NoError(t, err)
+
+		valid, err := db.AvailableK8sName("master")
+		assert.NoError(t, err)
+		assert.Equal(t, false, valid)
+
+	})
+
+	t.Run("test with new name", func(t *testing.T) {
+		k8s := K8sCluster{
+			UserID: "user",
+			Master: Master{
+				Name: "master",
+			},
+			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+		}
+		err := db.CreateK8s(&k8s)
+		assert.NoError(t, err)
+
+		valid, err := db.AvailableK8sName("new-master")
+		assert.NoError(t, err)
+		assert.Equal(t, true, valid)
+
+	})
+
+}
+
+func TestUpdateMaintenance(t *testing.T) {
+	db := setupDB(t)
+	err := db.UpdateMaintenance(true)
+	assert.NoError(t, err)
+
+}
+
+func TestGetMaintenance(t *testing.T) {
+	db := setupDB(t)
+	err := db.UpdateMaintenance(true)
+	assert.NoError(t, err)
+
+	m, err := db.GetMaintenance()
+	assert.NoError(t, err)
+	assert.Equal(t, true, m.Active)
 }

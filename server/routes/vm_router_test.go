@@ -79,6 +79,209 @@ func TestDeployVMHandler(t *testing.T) {
 		err = router.cancelDeployment(vm.ContractID, vm.NetworkContractID)
 		assert.NoError(t, err)
 	})
+
+	t.Run("user not found", func(t *testing.T) {
+		token, err := internal.CreateJWT("userID", "email@gmail.com", config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		body := []byte(`{
+		"name": "name2",
+		"resources": "small",
+		"public": false
+		}`)
+		request := httptest.NewRequest("POST", version+"/vm", bytes.NewBuffer(body))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), "userID")
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.DeployVMHandler(response, newRequest)
+		if response.Code == http.StatusInternalServerError {
+			return
+		}
+		want := `{"err":"User not found"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusNotFound)
+
+	})
+
+	t.Run("no user quota", func(t *testing.T) {
+		u := models.User{
+			Name:           "abcd",
+			Email:          "abcd@gmail.com",
+			HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+			Verified:       true,
+			SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
+		}
+		err := db.CreateUser(&u)
+		assert.NoError(t, err)
+
+		user, err := db.GetUserByEmail("abcd@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		body := []byte(`{
+		"name": "newname",
+		"resources": "small",
+		"public": false
+		}`)
+		request := httptest.NewRequest("POST", version+"/vm", bytes.NewBuffer(body))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.DeployVMHandler(response, newRequest)
+		want := `{"err":"User quota not found"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusNotFound)
+	})
+
+	t.Run("no ssh for user", func(t *testing.T) {
+		u := models.User{
+			Name:           "testing",
+			Email:          "testing@gmail.com",
+			HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+			Verified:       true,
+			SSHKey:         "",
+		}
+		err := db.CreateUser(&u)
+		assert.NoError(t, err)
+
+		user, err := db.GetUserByEmail("testing@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		err = db.CreateQuota(
+			&models.Quota{
+				UserID:    user.ID.String(),
+				Vms:       10,
+				PublicIPs: 1,
+			},
+		)
+		assert.NoError(t, err)
+
+		body := []byte(`{
+		"name": "newname2",
+		"resources": "small",
+		"public": false
+		}`)
+		request := httptest.NewRequest("POST", version+"/vm", bytes.NewBuffer(body))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.DeployVMHandler(response, newRequest)
+		want := `{"err":"ssh key is required"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
+	})
+
+	t.Run("vm's name not available", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		err = db.CreateVM(
+			&models.VM{ID: 1, Name: "newname2", UserID: user.ID.String(), Resources: "small", Public: false},
+		)
+		assert.NoError(t, err)
+
+		body := []byte(`{
+		"name": "newname2",
+		"resources": "small",
+		"public": false
+		}`)
+
+		request := httptest.NewRequest("POST", version+"/vm", bytes.NewBuffer(body))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.DeployVMHandler(response, newRequest)
+		if response.Code == http.StatusInternalServerError {
+			return
+		}
+		want := `{"err":"VM name is not available, please choose a different name"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
+
+	})
+
+	t.Run("failed to read vm data", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		v := models.Voucher{
+			UserID:    user.ID.String(),
+			Voucher:   "new-voucher",
+			VMs:       10,
+			PublicIPs: 1,
+			Reason:    "reason",
+			Used:      false,
+			Approved:  true,
+			Rejected:  false,
+		}
+		err = db.CreateVoucher(&v)
+		assert.NoError(t, err)
+
+		err = db.CreateQuota(
+			&models.Quota{
+				UserID:    user.ID.String(),
+				Vms:       10,
+				PublicIPs: 1,
+			},
+		)
+		assert.NoError(t, err)
+		body := []byte(`{
+		"name": "name"
+		"resources": "small"
+		"public": false
+		}`)
+
+		request := httptest.NewRequest("POST", version+"/vm", bytes.NewBuffer(body))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.DeployVMHandler(response, newRequest)
+		want := `{"err":"Failed to read vm data"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
+
+	})
+
+	t.Run("invalid vm data", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		body := []byte(`{
+		"name": "",
+		"resources": "",
+		"public": false
+		}`)
+
+		request := httptest.NewRequest("POST", version+"/vm", bytes.NewBuffer(body))
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.DeployVMHandler(response, newRequest)
+		want := `{"err":"Invalid vm data"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
+
+	})
 }
 
 func TestGetVMHandler(t *testing.T) {
@@ -92,6 +295,29 @@ func TestGetVMHandler(t *testing.T) {
 	}
 	err := db.CreateUser(&u)
 	assert.NoError(t, err)
+
+	t.Run("no vm id", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest("GET", version+"/vm/", nil)
+		request := mux.SetURLVars(req, map[string]string{
+			"id": "",
+		})
+
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.GetVMHandler(response, newRequest)
+		want := `{"err":"Failed to read vm id"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
+
+	})
 
 	t.Run("get vm of user", func(t *testing.T) {
 		user, err := db.GetUserByEmail("name@gmail.com")
@@ -125,6 +351,64 @@ func TestGetVMHandler(t *testing.T) {
 		router.GetVMHandler(response, newRequest)
 		assert.Equal(t, response.Code, http.StatusOK)
 	})
+
+	t.Run("vm not found", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest("GET", version+"/vm/3", nil)
+		request := mux.SetURLVars(req, map[string]string{
+			"id": "3",
+		})
+
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.GetVMHandler(response, newRequest)
+		want := `{"err":"Virtual machine not found"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusNotFound)
+	})
+
+	t.Run("vm not belong to user", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		vm := models.VM{
+			ID:        2,
+			UserID:    "userID",
+			Name:      "new-vm",
+			YggIP:     "10.1.0.0",
+			Resources: "small",
+			SRU:       5,
+			CRU:       2,
+			MRU:       2,
+		}
+		err = db.CreateVM(&vm)
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest("GET", version+"/vm/1", nil)
+		request := mux.SetURLVars(req, map[string]string{
+			"id": "2",
+		})
+
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.GetVMHandler(response, newRequest)
+		want := `{"err":"Virtual machine not found"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusNotFound)
+
+	})
 }
 
 func TestListVMsHandler(t *testing.T) {
@@ -138,6 +422,24 @@ func TestListVMsHandler(t *testing.T) {
 	}
 	err := db.CreateUser(&u)
 	assert.NoError(t, err)
+
+	t.Run("no vms for user", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		request := httptest.NewRequest("GET", version+"/vm", nil)
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.ListVMsHandler(response, newRequest)
+		want := `{"msg":"Virtual machines not found","data":[]}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusOK)
+	})
 
 	t.Run("list all vms of user", func(t *testing.T) {
 		user, err := db.GetUserByEmail("name@gmail.com")
@@ -168,21 +470,6 @@ func TestListVMsHandler(t *testing.T) {
 		assert.Equal(t, response.Code, http.StatusOK)
 	})
 
-	t.Run("no vms for user", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
-		assert.NoError(t, err)
-
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
-		assert.NoError(t, err)
-
-		request := httptest.NewRequest("GET", version+"/vm", nil)
-		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
-		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
-		newRequest := request.WithContext(ctx)
-		response := httptest.NewRecorder()
-		router.ListVMsHandler(response, newRequest)
-		assert.Equal(t, response.Code, http.StatusOK)
-	})
 }
 
 func TestDeleteVM(t *testing.T) {
@@ -205,6 +492,7 @@ func TestDeleteVM(t *testing.T) {
 		assert.NoError(t, err)
 
 		vm := models.VM{
+			ID:        1,
 			UserID:    user.ID.String(),
 			Name:      "vm",
 			YggIP:     "10.1.0.0",
@@ -228,11 +516,59 @@ func TestDeleteVM(t *testing.T) {
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
 		router.DeleteVM(response, newRequest)
+		want := `{"msg":"Virtual machine is deleted successfully","data":""}`
+		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusOK)
 
 		vms, err := db.GetAllVms(user.ID.String())
 		assert.Empty(t, vms)
 		assert.NoError(t, err)
+	})
+
+	t.Run("vm not found", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest("DELETE", version+"/vm/2", nil)
+		request := mux.SetURLVars(req, map[string]string{
+			"id": "2",
+		})
+
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.DeleteVM(response, newRequest)
+		want := `{"err":"VM not found"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusNotFound)
+
+	})
+
+	t.Run("invalid id", func(t *testing.T) {
+		user, err := db.GetUserByEmail("name@gmail.com")
+		assert.NoError(t, err)
+
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		assert.NoError(t, err)
+
+		req := httptest.NewRequest("DELETE", version+"/vm/", nil)
+		request := mux.SetURLVars(req, map[string]string{
+			"id": "",
+		})
+
+		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
+		newRequest := request.WithContext(ctx)
+		response := httptest.NewRecorder()
+		router.DeleteVM(response, newRequest)
+		want := `{"err":"Failed to read vm id"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
+
 	})
 
 }

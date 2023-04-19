@@ -324,7 +324,7 @@ func TestK8sGetAllHandler(t *testing.T) {
 				Name: "name",
 			},
 			Workers: []models.Worker{
-				models.Worker{
+				{
 					ClusterID: 1,
 					Name:      "worker1",
 					Resources: "small",
@@ -332,7 +332,7 @@ func TestK8sGetAllHandler(t *testing.T) {
 					CRU:       2,
 					MRU:       2,
 				},
-				models.Worker{
+				{
 					ClusterID: 1,
 					Name:      "worker2",
 					Resources: "small",
@@ -409,7 +409,7 @@ func TestK8sDeleteAllHandler(t *testing.T) {
 				Name: "name",
 			},
 			Workers: []models.Worker{
-				models.Worker{
+				{
 					ClusterID: 1,
 					Name:      "worker1",
 					Resources: "small",
@@ -417,7 +417,7 @@ func TestK8sDeleteAllHandler(t *testing.T) {
 					CRU:       2,
 					MRU:       2,
 				},
-				models.Worker{
+				{
 					ClusterID: 1,
 					Name:      "worker2",
 					Resources: "small",
@@ -474,7 +474,7 @@ func TestK8sGetHandler(t *testing.T) {
 				Name: "name",
 			},
 			Workers: []models.Worker{
-				models.Worker{
+				{
 					ClusterID: 1,
 					Name:      "worker1",
 					Resources: "small",
@@ -482,7 +482,7 @@ func TestK8sGetHandler(t *testing.T) {
 					CRU:       2,
 					MRU:       2,
 				},
-				models.Worker{
+				{
 					ClusterID: 1,
 					Name:      "worker2",
 					Resources: "small",
@@ -582,7 +582,7 @@ func TestK8sDeleteHandler(t *testing.T) {
 				Name: "name",
 			},
 			Workers: []models.Worker{
-				models.Worker{
+				{
 					ClusterID: 1,
 					Name:      "worker1",
 					Resources: "small",
@@ -590,7 +590,7 @@ func TestK8sDeleteHandler(t *testing.T) {
 					CRU:       2,
 					MRU:       2,
 				},
-				models.Worker{
+				{
 					ClusterID: 1,
 					Name:      "worker2",
 					Resources: "small",

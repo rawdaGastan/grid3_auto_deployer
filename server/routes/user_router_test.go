@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/codescalers/cloud4students/models"
-	"github.com/threefoldtech/grid3-go/deployer"
+	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 )
 
 // SetUp sets the needed configuration for testing

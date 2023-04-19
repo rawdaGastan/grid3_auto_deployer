@@ -480,7 +480,6 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 
-	//TODO:
 	if updates == 0 {
 		writeMsgResponse(req, w, "Nothing to update", "")
 		// return

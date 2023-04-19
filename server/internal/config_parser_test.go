@@ -45,11 +45,7 @@ func TestReadConfFile(t *testing.T) {
 	})
 
 	t.Run("no file exists", func(t *testing.T) {
-
-		err := os.WriteFile("./config.json", []byte(config), fs.FileMode(os.O_RDONLY))
-		assert.Error(t, err)
-
-		data, err := ReadConfFile("./config.json")
+		data, err := ReadConfFile("./testing.json")
 		assert.Error(t, err)
 		assert.Empty(t, data)
 
@@ -58,6 +54,13 @@ func TestReadConfFile(t *testing.T) {
 }
 
 func TestParseConf(t *testing.T) {
+
+	t.Run("can't unmarshal", func(t *testing.T) {
+		config := `{testing}`
+		_, err := ParseConf([]byte(config))
+		assert.Error(t, err)
+
+	})
 
 	t.Run("parse config file", func(t *testing.T) {
 		config :=
@@ -160,7 +163,6 @@ func TestParseConf(t *testing.T) {
 
 	})
 
-	//TODO: error
 	t.Run("no mail sender configuration", func(t *testing.T) {
 		config :=
 			`

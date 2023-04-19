@@ -822,26 +822,6 @@ func TestUpdateUserHandler(t *testing.T) {
 		assert.Equal(t, response.Code, http.StatusInternalServerError)
 	})
 
-	//TODO: Error
-	// t.Run("user not found", func(t *testing.T) {
-	// 	token, err := internal.CreateJWT("b668e9de-g8a8-11ed-98db-74867a4e50d3", u.Email, config.Token.Secret, config.Token.Timeout)
-	// 	assert.NoError(t, err)
-
-	// 	body := []byte(`{
-	// 	"name" : "newname",
-	// 	"password":"newpass",
-	// 	"confirm_password":"newpass"
-	// 	}`)
-	// 	request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
-	// 	request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
-	// 	ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), "b668e9de-g8a8-11ed-98db-74867a4e50d3")
-	// 	newRequest := request.WithContext(ctx)
-	// 	response := httptest.NewRecorder()
-	// 	router.UpdateUserHandler(response, newRequest)
-	// 	fmt.Printf("response.Body.String(): %v\n", response.Body.String())
-	// 	assert.Equal(t, response.Code, http.StatusNotFound)
-
-	// })
 }
 
 func TestGetUserHandler(t *testing.T) {

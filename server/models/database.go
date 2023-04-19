@@ -71,7 +71,7 @@ func (d *DB) ListAllUsers() ([]UserUsedQuota, error) {
 		Select("*, users.id as user_id, sum(vouchers.vms) as vms, sum(vouchers.public_ips) as public_ips, sum(vouchers.vms) - quota.vms as used_vms, sum(vouchers.public_ips) - quota.public_ips as used_public_ips").
 		Joins("left join quota on quota.user_id = users.id").
 		Joins("left join vouchers on vouchers.used = true and vouchers.user_id = users.id").
-		Where("verified = true").Where("admin = false").
+		Where("verified = true").
 		Group("users.id").
 		Scan(&res)
 	return res, query.Error

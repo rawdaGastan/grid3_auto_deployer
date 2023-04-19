@@ -479,10 +479,8 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		updates++
 	}
 
-
 	if updates == 0 {
 		writeMsgResponse(req, w, "Nothing to update", "")
-		// return
 	}
 
 	userUUID, err := uuid.Parse(userID)

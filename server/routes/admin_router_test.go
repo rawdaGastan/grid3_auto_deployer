@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 func TestGetAllUsersHandler(t *testing.T) {
 	router, db, config, version := SetUp(t)
 	admin := models.User{
@@ -44,7 +43,6 @@ func TestGetAllUsersHandler(t *testing.T) {
 		assert.Equal(t, response.Code, http.StatusOK)
 
 	})
-
 
 	t.Run("Get all users", func(t *testing.T) {
 		u := models.User{

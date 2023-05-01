@@ -113,138 +113,82 @@
     </v-row>
     <v-row v-if="results.length > 0">
       <v-col>
-        <v-sheet>
-          <v-table>
-            <thead class="bg-primary text-white">
-              <tr>
-                <th
-                  class="text-left text-white"
-                  v-for="head in headers"
-                  :key="head"
+        <v-data-table :headers="headers" :items="results" class="elevation-1">
+          <template v-slot:item="{ item }">
+            <tr>
+              <td>{{ item.raw.master.clusterID }}</td>
+              <td>{{ item.raw.master.name }}</td>
+              <td>{{ item.raw.master.sru }}GB</td>
+              <td>{{ item.raw.master.mru }}GB</td>
+              <td>{{ item.raw.master.cru }}</td>
+              <td
+                class="cursor-pointer"
+                @click="copyIP(item.raw.master.ygg_ip)"
+              >
+                {{ item.raw.master.ygg_ip }}
+              </td>
+              <td
+                v-if="item.raw.master.public_ip"
+                class="cursor-pointer"
+                @click="copyIP(item.raw.master.public_ip)"
+              >
+                {{ item.raw.master.public_ip }}
+              </td>
+              <td v-else>-</td>
+              <td>
+                <font-awesome-icon
+                  class="text-red-accent-2 mr-5 cursor-pointer"
+                  @click="
+                    deleteK8s(item.raw.master.clusterID, item.raw.master.name)
+                  "
+                  icon="fa-solid fa-trash"
+                />
+                <v-dialog
+                  transition="dialog-top-transition workers"
+                  v-model="dialog"
+                  v-if="item.raw.workers.length > 0"
                 >
-                  {{ head }}
-
-                  <v-tooltip
-                    v-if="head === 'Yggdrasil IP'"
-                    text="visit https://yggdrasil-network.github.io/installation.html to get connected to yggdrasil network"
-                    location="top"
-                  >
-                    <template v-slot:activator="{ props }">
-                      <a
-                        href="https://yggdrasil-network.github.io/installation.html"
-                        target="_blank"
+                  <template v-slot:activator="{ props }">
+                    <font-awesome-icon
+                      v-if="item.raw.workers.length > 0"
+                      class="text-primary cursor-pointer"
+                      v-bind="props"
+                      icon="fa-solid fa-eye"
+                    />
+                  </template>
+                  <v-card width="50%" class="mx-auto pa-5">
+                    <v-icon class="ml-auto" @click="dialog = false"
+                      >mdi-close</v-icon
+                    >
+                    <v-card-text>
+                      <h5
+                        class="text-h5 text-md-h4 font-weight-bold text-center my-5 secondary"
                       >
-                        <font-awesome-icon
-                          v-bind="props"
-                          :icon="['fas', 'circle-exclamation']"
-                          color="white"
-                        />
-                      </a>
-                    </template>
-                  </v-tooltip>
-                </th>
-                <th class="text-left text-white">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in dataPerPage" :key="item.name">
-                <td>{{ item.master.clusterID }}</td>
-                <td>{{ item.master.name }}</td>
-                <td>{{ item.master.sru }}GB</td>
-                <td>{{ item.master.mru }}GB</td>
-                <td>{{ item.master.cru }}</td>
-                <td class="cursor-pointer" @click="copyIP(item.master.ygg_ip)">
-                  {{ item.master.ygg_ip }}
-                </td>
-                <td
-                  v-if="item.master.public_ip"
-                  class="cursor-pointer"
-                  @click="copyIP(item.master.public_ip)"
-                >
-                  {{ item.master.public_ip }}
-                </td>
-                <td v-else>-</td>
-                <td>
-                  <font-awesome-icon
-                    class="text-red-accent-2 mr-5 cursor-pointer"
-                    @click="deleteK8s(item.master.clusterID, item.master.name)"
-                    icon="fa-solid fa-trash"
-                  />
-                  <v-dialog
-                    transition="dialog-top-transition workers"
-                    v-model="dialog"
-                    v-if="item.workers.length > 0"
-                  >
-                    <template v-slot:activator="{ props }">
-                      <font-awesome-icon
-                        v-if="item.workers.length > 0"
-                        class="text-primary cursor-pointer"
-                        v-bind="props"
-                        icon="fa-solid fa-eye"
-                      />
-                    </template>
-                    <v-card width="50%" class="mx-auto pa-5">
-                      <v-icon class="ml-auto" @click="dialog = false"
-                        >mdi-close</v-icon
+                        Workers
+                      </h5>
+                    </v-card-text>
+                    <v-data-table
+                      :headers="workerHeaders"
+                      :items="item.raw.workers"
+                      class="elevation-1"
+                    >
+                      <template v-slot:item="{ item }">
+                        <tr>
+                          <td>{{ item.raw.clusterID }}</td>
+                          <td>{{ item.raw.name }}</td>
+                          <td>{{ item.raw.sru }}GB</td>
+                          <td>{{ item.raw.mru }}GB</td>
+                          <td>{{ item.raw.cru }}</td>
+                          <td>{{ item.raw.resources }}</td>
+                        </tr></template
                       >
-                      <v-card-text>
-                        <h5
-                          class="text-h5 text-md-h4 font-weight-bold text-center my-5 secondary"
-                        >
-                          Workers
-                        </h5>
-                      </v-card-text>
-                      <v-table>
-                        <thead class="bg-primary">
-                          <tr>
-                            <th
-                              class="text-left text-white"
-                              v-for="head in workerHeaders"
-                              :key="head"
-                            >
-                              {{ head }}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody v-for="item in item.workers" :key="item.id">
-                          <tr>
-                            <td>{{ item.clusterID }}</td>
-                            <td>{{ item.name }}</td>
-                            <td>{{ item.sru }}GB</td>
-                            <td>{{ item.mru }}GB</td>
-                            <td>{{ item.cru }}</td>
-                            <td>{{ item.resources }}</td>
-                          </tr>
-                        </tbody>
-                      </v-table>
-                      <v-pagination
-                        v-model="currentPage"
-                        :length="totalPages"
-                        :total-visible="
-                          Math.ceil(item.workers.length / itemsPerPage)
-                        "
-                      ></v-pagination>
-                    </v-card>
-                  </v-dialog>
-                </td>
-              </tr>
-            </tbody>
-          </v-table>
-          <div class="actions d-flex justify-center align-center">
-            <v-pagination
-              v-model="currentPage"
-              :length="totalPages"
-              :total-visible="totalPages"
-            ></v-pagination>
-          </div>
-        </v-sheet>
-      </v-col>
-    </v-row>
-    <v-row v-else>
-      <v-col>
-        <p class="my-5 text-center">Kubernetes clusters are not found</p>
+                    </v-data-table>
+                  </v-card>
+                </v-dialog>
+              </td>
+            </tr>
+          </template>
+        </v-data-table>
       </v-col>
     </v-row>
     <Confirm ref="confirm" />
@@ -253,7 +197,7 @@
 </template>
 
 <script>
-import { ref, onMounted, inject, computed } from "vue";
+import { ref, onMounted, inject } from "vue";
 import BaseSelect from "@/components/Form/BaseSelect.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import userService from "@/services/userService";
@@ -269,13 +213,9 @@ export default {
   },
   setup() {
     const emitter = inject("emitter");
-
     const verify = ref(false);
     const checked = ref(false);
     const alert = ref(false);
-    const currentPage = ref(null);
-    const totalPages = ref(null);
-    const itemsPerPage = ref(null);
     const workerVerify = ref(false);
     const k8Name = ref(null);
     const nameValidation = ref([
@@ -291,21 +231,65 @@ export default {
       },
     ]);
     const headers = ref([
-      "ID",
-      "Name",
-      "Disk (GB)",
-      "RAM (GB)",
-      "CPU",
-      "Yggdrasil IP",
-      "Public IP",
+      {
+        title: "ID",
+        key: "clusterID",
+      },
+      {
+        title: "Name",
+        key: "name",
+      },
+      {
+        title: "Disk (GB)",
+        key: "sru",
+      },
+      {
+        title: "RAM (GB)",
+        key: "mru",
+      },
+      {
+        title: "CPU",
+        key: "cru",
+      },
+      {
+        title: "Yggdrasil IP",
+        key: "ygg_ip",
+        sortable: false,
+      },
+      {
+        title: "Public IP",
+        key: "public_ip",
+        sortable: false,
+      },
+      { title: "Actions", key: "actions", sortable: false },
     ]);
+
     const workerHeaders = ref([
-      "ID",
-      "Name",
-      "Disk (GB)",
-      "RAM (GB)",
-      "CPU",
-      "Resources",
+      {
+        title: "ID",
+        key: "id",
+      },
+      {
+        title: "Name",
+        key: "name",
+      },
+      {
+        title: "Disk (GB)",
+        key: "sru",
+      },
+      {
+        title: "RAM (GB)",
+        key: "mru",
+      },
+      {
+        title: "CPU",
+        key: "cru",
+      },
+      {
+        title: "Resources",
+        key: "resources",
+        sortable: false,
+      },
     ]);
     const selectedResource = ref(null);
     const resources = ref([
@@ -331,18 +315,12 @@ export default {
     const deLoading = ref(false);
     const dialog = ref(false);
 
-    currentPage.value = 1;
-    itemsPerPage.value = 5;
-
     const getK8s = () => {
       userService
         .getK8s()
         .then((response) => {
           const { data } = response.data;
           results.value = data;
-          totalPages.value = Math.ceil(
-            results.value.length / itemsPerPage.value
-          );
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -449,13 +427,6 @@ export default {
       emitter.emit("userUpdateQuota", true);
     };
 
-    const dataPerPage = computed(() => {
-      return results.value.slice(
-        (currentPage.value - 1) * itemsPerPage.value,
-        currentPage.value * itemsPerPage.value
-      );
-    });
-
     const copyIP = (ip) => {
       navigator.clipboard.writeText(ip);
       toast.value.toast("IP Copied", "#388E3C");
@@ -488,10 +459,6 @@ export default {
       wForm,
       toast,
       nameValidation,
-      currentPage,
-      totalPages,
-      itemsPerPage,
-      dataPerPage,
       workerHeaders,
       dialog,
       copyIP,

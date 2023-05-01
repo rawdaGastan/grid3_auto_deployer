@@ -54,73 +54,43 @@
     </v-row>
     <v-row v-if="results.length > 0">
       <v-col>
-        <v-sheet>
-          <v-table>
-            <thead class="bg-primary">
-              <tr>
-                <th
-                  class="text-left text-white"
-                  v-for="head in headers"
-                  :key="head"
-                >
-                  {{ head }}
-                  <v-tooltip
-                    v-if="head === 'Yggdrasil IP'"
-                    text="visit https://yggdrasil-network.github.io/installation.html to get connected to yggdrasil network"
-                    location="top"
+        <v-row v-if="results.length > 0">
+          <v-col>
+            <v-data-table
+              :headers="headers"
+              :items="results"
+              class="elevation-1"
+            >
+              <template v-slot:item="{ item }">
+                <tr>
+                  <td>{{ item.raw.id }}</td>
+                  <td>{{ item.raw.name }}</td>
+                  <td>{{ item.raw.sru }}GB</td>
+                  <td>{{ item.raw.mru }}GB</td>
+                  <td>{{ item.raw.cru }}</td>
+                  <td class="cursor-pointer" @click="copyIP(item.raw.ygg_ip)">
+                    {{ item.raw.ygg_ip }}
+                  </td>
+                  <td
+                    v-if="item.raw.public_ip"
+                    class="cursor-pointer"
+                    @click="copyIP(item.raw.public_ip)"
                   >
-                    <template v-slot:activator="{ props }">
-                      <a
-                        href="https://yggdrasil-network.github.io/installation.html"
-                        target="_blank"
-                      >
-                        <font-awesome-icon
-                          v-bind="props"
-                          :icon="['fas', 'circle-exclamation']"
-                          color="white"
-                        />
-                      </a>
-                    </template>
-                  </v-tooltip>
-                </th>
-                <th class="text-left text-white">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in dataPerPage" :key="item.name">
-                <td>{{ item.id }}</td>
-                <td>{{ item.name }}</td>
-                <td>{{ item.sru }}GB</td>
-                <td>{{ item.mru }}MB</td>
-                <td>{{ item.cru }}</td>
-                <td class="cursor-pointer" @click="copyIP(item.ygg_ip)">
-                  {{ item.ygg_ip }}
-                </td>
-                <td v-if="item.public_ip" @click="copyIP(item.public_ip)">
-                  {{ item.public_ip }}
-                </td>
-                <td v-else>-</td>
-
-                <td>
-                  <font-awesome-icon
-                    class="text-red-accent-2 cursor-pointer"
-                    @click="deleteVm(item.id, item.name)"
-                    icon="fa-solid fa-trash"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </v-table>
-          <div class="actions d-flex justify-center align-center">
-            <v-pagination
-              v-model="currentPage"
-              :length="currentPage"
-              :total-visible="totalPages"
-            ></v-pagination>
-          </div>
-        </v-sheet>
+                    {{ item.raw.public_ip }}
+                  </td>
+                  <td v-else>-</td>
+                  <td>
+                    <font-awesome-icon
+                      class="text-red-accent-2 cursor-pointer"
+                      @click="deleteVm(item.raw.id, item.raw.name)"
+                      icon="fa-solid fa-trash"
+                    />
+                  </td>
+                </tr>
+              </template>
+            </v-data-table>
+          </v-col>
+        </v-row>
       </v-col>
     </v-row>
     <v-row v-else>
@@ -173,13 +143,37 @@ export default {
       { title: "Large VM (4 CPU, 8GB, 15GB)", value: "large" },
     ]);
     const headers = ref([
-      "ID",
-      "Name",
-      "Disk (GB)",
-      "RAM (MB)",
-      "CPU",
-      "Yggdrasil IP",
-      "Public IP",
+      {
+        title: "ID",
+        key: "id",
+      },
+      {
+        title: "Name",
+        key: "name",
+      },
+      {
+        title: "Disk (GB)",
+        key: "sru",
+      },
+      {
+        title: "RAM (GB)",
+        key: "mru",
+      },
+      {
+        title: "CPU",
+        key: "cru",
+      },
+      {
+        title: "Yggdrasil IP",
+        key: "ygg_ip",
+        sortable: false,
+      },
+      {
+        title: "Public IP",
+        key: "public_ip",
+        sortable: false,
+      },
+      { title: "Actions", key: "actions", sortable: false },
     ]);
 
     const toast = ref(null);

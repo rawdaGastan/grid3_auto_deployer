@@ -106,7 +106,7 @@
 </template>
 
 <script>
-import { ref, onMounted, inject, computed } from "vue";
+import { ref, onMounted, inject } from "vue";
 import userService from "@/services/userService";
 import BaseSelect from "@/components/Form/BaseSelect.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
@@ -125,8 +125,6 @@ export default {
     const verify = ref(false);
     const checked = ref(false);
     const alert = ref(false);
-    const currentPage = ref(null);
-    const totalPages = ref(null);
     const itemsPerPage = ref(null);
     const name = ref(null);
     const rules = ref([
@@ -188,8 +186,6 @@ export default {
         return "Name needs to be more than 2 characters and less than 20.";
       },
     ]);
-    currentPage.value = 1;
-    itemsPerPage.value = 5;
 
     const getVMS = () => {
       userService
@@ -197,9 +193,6 @@ export default {
         .then((response) => {
           const { data } = response.data;
           results.value = data;
-          totalPages.value = Math.ceil(
-            results.value.length / itemsPerPage.value
-          );
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -291,13 +284,6 @@ export default {
     const emitQuota = () => {
       emitter.emit("userUpdateQuota", true);
     };
-    const dataPerPage = computed(() => {
-      return results.value.slice(
-        (currentPage.value - 1) * itemsPerPage.value,
-        currentPage.value * itemsPerPage.value
-      );
-    });
-
     const copyIP = (ip) => {
       navigator.clipboard.writeText(ip);
       toast.value.toast("IP Copied", "#388E3C");
@@ -324,10 +310,7 @@ export default {
       form,
       checked,
       nameValidation,
-      currentPage,
-      totalPages,
       itemsPerPage,
-      dataPerPage,
       reset,
       getVMS,
       deployVm,

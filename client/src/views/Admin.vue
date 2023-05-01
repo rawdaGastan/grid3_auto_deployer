@@ -19,9 +19,9 @@
           :items="vouchers"
           class="elevation-1 rounded shadow"
         >
-          <template v-slot:item="{ item, index }">
+          <template v-slot:item="{ item }">
             <tr>
-              <td>{{ ++index }}</td>
+              <td>{{ item.raw.id }}</td>
               <td v-if="item.raw.name" class="d-flex align-center">
                 <v-avatar color="primary" size="30" class="mr-2">
                   <span class="text-uppercase">{{
@@ -106,8 +106,8 @@
             </div>
           </v-col>
         </v-row>
-        <section class="my-5 shadow rounded bg-grey-lighten-5">
-          <h5 class="text-grey-darken-1 text-h5 bg-primary text-center pa-4">
+        <section class="my-5 shadow">
+          <h5 class="bg-grey-lighten-5 text-h5 bg-primary text-center pa-4">
             Users
           </h5>
           <v-data-table
@@ -115,7 +115,6 @@
             :headers="usersHeaders"
             :items="users"
             class="elevation-1"
-            item-key="id"
           >
             <template v-slot:item="{ item, index }">
               <tr>
@@ -168,7 +167,7 @@ export default {
     const confirm = ref(null);
     const vouchersHeaders = ref([
       { title: "No", key: "id" },
-      { title: "User", key: "user" },
+      { title: "User", key: "user", sortable: false },
       { title: "Reason for Voucher", key: "reason", sortable: false },
       { title: "VMs", key: "vms" },
       { title: "Public IPs", key: "public_ips" },

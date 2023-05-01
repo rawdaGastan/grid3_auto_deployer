@@ -144,9 +144,9 @@
                   icon="fa-solid fa-trash"
                 />
                 <v-dialog
-                  transition="dialog-top-transition workers"
-                  v-model="dialog"
-                  v-if="item.raw.workers.length > 0"
+                  transition="dialog-top-transition"
+                  v-for="(worker, index) in item.raw.workers"
+                  :key="index"
                 >
                   <template v-slot:activator="{ props }">
                     <font-awesome-icon
@@ -156,10 +156,11 @@
                       icon="fa-solid fa-eye"
                     />
                   </template>
-                  <v-card width="50%" class="mx-auto pa-5">
-                    <v-icon class="ml-auto" @click="dialog = false"
-                      >mdi-close</v-icon
-                    >
+                  <v-card
+                    width="50%"
+                    class="mx-auto pa-5 pb-10"
+                    v-click-outside="onClickOutside"
+                  >
                     <v-card-text>
                       <h5
                         class="text-h5 text-md-h4 font-weight-bold text-center my-5 secondary"
@@ -180,8 +181,8 @@
                           <td>{{ item.raw.mru }}GB</td>
                           <td>{{ item.raw.cru }}</td>
                           <td>{{ item.raw.resources }}</td>
-                        </tr></template
-                      >
+                        </tr>
+                      </template>
                     </v-data-table>
                   </v-card>
                 </v-dialog>
@@ -212,6 +213,7 @@ export default {
     Toast,
   },
   setup() {
+    const removeTagDialogs = ref({});
     const emitter = inject("emitter");
     const verify = ref(false);
     const checked = ref(false);
@@ -314,7 +316,7 @@ export default {
     const wForm = ref(null);
     const deLoading = ref(false);
     const dialog = ref(false);
-
+    const active = ref(false);
     const getK8s = () => {
       userService
         .getK8s()
@@ -431,7 +433,9 @@ export default {
       navigator.clipboard.writeText(ip);
       toast.value.toast("IP Copied", "#388E3C");
     };
-
+    const onClickOutside = () => {
+      active.value = false;
+    };
     onMounted(() => {
       let token = localStorage.getItem("token");
       if (token) getK8s();
@@ -461,6 +465,7 @@ export default {
       nameValidation,
       workerHeaders,
       dialog,
+      removeTagDialogs,
       copyIP,
       resetInputs,
       deployK8s,
@@ -468,6 +473,7 @@ export default {
       deleteAllK8s,
       deleteK8s,
       emitQuota,
+      onClickOutside,
     };
   },
 };

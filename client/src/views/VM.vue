@@ -344,7 +344,7 @@ export default {
 .cursor-pointer {
   cursor: pointer;
 }
-thead {
+thead th{
   background-color: #217dbb !important;
   color: white !important
 }

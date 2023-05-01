@@ -59,7 +59,7 @@
             <v-data-table
               :headers="headers"
               :items="results"
-              class="elevation-1"
+              class="elevation-1 bg-primary"
             >
               <template v-slot:item="{ item }">
                 <tr>
@@ -343,5 +343,9 @@ export default {
 <style>
 .cursor-pointer {
   cursor: pointer;
+}
+thead th {
+  background-color: #217dbb !important;
+  color: white !important
 }
 </style>

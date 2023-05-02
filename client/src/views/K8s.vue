@@ -236,22 +236,27 @@ export default {
       {
         title: "ID",
         key: "clusterID",
+        sortable: false,
       },
       {
         title: "Name",
         key: "name",
+        sortable: false,
       },
       {
         title: "Disk (GB)",
         key: "sru",
+        sortable: false,
       },
       {
         title: "RAM (GB)",
         key: "mru",
+        sortable: false,
       },
       {
         title: "CPU",
         key: "cru",
+        sortable: false,
       },
       {
         title: "Yggdrasil IP",
@@ -269,23 +274,28 @@ export default {
     const workerHeaders = ref([
       {
         title: "ID",
-        key: "id",
+        key: "clusterID",
+        sortable: false,
       },
       {
         title: "Name",
         key: "name",
+        sortable: false,
       },
       {
         title: "Disk (GB)",
         key: "sru",
+        sortable: false,
       },
       {
         title: "RAM (GB)",
         key: "mru",
+        sortable: false,
       },
       {
         title: "CPU",
         key: "cru",
+        sortable: false,
       },
       {
         title: "Resources",
@@ -317,6 +327,7 @@ export default {
     const deLoading = ref(false);
     const dialog = ref(false);
     const active = ref(false);
+
     const getK8s = () => {
       userService
         .getK8s()

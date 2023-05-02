@@ -175,10 +175,10 @@ export default {
     ]);
 
     const usersHeaders = ref([
-      { title: "No", key: "id" },
-      { title: "Name", key: "name" },
-      { title: "VMs", key: "vms" },
-      { title: "IPs", key: "public_ips" },
+      { title: "No", key: "id", sortable: false },
+      { title: "Name", key: "name", sortable: false },
+      { title: "VMs", key: "vms", sortable: false },
+      { title: "IPs", key: "public_ips", sortable: false },
     ]);
 
     const vouchers = ref([]);

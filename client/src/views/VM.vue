@@ -144,22 +144,27 @@ export default {
       {
         title: "ID",
         key: "id",
+        sortable: false,
       },
       {
         title: "Name",
         key: "name",
+        sortable: false,
       },
       {
         title: "Disk (GB)",
         key: "sru",
+        sortable: false,
       },
       {
         title: "RAM (GB)",
         key: "mru",
+        sortable: false,
       },
       {
         title: "CPU",
         key: "cru",
+        sortable: false,
       },
       {
         title: "Yggdrasil IP",
@@ -327,8 +332,8 @@ export default {
 .cursor-pointer {
   cursor: pointer;
 }
-thead th{
+thead th {
   background-color: #217dbb !important;
-  color: white !important
+  color: white !important;
 }
 </style>

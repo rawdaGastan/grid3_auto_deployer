@@ -110,7 +110,7 @@ func NewServer(file string) (server *Server, err error) {
 	http.Handle("/", r)
 
 	// notify admins
-	router.NotifyAdmins()
+	go router.NotifyAdmins()
 
 	return &Server{port: configuration.Server.Port, host: configuration.Server.Host}, nil
 }

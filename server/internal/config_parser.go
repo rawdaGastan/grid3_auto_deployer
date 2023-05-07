@@ -10,14 +10,15 @@ import (
 
 // Configuration struct to hold app configurations
 type Configuration struct {
-	Server     Server      `json:"server"`
-	MailSender MailSender  `json:"mailSender"`
-	Database   DB          `json:"database"`
-	Token      JwtToken    `json:"token"`
-	Account    GridAccount `json:"account"`
-	Version    string      `json:"version"`
-	Salt       string      `json:"salt"`
-	Admins     []string    `json:"admins"`
+	Server      Server      `json:"server"`
+	MailSender  MailSender  `json:"mailSender"`
+	Database    DB          `json:"database"`
+	Token       JwtToken    `json:"token"`
+	Account     GridAccount `json:"account"`
+	Version     string      `json:"version"`
+	Salt        string      `json:"salt"`
+	Admins      []string    `json:"admins"`
+	NotifyHours int         `json:"notifyHours"`
 }
 
 // Server struct to hold server's information
@@ -99,6 +100,10 @@ func ParseConf(conf []byte) (Configuration, error) {
 
 	if myConf.Salt == "" {
 		return myConf, errors.New("salt is required")
+	}
+
+	if myConf.NotifyHours == 0 {
+		myConf.NotifyHours = 2
 	}
 
 	return myConf, nil

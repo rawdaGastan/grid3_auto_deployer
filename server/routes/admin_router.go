@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/codescalers/cloud4students/internal"
 	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
@@ -72,4 +74,32 @@ func (r *Router) GetMaintenanceHandler(w http.ResponseWriter, req *http.Request)
 	}
 
 	writeMsgResponse(req, w, fmt.Sprintf("Maintenance is set with %v", maintenance.Active), maintenance)
+}
+
+// NotifyAdmins is used to notify admins that there are new vouchers requests
+func (r *Router) NotifyAdmins() {
+	ticker := time.NewTicker(time.Hour * time.Duration(r.config.NotifyHours))
+
+	for range ticker.C {
+		pending, err := r.db.GetAllPendingVouchers()
+		if err != nil {
+			log.Error().Err(err).Send()
+		}
+
+		if len(pending) > 0 {
+			subject, body := internal.NotifyAdminsMailContent(len(pending))
+
+			admins, err := r.db.ListAdmins()
+			if err != nil {
+				log.Error().Err(err).Send()
+			}
+
+			for _, admin := range admins {
+				err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.SendGridKey, admin.Email, subject, body)
+				if err != nil {
+					log.Error().Err(err).Send()
+				}
+			}
+		}
+	}
 }

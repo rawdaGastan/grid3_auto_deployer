@@ -386,7 +386,7 @@ func TestSignInHandler(t *testing.T) {
 		request := httptest.NewRequest("POST", version+"/user/signin", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
 		router.SignInHandler(response, request)
-		want := `{"err":"User is not verified yet"}`
+		want := `{"err":"Email is not verified yet, please check the verification email in your inbox"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 

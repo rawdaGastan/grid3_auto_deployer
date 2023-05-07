@@ -159,7 +159,7 @@ func (r *Router) UpdateVoucherHandler(w http.ResponseWriter, req *http.Request) 
 
 // ApproveAllVouchers approves all vouchers by admin
 func (r *Router) ApproveAllVouchers(w http.ResponseWriter, req *http.Request) {
-	vouchers, err := r.db.GetAllVouchers()
+	vouchers, err := r.db.ListAllVouchers()
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)

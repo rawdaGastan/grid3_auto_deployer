@@ -27,14 +27,14 @@ func TestSignUpMailContent(t *testing.T) {
 
 func TestApprovedVoucherMailContent(t *testing.T) {
 	subject, body := ApprovedVoucherMailContent("1234", "user")
-	assert.Equal(t, subject, "Your voucher is approved 🎆")
+	assert.Equal(t, subject, "Your voucher request is approved 🎆")
 	assert.Equal(t, body, "Welcome user,\n\nWe are so glad to inform you that your voucher has been approved successfully.\n\nYour voucher is 1234\n\nBest regards,\nCodescalers team")
 
 }
 
 func TestRejectedVoucherMailContent(t *testing.T) {
 	subject, body := RejectedVoucherMailContent("user")
-	assert.Equal(t, subject, "Your voucher is rejected 😔")
-	assert.Equal(t, body, "Welcome user,\n\nWe are sorry to inform you that your voucher has been rejected\n\nBest regards,\nCodescalers team")
+	assert.Equal(t, subject, "Your voucher request is rejected 😔")
+	assert.Equal(t, body, "Welcome user,\n\nWe are sorry to inform you that your voucher request has been rejected.\n\nBest regards,\nCodescalers team")
 
 }

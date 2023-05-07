@@ -41,7 +41,7 @@ func SignUpMailContent(code int, timeout int) (string, string) {
 
 // ApprovedVoucherMailContent gets the content for approved voucher
 func ApprovedVoucherMailContent(voucher string, user string) (string, string) {
-	subject := "Your voucher is approved 🎆"
+	subject := "Your voucher request is approved 🎆"
 	body := fmt.Sprintf("Welcome %v,\n\nWe are so glad to inform you that your voucher has been approved successfully.\n\nYour voucher is %s\n\nBest regards,\nCodescalers team", user, voucher)
 
 	return subject, body
@@ -49,8 +49,16 @@ func ApprovedVoucherMailContent(voucher string, user string) (string, string) {
 
 // RejectedVoucherMailContent gets the content for rejected voucher
 func RejectedVoucherMailContent(user string) (string, string) {
-	subject := "Your voucher is rejected 😔"
-	body := fmt.Sprintf("Welcome %v,\n\nWe are sorry to inform you that your voucher has been rejected\n\nBest regards,\nCodescalers team", user)
+	subject := "Your voucher request is rejected 😔"
+	body := fmt.Sprintf("Welcome %v,\n\nWe are sorry to inform you that your voucher request has been rejected.\n\nBest regards,\nCodescalers team", user)
+
+	return subject, body
+}
+
+// NotifyAdminsMailContent gets the content for notifying admins
+func NotifyAdminsMailContent(vouchers int) (string, string) {
+	subject := "Some voucher requests need check"
+	body := fmt.Sprintf("hello,\n\nThere are %d voucher requests that need to be checked.\n\nBest regards,\nCodescalers team", vouchers)
 
 	return subject, body
 }

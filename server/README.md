@@ -36,7 +36,8 @@ example `config.json`:
         "mnemonics": "<mnemonics>",
         "network": "<grid-network>"
     },
-    "version": "v1"
+    "version": "v1",
+    "notifyHours": 6
 }
 ```
 

@@ -78,7 +78,7 @@ func (r *Router) GetMaintenanceHandler(w http.ResponseWriter, req *http.Request)
 
 // NotifyAdmins is used to notify admins that there are new vouchers requests
 func (r *Router) NotifyAdmins() {
-	ticker := time.NewTicker(time.Hour * time.Duration(r.config.NotifyHours))
+	ticker := time.NewTicker(time.Hour * time.Duration(r.config.NotifyAdminsIntervalHours))
 
 	for range ticker.C {
 		pending, err := r.db.GetAllPendingVouchers()

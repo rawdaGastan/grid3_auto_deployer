@@ -57,8 +57,8 @@ func RejectedVoucherMailContent(user string) (string, string) {
 
 // NotifyAdminsMailContent gets the content for notifying admins
 func NotifyAdminsMailContent(vouchers int) (string, string) {
-	subject := "Some voucher requests need check"
-	body := fmt.Sprintf("hello,\n\nThere are %d voucher requests that need to be checked.\n\nBest regards,\nCodescalers team", vouchers)
+	subject := "There're pending voucher requests for you to review"
+	body := fmt.Sprintf("Hello,\n\nThere are %d voucher requests that need to be reviewed. Kindly check them.\n\nBest regards,\nCodescalers team", vouchers)
 
 	return subject, body
 }

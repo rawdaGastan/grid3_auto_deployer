@@ -37,7 +37,7 @@ example `config.json`:
         "network": "<grid-network>"
     },
     "version": "v1",
-    "notifyHours": 6
+    "notifyAdminsIntervalHours": 6
 }
 ```
 

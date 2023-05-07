@@ -77,6 +77,12 @@ func (d *DB) ListAllUsers() ([]UserUsedQuota, error) {
 	return res, query.Error
 }
 
+// GetAllPendingVouchers gets all pending vouchers
+func (d *DB) ListAdmins() ([]User, error) {
+	var admins []User
+	return admins, d.db.Where("admin = true and verified = true").Find(&admins).Error
+}
+
 // GetCodeByEmail returns verification code for unit testing
 func (d *DB) GetCodeByEmail(email string) (int, error) {
 	var res User
@@ -219,10 +225,10 @@ func (d *DB) UpdateVoucher(id int, approved bool) (Voucher, error) {
 	return voucher, query.Error
 }
 
-// GetAllVouchers gets all vouchers
-func (d *DB) GetAllVouchers() ([]Voucher, error) {
+// GetAllPendingVouchers gets all pending vouchers
+func (d *DB) GetAllPendingVouchers() ([]Voucher, error) {
 	var vouchers []Voucher
-	return vouchers, d.db.Find(&vouchers).Error
+	return vouchers, d.db.Where("approved = false and rejected = false").Find(&vouchers).Error
 }
 
 // DeactivateVoucher if it is used

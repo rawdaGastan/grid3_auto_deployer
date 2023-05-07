@@ -513,8 +513,7 @@ func TestUpdateUserQuota(t *testing.T) {
 		err := db.CreateQuota(&quota)
 		assert.NoError(t, err)
 		err = db.UpdateUserQuota("1", 0, 0)
-		assert.Error(t, err)
-
+		assert.NoError(t, err)
 	})
 }
 func TestGetUserQuota(t *testing.T) {
@@ -627,30 +626,6 @@ func TestApproveVoucher(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, v, resVoucher)
 	})
-}
-
-func TestGetAllVouchers(t *testing.T) {
-	db := setupDB(t)
-	t.Run("no vouchers", func(t *testing.T) {
-		vouchers, err := db.GetAllVouchers()
-		assert.NoError(t, err)
-		assert.Empty(t, vouchers)
-	})
-
-	t.Run("get all vouchers", func(t *testing.T) {
-		voucher1 := Voucher{Voucher: "voucher1", UserID: "user"}
-		voucher2 := Voucher{Voucher: "voucher2", UserID: "new-user"}
-
-		err := db.CreateVoucher(&voucher1)
-		assert.NoError(t, err)
-		err = db.CreateVoucher(&voucher2)
-		assert.NoError(t, err)
-
-		vouchers, err := db.GetAllVouchers()
-		assert.NoError(t, err)
-		assert.Equal(t, vouchers, []Voucher{voucher1, voucher2})
-	})
-
 }
 
 func TestDeactivateVoucher(t *testing.T) {

@@ -655,7 +655,7 @@ func TestK8sDeleteHandler(t *testing.T) {
 				Name: "name",
 			},
 			Workers: []models.Worker{
-				models.Worker{
+				{
 					ClusterID: 2,
 					Name:      "worker1",
 					Resources: "small",

@@ -109,6 +109,9 @@ func NewServer(file string) (server *Server, err error) {
 	http.Handle("/metrics", promhttp.Handler())
 	http.Handle("/", r)
 
+	// notify admins
+	router.NotifyAdmins()
+
 	return &Server{port: configuration.Server.Port, host: configuration.Server.Host}, nil
 }
 

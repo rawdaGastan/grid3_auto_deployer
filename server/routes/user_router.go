@@ -242,7 +242,7 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !user.Verified {
-		writeErrResponse(req, w, http.StatusBadRequest, "User is not verified yet")
+		writeErrResponse(req, w, http.StatusBadRequest, "Email is not verified yet, please check the verification email in your inbox")
 		return
 	}
 
@@ -259,7 +259,7 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	writeMsgResponse(req, w, "User is signed in successfully", map[string]string{"access_token": token})
+	writeMsgResponse(req, w, "You are signed in successfully", map[string]string{"access_token": token})
 }
 
 // RefreshJWTHandler refreshes the user's token
@@ -276,6 +276,12 @@ func (r *Router) RefreshJWTHandler(w http.ResponseWriter, req *http.Request) {
 	tkn, err := jwt.ParseWithClaims(reqToken, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(r.config.Token.Secret), nil
 	})
+
+	// if user doesn't exist
+	if _, err := r.db.GetUserByID(claims.UserID); err == gorm.ErrRecordNotFound {
+		writeErrResponse(req, w, http.StatusNotFound, "User is not found")
+		return
+	}
 
 	// if token didn't expire
 	if err == nil && time.Until(claims.ExpiresAt.Time) < time.Duration(r.config.Token.Timeout)*time.Minute && tkn.Valid {

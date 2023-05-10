@@ -14,6 +14,7 @@ import (
 
 	"github.com/codescalers/cloud4students/internal"
 	"github.com/codescalers/cloud4students/middlewares"
+	"github.com/codescalers/cloud4students/streams"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/codescalers/cloud4students/models"
@@ -27,7 +28,10 @@ func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Confi
 {
 	"server": {
 		"host": "localhost",
-		"port": ":3000"
+		"port": ":3000",
+		"redisHost": "localhost",
+		"redisPort": "6379",
+		"redisPass": ""		
 	},
 	"mailSender": {
         "email": "email",
@@ -69,11 +73,14 @@ func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Confi
 	err = db.Migrate()
 	assert.NoError(t, err)
 
-	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, true, false)
+	redis, err := streams.NewRedisClient(configuration)
+	assert.NoError(t, err)
+
+	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, false)
 	assert.NoError(t, err)
 
 	version = "/" + configuration.Version
-	router, err := NewRouter(configuration, db, tfPluginClient)
+	router, err := NewRouter(configuration, db, redis, tfPluginClient)
 	assert.NoError(t, err)
 
 	return &router, db, configuration, version

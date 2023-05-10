@@ -8,25 +8,12 @@ import (
 	"strings"
 
 	"github.com/codescalers/cloud4students/middlewares"
+	"github.com/codescalers/cloud4students/models"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
 )
-
-// K8sDeployInput deploy k8s cluster input
-type K8sDeployInput struct {
-	MasterName string   `json:"master_name" validate:"min=3,max=20"`
-	Resources  string   `json:"resources"`
-	Public     bool     `json:"public"`
-	Workers    []Worker `json:"workers"`
-}
-
-// Worker deploy k8s worker input
-type Worker struct {
-	Name      string `json:"name" validate:"min=3,max=20"`
-	Resources string `json:"resources"`
-}
 
 // K8sDeployHandler deploy k8s handler
 func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
@@ -42,7 +29,7 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var k8sDeployInput K8sDeployInput
+	var k8sDeployInput models.K8sDeployInput
 	err = json.NewDecoder(req.Body).Decode(&k8sDeployInput)
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -93,7 +80,7 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// deploy network and cluster
-	node, networkContractID, k8sContractID, err := r.deployK8sClusterWithNetwork(k8sDeployInput, user.SSHKey)
+	node, networkContractID, k8sContractID, err := r.deployK8sClusterWithNetwork(req.Context(), k8sDeployInput, user.SSHKey)
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)

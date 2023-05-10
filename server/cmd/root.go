@@ -29,7 +29,7 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal().Err(err).Send()
 		}
-		server, err := routes.NewServer(config)
+		server, err := routes.NewServer(cmd.Context(), config)
 		if err != nil {
 			log.Fatal().Err(err).Send()
 		}

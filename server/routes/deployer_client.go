@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/codescalers/cloud4students/models"
+	"github.com/codescalers/cloud4students/streams"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/workloads"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-proxy/pkg/types"
@@ -41,9 +43,9 @@ var (
 	token = "random"
 )
 
-func (r *Router) deployK8sClusterWithNetwork(k8sDeployInput K8sDeployInput, sshKey string) (uint32, uint64, uint64, error) {
+func (r *Router) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInput models.K8sDeployInput, sshKey string) (uint32, uint64, uint64, error) {
 	// get available nodes
-	node, err := r.getK8sAvailableNode(k8sDeployInput)
+	node, err := r.getK8sAvailableNode(ctx, k8sDeployInput)
 	if err != nil {
 		return 0, 0, 0, err
 	}
@@ -61,20 +63,31 @@ func (r *Router) deployK8sClusterWithNetwork(k8sDeployInput K8sDeployInput, sshK
 		return 0, 0, 0, err
 	}
 
-	err = r.tfPluginClient.NetworkDeployer.Deploy(context.Background(), &network)
+	// add network and cluster to be deployed
+	err = r.redis.PushNet(streams.NetDeployment{DL: &network})
 	if err != nil {
-		return 0, 0, 0, errors.Wrapf(err, "failed to deploy network on nodes %v", network.Nodes)
+		return 0, 0, 0, err
+	}
+	err = r.redis.PushK8s(streams.K8sDeployment{DL: &cluster})
+	if err != nil {
+		return 0, 0, 0, err
 	}
 
-	err = r.tfPluginClient.K8sDeployer.Deploy(context.Background(), &cluster)
+	// wait for deployments
+	for !r.k8sDeployed {
+		continue
+	}
+
+	// checks that network and k8s are deployed successfully
+	_, err = r.tfPluginClient.State.LoadK8sFromGrid([]uint32{node}, cluster.Master.Name)
 	if err != nil {
-		return 0, 0, 0, errors.Wrapf(err, "failed to deploy kubernetes cluster on nodes %v", network.Nodes)
+		return 0, 0, 0, errors.Wrapf(err, "failed to load kubernetes cluster '%s' on nodes %v", cluster.Master.Name, network.Nodes)
 	}
 
 	return node, network.NodeDeploymentID[node], cluster.NodeDeploymentID[node], nil
 }
 
-func (r *Router) loadK8s(k8sDeployInput K8sDeployInput, userID string, node uint32, networkContractID uint64, k8sContractID uint64) (models.K8sCluster, error) {
+func (r *Router) loadK8s(k8sDeployInput models.K8sDeployInput, userID string, node uint32, networkContractID uint64, k8sContractID uint64) (models.K8sCluster, error) {
 	// load cluster
 	resCluster, err := r.tfPluginClient.State.LoadK8sFromGrid([]uint32{node}, k8sDeployInput.MasterName)
 	if err != nil {
@@ -123,14 +136,14 @@ func (r *Router) loadK8s(k8sDeployInput K8sDeployInput, userID string, node uint
 	return k8sCluster, nil
 }
 
-func (r *Router) deployVM(ctx context.Context, vmInput DeployVMInput, sshKey string) (*workloads.VM, uint64, uint64, uint64, error) {
+func (r *Router) deployVM(ctx context.Context, vmInput models.DeployVMInput, sshKey string) (*workloads.VM, uint64, uint64, uint64, error) {
 	// filter nodes
 	filter, err := filterNode(vmInput.Resources, vmInput.Public)
 	if err != nil {
 		return nil, 0, 0, 0, err
 	}
 
-	nodeIDs, err := deployer.FilterNodes(r.tfPluginClient.GridProxyClient, filter)
+	nodeIDs, err := deployer.FilterNodes(ctx, r.tfPluginClient, filter)
 	if err != nil {
 		return nil, 0, 0, 0, err
 	}
@@ -163,23 +176,29 @@ func (r *Router) deployVM(ctx context.Context, vmInput DeployVMInput, sshKey str
 		NetworkName: network.Name,
 	}
 
-	// deploy network
-	err = r.tfPluginClient.NetworkDeployer.Deploy(ctx, &network)
-	if err != nil {
-		return nil, 0, 0, 0, err
-	}
-
-	// deploy vm
 	dl := workloads.NewDeployment(vmInput.Name, nodeID, "", nil, network.Name, []workloads.Disk{disk}, nil, []workloads.VM{vm}, nil)
-	err = r.tfPluginClient.DeploymentDeployer.Deploy(ctx, &dl)
+
+	fmt.Printf("dl: %v\n", dl.ContractID)
+	// add network and deployment to be deployed
+	err = r.redis.PushNet(streams.NetDeployment{DL: &network})
+	if err != nil {
+		return nil, 0, 0, 0, err
+	}
+	err = r.redis.PushVM(streams.VMDeployment{DL: &dl})
 	if err != nil {
 		return nil, 0, 0, 0, err
 	}
 
-	// checks that vm deployed successfully
+	fmt.Printf("dl2: %v\n", dl.Name)
+	// wait for deployments
+	for !r.vmDeployed {
+		continue
+	}
+
+	// checks that network and vm are deployed successfully
 	loadedVM, err := r.tfPluginClient.State.LoadVMFromGrid(nodeID, vm.Name, dl.Name)
 	if err != nil {
-		return nil, 0, 0, 0, err
+		return nil, 0, 0, 0, errors.Wrapf(err, "failed to load vm '%s' on node %v", dl.Name, dl.NodeID)
 	}
 
 	return &loadedVM, dl.ContractID, network.NodeDeploymentID[nodeID], uint64(disk.SizeGB), nil
@@ -229,7 +248,7 @@ func calcNodeResources(resources string, public bool) (uint64, uint64, uint64, u
 	return cru, mru, sru, ips, nil
 }
 
-func (r *Router) getK8sAvailableNode(k K8sDeployInput) (uint32, error) {
+func (r *Router) getK8sAvailableNode(ctx context.Context, k models.K8sDeployInput) (uint32, error) {
 	_, mru, sru, ips, err := calcNodeResources(k.Resources, k.Public)
 	if err != nil {
 		return 0, err
@@ -255,7 +274,7 @@ func (r *Router) getK8sAvailableNode(k K8sDeployInput) (uint32, error) {
 		IPv6:    &trueVal,
 	}
 
-	nodes, err := deployer.FilterNodes(r.tfPluginClient.GridProxyClient, filter)
+	nodes, err := deployer.FilterNodes(ctx, r.tfPluginClient, filter)
 	if err != nil {
 		return 0, err
 	}
@@ -281,7 +300,7 @@ func filterNode(resource string, public bool) (types.NodeFilter, error) {
 	}, nil
 }
 
-func validateK8sQuota(k K8sDeployInput, availableResourcesQuota, availablePublicIPsQuota int) (int, error) {
+func validateK8sQuota(k models.K8sDeployInput, availableResourcesQuota, availablePublicIPsQuota int) (int, error) {
 	neededQuota, err := calcNeededQuota(k.Resources)
 	if err != nil {
 		return 0, err
@@ -305,7 +324,7 @@ func validateK8sQuota(k K8sDeployInput, availableResourcesQuota, availablePublic
 	return neededQuota, nil
 }
 
-func validateVMQuota(vm DeployVMInput, availableResourcesQuota, availablePublicIPsQuota int) (int, error) {
+func validateVMQuota(vm models.DeployVMInput, availableResourcesQuota, availablePublicIPsQuota int) (int, error) {
 	neededQuota, err := calcNeededQuota(vm.Resources)
 	if err != nil {
 		return 0, err
@@ -349,7 +368,7 @@ func buildNetwork(node uint32, name string) workloads.ZNet {
 	}
 }
 
-func buildK8sCluster(node uint32, sshKey, network string, k K8sDeployInput) (workloads.K8sCluster, error) {
+func buildK8sCluster(node uint32, sshKey, network string, k models.K8sDeployInput) (workloads.K8sCluster, error) {
 	master := workloads.K8sNode{
 		Name:      k.MasterName,
 		Flist:     k8sFlist,
@@ -404,4 +423,59 @@ func generateNetworkName() string {
 		name[i] = charset[seededRand.Intn(len(charset))]
 	}
 	return string(name)
+}
+
+func (r *Router) periodicVMRequests(ctx context.Context) {
+	ticker := time.NewTicker(time.Second * 6)
+
+	for range ticker.C {
+		r.vmRequested = false
+		r.k8sRequested = false
+
+		r.consumeVMRequest(ctx)
+	}
+}
+
+func (r *Router) periodicDeploy(ctx context.Context) {
+	ticker := time.NewTicker(time.Second * 6)
+
+	for range ticker.C {
+		r.vmDeployed = false
+		r.k8sDeployed = false
+
+		vms, err := r.consumeVMs(ctx)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to consume vms")
+		}
+
+		nets, err := r.consumeNets(ctx)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to consume networks")
+		}
+
+		fmt.Printf("nets, vms: %v %v\n", nets, vms)
+
+		if len(nets) > 0 {
+			err := r.tfPluginClient.NetworkDeployer.BatchDeploy(ctx, nets)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to batch deploy network")
+			}
+		}
+
+		if len(vms) > 0 {
+			err := r.tfPluginClient.DeploymentDeployer.BatchDeploy(ctx, vms)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to batch deploy vm")
+			}
+			r.vmDeployed = true
+		}
+
+		/*if len(clusters) > 0 {
+			err := r.tfPluginClient.K8sDeployer.BatchDeploy(ctx, clusters)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to batch deploy k8s cluster")
+			}
+			r.k8sDeployed = true
+		}*/
+	}
 }

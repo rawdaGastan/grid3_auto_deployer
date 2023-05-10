@@ -13,6 +13,7 @@ import (
 	"github.com/codescalers/cloud4students/internal"
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
+	"github.com/codescalers/cloud4students/streams"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -28,7 +29,7 @@ type Server struct {
 }
 
 // NewServer create new server with all configurations
-func NewServer(file string) (server *Server, err error) {
+func NewServer(ctx context.Context, file string) (server *Server, err error) {
 	data, err := internal.ReadConfFile(file)
 	if err != nil {
 		return
@@ -48,14 +49,19 @@ func NewServer(file string) (server *Server, err error) {
 		return
 	}
 
-	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, true, false)
+	redis, err := streams.NewRedisClient(configuration)
+	if err != nil {
+		return
+	}
+
+	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, false)
 	if err != nil {
 		return
 	}
 
 	version := "/" + configuration.Version
 
-	router, err := NewRouter(configuration, db, tfPluginClient)
+	router, err := NewRouter(configuration, db, redis, tfPluginClient)
 	if err != nil {
 		return
 	}
@@ -111,6 +117,9 @@ func NewServer(file string) (server *Server, err error) {
 
 	// notify admins
 	go router.NotifyAdmins()
+	go router.periodicVMRequests(ctx)
+	//go router.periodicK8sRequests(ctx)
+	go router.periodicDeploy(ctx)
 
 	return &Server{port: configuration.Server.Port, host: configuration.Server.Host}, nil
 }

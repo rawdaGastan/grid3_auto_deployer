@@ -9,6 +9,7 @@ import (
 	"github.com/codescalers/cloud4students/internal"
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
+	"github.com/codescalers/cloud4students/streams"
 	"github.com/codescalers/cloud4students/validators"
 	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
@@ -21,11 +22,18 @@ const internalServerErrorMsg = "Something went wrong"
 type Router struct {
 	config         *internal.Configuration
 	db             models.DB
+	redis          streams.RedisClient
 	tfPluginClient deployer.TFPluginClient
+
+	vmDeployed  bool
+	k8sDeployed bool
+
+	vmRequested  bool
+	k8sRequested bool
 }
 
 // NewRouter create new router with db
-func NewRouter(config internal.Configuration, db models.DB, tfPluginClient deployer.TFPluginClient) (Router, error) {
+func NewRouter(config internal.Configuration, db models.DB, redis streams.RedisClient, tfPluginClient deployer.TFPluginClient) (Router, error) {
 	// validations
 	err := validator.SetValidationFunc("ssh", validators.ValidateSSHKey)
 	if err != nil {
@@ -39,7 +47,17 @@ func NewRouter(config internal.Configuration, db models.DB, tfPluginClient deplo
 	if err != nil {
 		return Router{}, err
 	}
-	return Router{&config, db, tfPluginClient}, nil
+
+	return Router{
+		&config,
+		db,
+		redis,
+		tfPluginClient,
+		false,
+		false,
+		false,
+		false,
+	}, nil
 }
 
 // ErrorMsg holds errors

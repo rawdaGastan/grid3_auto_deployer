@@ -25,6 +25,10 @@ type Configuration struct {
 type Server struct {
 	Host string `json:"host"`
 	Port string `json:"port"`
+
+	RedisHost string `json:"redisHost"`
+	RedisPort string `json:"redisPort"`
+	RedisPass string `json:"redisPass"`
 }
 
 // MailSender struct to hold sender's email, password
@@ -76,6 +80,10 @@ func ParseConf(conf []byte) (Configuration, error) {
 
 	if myConf.Server.Host == "" || myConf.Server.Port == "" {
 		return myConf, errors.New("server configuration is required")
+	}
+
+	if myConf.Server.RedisHost == "" || myConf.Server.RedisPort == "" {
+		return myConf, errors.New("server redis configuration is required")
 	}
 
 	if myConf.MailSender.Email == "" || myConf.MailSender.SendGridKey == "" || myConf.MailSender.Timeout == 0 {

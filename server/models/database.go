@@ -77,7 +77,7 @@ func (d *DB) ListAllUsers() ([]UserUsedQuota, error) {
 	return res, query.Error
 }
 
-// GetAllPendingVouchers gets all pending vouchers
+// ListAdmins gets all admins
 func (d *DB) ListAdmins() ([]User, error) {
 	var admins []User
 	return admins, d.db.Where("admin = true and verified = true").Find(&admins).Error

@@ -104,7 +104,7 @@
           </v-text-field>
 
           <v-row>
-            <TermsAndConditions @setChecked="actions" />
+            <TermsAndConditions v-model="checked" />
           </v-row>
 
           <v-btn
@@ -181,6 +181,7 @@ export default {
       (value) => {
         if (!value) return "Field is required";
         if (value < 1) return "Team Size should at least 1";
+        if (value > 20) return "Team Size should be max 20";
         return true;
       },
     ]);
@@ -245,14 +246,8 @@ export default {
           loading.value = false;
         });
     };
-
-    const actions = (event) => {
-      checked.value = event;
-    };
-
     return {
       onSubmit,
-      actions,
       loading,
       verify,
       showPassword,

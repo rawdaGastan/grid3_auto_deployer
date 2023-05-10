@@ -1,7 +1,10 @@
 <template>
   <v-dialog v-model="dialog" transition="dialog-top-transition" width="800">
     <template v-slot:activator="{ props }">
-      <v-checkbox v-model="checked">
+      <v-checkbox
+        :checked="modelValue"
+        @change="$emit('update:modelValue', $event.target.checked)"
+      >
         <template v-slot:label>
           <a
             class="grey-darken-4 text-uppercase text-decoration-underline"
@@ -209,15 +212,22 @@
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn color="green-darken-1" variant="text" @click="actions('accept')">
+        <v-btn
+          color="green-darken-1"
+          variant="text"
+          @click="
+            $emit('update:modelValue', true);
+            dialog = false;
+          "
+        >
           Accept
         </v-btn>
         <v-btn
           color="red-darken-1"
           variant="text"
           @click="
-            actions('decline');
-            checked = false;
+            $emit('update:modelValue', false);
+            dialog = false;
           "
         >
           Decline
@@ -230,22 +240,16 @@
 <script>
 import { ref } from "vue";
 export default {
-  setup(props, { emit }) {
+  emits: ["update:modelValue"],
+  props: {
+    modelValue: {
+      type: Boolean,
+      required: true,
+    },
+  },
+  setup() {
     const dialog = ref(false);
-    const checked = ref(false);
-
-    const actions = (action) => {
-      if (action == "accept" || checked.value == true) {
-        dialog.value = false;
-        checked.value = true;
-        emit("setChecked", checked.value);
-      } else {
-        dialog.value = false;
-        checked.value = false;
-        emit("setChecked", checked.value);
-      }
-    };
-    return { dialog, checked, actions };
+    return { dialog };
   },
 };
 </script>

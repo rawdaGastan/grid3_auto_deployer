@@ -23,12 +23,13 @@
             density="compact"
           ></v-text-field>
           <BaseSelect
-            :modelValue="selectedResource"
-            :items="resources"
+            :value="selectedResources"
             placeholder="Resources"
+            :modelValue="selectedResources"
+            :items="resources"
             :rules="rules"
             class="mt-3"
-            @update:modelValue="selectedResource = $event"
+            @update:modelValue="selectedResources = $event"
           />
           <v-checkbox v-model="checked" label="Public IP"></v-checkbox>
 
@@ -53,31 +54,72 @@
             </template>
             <template v-slot:default="{ isActive }">
               <v-card width="100%" size="100%" class="mx-auto pa-5">
-                <v-form
-                  v-model="workerVerify"
-                  ref="wForm"
-                  @submit.prevent="deployWorker"
-                >
+                <v-form ref="wForm" v-model="listVerify">
                   <v-card-text>
                     <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
-                      Worker
+                      Workers
                     </h5>
-                    <v-text-field
-                      label="Name"
-                      bg-color="accent"
-                      variant="outlined"
-                      v-model="workerName"
-                      density="compact"
-                      :rules="nameValidation"
-                    ></v-text-field>
-                    <BaseSelect
-                      placeholder="Resources"
-                      :modelValue="workerSelResources"
-                      :items="workerResources"
-                      :rules="rules"
-                      class="my-3"
-                      @update:modelValue="workerSelResources = $event"
-                    />
+                    <v-list density="compact" v-if="savedWorkers.length > 0">
+                      <v-list-item
+                        v-for="(worker, i) in savedWorkers"
+                        :key="i"
+                        :value="worker"
+                      >
+                        <v-list-item-title class="primary">{{
+                          worker.name
+                        }}</v-list-item-title>
+                        <v-list-item-subtitle>{{
+                          worker.resources
+                        }}</v-list-item-subtitle>
+                        <template v-slot:append>
+                          <font-awesome-icon
+                            class="primary pointer"
+                            icon="fa-solid fa-xmark"
+                            @click="deleteWorker(worker.name)"
+                          />
+                        </template>
+                        <v-list-item-action></v-list-item-action>
+                      </v-list-item>
+                    </v-list>
+                    <v-form
+                      v-model="workerVerify"
+                      @submit.prevent="addWorker"
+                      v-if="showInputs"
+                    >
+                      <v-text-field
+                        label="Name"
+                        bg-color="accent"
+                        variant="outlined"
+                        v-model="workerName"
+                        density="compact"
+                        :rules="nameValidation"
+                      ></v-text-field>
+                      <BaseSelect
+                        :value="workerSelResources"
+                        placeholder="Resources"
+                        :modelValue="workerSelResources"
+                        :items="workerResources"
+                        :rules="rules"
+                        class="my-3"
+                        @update:modelValue="workerSelResources = $event"
+                      />
+                      <v-btn
+                        type="submit"
+                        :disabled="!workerVerify"
+                        density="comfortable"
+                        class="bg-primary d-flex ml-auto"
+                        >Add</v-btn
+                      >
+                    </v-form>
+                    <v-btn
+                      variant="text"
+                      v-if="!showInputs"
+                      @click="showInputs = true"
+                      class="d-flex ml-auto text-capitalize text-primary"
+                    >
+                      <font-awesome-icon icon="fa-solid fa-plus" class="mr-2" />
+                      Add new worker
+                    </v-btn>
                   </v-card-text>
                   <v-card-actions class="justify-center">
                     <BaseButton
@@ -85,10 +127,8 @@
                       @click="isActive.value = false"
                       text="Cancel"
                     />
-
                     <BaseButton
-                      type="submit"
-                      :disabled="!workerVerify"
+                      :disabled="savedWorkers.length == 0"
                       class="bg-primary"
                       @click="isActive.value = false"
                       text="Save"
@@ -220,12 +260,14 @@ export default {
     const alert = ref(false);
     const workerVerify = ref(false);
     const k8Name = ref(null);
+    const showInputs = ref(true);
     const nameValidation = ref([
       (value) => {
         if (value.length >= 3 && value.length <= 20) return true;
         return "Name needs to be more than 2 characters and less than 20";
       },
     ]);
+    const savedWorkers = ref([]);
     const rules = ref([
       (value) => {
         if (value) return true;
@@ -303,7 +345,6 @@ export default {
         sortable: false,
       },
     ]);
-    const selectedResource = ref(null);
     const resources = ref([
       { title: "Small K8s (1 CPU, 2GB, 5GB)", value: "small" },
       { title: "Medium K8s (2 CPU, 4GB, 10GB)", value: "medium" },
@@ -315,8 +356,8 @@ export default {
       { title: "Medium K8s (2 CPU, 4GB, 10GB)", value: "medium" },
       { title: "Large K8s (4 CPU, 8GB, 15GB)", value: "large" },
     ]);
+    const selectedResources = ref(null);
     const workerSelResources = ref(null);
-    const worker = ref([]);
     const loading = ref(false);
     const results = ref([]);
     const workers = ref([]);
@@ -340,19 +381,12 @@ export default {
           toast.value.toast(err, "#FF5252");
         });
     };
-
-    const deployWorker = () => {
-      worker.value.push({
-        name: workerName.value,
-        resources: workerSelResources.value,
-      });
-    };
-
     const resetInputs = () => {
       k8Name.value = null;
-      selectedResource.value = null;
-      worker.value = null;
       checked.value = false;
+      selectedResources.value = null;
+      workerSelResources.value = null;
+      workerName.value = null;
     };
 
     const deployK8s = () => {
@@ -360,25 +394,23 @@ export default {
       userService
         .deployK8s(
           k8Name.value,
-          selectedResource.value,
-          worker.value,
+          selectedResources.value,
+          savedWorkers.value,
           checked.value
         )
         .then((response) => {
           toast.value.toast(response.data.msg, "#388E3C");
           emitQuota();
           getK8s();
-          form.value.reset();
         })
         .catch((response) => {
           const { err } = response.response.data;
           toast.value.toast(err, "#FF5252");
-          form.value.reset();
         })
         .finally(() => {
+          form.value.reset()
           resetInputs();
           loading.value = false;
-          checked.value = false;
         });
     };
 
@@ -447,6 +479,19 @@ export default {
     const onClickOutside = () => {
       active.value = false;
     };
+    const addWorker = () => {
+      savedWorkers.value.push({
+        name: workerName.value,
+        resources: workerSelResources.value,
+      });
+      workerName.value = null;
+      workerSelResources.value = null;
+      showInputs.value = false;
+    };
+    const deleteWorker = (name) => {
+      const id = savedWorkers.value.findIndex((worker) => worker.name === name);
+      savedWorkers.value.splice(id, 1);
+    };
     onMounted(() => {
       let token = localStorage.getItem("token");
       if (token) getK8s();
@@ -457,13 +502,12 @@ export default {
       workerVerify,
       k8Name,
       alert,
-      selectedResource,
+      selectedResources,
       resources,
       headers,
       workerName,
       workerResources,
       workerSelResources,
-      worker,
       loading,
       rules,
       results,
@@ -477,15 +521,24 @@ export default {
       workerHeaders,
       dialog,
       removeTagDialogs,
+      savedWorkers,
+      showInputs,
+      deleteWorker,
       copyIP,
       resetInputs,
       deployK8s,
-      deployWorker,
       deleteAllK8s,
       deleteK8s,
       emitQuota,
       onClickOutside,
+      addWorker,
     };
   },
 };
 </script>
+
+<style>
+.v-list-item--link {
+  cursor: auto;
+}
+</style>

@@ -97,7 +97,9 @@ func (d *DB) GetCodeByEmail(email string) (int, error) {
 func (d *DB) UpdatePassword(email string, password string) error {
 	var res User
 	result := d.db.Model(&res).Where("email = ?", email).Update("hashed_password", password)
-
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
 	return result.Error
 }
 

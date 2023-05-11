@@ -4,6 +4,7 @@ package routes
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -39,19 +40,34 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		writeErrResponse(req, w, http.StatusBadRequest, "failed to read vm data")
 	}
 
-	err = r.redis.PushVMRequest(streams.VMDeployRequest{User: user, Input: input})
+	id := len(r.vmRequestResponse) + 1
+	err = r.redis.PushVMRequest(streams.VMDeployRequest{ID: id, User: user, Input: input})
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
 	}
 
-	// wait for request // TODO: kol request lw7dooo
-	for !r.vmRequested {
-		continue
+	// wait for request
+	key := fmt.Sprintf("%s %d", input.Name, id)
+	r.mutex.Lock()
+	r.vmRequestResponse[key] = streams.ErrResponse{}
+	resCode := r.vmRequestResponse[key].Code
+	r.mutex.Unlock()
+
+	for resCode == nil {
+		r.mutex.Lock()
+		resCode = r.vmRequestResponse[key].Code
+		r.mutex.Unlock()
 	}
 
-	// TODO: write errorrrssss
+	res := r.vmRequestResponse[key]
+	if res.Err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, *res.Code, res.Err.Error())
+		return
+	}
+
 	writeMsgResponse(req, w, "Virtual machine is deployed successfully", "")
 }
 
@@ -101,6 +117,8 @@ func (r *Router) ListVMsHandler(w http.ResponseWriter, req *http.Request) {
 	writeMsgResponse(req, w, "Virtual machines found", vms)
 }
 
+//TODO: ContractNotExists handle in delete
+
 // DeleteVM deletes vm by its id
 func (r *Router) DeleteVM(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
@@ -122,7 +140,7 @@ func (r *Router) DeleteVM(w http.ResponseWriter, req *http.Request) {
 	}
 
 	err = r.cancelDeployment(vm.ContractID, vm.NetworkContractID)
-	if err != nil {
+	if err != nil && err.Error() != "failed to cancel contract: ContractNotExists" {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
@@ -155,7 +173,7 @@ func (r *Router) DeleteAllVMs(w http.ResponseWriter, req *http.Request) {
 
 	for _, vm := range vms {
 		err = r.cancelDeployment(vm.ContractID, vm.NetworkContractID)
-		if err != nil {
+		if err != nil && err.Error() != "failed to cancel contract: ContractNotExists" {
 			log.Error().Err(err).Send()
 			writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 			return

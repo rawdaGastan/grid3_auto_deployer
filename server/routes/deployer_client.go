@@ -4,7 +4,6 @@ package routes
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"net"
 	"time"
 
@@ -51,7 +50,7 @@ func (r *Router) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInput
 	}
 
 	// build network
-	network := buildNetwork(node, generateNetworkName())
+	network := buildNetwork(node, fmt.Sprintf("%sk8sNet", k8sDeployInput.MasterName))
 
 	// build cluster
 	cluster, err := buildK8sCluster(node,
@@ -150,7 +149,7 @@ func (r *Router) deployVM(ctx context.Context, vmInput models.DeployVMInput, ssh
 	nodeID := uint32(nodeIDs[0].NodeID)
 
 	// create network workload
-	network := buildNetwork(nodeID, generateNetworkName())
+	network := buildNetwork(nodeID, fmt.Sprintf("%svmNet", vmInput.Name))
 
 	// create disk
 	disk := workloads.Disk{
@@ -177,8 +176,8 @@ func (r *Router) deployVM(ctx context.Context, vmInput models.DeployVMInput, ssh
 	}
 
 	dl := workloads.NewDeployment(vmInput.Name, nodeID, "", nil, network.Name, []workloads.Disk{disk}, nil, []workloads.VM{vm}, nil)
+	dl.SolutionType = vmInput.Name
 
-	fmt.Printf("dl: %v\n", dl.ContractID)
 	// add network and deployment to be deployed
 	err = r.redis.PushNet(streams.NetDeployment{DL: &network})
 	if err != nil {
@@ -189,11 +188,22 @@ func (r *Router) deployVM(ctx context.Context, vmInput models.DeployVMInput, ssh
 		return nil, 0, 0, 0, err
 	}
 
-	fmt.Printf("dl2: %v\n", dl.Name)
 	// wait for deployments
 	for !r.vmDeployed {
 		continue
 	}
+
+	// TODO: try to get network from graphql if state failed
+	/*networkContractIDs, err := r.tfPluginClient.ContractsGetter.GetNodeContractsByTypeAndName(dl.NetworkName, workloads.NetworkType, dl.NetworkName)
+	if err != nil {
+		return nil, 0, 0, 0, err
+	}
+
+	for node, contractID := range networkContractIDs {
+		if _, ok := r.tfPluginClient.State.CurrentNodeDeployments[node]; ok {
+			r.tfPluginClient.State.CurrentNodeDeployments[node] = append(r.tfPluginClient.State.CurrentNodeDeployments[node], contractID)
+		}
+	}*/
 
 	// checks that network and vm are deployed successfully
 	loadedVM, err := r.tfPluginClient.State.LoadVMFromGrid(nodeID, vm.Name, dl.Name)
@@ -414,25 +424,10 @@ func buildK8sCluster(node uint32, sshKey, network string, k models.K8sDeployInpu
 	return k8sCluster, nil
 }
 
-// generate random names for network
-func generateNetworkName() string {
-	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	name := make([]byte, 4)
-	for i := range name {
-		name[i] = charset[seededRand.Intn(len(charset))]
-	}
-	return string(name)
-}
-
-func (r *Router) periodicVMRequests(ctx context.Context) {
-	ticker := time.NewTicker(time.Second * 6)
-
-	for range ticker.C {
-		r.vmRequested = false
-		r.k8sRequested = false
-
+func (r *Router) periodicRequests(ctx context.Context) {
+	for {
 		r.consumeVMRequest(ctx)
+		r.consumeK8sRequest(ctx)
 	}
 }
 
@@ -453,9 +448,13 @@ func (r *Router) periodicDeploy(ctx context.Context) {
 			log.Error().Err(err).Msg("failed to consume networks")
 		}
 
-		fmt.Printf("nets, vms: %v %v\n", nets, vms)
+		clusters, err := r.consumeK8s(ctx)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to consume clusters")
+		}
 
 		if len(nets) > 0 {
+			fmt.Print("deploy nets\n")
 			err := r.tfPluginClient.NetworkDeployer.BatchDeploy(ctx, nets)
 			if err != nil {
 				log.Error().Err(err).Msg("failed to batch deploy network")
@@ -463,6 +462,7 @@ func (r *Router) periodicDeploy(ctx context.Context) {
 		}
 
 		if len(vms) > 0 {
+			fmt.Print("deploy vms\n")
 			err := r.tfPluginClient.DeploymentDeployer.BatchDeploy(ctx, vms)
 			if err != nil {
 				log.Error().Err(err).Msg("failed to batch deploy vm")
@@ -470,12 +470,13 @@ func (r *Router) periodicDeploy(ctx context.Context) {
 			r.vmDeployed = true
 		}
 
-		/*if len(clusters) > 0 {
+		if len(clusters) > 0 {
+			fmt.Print("deploy clusters\n")
 			err := r.tfPluginClient.K8sDeployer.BatchDeploy(ctx, clusters)
 			if err != nil {
-				log.Error().Err(err).Msg("failed to batch deploy k8s cluster")
+				log.Error().Err(err).Msg("failed to batch deploy clusters")
 			}
 			r.k8sDeployed = true
-		}*/
+		}
 	}
 }

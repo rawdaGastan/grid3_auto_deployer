@@ -647,21 +647,20 @@ func TestChangePasswordHandler(t *testing.T) {
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})
 
-	// TODO: Error
-	// t.Run("user not found", func(t *testing.T) {
-	// 	body := []byte(`{
-	// 	"password":"newpass",
-	// 	"confirm_password":"newpass"
-	// 	}`)
+	t.Run("user not found", func(t *testing.T) {
+		body := []byte(`{
+		"password":"newpass",
+		"confirm_password":"newpass"
+		}`)
 
-	// 	request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
-	// 	response := httptest.NewRecorder()
-	// 	router.ChangePasswordHandler(response, request)
-	// 	want := `{"err":"User is not found"}`
-	// 	assert.Equal(t, response.Body.String(), want)
-	// 	assert.Equal(t, response.Code, http.StatusNotFound)
+		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		response := httptest.NewRecorder()
+		router.ChangePasswordHandler(response, request)
+		want := `{"err":"User is not found"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusNotFound)
 
-	// })
+	})
 }
 
 func TestUpdateUserHandler(t *testing.T) {

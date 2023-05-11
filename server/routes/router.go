@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/codescalers/cloud4students/internal"
 	"github.com/codescalers/cloud4students/middlewares"
@@ -28,8 +29,11 @@ type Router struct {
 	vmDeployed  bool
 	k8sDeployed bool
 
-	vmRequested  bool
-	k8sRequested bool
+	// response is a map of deployment name as a key and (error code and error if exists) as a value
+	vmRequestResponse  map[string]streams.ErrResponse
+	k8sRequestResponse map[string]streams.ErrResponse
+
+	mutex sync.Mutex
 }
 
 // NewRouter create new router with db
@@ -55,8 +59,9 @@ func NewRouter(config internal.Configuration, db models.DB, redis streams.RedisC
 		tfPluginClient,
 		false,
 		false,
-		false,
-		false,
+		map[string]streams.ErrResponse{},
+		map[string]streams.ErrResponse{},
+		sync.Mutex{},
 	}, nil
 }
 

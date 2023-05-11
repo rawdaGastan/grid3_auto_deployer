@@ -2,8 +2,6 @@
 package streams
 
 import (
-	"net/http"
-
 	"github.com/codescalers/cloud4students/models"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/workloads"
 )
@@ -34,21 +32,22 @@ const (
 	ReqK8sStreamName = "k8s-req"
 )
 
-// Writer is a response writer
-type Writer struct {
-	W http.ResponseWriter
+// ErrResponse is a response for deployment requests
+type ErrResponse struct {
+	Code *int
+	Err  error
 }
 
 // VMDeployRequest type for redis vm deployment request
 type VMDeployRequest struct {
-	//Writer Writer
+	ID    int
 	User  models.User
 	Input models.DeployVMInput
 }
 
 // K8sDeployRequest type for redis k8s deployment request
 type K8sDeployRequest struct {
-	//Writer Writer
+	ID    int
 	User  models.User
 	Input models.K8sDeployInput
 }

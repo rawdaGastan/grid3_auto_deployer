@@ -108,7 +108,7 @@ func TestParseConf(t *testing.T) {
 				Port:      ":3000",
 				RedisHost: "localhost",
 				RedisPort: "6379",
-				RedisPass: "pass",
+				RedisPass: "",
 			},
 			MailSender: MailSender{
 				Email:       "email",

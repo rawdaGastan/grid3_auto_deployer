@@ -1,5 +1,5 @@
-// Package routes for API endpoints
-package routes
+// Package deployer for handling deployments
+package deployer
 
 import (
 	"context"
@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"sync"
 
+	"github.com/codescalers/cloud4students/models"
 	"github.com/codescalers/cloud4students/streams"
 	"github.com/go-redis/redis"
 	"github.com/pkg/errors"
@@ -15,8 +17,9 @@ import (
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/workloads"
 )
 
-func (r *Router) consumeVMRequest(ctx context.Context, pending bool) {
-	result, err := r.redis.Read(streams.ReqVMStreamName, streams.ReqVMConsumerGroupName, pending)
+// ConsumeVMRequest to consume api requests of vm deployments
+func (d *Deployer) ConsumeVMRequest(ctx context.Context, pending bool) {
+	result, err := d.Redis.Read(streams.ReqVMStreamName, streams.ReqVMConsumerGroupName, 0, pending)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return
@@ -25,10 +28,14 @@ func (r *Router) consumeVMRequest(ctx context.Context, pending bool) {
 		return
 	}
 
+	var vmWG sync.WaitGroup
+
 	for _, s := range result {
 		for _, message := range s.Messages {
-			r.vmWG.Add(1)
+			vmWG.Add(1)
 			go func(message redis.XMessage) {
+				defer vmWG.Done()
+
 				var codeErr int
 				var resErr error
 				var req streams.VMDeployRequest
@@ -40,32 +47,43 @@ func (r *Router) consumeVMRequest(ctx context.Context, pending bool) {
 						continue
 					}
 
-					codeErr, resErr = r.deployVMRequest(ctx, req.User, req.Input)
+					codeErr, resErr = d.deployVMRequest(ctx, req.User, req.Input)
 					if resErr != nil {
 						log.Error().Err(resErr).Msg("failed to deploy vm request")
 						continue
 					}
 				}
 
-				if err := r.redis.DB.XAck(streams.ReqVMStreamName, streams.ReqVMConsumerGroupName, message.ID).Err(); err != nil {
+				if err := d.Redis.DB.XAck(streams.ReqVMStreamName, streams.ReqVMConsumerGroupName, message.ID).Err(); err != nil {
 					log.Error().Err(err).Msgf("failed to acknowledge vm request with ID: %s", message.ID)
 					resErr = err
 					codeErr = http.StatusInternalServerError
 				}
 
-				r.mutex.Lock()
-				r.vmRequestResponse[fmt.Sprintf("%s %d", req.Input.Name, req.ID)] = streams.ErrResponse{Code: &codeErr, Err: resErr}
-				r.mutex.Unlock()
+				msg := fmt.Sprintf("Your virtual machine '%s' failed to be deployed with error: %s", req.Input.Name, resErr)
+				if codeErr == 0 {
+					msg = fmt.Sprintf("Your virtual machine '%s' is deployed successfully 🎆", req.Input.Name)
+				}
 
-				r.vmWG.Done()
+				notification := models.Notification{
+					UserID: req.User.ID.String(),
+					Msg:    msg,
+					Type:   models.VMsType,
+				}
+				err = d.db.CreateNotification(&notification)
+				if err != nil {
+					log.Error().Err(err).Msgf("failed to create notification: %+v", notification)
+				}
+
 			}(message)
 		}
-		r.vmWG.Wait()
+		vmWG.Wait()
 	}
 }
 
-func (r *Router) consumeK8sRequest(ctx context.Context, pending bool) {
-	result, err := r.redis.Read(streams.ReqK8sStreamName, streams.ReqK8sConsumerGroupName, pending)
+// ConsumeK8sRequest to consume api requests of k8s deployments
+func (d *Deployer) ConsumeK8sRequest(ctx context.Context, pending bool) {
+	result, err := d.Redis.Read(streams.ReqK8sStreamName, streams.ReqK8sConsumerGroupName, 0, pending)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return
@@ -74,10 +92,14 @@ func (r *Router) consumeK8sRequest(ctx context.Context, pending bool) {
 		return
 	}
 
+	var k8sWG sync.WaitGroup
+
 	for _, s := range result {
 		for _, message := range s.Messages {
-			r.k8sWG.Add(1)
+			k8sWG.Add(1)
 			go func(message redis.XMessage) {
+				defer k8sWG.Done()
+
 				var codeErr int
 				var resErr error
 				var req streams.K8sDeployRequest
@@ -89,32 +111,42 @@ func (r *Router) consumeK8sRequest(ctx context.Context, pending bool) {
 						continue
 					}
 
-					codeErr, resErr = r.deployK8sRequest(ctx, req.User, req.Input)
+					codeErr, resErr = d.deployK8sRequest(ctx, req.User, req.Input)
 					if resErr != nil {
 						log.Error().Err(resErr).Msg("failed to deploy k8s request")
 						continue
 					}
 				}
 
-				if err := r.redis.DB.XAck(streams.ReqK8sStreamName, streams.ReqK8sConsumerGroupName, message.ID).Err(); err != nil {
+				if err := d.Redis.DB.XAck(streams.ReqK8sStreamName, streams.ReqK8sConsumerGroupName, message.ID).Err(); err != nil {
 					log.Error().Err(err).Msgf("failed to acknowledge k8s request with ID: %s", message.ID)
 					resErr = err
 					codeErr = http.StatusInternalServerError
 				}
 
-				r.mutex.Lock()
-				r.k8sRequestResponse[fmt.Sprintf("%s %d", req.Input.MasterName, req.ID)] = streams.ErrResponse{Code: &codeErr, Err: resErr}
-				r.mutex.Unlock()
+				msg := fmt.Sprintf("Your kubernetes cluster '%s' failed to be deployed with error: %s", req.Input.MasterName, resErr)
+				if codeErr == 0 {
+					msg = fmt.Sprintf("Your kubernetes cluster '%s' is deployed successfully 🎆", req.Input.MasterName)
+				}
 
-				r.k8sWG.Done()
+				notification := models.Notification{
+					UserID: req.User.ID.String(),
+					Msg:    msg,
+					Type:   models.VMsType,
+				}
+				err = d.db.CreateNotification(&notification)
+				if err != nil {
+					log.Error().Err(err).Msgf("failed to create notification: %+v", notification)
+				}
+
 			}(message)
 		}
-		r.k8sWG.Wait()
+		k8sWG.Wait()
 	}
 }
 
-func (r *Router) consumeVMs(ctx context.Context) (vms []*workloads.Deployment, err error) {
-	result, err := r.redis.Read(streams.DeployVMStreamName, streams.DeployVMConsumerGroupName, false)
+func (d *Deployer) consumeVMs(ctx context.Context) (vms []*workloads.Deployment, err error) {
+	result, err := d.Redis.Read(streams.DeployVMStreamName, streams.DeployVMConsumerGroupName, 5, false)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return vms, nil
@@ -124,11 +156,6 @@ func (r *Router) consumeVMs(ctx context.Context) (vms []*workloads.Deployment, e
 
 	for _, s := range result {
 		for i, message := range s.Messages {
-			// consume 5 deployments only
-			if i == 5 {
-				break
-			}
-
 			var vm streams.VMDeployment
 			for _, v := range message.Values {
 				err = json.Unmarshal([]byte(v.(string)), &vm)
@@ -142,7 +169,7 @@ func (r *Router) consumeVMs(ctx context.Context) (vms []*workloads.Deployment, e
 				vms = append(vms, vm.DL)
 			}
 
-			if err = r.redis.DB.XAck(streams.DeployVMStreamName, streams.DeployVMConsumerGroupName, s.Messages[i].ID).Err(); err != nil {
+			if err = d.Redis.DB.XAck(streams.DeployVMStreamName, streams.DeployVMConsumerGroupName, s.Messages[i].ID).Err(); err != nil {
 				log.Error().Err(err).Msgf("failed to acknowledge vm request with ID: %s", s.Messages[i].ID)
 			}
 		}
@@ -151,8 +178,8 @@ func (r *Router) consumeVMs(ctx context.Context) (vms []*workloads.Deployment, e
 	return
 }
 
-func (r *Router) consumeK8s(ctx context.Context) (clusters []*workloads.K8sCluster, err error) {
-	result, err := r.redis.Read(streams.DeployK8sStreamName, streams.DeployK8sConsumerGroupName, false)
+func (d *Deployer) consumeK8s(ctx context.Context) (clusters []*workloads.K8sCluster, err error) {
+	result, err := d.Redis.Read(streams.DeployK8sStreamName, streams.DeployK8sConsumerGroupName, 5, false)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return clusters, nil
@@ -162,11 +189,6 @@ func (r *Router) consumeK8s(ctx context.Context) (clusters []*workloads.K8sClust
 
 	for _, s := range result {
 		for i, message := range s.Messages {
-			// consume 5 deployments only
-			if i == 5 {
-				break
-			}
-
 			var k8s streams.K8sDeployment
 			for _, v := range message.Values {
 				err = json.Unmarshal([]byte(v.(string)), &k8s)
@@ -180,7 +202,7 @@ func (r *Router) consumeK8s(ctx context.Context) (clusters []*workloads.K8sClust
 				clusters = append(clusters, k8s.DL)
 			}
 
-			if err = r.redis.DB.XAck(streams.DeployK8sStreamName, streams.DeployK8sConsumerGroupName, s.Messages[i].ID).Err(); err != nil {
+			if err = d.Redis.DB.XAck(streams.DeployK8sStreamName, streams.DeployK8sConsumerGroupName, s.Messages[i].ID).Err(); err != nil {
 				log.Error().Err(err).Msgf("failed to acknowledge k8s request with ID: %s", s.Messages[i].ID)
 			}
 		}
@@ -189,8 +211,8 @@ func (r *Router) consumeK8s(ctx context.Context) (clusters []*workloads.K8sClust
 	return
 }
 
-func (r *Router) consumeNets(ctx context.Context) (nets []*workloads.ZNet, err error) {
-	result, err := r.redis.Read(streams.DeployNetStreamName, streams.DeployNetConsumerGroupName, false)
+func (d *Deployer) consumeNets(ctx context.Context) (nets []*workloads.ZNet, err error) {
+	result, err := d.Redis.Read(streams.DeployNetStreamName, streams.DeployNetConsumerGroupName, 10, false)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nets, nil
@@ -200,11 +222,6 @@ func (r *Router) consumeNets(ctx context.Context) (nets []*workloads.ZNet, err e
 
 	for _, s := range result {
 		for i, message := range s.Messages {
-			// consume 10 deployments only
-			if i == 10 {
-				break
-			}
-
 			var net streams.NetDeployment
 			for _, v := range message.Values {
 				err = json.Unmarshal([]byte(v.(string)), &net)
@@ -218,7 +235,7 @@ func (r *Router) consumeNets(ctx context.Context) (nets []*workloads.ZNet, err e
 				nets = append(nets, net.DL)
 			}
 
-			if err = r.redis.DB.XAck(streams.DeployNetStreamName, streams.DeployNetConsumerGroupName, s.Messages[i].ID).Err(); err != nil {
+			if err = d.Redis.DB.XAck(streams.DeployNetStreamName, streams.DeployNetConsumerGroupName, s.Messages[i].ID).Err(); err != nil {
 				log.Error().Err(err).Msgf("failed to acknowledge k8s request with ID: %s", s.Messages[i].ID)
 			}
 		}

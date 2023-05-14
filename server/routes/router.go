@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sync"
 
+	c4sDeployer "github.com/codescalers/cloud4students/deployer"
 	"github.com/codescalers/cloud4students/internal"
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
@@ -21,21 +21,9 @@ const internalServerErrorMsg = "Something went wrong"
 
 // Router struct holds db model and configurations
 type Router struct {
-	config         *internal.Configuration
-	db             models.DB
-	redis          streams.RedisClient
-	tfPluginClient deployer.TFPluginClient
-
-	vmDeployed  bool
-	k8sDeployed bool
-
-	// response is a map of deployment name as a key and (error code and error if exists) as a value
-	vmRequestResponse  map[string]streams.ErrResponse
-	k8sRequestResponse map[string]streams.ErrResponse
-
-	mutex sync.Mutex
-	vmWG  sync.WaitGroup
-	k8sWG sync.WaitGroup
+	config   *internal.Configuration
+	db       models.DB
+	deployer c4sDeployer.Deployer
 }
 
 // NewRouter create new router with db
@@ -54,18 +42,15 @@ func NewRouter(config internal.Configuration, db models.DB, redis streams.RedisC
 		return Router{}, err
 	}
 
+	deployer, err := c4sDeployer.NewDeployer(db, redis, tfPluginClient)
+	if err != nil {
+		return Router{}, err
+	}
+
 	return Router{
 		&config,
 		db,
-		redis,
-		tfPluginClient,
-		false,
-		false,
-		map[string]streams.ErrResponse{},
-		map[string]streams.ErrResponse{},
-		sync.Mutex{},
-		sync.WaitGroup{},
-		sync.WaitGroup{},
+		deployer,
 	}, nil
 }
 

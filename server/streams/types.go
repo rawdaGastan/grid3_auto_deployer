@@ -40,19 +40,17 @@ type ErrResponse struct {
 
 // VMDeployRequest type for redis vm deployment request
 type VMDeployRequest struct {
-	ID    int
 	User  models.User
 	Input models.DeployVMInput
 }
 
 // K8sDeployRequest type for redis k8s deployment request
 type K8sDeployRequest struct {
-	ID    int
 	User  models.User
 	Input models.K8sDeployInput
 }
 
-// VMDeployment type for redis vm deployment request
+// VMDeployment type for redis vm deployment
 type VMDeployment struct {
 	DL *workloads.Deployment
 }
@@ -62,7 +60,7 @@ type K8sDeployment struct {
 	DL *workloads.K8sCluster
 }
 
-// NetDeployment type for redis k8s deployment
+// NetDeployment type for redis network deployment
 type NetDeployment struct {
 	DL *workloads.ZNet
 }

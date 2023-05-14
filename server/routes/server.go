@@ -22,6 +22,8 @@ import (
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 )
 
+var substrateBlockDiffInSeconds = 6
+
 // Server struct holds port of server
 type Server struct {
 	host string
@@ -80,6 +82,9 @@ func NewServer(ctx context.Context, file string) (server *Server, err error) {
 
 	r.HandleFunc(version+"/quota", router.GetQuotaHandler).Methods("GET", "OPTIONS")
 
+	r.HandleFunc(version+"/notification", router.ListNotificationsHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/notification", router.UpdateNotificationsHandler).Methods("PUT", "OPTIONS")
+
 	r.HandleFunc(version+"/vm", router.DeployVMHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc(version+"/vm/{id}", router.GetVMHandler).Methods("GET", "OPTIONS")
 	r.HandleFunc(version+"/vm", router.ListVMsHandler).Methods("GET", "OPTIONS")
@@ -115,17 +120,21 @@ func NewServer(ctx context.Context, file string) (server *Server, err error) {
 	http.Handle("/metrics", promhttp.Handler())
 	http.Handle("/", r)
 
+	initBackgroundRoutines(ctx, router)
+
+	// check pending deployments
+	router.deployer.ConsumeVMRequest(ctx, true)
+	router.deployer.ConsumeK8sRequest(ctx, true)
+
+	return &Server{port: configuration.Server.Port, host: configuration.Server.Host}, nil
+}
+
+func initBackgroundRoutines(ctx context.Context, router Router) {
 	// notify admins
 	go router.NotifyAdmins()
 	// periodic deployments
-	go router.periodicRequests(ctx)
-	go router.periodicDeploy(ctx)
-
-	// check pending deployments
-	router.consumeVMRequest(ctx, true)
-	router.consumeK8sRequest(ctx, true)
-
-	return &Server{port: configuration.Server.Port, host: configuration.Server.Host}, nil
+	go router.deployer.PeriodicRequests(ctx, substrateBlockDiffInSeconds)
+	go router.deployer.PeriodicDeploy(ctx, substrateBlockDiffInSeconds)
 }
 
 // Start starts the server

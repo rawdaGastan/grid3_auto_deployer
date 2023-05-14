@@ -63,11 +63,7 @@ func (r *Router) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInput
 	}
 
 	// add network and cluster to be deployed
-	err = r.redis.PushNet(streams.NetDeployment{DL: &network})
-	if err != nil {
-		return 0, 0, 0, err
-	}
-	err = r.redis.PushK8s(streams.K8sDeployment{DL: &cluster})
+	err = r.redis.PushK8s(streams.NetDeployment{DL: &network}, streams.K8sDeployment{DL: &cluster})
 	if err != nil {
 		return 0, 0, 0, err
 	}
@@ -78,12 +74,17 @@ func (r *Router) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInput
 	}
 
 	// checks that network and k8s are deployed successfully
-	_, err = r.tfPluginClient.State.LoadK8sFromGrid([]uint32{node}, cluster.Master.Name)
+	loadedNet, err := r.tfPluginClient.State.LoadNetworkFromGrid(cluster.NetworkName)
+	if err != nil {
+		return 0, 0, 0, errors.Wrapf(err, "failed to load network '%s' on nodes %v", cluster.NetworkName, network.Nodes)
+	}
+
+	loadedCluster, err := r.tfPluginClient.State.LoadK8sFromGrid([]uint32{node}, cluster.Master.Name)
 	if err != nil {
 		return 0, 0, 0, errors.Wrapf(err, "failed to load kubernetes cluster '%s' on nodes %v", cluster.Master.Name, network.Nodes)
 	}
 
-	return node, network.NodeDeploymentID[node], cluster.NodeDeploymentID[node], nil
+	return node, loadedNet.NodeDeploymentID[node], loadedCluster.NodeDeploymentID[node], nil
 }
 
 func (r *Router) loadK8s(k8sDeployInput models.K8sDeployInput, userID string, node uint32, networkContractID uint64, k8sContractID uint64) (models.K8sCluster, error) {
@@ -179,11 +180,7 @@ func (r *Router) deployVM(ctx context.Context, vmInput models.DeployVMInput, ssh
 	dl.SolutionType = vmInput.Name
 
 	// add network and deployment to be deployed
-	err = r.redis.PushNet(streams.NetDeployment{DL: &network})
-	if err != nil {
-		return nil, 0, 0, 0, err
-	}
-	err = r.redis.PushVM(streams.VMDeployment{DL: &dl})
+	err = r.redis.PushVM(streams.NetDeployment{DL: &network}, streams.VMDeployment{DL: &dl})
 	if err != nil {
 		return nil, 0, 0, 0, err
 	}
@@ -193,25 +190,18 @@ func (r *Router) deployVM(ctx context.Context, vmInput models.DeployVMInput, ssh
 		continue
 	}
 
-	// TODO: try to get network from graphql if state failed
-	/*networkContractIDs, err := r.tfPluginClient.ContractsGetter.GetNodeContractsByTypeAndName(dl.NetworkName, workloads.NetworkType, dl.NetworkName)
+	// checks that network and vm are deployed successfully
+	loadedNet, err := r.tfPluginClient.State.LoadNetworkFromGrid(dl.NetworkName)
 	if err != nil {
-		return nil, 0, 0, 0, err
+		return nil, 0, 0, 0, errors.Wrapf(err, "failed to load network '%s' on node %v", dl.NetworkName, dl.NodeID)
 	}
 
-	for node, contractID := range networkContractIDs {
-		if _, ok := r.tfPluginClient.State.CurrentNodeDeployments[node]; ok {
-			r.tfPluginClient.State.CurrentNodeDeployments[node] = append(r.tfPluginClient.State.CurrentNodeDeployments[node], contractID)
-		}
-	}*/
-
-	// checks that network and vm are deployed successfully
-	loadedVM, err := r.tfPluginClient.State.LoadVMFromGrid(nodeID, vm.Name, dl.Name)
+	loadedDl, err := r.tfPluginClient.State.LoadDeploymentFromGrid(nodeID, dl.Name)
 	if err != nil {
 		return nil, 0, 0, 0, errors.Wrapf(err, "failed to load vm '%s' on node %v", dl.Name, dl.NodeID)
 	}
 
-	return &loadedVM, dl.ContractID, network.NodeDeploymentID[nodeID], uint64(disk.SizeGB), nil
+	return &loadedDl.Vms[0], loadedDl.ContractID, loadedNet.NodeDeploymentID[nodeID], uint64(disk.SizeGB), nil
 }
 
 // CancelDeployment cancel deployments from grid
@@ -425,9 +415,10 @@ func buildK8sCluster(node uint32, sshKey, network string, k models.K8sDeployInpu
 }
 
 func (r *Router) periodicRequests(ctx context.Context) {
-	for {
-		r.consumeVMRequest(ctx)
-		r.consumeK8sRequest(ctx)
+	ticker := time.NewTicker(time.Second * 6)
+	for range ticker.C {
+		r.consumeVMRequest(ctx, false)
+		r.consumeK8sRequest(ctx, false)
 	}
 }
 
@@ -454,7 +445,6 @@ func (r *Router) periodicDeploy(ctx context.Context) {
 		}
 
 		if len(nets) > 0 {
-			fmt.Print("deploy nets\n")
 			err := r.tfPluginClient.NetworkDeployer.BatchDeploy(ctx, nets)
 			if err != nil {
 				log.Error().Err(err).Msg("failed to batch deploy network")
@@ -462,7 +452,6 @@ func (r *Router) periodicDeploy(ctx context.Context) {
 		}
 
 		if len(vms) > 0 {
-			fmt.Print("deploy vms\n")
 			err := r.tfPluginClient.DeploymentDeployer.BatchDeploy(ctx, vms)
 			if err != nil {
 				log.Error().Err(err).Msg("failed to batch deploy vm")
@@ -471,7 +460,6 @@ func (r *Router) periodicDeploy(ctx context.Context) {
 		}
 
 		if len(clusters) > 0 {
-			fmt.Print("deploy clusters\n")
 			err := r.tfPluginClient.K8sDeployer.BatchDeploy(ctx, clusters)
 			if err != nil {
 				log.Error().Err(err).Msg("failed to batch deploy clusters")

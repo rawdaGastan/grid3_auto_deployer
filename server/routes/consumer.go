@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"time"
 
 	"github.com/codescalers/cloud4students/streams"
 	"github.com/go-redis/redis"
@@ -16,19 +15,19 @@ import (
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/workloads"
 )
 
-func (r *Router) consumeVMRequest(ctx context.Context) bool {
-	result, err := r.redis.Read(streams.ReqVMStreamName, streams.ReqVMConsumerGroupName)
+func (r *Router) consumeVMRequest(ctx context.Context, pending bool) {
+	result, err := r.redis.Read(streams.ReqVMStreamName, streams.ReqVMConsumerGroupName, pending)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return true
+			return
 		}
 		log.Error().Err(err).Msg("failed to read vm stream request")
-		return true
+		return
 	}
 
 	for _, s := range result {
-		fmt.Printf("s.Messages: %v\n", len(s.Messages))
 		for _, message := range s.Messages {
+			r.vmWG.Add(1)
 			go func(message redis.XMessage) {
 				var codeErr int
 				var resErr error
@@ -41,15 +40,12 @@ func (r *Router) consumeVMRequest(ctx context.Context) bool {
 						continue
 					}
 
-					fmt.Print("deploy: \n")
 					codeErr, resErr = r.deployVMRequest(ctx, req.User, req.Input)
 					if resErr != nil {
 						log.Error().Err(resErr).Msg("failed to deploy vm request")
 						continue
 					}
 				}
-
-				fmt.Printf("finished %v\n", req.Input.Name)
 
 				if err := r.redis.DB.XAck(streams.ReqVMStreamName, streams.ReqVMConsumerGroupName, message.ID).Err(); err != nil {
 					log.Error().Err(err).Msgf("failed to acknowledge vm request with ID: %s", message.ID)
@@ -60,25 +56,27 @@ func (r *Router) consumeVMRequest(ctx context.Context) bool {
 				r.mutex.Lock()
 				r.vmRequestResponse[fmt.Sprintf("%s %d", req.Input.Name, req.ID)] = streams.ErrResponse{Code: &codeErr, Err: resErr}
 				r.mutex.Unlock()
+
+				r.vmWG.Done()
 			}(message)
 		}
+		r.vmWG.Wait()
 	}
-
-	return true
 }
 
-func (r *Router) consumeK8sRequest(ctx context.Context) bool {
-	result, err := r.redis.Read(streams.ReqK8sStreamName, streams.ReqK8sConsumerGroupName)
+func (r *Router) consumeK8sRequest(ctx context.Context, pending bool) {
+	result, err := r.redis.Read(streams.ReqK8sStreamName, streams.ReqK8sConsumerGroupName, pending)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return true
+			return
 		}
 		log.Error().Err(err).Msg("failed to read k8s stream request")
-		return true
+		return
 	}
 
 	for _, s := range result {
 		for _, message := range s.Messages {
+			r.k8sWG.Add(1)
 			go func(message redis.XMessage) {
 				var codeErr int
 				var resErr error
@@ -107,19 +105,16 @@ func (r *Router) consumeK8sRequest(ctx context.Context) bool {
 				r.mutex.Lock()
 				r.k8sRequestResponse[fmt.Sprintf("%s %d", req.Input.MasterName, req.ID)] = streams.ErrResponse{Code: &codeErr, Err: resErr}
 				r.mutex.Unlock()
+
+				r.k8sWG.Done()
 			}(message)
 		}
+		r.k8sWG.Wait()
 	}
-	return true
 }
 
 func (r *Router) consumeVMs(ctx context.Context) (vms []*workloads.Deployment, err error) {
-	result, err := r.redis.DB.XReadGroup(&redis.XReadGroupArgs{
-		Streams: []string{streams.DeployVMStreamName, ">"},
-		Group:   streams.DeployVMConsumerGroupName,
-		Block:   1 * time.Second,
-	}).Result()
-
+	result, err := r.redis.Read(streams.DeployVMStreamName, streams.DeployVMConsumerGroupName, false)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return vms, nil
@@ -128,7 +123,6 @@ func (r *Router) consumeVMs(ctx context.Context) (vms []*workloads.Deployment, e
 	}
 
 	for _, s := range result {
-		fmt.Printf("messages vms: %v\n", len(s.Messages))
 		for i, message := range s.Messages {
 			// consume 5 deployments only
 			if i == 5 {
@@ -158,11 +152,7 @@ func (r *Router) consumeVMs(ctx context.Context) (vms []*workloads.Deployment, e
 }
 
 func (r *Router) consumeK8s(ctx context.Context) (clusters []*workloads.K8sCluster, err error) {
-	result, err := r.redis.DB.XReadGroup(&redis.XReadGroupArgs{
-		Streams: []string{streams.DeployK8sStreamName, ">"},
-		Group:   streams.DeployK8sConsumerGroupName,
-		Block:   1 * time.Second,
-	}).Result()
+	result, err := r.redis.Read(streams.DeployK8sStreamName, streams.DeployK8sConsumerGroupName, false)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return clusters, nil
@@ -200,11 +190,7 @@ func (r *Router) consumeK8s(ctx context.Context) (clusters []*workloads.K8sClust
 }
 
 func (r *Router) consumeNets(ctx context.Context) (nets []*workloads.ZNet, err error) {
-	result, err := r.redis.DB.XReadGroup(&redis.XReadGroupArgs{
-		Streams: []string{streams.DeployNetStreamName, ">"},
-		Group:   streams.DeployNetConsumerGroupName,
-		Block:   1 * time.Second,
-	}).Result()
+	result, err := r.redis.Read(streams.DeployNetStreamName, streams.DeployNetConsumerGroupName, false)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nets, nil
@@ -213,7 +199,6 @@ func (r *Router) consumeNets(ctx context.Context) (nets []*workloads.ZNet, err e
 	}
 
 	for _, s := range result {
-		fmt.Printf("messages nets: %v\n", len(s.Messages))
 		for i, message := range s.Messages {
 			// consume 10 deployments only
 			if i == 10 {

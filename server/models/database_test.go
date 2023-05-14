@@ -149,7 +149,7 @@ func TestUpdatePassword(t *testing.T) {
 	db := setupDB(t)
 	t.Run("user not found so nothing updated", func(t *testing.T) {
 		err := db.UpdatePassword("email", "new-pass")
-		assert.NoError(t, err)
+		assert.Error(t, err)
 		var user User
 		err = db.db.First(&user).Error
 		assert.Equal(t, err, gorm.ErrRecordNotFound)

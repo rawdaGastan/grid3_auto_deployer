@@ -21,7 +21,12 @@ func (r *RedisClient) PushNet(net NetDeployment) error {
 }
 
 // PushVM pushes a vm deployment to the stream
-func (r *RedisClient) PushVM(vm VMDeployment) error {
+func (r *RedisClient) PushVM(net NetDeployment, vm VMDeployment) error {
+	err := r.PushNet(net)
+	if err != nil {
+		return err
+	}
+
 	bytes, err := json.Marshal(vm)
 	if err != nil {
 		return err
@@ -34,7 +39,12 @@ func (r *RedisClient) PushVM(vm VMDeployment) error {
 }
 
 // PushK8s pushes a k8s cluster deployment to the stream
-func (r *RedisClient) PushK8s(k8s K8sDeployment) error {
+func (r *RedisClient) PushK8s(net NetDeployment, k8s K8sDeployment) error {
+	err := r.PushNet(net)
+	if err != nil {
+		return err
+	}
+
 	bytes, err := json.Marshal(k8s)
 	if err != nil {
 		return err

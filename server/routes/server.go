@@ -117,8 +117,13 @@ func NewServer(ctx context.Context, file string) (server *Server, err error) {
 
 	// notify admins
 	go router.NotifyAdmins()
+	// periodic deployments
 	go router.periodicRequests(ctx)
 	go router.periodicDeploy(ctx)
+
+	// check pending deployments
+	router.consumeVMRequest(ctx, true)
+	router.consumeK8sRequest(ctx, true)
 
 	return &Server{port: configuration.Server.Port, host: configuration.Server.Host}, nil
 }

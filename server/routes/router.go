@@ -34,6 +34,8 @@ type Router struct {
 	k8sRequestResponse map[string]streams.ErrResponse
 
 	mutex sync.Mutex
+	vmWG  sync.WaitGroup
+	k8sWG sync.WaitGroup
 }
 
 // NewRouter create new router with db
@@ -62,6 +64,8 @@ func NewRouter(config internal.Configuration, db models.DB, redis streams.RedisC
 		map[string]streams.ErrResponse{},
 		map[string]streams.ErrResponse{},
 		sync.Mutex{},
+		sync.WaitGroup{},
+		sync.WaitGroup{},
 	}, nil
 }
 

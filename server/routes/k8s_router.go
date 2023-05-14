@@ -135,7 +135,7 @@ func (r *Router) K8sDeleteHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	err = r.cancelDeployment(uint64(cluster.ClusterContract), uint64(cluster.NetworkContract))
-	if err != nil && err.Error() != "failed to cancel contract: ContractNotExists" {
+	if err != nil && !strings.Contains(err.Error(), "ContractNotExists") {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 		return
@@ -170,7 +170,7 @@ func (r *Router) K8sDeleteAllHandler(w http.ResponseWriter, req *http.Request) {
 
 	for _, cluster := range clusters {
 		err = r.cancelDeployment(uint64(cluster.ClusterContract), uint64(cluster.NetworkContract))
-		if err != nil && err.Error() != "failed to cancel contract: ContractNotExists" {
+		if err != nil && !strings.Contains(err.Error(), "ContractNotExists") {
 			log.Error().Err(err).Send()
 			writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
 			return

@@ -92,10 +92,10 @@ func (d *Deployer) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInp
 	}
 
 	// wait for deployments
-	select {
-	case <-d.k8sDeployed:
-		break
-	default:
+	for {
+		if <-d.k8sDeployed {
+			break
+		}
 	}
 
 	// checks that network and k8s are deployed successfully

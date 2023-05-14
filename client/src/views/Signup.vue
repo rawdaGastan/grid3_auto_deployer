@@ -180,7 +180,7 @@ export default {
     const teamSizeRules = ref([
       (value) => {
         if (!value) return "Field is required";
-        if (value < 1) return "Team Size should at least 1";
+        if (value < 1) return "Team Size should at least be 1";
         if (value > 20) return "Team Size should be max 20";
         return true;
       },

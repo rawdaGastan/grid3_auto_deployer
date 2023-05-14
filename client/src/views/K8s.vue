@@ -59,28 +59,6 @@
                     <h5 class="text-h5 text-md-h4 text-center my-10 secondary">
                       Workers
                     </h5>
-                    <v-list density="compact" v-if="savedWorkers.length > 0">
-                      <v-list-item
-                        v-for="(worker, i) in savedWorkers"
-                        :key="i"
-                        :value="worker"
-                      >
-                        <v-list-item-title class="primary">{{
-                          worker.name
-                        }}</v-list-item-title>
-                        <v-list-item-subtitle>{{
-                          worker.resources
-                        }}</v-list-item-subtitle>
-                        <template v-slot:append>
-                          <font-awesome-icon
-                            class="primary pointer"
-                            icon="fa-solid fa-xmark"
-                            @click="deleteWorker(worker.name)"
-                          />
-                        </template>
-                        <v-list-item-action></v-list-item-action>
-                      </v-list-item>
-                    </v-list>
                     <v-form
                       v-model="workerVerify"
                       @submit.prevent="addWorker"
@@ -111,6 +89,29 @@
                         >Add</v-btn
                       >
                     </v-form>
+                    <h3 v-if="savedWorkers.length > 0">Saved workers</h3>
+                    <v-list density="compact" v-if="savedWorkers.length > 0">
+                      <v-list-item
+                        v-for="(worker, i) in savedWorkers"
+                        :key="i"
+                        :value="worker"
+                      >
+                        <v-list-item-title class="primary">{{
+                          worker.name
+                        }}</v-list-item-title>
+                        <v-list-item-subtitle>{{
+                          worker.resources
+                        }}</v-list-item-subtitle>
+                        <template v-slot:append>
+                          <font-awesome-icon
+                            class="primary pointer"
+                            icon="fa-solid fa-xmark"
+                            @click="deleteWorker(worker.name)"
+                          />
+                        </template>
+                        <v-list-item-action></v-list-item-action>
+                      </v-list-item>
+                    </v-list>
                     <v-btn
                       variant="text"
                       v-if="!showInputs"
@@ -183,53 +184,41 @@
                   "
                   icon="fa-solid fa-trash"
                 />
-                <v-dialog
-                  transition="dialog-top-transition"
-                  v-for="(worker, index) in item.raw.workers"
-                  :key="index"
-                >
-                  <template v-slot:activator="{ props }">
-                    <font-awesome-icon
-                      v-if="item.raw.workers.length > 0"
-                      class="text-primary cursor-pointer"
-                      v-bind="props"
-                      icon="fa-solid fa-eye"
-                    />
-                  </template>
-                  <v-card
-                    width="50%"
-                    class="mx-auto pa-5 pb-10"
-                    v-click-outside="onClickOutside"
-                  >
-                    <v-card-text>
-                      <h5
-                        class="text-h5 text-md-h4 font-weight-bold text-center my-5 secondary"
-                      >
-                        Workers
-                      </h5>
-                    </v-card-text>
-                    <v-data-table
-                      :headers="workerHeaders"
-                      :items="item.raw.workers"
-                      class="elevation-1"
-                    >
-                      <template v-slot:item="{ item }">
-                        <tr>
-                          <td>{{ item.raw.clusterID }}</td>
-                          <td>{{ item.raw.name }}</td>
-                          <td>{{ item.raw.sru }}GB</td>
-                          <td>{{ item.raw.mru }}GB</td>
-                          <td>{{ item.raw.cru }}</td>
-                          <td>{{ item.raw.resources }}</td>
-                        </tr>
-                      </template>
-                    </v-data-table>
-                  </v-card>
-                </v-dialog>
+                <font-awesome-icon
+                  v-if="item.raw.workers.length > 0"
+                  class="text-primary cursor-pointer"
+                  icon="fa-solid fa-eye"
+                  @click="displayWorkers(item.raw.workers)"
+                />
               </td>
             </tr>
           </template>
         </v-data-table>
+        <v-dialog transition="dialog-top-transition" v-model="dialog">
+          <v-card width="50%" class="mx-auto">
+            <v-toolbar color="transparent">
+              <v-spacer></v-spacer>
+              <v-toolbar-items>
+                <v-btn icon dark @click="dialog = false">
+                  <v-icon>mdi-close</v-icon>
+                </v-btn>
+              </v-toolbar-items>
+            </v-toolbar>
+            <v-card-text>
+              <h5
+                class="text-h5 text-md-h4 font-weight-bold text-center my-5 secondary"
+              >
+                Workers
+              </h5>
+              <v-data-table
+                :headers="workerHeaders"
+                :items="workers"
+                class="elevation-1"
+              >
+              </v-data-table>
+            </v-card-text>
+          </v-card>
+        </v-dialog>
       </v-col>
     </v-row>
     <Confirm ref="confirm" />
@@ -367,7 +356,6 @@ export default {
     const wForm = ref(null);
     const deLoading = ref(false);
     const dialog = ref(false);
-    const active = ref(false);
 
     const getK8s = () => {
       userService
@@ -408,7 +396,7 @@ export default {
           toast.value.toast(err, "#FF5252");
         })
         .finally(() => {
-          form.value.reset()
+          form.value.reset();
           resetInputs();
           loading.value = false;
         });
@@ -476,9 +464,6 @@ export default {
       navigator.clipboard.writeText(ip);
       toast.value.toast("IP Copied", "#388E3C");
     };
-    const onClickOutside = () => {
-      active.value = false;
-    };
     const addWorker = () => {
       savedWorkers.value.push({
         name: workerName.value,
@@ -491,6 +476,10 @@ export default {
     const deleteWorker = (name) => {
       const id = savedWorkers.value.findIndex((worker) => worker.name === name);
       savedWorkers.value.splice(id, 1);
+    };
+    const displayWorkers = (items) => {
+      dialog.value = true;
+      workers.value = items;
     };
     onMounted(() => {
       let token = localStorage.getItem("token");
@@ -530,8 +519,8 @@ export default {
       deleteAllK8s,
       deleteK8s,
       emitQuota,
-      onClickOutside,
       addWorker,
+      displayWorkers,
     };
   },
 };

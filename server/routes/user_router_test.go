@@ -73,14 +73,11 @@ func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Confi
 	err = db.Migrate()
 	assert.NoError(t, err)
 
-	redis, err := streams.NewRedisClient(configuration)
-	assert.NoError(t, err)
-
 	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, false)
 	assert.NoError(t, err)
 
 	version = "/" + configuration.Version
-	router, err := NewRouter(configuration, db, redis, tfPluginClient)
+	router, err := NewRouter(configuration, db, streams.RedisClient{}, tfPluginClient)
 	assert.NoError(t, err)
 
 	return &router, db, configuration, version

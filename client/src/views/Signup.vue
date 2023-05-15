@@ -110,7 +110,7 @@
           <v-btn
             type="submit"
             block
-            :disabled="!verify || !checked"
+            :disabled="!checked"
             :loading="loading"
             variant="flat"
             color="primary"
@@ -161,10 +161,9 @@ export default {
     const loading = ref(false);
     const toast = ref(null);
     const checked = ref(false);
-    const nameRegex = /^(\w+\s){0,3}\w*$/;
     const nameValidation = ref([
       (value) => {
-        if (!value.match(nameRegex)) return "Must be at most four names";
+        if (!value) return "Field is required";
         if (value.length < 3) return "Field should be at least 3 characters";
         if (value.length > 20) return "Field should be at most 20 characters";
         return true;
@@ -211,8 +210,6 @@ export default {
     ]);
 
     const onSubmit = () => {
-      if (!verify.value) return;
-
       loading.value = true;
       axios
         .post(window.configs.vite_app_endpoint + "/user/signup", {

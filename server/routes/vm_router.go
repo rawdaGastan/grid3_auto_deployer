@@ -36,7 +36,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		writeErrResponse(req, w, http.StatusBadRequest, "failed to read vm data")
 	}
 
-	err = r.Deployer.Redis.PushVMRequest(streams.VMDeployRequest{User: user, Input: input})
+	err = r.deployer.Redis.PushVMRequest(streams.VMDeployRequest{User: user, Input: input})
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -112,7 +112,7 @@ func (r *Router) DeleteVM(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = r.Deployer.CancelDeployment(vm.ContractID, vm.NetworkContractID)
+	err = r.deployer.CancelDeployment(vm.ContractID, vm.NetworkContractID)
 	if err != nil && !strings.Contains(err.Error(), "ContractNotExists") {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -145,7 +145,7 @@ func (r *Router) DeleteAllVMs(w http.ResponseWriter, req *http.Request) {
 	}
 
 	for _, vm := range vms {
-		err = r.Deployer.CancelDeployment(vm.ContractID, vm.NetworkContractID)
+		err = r.deployer.CancelDeployment(vm.ContractID, vm.NetworkContractID)
 		if err != nil && !strings.Contains(err.Error(), "ContractNotExists") {
 			log.Error().Err(err).Send()
 			writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)

@@ -12,12 +12,14 @@ import (
 
 	"testing"
 
+	c4sDeployer "github.com/codescalers/cloud4students/deployer"
 	"github.com/codescalers/cloud4students/internal"
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/streams"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/codescalers/cloud4students/models"
+	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 )
 
 // SetUp sets the needed configuration for testing
@@ -72,8 +74,16 @@ func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Confi
 	err = db.Migrate()
 	assert.NoError(t, err)
 
+	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, false)
+	assert.NoError(t, err)
+
+	newDeployer, err := c4sDeployer.NewDeployer(db, streams.RedisClient{}, tfPluginClient)
+	if err != nil {
+		return
+	}
+
 	version = "/" + configuration.Version
-	router, err := NewRouter(configuration, db, streams.RedisClient{})
+	router, err := NewRouter(configuration, db, streams.RedisClient{}, newDeployer)
 	assert.NoError(t, err)
 
 	return &router, db, configuration, version

@@ -87,10 +87,6 @@ func newServer(ctx context.Context, config internal.Configuration, router routes
 
 	http.Handle("/", r)
 
-	// check pending deployments
-	router.Deployer.ConsumeVMRequest(ctx, true)
-	router.Deployer.ConsumeK8sRequest(ctx, true)
-
 	server.port = config.Server.Port
 	server.host = config.Server.Host
 	return

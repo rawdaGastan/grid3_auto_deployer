@@ -18,7 +18,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/codescalers/cloud4students/models"
-	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 )
 
 // SetUp sets the needed configuration for testing
@@ -73,11 +72,8 @@ func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Confi
 	err = db.Migrate()
 	assert.NoError(t, err)
 
-	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, false)
-	assert.NoError(t, err)
-
 	version = "/" + configuration.Version
-	router, err := NewRouter(configuration, db, streams.RedisClient{}, tfPluginClient)
+	router, err := NewRouter(configuration, db, streams.RedisClient{})
 	assert.NoError(t, err)
 
 	return &router, db, configuration, version

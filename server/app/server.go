@@ -1,5 +1,5 @@
-// Package routes for API endpoints
-package routes
+// Package app for c4s backend app
+package app
 
 import (
 	"context"
@@ -13,60 +13,26 @@ import (
 	"github.com/codescalers/cloud4students/internal"
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
-	"github.com/codescalers/cloud4students/streams"
+	"github.com/codescalers/cloud4students/routes"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 )
 
 var substrateBlockDiffInSeconds = 6
 
 // Server struct holds port of server
-type Server struct {
+type server struct {
 	host string
 	port string
 }
 
 // NewServer create new server with all configurations
-func NewServer(ctx context.Context, file string) (server *Server, err error) {
-	data, err := internal.ReadConfFile(file)
-	if err != nil {
-		return
-	}
-	configuration, err := internal.ParseConf(data)
-	if err != nil {
-		return
-	}
+func newServer(ctx context.Context, config internal.Configuration, router routes.Router, db models.DB) (server server, err error) {
+	version := "/" + config.Version
 
-	db := models.NewDB()
-	err = db.Connect(configuration.Database.File)
-	if err != nil {
-		return
-	}
-	err = db.Migrate()
-	if err != nil {
-		return
-	}
-
-	redis, err := streams.NewRedisClient(configuration)
-	if err != nil {
-		return
-	}
-
-	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, false)
-	if err != nil {
-		return
-	}
-
-	version := "/" + configuration.Version
-
-	router, err := NewRouter(configuration, db, redis, tfPluginClient)
-	if err != nil {
-		return
-	}
 	r := mux.NewRouter()
 	signUp := r.HandleFunc(version+"/user/signup", router.SignUpHandler).Methods("POST", "OPTIONS")
 	signUpVerify := r.HandleFunc(version+"/user/signup/verify_email", router.VerifySignUpCodeHandler).Methods("POST", "OPTIONS")
@@ -83,7 +49,7 @@ func NewServer(ctx context.Context, file string) (server *Server, err error) {
 	r.HandleFunc(version+"/quota", router.GetQuotaHandler).Methods("GET", "OPTIONS")
 
 	r.HandleFunc(version+"/notification", router.ListNotificationsHandler).Methods("GET", "OPTIONS")
-	r.HandleFunc(version+"/notification", router.UpdateNotificationsHandler).Methods("PUT", "OPTIONS")
+	r.HandleFunc(version+"/notification/{id}", router.UpdateNotificationsHandler).Methods("PUT", "OPTIONS")
 
 	r.HandleFunc(version+"/vm", router.DeployVMHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc(version+"/vm/{id}", router.GetVMHandler).Methods("GET", "OPTIONS")
@@ -107,38 +73,31 @@ func NewServer(ctx context.Context, file string) (server *Server, err error) {
 	approveAllVouchers := r.HandleFunc(version+"/voucher", router.ApproveAllVouchers).Methods("PUT", "OPTIONS")
 	updateMaintenance := r.HandleFunc(version+"/maintenance", router.UpdateMaintenanceHandler).Methods("PUT", "OPTIONS")
 
-	prometheus.MustRegister(middlewares.Requests, middlewares.UserCreations, middlewares.VoucherActivated, middlewares.VoucherApplied, middlewares.Deployments, middlewares.Deletions)
-
 	// middlewares
 	r.Use(middlewares.LoggingMW)
 	r.Use(middlewares.EnableCors)
 	excludedRoutes := []*mux.Route{maintenance, signUp, signUpVerify, signIn, refreshToken, forgetPass, forgetPassVerify}
-	r.Use(middlewares.Authorization(excludedRoutes, configuration.Token.Secret, configuration.Token.Timeout))
+	r.Use(middlewares.Authorization(excludedRoutes, config.Token.Secret, config.Token.Timeout))
 	includedRoutes := []*mux.Route{listUsers, generateVoucher, listVouchers, updateVoucherRequest, approveAllVouchers, updateMaintenance}
 	r.Use(middlewares.AdminAccess(includedRoutes, db))
 
+	// prometheus registration
+	prometheus.MustRegister(middlewares.Requests, middlewares.UserCreations, middlewares.VoucherActivated, middlewares.VoucherApplied, middlewares.Deployments, middlewares.Deletions)
 	http.Handle("/metrics", promhttp.Handler())
+
 	http.Handle("/", r)
 
-	initBackgroundRoutines(ctx, router)
-
 	// check pending deployments
-	router.deployer.ConsumeVMRequest(ctx, true)
-	router.deployer.ConsumeK8sRequest(ctx, true)
+	router.Deployer.ConsumeVMRequest(ctx, true)
+	router.Deployer.ConsumeK8sRequest(ctx, true)
 
-	return &Server{port: configuration.Server.Port, host: configuration.Server.Host}, nil
-}
-
-func initBackgroundRoutines(ctx context.Context, router Router) {
-	// notify admins
-	go router.NotifyAdmins()
-	// periodic deployments
-	go router.deployer.PeriodicRequests(ctx, substrateBlockDiffInSeconds)
-	go router.deployer.PeriodicDeploy(ctx, substrateBlockDiffInSeconds)
+	server.port = config.Server.Port
+	server.host = config.Server.Host
+	return
 }
 
 // Start starts the server
-func (s *Server) Start() (err error) {
+func (s *server) start() (err error) {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	log.Info().Msgf("Server is listening on %s%s", s.host, s.port)
 

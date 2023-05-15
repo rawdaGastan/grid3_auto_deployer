@@ -340,7 +340,7 @@ func (d *DB) ListNotifications(userID string) ([]Notification, error) {
 
 // UpdateNotification updates seen field for notification
 func (d *DB) UpdateNotification(id int, seen bool) error {
-	return d.db.Model(&Maintenance{}).Where("id = ?", id).Updates(map[string]interface{}{"seen": seen}).Error
+	return d.db.Model(&Notification{}).Where("id = ?", id).Updates(map[string]interface{}{"seen": seen}).Error
 }
 
 // CreateNotification adds a new notification for a user

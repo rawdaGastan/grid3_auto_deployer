@@ -46,5 +46,5 @@ func (r *Router) UpdateNotificationsHandler(w http.ResponseWriter, req *http.Req
 		return
 	}
 
-	writeMsgResponse(req, w, "Notifications is updated", "")
+	writeMsgResponse(req, w, "Notifications are updated", "")
 }

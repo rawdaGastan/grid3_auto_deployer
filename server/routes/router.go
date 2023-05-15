@@ -23,11 +23,11 @@ const internalServerErrorMsg = "Something went wrong"
 type Router struct {
 	config   *internal.Configuration
 	db       models.DB
-	deployer c4sDeployer.Deployer
+	Deployer c4sDeployer.Deployer
 }
 
 // NewRouter create new router with db
-func NewRouter(config internal.Configuration, db models.DB, redis streams.RedisClient, tfPluginClient deployer.TFPluginClient) (Router, error) {
+func NewRouter(config internal.Configuration, db models.DB, redis streams.RedisClient) (Router, error) {
 	// validations
 	err := validator.SetValidationFunc("ssh", validators.ValidateSSHKey)
 	if err != nil {
@@ -38,6 +38,11 @@ func NewRouter(config internal.Configuration, db models.DB, redis streams.RedisC
 		return Router{}, err
 	}
 	err = validator.SetValidationFunc("mail", validators.ValidateMail)
+	if err != nil {
+		return Router{}, err
+	}
+
+	tfPluginClient, err := deployer.NewTFPluginClient(config.Account.Mnemonics, "sr25519", config.Account.Network, "", "", "", 0, false)
 	if err != nil {
 		return Router{}, err
 	}

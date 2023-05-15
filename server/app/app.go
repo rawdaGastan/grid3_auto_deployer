@@ -3,13 +3,18 @@ package app
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	c4sDeployer "github.com/codescalers/cloud4students/deployer"
 	"github.com/codescalers/cloud4students/internal"
+	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
 	"github.com/codescalers/cloud4students/routes"
 	"github.com/codescalers/cloud4students/streams"
+	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 )
@@ -66,7 +71,7 @@ func NewApp(ctx context.Context, file string) (app App, err error) {
 		return
 	}
 
-	server, err := newServer(ctx, config, router, db)
+	server, err := newServer(ctx, config)
 	if err != nil {
 		return
 	}
@@ -83,6 +88,7 @@ func NewApp(ctx context.Context, file string) (app App, err error) {
 
 // Start starts the app
 func (a *App) Start(ctx context.Context) (err error) {
+	a.registerHandlers()
 	a.startBackgroundWorkers(ctx)
 
 	// check pending deployments
@@ -127,4 +133,62 @@ func (a *App) notifyAdmins() {
 			}
 		}
 	}
+}
+
+func (a *App) registerHandlers() {
+	version := "/" + a.config.Version
+
+	r := mux.NewRouter()
+	signUp := r.HandleFunc(version+"/user/signup", a.router.SignUpHandler).Methods("POST", "OPTIONS")
+	signUpVerify := r.HandleFunc(version+"/user/signup/verify_email", a.router.VerifySignUpCodeHandler).Methods("POST", "OPTIONS")
+	signIn := r.HandleFunc(version+"/user/signin", a.router.SignInHandler).Methods("POST", "OPTIONS")
+	refreshToken := r.HandleFunc(version+"/user/refresh_token", a.router.RefreshJWTHandler).Methods("POST", "OPTIONS")
+	forgetPass := r.HandleFunc(version+"/user/forgot_password", a.router.ForgotPasswordHandler).Methods("POST", "OPTIONS")
+	forgetPassVerify := r.HandleFunc(version+"/user/forget_password/verify_email", a.router.VerifyForgetPasswordCodeHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc(version+"/user/change_password", a.router.ChangePasswordHandler).Methods("PUT", "OPTIONS")
+	r.HandleFunc(version+"/user", a.router.UpdateUserHandler).Methods("PUT", "OPTIONS")
+	r.HandleFunc(version+"/user", a.router.GetUserHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/user/apply_voucher", a.router.ApplyForVoucherHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc(version+"/user/activate_voucher", a.router.ActivateVoucherHandler).Methods("PUT", "OPTIONS")
+
+	r.HandleFunc(version+"/quota", a.router.GetQuotaHandler).Methods("GET", "OPTIONS")
+
+	r.HandleFunc(version+"/notification", a.router.ListNotificationsHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/notification/{id}", a.router.UpdateNotificationsHandler).Methods("PUT", "OPTIONS")
+
+	r.HandleFunc(version+"/vm", a.router.DeployVMHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc(version+"/vm/{id}", a.router.GetVMHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/vm", a.router.ListVMsHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/vm/{id}", a.router.DeleteVM).Methods("DELETE", "OPTIONS")
+	r.HandleFunc(version+"/vm", a.router.DeleteAllVMs).Methods("DELETE", "OPTIONS")
+
+	r.HandleFunc(version+"/k8s", a.router.K8sDeployHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc(version+"/k8s", a.router.K8sGetAllHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/k8s", a.router.K8sDeleteAllHandler).Methods("DELETE", "OPTIONS")
+	r.HandleFunc(version+"/k8s/{id}", a.router.K8sGetHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc(version+"/k8s/{id}", a.router.K8sDeleteHandler).Methods("DELETE", "OPTIONS")
+
+	maintenance := r.HandleFunc(version+"/maintenance", a.router.GetMaintenanceHandler).Methods("GET", "OPTIONS")
+
+	// ADMIN ACCESS
+	listUsers := r.HandleFunc(version+"/user/all", a.router.GetAllUsersHandler).Methods("GET", "OPTIONS")
+	generateVoucher := r.HandleFunc(version+"/voucher", a.router.GenerateVoucherHandler).Methods("POST", "OPTIONS")
+	listVouchers := r.HandleFunc(version+"/voucher", a.router.ListVouchersHandler).Methods("GET", "OPTIONS")
+	updateVoucherRequest := r.HandleFunc(version+"/voucher/{id}", a.router.UpdateVoucherHandler).Methods("PUT", "OPTIONS")
+	approveAllVouchers := r.HandleFunc(version+"/voucher", a.router.ApproveAllVouchers).Methods("PUT", "OPTIONS")
+	updateMaintenance := r.HandleFunc(version+"/maintenance", a.router.UpdateMaintenanceHandler).Methods("PUT", "OPTIONS")
+
+	// middlewares
+	r.Use(middlewares.LoggingMW)
+	r.Use(middlewares.EnableCors)
+	excludedRoutes := []*mux.Route{maintenance, signUp, signUpVerify, signIn, refreshToken, forgetPass, forgetPassVerify}
+	r.Use(middlewares.Authorization(excludedRoutes, a.config.Token.Secret, a.config.Token.Timeout))
+	includedRoutes := []*mux.Route{listUsers, generateVoucher, listVouchers, updateVoucherRequest, approveAllVouchers, updateMaintenance}
+	r.Use(middlewares.AdminAccess(includedRoutes, a.db))
+
+	// prometheus registration
+	prometheus.MustRegister(middlewares.Requests, middlewares.UserCreations, middlewares.VoucherActivated, middlewares.VoucherApplied, middlewares.Deployments, middlewares.Deletions)
+	http.Handle("/metrics", promhttp.Handler())
+
+	http.Handle("/", r)
 }

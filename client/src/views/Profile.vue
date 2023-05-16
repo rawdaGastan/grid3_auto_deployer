@@ -121,7 +121,6 @@
             </v-col>
             <v-col>
               <v-dialog
-                persistent
                 transition="dialog-top-transition"
                 max-width="500"
                 v-model="openVoucher"

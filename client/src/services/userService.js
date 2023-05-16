@@ -137,6 +137,18 @@ export default {
     return await authClient().put("/voucher");
   },
 
+  // notifications
+  async getNotifications() {
+    await this.refresh_token();
+    return await authClient().get("/notification");
+  },
+
+  async seenNotification(id) {
+    await this.refresh_token();
+    return await authClient().put(`/notification/${id}`);
+  },
+
+  // maintenance
   async maintenance() {
     await baseClient()
       .get("/maintenance")

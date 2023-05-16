@@ -32,7 +32,7 @@ func (d *DB) Connect(file string) error {
 
 // Migrate migrates db schema
 func (d *DB) Migrate() error {
-	err := d.db.AutoMigrate(&User{}, &Quota{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{}, &Maintenance{})
+	err := d.db.AutoMigrate(&User{}, &Quota{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{}, &Maintenance{}, &Notification{})
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func (d *DB) ListAllUsers() ([]UserUsedQuota, error) {
 	return res, query.Error
 }
 
-// GetAllPendingVouchers gets all pending vouchers
+// ListAdmins gets all admins
 func (d *DB) ListAdmins() ([]User, error) {
 	var admins []User
 	return admins, d.db.Where("admin = true and verified = true").Find(&admins).Error
@@ -97,7 +97,9 @@ func (d *DB) GetCodeByEmail(email string) (int, error) {
 func (d *DB) UpdatePassword(email string, password string) error {
 	var res User
 	result := d.db.Model(&res).Where("email = ?", email).Update("hashed_password", password)
-
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
 	return result.Error
 }
 
@@ -325,4 +327,23 @@ func (d *DB) GetMaintenance() (Maintenance, error) {
 	var res Maintenance
 	query := d.db.First(&res)
 	return res, query.Error
+}
+
+// notifications
+
+// ListNotifications returns a list of notifications for a user.
+func (d *DB) ListNotifications(userID string) ([]Notification, error) {
+	var res []Notification
+	query := d.db.Where("user_id = ?", userID).Find(&res)
+	return res, query.Error
+}
+
+// UpdateNotification updates seen field for notification
+func (d *DB) UpdateNotification(id int, seen bool) error {
+	return d.db.Model(&Notification{}).Where("id = ?", id).Updates(map[string]interface{}{"seen": seen}).Error
+}
+
+// CreateNotification adds a new notification for a user
+func (d *DB) CreateNotification(n *Notification) error {
+	return d.db.Create(&n).Error
 }

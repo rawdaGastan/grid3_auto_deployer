@@ -18,7 +18,10 @@ example `config.json`:
 {
     "server": {
         "host": "localhost",
-        "port": ":3000"
+        "port": ":3000",
+        "redisHost": "localhost",
+        "redisPort": "6379",
+        "redisPass": "<password>"  
     },
     "mailSender": {
         "email": "<email>",
@@ -37,6 +40,8 @@ example `config.json`:
         "network": "<grid-network>"
     },
     "version": "v1",
+    "salt": "<salt>",
+    "admins": [],
     "notifyAdminsIntervalHours": 6
 }
 ```

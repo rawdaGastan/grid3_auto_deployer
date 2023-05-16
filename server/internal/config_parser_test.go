@@ -68,7 +68,10 @@ func TestParseConf(t *testing.T) {
 {
 	"server": {
 		"host": "localhost",
-		"port": ":3000"
+		"port": ":3000",
+		"redisHost": "localhost",
+		"redisPort": "6379",
+		"redisPass": ""		
 	},
 	"mailSender": {
         "email": "email",
@@ -101,8 +104,11 @@ func TestParseConf(t *testing.T) {
 
 		expected := Configuration{
 			Server: Server{
-				Host: "localhost",
-				Port: ":3000",
+				Host:      "localhost",
+				Port:      ":3000",
+				RedisHost: "localhost",
+				RedisPort: "6379",
+				RedisPass: "",
 			},
 			MailSender: MailSender{
 				Email:       "email",

@@ -12,8 +12,10 @@ import (
 
 	"testing"
 
+	c4sDeployer "github.com/codescalers/cloud4students/deployer"
 	"github.com/codescalers/cloud4students/internal"
 	"github.com/codescalers/cloud4students/middlewares"
+	"github.com/codescalers/cloud4students/streams"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/codescalers/cloud4students/models"
@@ -27,7 +29,10 @@ func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Confi
 {
 	"server": {
 		"host": "localhost",
-		"port": ":3000"
+		"port": ":3000",
+		"redisHost": "localhost",
+		"redisPort": "6379",
+		"redisPass": ""		
 	},
 	"mailSender": {
         "email": "email",
@@ -69,11 +74,16 @@ func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Confi
 	err = db.Migrate()
 	assert.NoError(t, err)
 
-	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, true, false)
+	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, false)
 	assert.NoError(t, err)
 
+	newDeployer, err := c4sDeployer.NewDeployer(db, streams.RedisClient{}, tfPluginClient)
+	if err != nil {
+		return
+	}
+
 	version = "/" + configuration.Version
-	router, err := NewRouter(configuration, db, tfPluginClient)
+	router, err := NewRouter(configuration, db, streams.RedisClient{}, newDeployer)
 	assert.NoError(t, err)
 
 	return &router, db, configuration, version
@@ -640,21 +650,20 @@ func TestChangePasswordHandler(t *testing.T) {
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})
 
-	// TODO: Error
-	// t.Run("user not found", func(t *testing.T) {
-	// 	body := []byte(`{
-	// 	"password":"newpass",
-	// 	"confirm_password":"newpass"
-	// 	}`)
+	t.Run("user not found", func(t *testing.T) {
+		body := []byte(`{
+		"password":"newpass",
+		"confirm_password":"newpass"
+		}`)
 
-	// 	request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
-	// 	response := httptest.NewRecorder()
-	// 	router.ChangePasswordHandler(response, request)
-	// 	want := `{"err":"User is not found"}`
-	// 	assert.Equal(t, response.Body.String(), want)
-	// 	assert.Equal(t, response.Code, http.StatusNotFound)
+		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		response := httptest.NewRecorder()
+		router.ChangePasswordHandler(response, request)
+		want := `{"err":"User is not found"}`
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusNotFound)
 
-	// })
+	})
 }
 
 func TestUpdateUserHandler(t *testing.T) {

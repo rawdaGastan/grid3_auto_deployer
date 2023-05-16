@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"net/http"
 
+	c4sDeployer "github.com/codescalers/cloud4students/deployer"
 	"github.com/codescalers/cloud4students/internal"
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
+	"github.com/codescalers/cloud4students/streams"
 	"github.com/codescalers/cloud4students/validators"
 	"github.com/rs/zerolog/log"
-	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 	"gopkg.in/validator.v2"
 )
 
@@ -19,13 +20,13 @@ const internalServerErrorMsg = "Something went wrong"
 
 // Router struct holds db model and configurations
 type Router struct {
-	config         *internal.Configuration
-	db             models.DB
-	tfPluginClient deployer.TFPluginClient
+	config   *internal.Configuration
+	db       models.DB
+	deployer c4sDeployer.Deployer
 }
 
 // NewRouter create new router with db
-func NewRouter(config internal.Configuration, db models.DB, tfPluginClient deployer.TFPluginClient) (Router, error) {
+func NewRouter(config internal.Configuration, db models.DB, redis streams.RedisClient, deployer c4sDeployer.Deployer) (Router, error) {
 	// validations
 	err := validator.SetValidationFunc("ssh", validators.ValidateSSHKey)
 	if err != nil {
@@ -39,7 +40,12 @@ func NewRouter(config internal.Configuration, db models.DB, tfPluginClient deplo
 	if err != nil {
 		return Router{}, err
 	}
-	return Router{&config, db, tfPluginClient}, nil
+
+	return Router{
+		&config,
+		db,
+		deployer,
+	}, nil
 }
 
 // ErrorMsg holds errors

@@ -3,6 +3,8 @@
     <template v-slot:activator="{ props }">
       <v-checkbox
         :checked="modelValue"
+        :rules="termsPrivacyError"
+        density="compact"
         @change="$emit('update:modelValue', $event.target.checked)"
       >
         <template v-slot:label>
@@ -249,7 +251,13 @@ export default {
   },
   setup() {
     const dialog = ref(false);
-    return { dialog };
+    const termsPrivacyError = ref([
+      (value) => {
+        if (!value) return "You have to agree the terms and privacy condition.";
+        return true;
+      },
+    ]);
+    return { dialog, termsPrivacyError };
   },
 };
 </script>

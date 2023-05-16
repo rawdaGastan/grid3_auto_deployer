@@ -110,11 +110,10 @@
           <v-btn
             type="submit"
             block
-            :disabled="!checked"
             :loading="loading"
             variant="flat"
             color="primary"
-            class="text-capitalize mx-auto bg-primary"
+            class="text-capitalize mx-auto my-5 bg-primary"
           >
             Create Account
           </v-btn>
@@ -210,6 +209,7 @@ export default {
     ]);
 
     const onSubmit = () => {
+      if (!checked.value) return;
       loading.value = true;
       axios
         .post(window.configs.vite_app_endpoint + "/user/signup", {

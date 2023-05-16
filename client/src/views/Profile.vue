@@ -181,6 +181,7 @@
                           density="compact"
                           clearable
                           class="my-3"
+                          hint="This field is used when the voucher request is reviewed, please be as detailed as possible"
                         ></v-text-field>
                       </v-card-text>
                       <v-card-actions class="justify-center">

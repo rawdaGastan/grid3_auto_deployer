@@ -20,7 +20,7 @@ require (
 	github.com/threefoldtech/zos v0.5.6-0.20230426125942-0ea2f91b21f5
 	golang.org/x/crypto v0.8.0
 	gopkg.in/validator.v2 v2.0.1
-	gorm.io/driver/sqlite v1.4.4
+	gorm.io/driver/sqlite v1.5.0
 	gorm.io/gorm v1.25.1
 )
 

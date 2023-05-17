@@ -12,6 +12,7 @@
             />
           </router-link>
         </v-app-bar-title>
+
         <v-list class="hidden-md-and-down">
           <v-list-item-title class="py-3">
             <router-link
@@ -19,7 +20,7 @@
               :key="index"
               :to="item.path"
               class="pa-5 primary text-decoration-none"
-              @click="setActive(index, item)"
+              @click="setActive(index, item.title)"
               :class="{ active: isActive == index }"
             >
               {{ item.title }}
@@ -32,7 +33,7 @@
             <v-btn
               class="primary ml-1 mt-2 pt-0 mt-md-3 text-capitalize"
               v-bind="props"
-              @click="setActive(index, props)"
+              @click="setActive(index, props.title)"
             >
               <font-awesome-icon icon="fa-user" class="mr-3 fa-l" />
               {{ username }}
@@ -54,7 +55,7 @@
           </v-list>
         </v-menu>
 
-        <v-menu id="notifications">
+        <v-menu id="notifications" v-if="user.length != 0">
           <template v-slot:activator="{ props }">
             <v-btn
               class="primary ml-1 mt-2 pt-0 mt-md-3 text-capitalize"
@@ -91,7 +92,7 @@
                   style="padding: 15px"
                   :to="item.type == 'vms' ? '/vm' : '/k8s'"
                   class="d-flex primary text-decoration-none"
-                  @click="seen(item.id)"
+                  @click="seen(item.id); setActive(item.type == 'vms' ? 2 : 3, item.type);"
                 >
                   <span style="color: rgb(53, 52, 52)" @click="seen(item.id)">{{ item.msg }}</span>
                 </router-link>
@@ -117,6 +118,7 @@
         ></v-app-bar-nav-icon>
       </v-container>
     </v-app-bar>
+
     <v-navigation-drawer v-model="drawer" location="top" temporary>
       <v-list>
         <v-list-item>
@@ -191,7 +193,7 @@ export default {
     ]);
 
     const setActive = (index, item) => {
-      if (item.title == null) {
+      if (item == null) {
         isActive.value = null;
       } else {
         isActive.value = index;
@@ -258,8 +260,7 @@ export default {
     const seen = (id) => {
       userService
         .seenNotification(id)
-        .then((response) => {
-          console.log(response);
+        .then(() => {
           getNotifications();
         })
         .catch((err) => {

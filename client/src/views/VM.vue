@@ -1,6 +1,6 @@
 <template>
   <v-container>
-    <v-alert v-model="alert" outlined type="warning" prominent border="left">
+    <v-alert v-model="alert" outlined type="warning" prominent>
       You will not be able to deploy. Please add your public SSH key in your
       profile settings.
     </v-alert>
@@ -54,7 +54,7 @@
     </v-row>
     <v-row v-if="results.length > 0">
       <v-col>
-        <v-row v-if="results.length > 0">
+        <v-row>
           <v-col>
             <v-data-table
               :headers="headers"
@@ -80,11 +80,12 @@
                   </td>
                   <td v-else>-</td>
                   <td>
-                    <font-awesome-icon
+                    <font-awesome-icon v-if="!item.raw.deleting"
                       class="text-red-accent-2 cursor-pointer"
-                      @click="deleteVm(item.raw.id, item.raw.name)"
+                      @click="deleteVm(item.raw);"
                       icon="fa-solid fa-trash"
                     />
+                    <v-progress-circular v-else indeterminate color="red" size="20"></v-progress-circular>
                   </td>
                 </tr>
               </template>
@@ -197,6 +198,7 @@ export default {
         .getVms()
         .then((response) => {
           const { data } = response.data;
+          data.map(item => item.deleting = false);
           results.value = data;
         })
         .catch((response) => {
@@ -242,7 +244,6 @@ export default {
               .catch((response) => {
                 const { err } = response.response.data;
                 toast.value.toast(err, "#FF5252");
-                deLoading.value = false;
               })
               .finally(() => {
                 deLoading.value = false;
@@ -255,14 +256,15 @@ export default {
       form.value.reset();
     };
 
-    const deleteVm = (id, name) => {
+    const deleteVm = (item) => {
       confirm.value
-        .open(`Delete ${name}`, "Are you sure?", { color: "red-accent-2" })
+        .open(`Delete ${item.name}`, "Are you sure?", { color: "red-accent-2" })
         .then((confirm) => {
           if (confirm) {
-            toast.value.toast(`Deleting ${name}..`, "#FF5252");
+            item.deleting = true;
+            toast.value.toast(`Deleting ${item.name}..`, "#FF5252");
             userService
-              .deleteVm(id)
+              .deleteVm(item.id)
               .then((response) => {
                 toast.value.toast(response.data.msg, "#388E3C");
                 getVMS();
@@ -270,7 +272,8 @@ export default {
               .catch((response) => {
                 const { err } = response.response.data;
                 toast.value.toast(err, "#FF5252");
-              });
+              })
+              .finally(() => item.deleting = false);
           }
         });
     };

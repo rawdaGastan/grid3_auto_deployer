@@ -481,6 +481,11 @@ export default {
       dialog.value = true;
       workers.value = items;
     };
+
+    setInterval(() => {
+      getK8s();
+    }, 30 * 1000);
+
     onMounted(() => {
       let token = localStorage.getItem("token");
       if (token) getK8s();

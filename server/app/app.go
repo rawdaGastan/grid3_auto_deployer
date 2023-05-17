@@ -31,6 +31,9 @@ type App struct {
 
 // NewApp creates new server app all configurations
 func NewApp(ctx context.Context, file string) (app App, err error) {
+	/*
+	 - Please check comments on the ReadConfigFile:
+	*/
 	data, err := internal.ReadConfFile(file)
 	if err != nil {
 		return
@@ -139,6 +142,30 @@ func (a *App) registerHandlers() {
 	version := "/" + a.config.Version
 
 	r := mux.NewRouter()
+	/*
+		this is not the right way to prefix a route with verison, instead you can create sub routes
+
+		ver := r.PathPrefix(version).Subroute()
+		ver.HandlerFunc("/usr/signup", handler)
+
+		you can nest this as deep as u want. and even add some middleware that only works on sub routes like
+
+		admin := ver.NewRouter()
+		admin.Use(AdminAccess) // or whatever
+		admin.HandleFunc(/admin-only, handler)
+
+		and then the admin access middleware will only work on all admin subroute handlers
+
+		This mean the AdminAccess middleware ONLY need to take care of verifying if the user making the call is indeed
+		an admin (checking a jwt in the request or something) It should not care to filter out which handlers/paths to include
+		in the check.
+
+		All this information is explained in details in the home page of the gorllia mux here https://github.com/gorilla/mux
+
+		It's important to read the documentation of the framework you are going to use before using it, even a quick skimming of the docs
+		so you know what it provides before you jump into implementation
+	*/
+
 	signUp := r.HandleFunc(version+"/user/signup", a.router.SignUpHandler).Methods("POST", "OPTIONS")
 	signUpVerify := r.HandleFunc(version+"/user/signup/verify_email", a.router.VerifySignUpCodeHandler).Methods("POST", "OPTIONS")
 	signIn := r.HandleFunc(version+"/user/signin", a.router.SignInHandler).Methods("POST", "OPTIONS")

@@ -7,7 +7,15 @@ services:
       - .:/opt/project
     ports:
       - 3000:3000
+    depends_on:
+      - redis-db
  
+  redis-db:
+    image: redis:alpine
+    ports:
+      - 6379:6379
+    container_name: redis-db
+
   frontend:
     environment:
       - VITE_API_ENDPOINT=http://localhost:3000/v1

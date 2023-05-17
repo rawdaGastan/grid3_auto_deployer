@@ -1,6 +1,6 @@
 <template>
   <v-container>
-    <v-alert v-if="alert" outlined type="warning" prominent border="left">
+    <v-alert v-if="alert" outlined type="warning" prominent>
       You will not be able to deploy. Please add your public SSH key in your
       profile settings.
     </v-alert>
@@ -177,13 +177,14 @@
               </td>
               <td v-else>-</td>
               <td>
-                <font-awesome-icon
+                <font-awesome-icon v-if="!item.raw.deleting"
                   class="text-red-accent-2 mr-5 cursor-pointer"
                   @click="
-                    deleteK8s(item.raw.master.clusterID, item.raw.master.name)
+                    deleteK8s(item.raw)
                   "
                   icon="fa-solid fa-trash"
                 />
+                <v-progress-circular v-else indeterminate color="red" size="20" style="margin-right:5px"></v-progress-circular>
                 <font-awesome-icon
                   v-if="item.raw.workers.length > 0"
                   class="text-primary cursor-pointer"
@@ -362,6 +363,7 @@ export default {
         .getK8s()
         .then((response) => {
           const { data } = response.data;
+          data.map(item => item.deleting = false);
           results.value = data;
         })
         .catch((response) => {
@@ -414,25 +416,25 @@ export default {
               .then((response) => {
                 toast.value.toast(response.data.msg, "#388E3C");
                 getK8s();
-                deLoading.value = false;
               })
               .catch((response) => {
                 const { err } = response.response.data;
                 toast.value.toast(err, "#FF5252");
-                deLoading.value = false;
-              });
+              })
+              .finally(() => deLoading.value = false);
           }
         });
     };
 
-    const deleteK8s = (id, name) => {
+    const deleteK8s = (item) => {
       confirm.value
-        .open(`Delete ${name}`, "Are you sure?", { color: "red-accent-2" })
+        .open(`Delete ${item.master.name}`, "Are you sure?", { color: "red-accent-2" })
         .then((confirm) => {
           if (confirm) {
-            toast.value.toast(`Deleting ${name}..`, "#FF5252");
+            item.deleting = true;
+            toast.value.toast(`Deleting ${item.master.name}..`, "#FF5252");
             userService
-              .deleteK8s(id)
+              .deleteK8s(item.master.clusterID)
               .then((response) => {
                 toast.value.toast(response.data.msg, "#388E3C");
                 getK8s();
@@ -440,7 +442,8 @@ export default {
               .catch((response) => {
                 const { err } = response.response.data;
                 toast.value.toast(err, "#FF5252");
-              });
+              })
+              .finally(() => item.deleting = false);
           }
         });
     };

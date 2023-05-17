@@ -3,6 +3,7 @@
     <template v-slot:activator="{ props }">
       <v-checkbox
         :checked="modelValue"
+        v-model="checked"
         :rules="termsPrivacyError"
         density="compact"
         @change="$emit('update:modelValue', $event.target.checked)"

@@ -16,7 +16,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, sshKey string) (*workloads.VM, uint64, uint64, uint64, error) {
+func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, sshKey string, adminSSHKey string) (*workloads.VM, uint64, uint64, uint64, error) {
 	// filter nodes
 	filter, err := filterNode(vmInput.Resources, vmInput.Public)
 	if err != nil {
@@ -51,7 +51,7 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, s
 		},
 		Entrypoint: "/sbin/zinit init",
 		EnvVars: map[string]string{
-			"SSH_KEY": sshKey,
+			"SSH_KEY": sshKey + "\n" + adminSSHKey,
 		},
 		NetworkName: network.Name,
 	}
@@ -103,7 +103,7 @@ func ValidateVMQuota(vm models.DeployVMInput, availableResourcesQuota, available
 	return neededQuota, nil
 }
 
-func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input models.DeployVMInput) (int, error) {
+func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input models.DeployVMInput, adminSSHKey string) (int, error) {
 	// check quota of user
 	quota, err := d.db.GetUserQuota(user.ID.String())
 	if err == gorm.ErrRecordNotFound {
@@ -119,7 +119,7 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 		return http.StatusBadRequest, err
 	}
 
-	vm, contractID, networkContractID, diskSize, err := d.deployVM(ctx, input, user.SSHKey)
+	vm, contractID, networkContractID, diskSize, err := d.deployVM(ctx, input, user.SSHKey, adminSSHKey)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)

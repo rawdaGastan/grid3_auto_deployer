@@ -19,6 +19,7 @@ type Configuration struct {
 	Salt                      string      `json:"salt"`
 	Admins                    []string    `json:"admins"`
 	NotifyAdminsIntervalHours int         `json:"notifyAdminsIntervalHours"`
+	AdminSSHKey               string      `json:"adminSSHKey"`
 }
 
 // Server struct to hold server's information

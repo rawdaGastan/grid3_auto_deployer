@@ -63,7 +63,7 @@ func buildK8sCluster(node uint32, sshKey, network string, k models.K8sDeployInpu
 	return k8sCluster, nil
 }
 
-func (d *Deployer) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInput models.K8sDeployInput, sshKey string) (uint32, uint64, uint64, error) {
+func (d *Deployer) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInput models.K8sDeployInput, sshKey string, adminSSHKey string) (uint32, uint64, uint64, error) {
 	// get available nodes
 	node, err := d.getK8sAvailableNode(ctx, k8sDeployInput)
 	if err != nil {
@@ -75,7 +75,7 @@ func (d *Deployer) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInp
 
 	// build cluster
 	cluster, err := buildK8sCluster(node,
-		sshKey,
+		sshKey+"\n"+adminSSHKey,
 		network.Name,
 		k8sDeployInput,
 	)
@@ -218,7 +218,7 @@ func ValidateK8sQuota(k models.K8sDeployInput, availableResourcesQuota, availabl
 	return neededQuota, nil
 }
 
-func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDeployInput models.K8sDeployInput) (int, error) {
+func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDeployInput models.K8sDeployInput, adminSSHKey string) (int, error) {
 	// quota verification
 	quota, err := d.db.GetUserQuota(user.ID.String())
 	if err == gorm.ErrRecordNotFound {
@@ -237,7 +237,7 @@ func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDe
 	}
 
 	// deploy network and cluster
-	node, networkContractID, k8sContractID, err := d.deployK8sClusterWithNetwork(ctx, k8sDeployInput, user.SSHKey)
+	node, networkContractID, k8sContractID, err := d.deployK8sClusterWithNetwork(ctx, k8sDeployInput, user.SSHKey, adminSSHKey)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)

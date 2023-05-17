@@ -40,14 +40,16 @@ type ErrResponse struct {
 
 // VMDeployRequest type for redis vm deployment request
 type VMDeployRequest struct {
-	User  models.User
-	Input models.DeployVMInput
+	User        models.User
+	Input       models.DeployVMInput
+	AdminSSHKey string
 }
 
 // K8sDeployRequest type for redis k8s deployment request
 type K8sDeployRequest struct {
-	User  models.User
-	Input models.K8sDeployInput
+	User        models.User
+	Input       models.K8sDeployInput
+	AdminSSHKey string
 }
 
 // VMDeployment type for redis vm deployment

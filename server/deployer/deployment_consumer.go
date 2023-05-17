@@ -47,7 +47,7 @@ func (d *Deployer) ConsumeVMRequest(ctx context.Context, pending bool) {
 						continue
 					}
 
-					codeErr, resErr = d.deployVMRequest(ctx, req.User, req.Input)
+					codeErr, resErr = d.deployVMRequest(ctx, req.User, req.Input, req.AdminSSHKey)
 					if resErr != nil {
 						log.Error().Err(resErr).Msg("failed to deploy vm request")
 						continue
@@ -111,7 +111,7 @@ func (d *Deployer) ConsumeK8sRequest(ctx context.Context, pending bool) {
 						continue
 					}
 
-					codeErr, resErr = d.deployK8sRequest(ctx, req.User, req.Input)
+					codeErr, resErr = d.deployK8sRequest(ctx, req.User, req.Input, req.AdminSSHKey)
 					if resErr != nil {
 						log.Error().Err(resErr).Msg("failed to deploy k8s request")
 						continue

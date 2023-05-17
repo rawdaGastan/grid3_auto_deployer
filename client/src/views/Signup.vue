@@ -104,17 +104,16 @@
           </v-text-field>
 
           <v-row>
-            <TermsAndConditions @setChecked="actions" />
+            <TermsAndConditions v-model="checked" />
           </v-row>
 
           <v-btn
             type="submit"
             block
-            :disabled="!verify || !checked"
             :loading="loading"
             variant="flat"
             color="primary"
-            class="text-capitalize mx-auto bg-primary"
+            class="text-capitalize mx-auto my-5 bg-primary"
           >
             Create Account
           </v-btn>
@@ -164,6 +163,7 @@ export default {
     const nameRegex = /^(\w+\s){0,3}\w*$/;
     const nameValidation = ref([
       (value) => {
+        if (!value) return "Field is required";
         if (!value.match(nameRegex)) return "Must be at most four names";
         if (value.length < 3) return "Field should be at least 3 characters";
         if (value.length > 20) return "Field should be at most 20 characters";
@@ -180,7 +180,8 @@ export default {
     const teamSizeRules = ref([
       (value) => {
         if (!value) return "Field is required";
-        if (value < 1) return "Team Size should at least 1";
+        if (value < 1) return "Team Size should at least be 1";
+        if (value > 20) return "Team Size should be max 20";
         return true;
       },
     ]);
@@ -210,8 +211,7 @@ export default {
     ]);
 
     const onSubmit = () => {
-      if (!verify.value) return;
-
+      if (!checked.value) return;
       loading.value = true;
       axios
         .post(window.configs.vite_app_endpoint + "/user/signup", {
@@ -245,14 +245,8 @@ export default {
           loading.value = false;
         });
     };
-
-    const actions = (event) => {
-      checked.value = event;
-    };
-
     return {
       onSubmit,
-      actions,
       loading,
       verify,
       showPassword,

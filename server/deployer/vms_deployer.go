@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
@@ -14,7 +13,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/workloads"
-	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
 )
 
@@ -88,7 +86,8 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, s
 	return &loadedDl.Vms[0], loadedDl.ContractID, loadedNet.NodeDeploymentID[nodeID], uint64(disk.SizeGB), nil
 }
 
-func validateVMQuota(vm models.DeployVMInput, availableResourcesQuota, availablePublicIPsQuota int) (int, error) {
+// ValidateVMQuota validates the quota a vm deployment need
+func ValidateVMQuota(vm models.DeployVMInput, availableResourcesQuota, availablePublicIPsQuota int) (int, error) {
 	neededQuota, err := calcNeededQuota(vm.Resources)
 	if err != nil {
 		return 0, err
@@ -105,12 +104,6 @@ func validateVMQuota(vm models.DeployVMInput, availableResourcesQuota, available
 }
 
 func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input models.DeployVMInput) (int, error) {
-	err := validator.Validate(input)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return http.StatusBadRequest, errors.New("invalid vm data")
-	}
-
 	// check quota of user
 	quota, err := d.db.GetUserQuota(user.ID.String())
 	if err == gorm.ErrRecordNotFound {
@@ -121,24 +114,9 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
-	neededQuota, err := validateVMQuota(input, quota.Vms, quota.PublicIPs)
+	neededQuota, err := ValidateVMQuota(input, quota.Vms, quota.PublicIPs)
 	if err != nil {
 		return http.StatusBadRequest, err
-	}
-
-	if len(strings.TrimSpace(user.SSHKey)) == 0 {
-		return http.StatusBadRequest, errors.New("ssh key is required")
-	}
-
-	// unique names
-	available, err := d.db.AvailableVMName(input.Name)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
-	}
-
-	if !available {
-		return http.StatusBadRequest, errors.New("vm name is not available, please choose a different name")
 	}
 
 	vm, contractID, networkContractID, diskSize, err := d.deployVM(ctx, input, user.SSHKey)

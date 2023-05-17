@@ -7,11 +7,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/codescalers/cloud4students/deployer"
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
 	"github.com/codescalers/cloud4students/streams"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
 )
 
@@ -34,6 +36,50 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusBadRequest, "Failed to read k8s data")
+		return
+	}
+
+	err = validator.Validate(k8sDeployInput)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusBadRequest, "invalid kubernetes data")
+		return
+	}
+
+	// quota verification
+	quota, err := r.db.GetUserQuota(user.ID.String())
+	if err == gorm.ErrRecordNotFound {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusNotFound, "user quota is not found")
+		return
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	_, err = deployer.ValidateK8sQuota(k8sDeployInput, quota.Vms, quota.PublicIPs)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	if len(strings.TrimSpace(user.SSHKey)) == 0 {
+		writeErrResponse(req, w, http.StatusBadRequest, "ssh key is required")
+	}
+
+	// unique names
+	available, err := r.db.AvailableK8sName(k8sDeployInput.MasterName)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	if !available {
+		writeErrResponse(req, w, http.StatusBadRequest, "kubernetes master name is not available, please choose a different name")
 		return
 	}
 

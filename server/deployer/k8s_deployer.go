@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
@@ -15,7 +14,6 @@ import (
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/workloads"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-proxy/pkg/types"
-	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
 )
 
@@ -195,7 +193,8 @@ func (d *Deployer) getK8sAvailableNode(ctx context.Context, k models.K8sDeployIn
 	return uint32(nodes[0].NodeID), nil
 }
 
-func validateK8sQuota(k models.K8sDeployInput, availableResourcesQuota, availablePublicIPsQuota int) (int, error) {
+// ValidateK8sQuota validates the quota a k8s deployment need
+func ValidateK8sQuota(k models.K8sDeployInput, availableResourcesQuota, availablePublicIPsQuota int) (int, error) {
 	neededQuota, err := calcNeededQuota(k.Resources)
 	if err != nil {
 		return 0, err
@@ -220,12 +219,6 @@ func validateK8sQuota(k models.K8sDeployInput, availableResourcesQuota, availabl
 }
 
 func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDeployInput models.K8sDeployInput) (int, error) {
-	err := validator.Validate(k8sDeployInput)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return http.StatusBadRequest, errors.New("invalid kubernetes data")
-	}
-
 	// quota verification
 	quota, err := d.db.GetUserQuota(user.ID.String())
 	if err == gorm.ErrRecordNotFound {
@@ -237,25 +230,10 @@ func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDe
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
-	neededQuota, err := validateK8sQuota(k8sDeployInput, quota.Vms, quota.PublicIPs)
+	neededQuota, err := ValidateK8sQuota(k8sDeployInput, quota.Vms, quota.PublicIPs)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
-	}
-
-	if len(strings.TrimSpace(user.SSHKey)) == 0 {
-		return http.StatusBadRequest, errors.New("ssh key is required")
-	}
-
-	// unique names
-	available, err := d.db.AvailableK8sName(k8sDeployInput.MasterName)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
-	}
-
-	if !available {
-		return http.StatusBadRequest, errors.New("kubernetes master name is not available, please choose a different name")
 	}
 
 	// deploy network and cluster

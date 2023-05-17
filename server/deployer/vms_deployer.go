@@ -103,7 +103,6 @@ func ValidateVMQuota(vm models.DeployVMInput, availableResourcesQuota, available
 	return neededQuota, nil
 }
 
-// TODO: REMOVE CHECKS FROM REQUEST
 func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input models.DeployVMInput) (int, error) {
 	// check quota of user
 	quota, err := d.db.GetUserQuota(user.ID.String())

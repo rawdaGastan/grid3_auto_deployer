@@ -132,7 +132,7 @@ func (d *Deployer) ConsumeK8sRequest(ctx context.Context, pending bool) {
 				notification := models.Notification{
 					UserID: req.User.ID.String(),
 					Msg:    msg,
-					Type:   models.VMsType,
+					Type:   models.K8sType,
 				}
 				err = d.db.CreateNotification(&notification)
 				if err != nil {
@@ -236,7 +236,7 @@ func (d *Deployer) consumeNets(ctx context.Context) (nets []*workloads.ZNet, err
 			}
 
 			if err = d.Redis.DB.XAck(streams.DeployNetStreamName, streams.DeployNetConsumerGroupName, s.Messages[i].ID).Err(); err != nil {
-				log.Error().Err(err).Msgf("failed to acknowledge k8s request with ID: %s", s.Messages[i].ID)
+				log.Error().Err(err).Msgf("failed to acknowledge network request with ID: %s", s.Messages[i].ID)
 			}
 		}
 	}

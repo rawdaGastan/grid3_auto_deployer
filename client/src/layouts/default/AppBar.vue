@@ -74,19 +74,29 @@
           <v-list
           max-height="400px"
           v-if="notifications.length > 0"
+          density="compact"
           >
-            <v-list-item>
+            <v-list-subheader>Unseen</v-list-subheader>
+            <v-list-item
+            v-for="item in notifications"
+            :key="item.id"
+            class="tile"
+            >
+              <template v-slot:prepend>
+                <font-awesome-icon :icon="item.type == 'vms' ? ['fas', 'cube'] : ['fasr', 'dharmachakra']" />
+              </template>
+
               <v-list-item-title>
                 <router-link
-                  v-for="item in notifications"
-                  :key="item.id"
+                  style="padding: 15px"
                   :to="item.type == 'vms' ? '/vm' : '/k8s'"
-                  class="tile d-flex primary text-decoration-none"
+                  class="d-flex primary text-decoration-none"
                   @click="seen(item.id)"
                 >
                   <span style="color: rgb(53, 52, 52)" @click="seen(item.id)">{{ item.msg }}</span>
                 </router-link>
               </v-list-item-title>
+
             </v-list-item>
           </v-list>
 
@@ -95,7 +105,7 @@
             >
             <v-list-item>
               <v-list-item-title>
-                <span style="color: rgb(53, 52, 52)">You don't have notifications yet</span>
+                <span style="color: rgb(53, 52, 52)">You don't have any notifications yet</span>
               </v-list-item-title>
             </v-list-item>
           </v-list>
@@ -136,7 +146,7 @@ export default {
     const username = ref("");
     const isActive = ref(0);
     const token = ref(localStorage.getItem("token"));
-    const notifications = ref(null);
+    const notifications = ref([]);
     const excludedRoutes = ref([
       "/login",
       "/signup",
@@ -256,6 +266,10 @@ export default {
           console.log(err);
         });
     };
+
+    setInterval(() => {
+      getNotifications();
+    }, 30 * 1000);
 
     onMounted(() => {
       if (route.redirectedFrom) checkTitle(route.redirectedFrom.name);

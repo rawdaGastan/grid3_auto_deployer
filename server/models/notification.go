@@ -2,8 +2,9 @@
 package models
 
 const (
-	// VMsRedirection deployment
+	// VMsType deployment
 	VMsType = "vms"
+	// K8sType deployment
 	K8sType = "k8s"
 )
 

@@ -7,11 +7,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/codescalers/cloud4students/deployer"
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
 	"github.com/codescalers/cloud4students/streams"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
 )
 
@@ -22,11 +24,13 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 	if err == gorm.ErrRecordNotFound {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusNotFound, "user is not found")
+		return
 	}
 
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
 	}
 
 	var input models.DeployVMInput
@@ -34,6 +38,50 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusBadRequest, "failed to read vm data")
+		return
+	}
+
+	err = validator.Validate(input)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusBadRequest, "invalid vm data")
+		return
+	}
+
+	// check quota of user
+	quota, err := r.db.GetUserQuota(user.ID.String())
+	if err == gorm.ErrRecordNotFound {
+		writeErrResponse(req, w, http.StatusNotFound, "user quota is not found")
+		return
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	_, err = deployer.ValidateVMQuota(input, quota.Vms, quota.PublicIPs)
+	if err != nil {
+		writeErrResponse(req, w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if len(strings.TrimSpace(user.SSHKey)) == 0 {
+		writeErrResponse(req, w, http.StatusBadRequest, "ssh key is required")
+		return
+	}
+
+	// unique names
+	available, err := r.db.AvailableVMName(input.Name)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	if !available {
+		writeErrResponse(req, w, http.StatusBadRequest, "vm name is not available, please choose a different name")
+		return
 	}
 
 	err = r.deployer.Redis.PushVMRequest(streams.VMDeployRequest{User: user, Input: input})

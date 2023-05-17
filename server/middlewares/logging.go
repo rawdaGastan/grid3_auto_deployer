@@ -3,7 +3,6 @@ package middlewares
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/rs/zerolog/log"
 )
@@ -11,7 +10,9 @@ import (
 // LoggingMW logs all information of every request
 func LoggingMW(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Info().Msgf("%v: %v\n%v", r.Method, r.RequestURI, time.Now().Format(time.RFC850))
+		/// structured logs since u using zero logs
+
+		log.Info().Timestamp().Str("method", r.Method).Str("uri", r.RequestURI).Msg("")
 		h.ServeHTTP(w, r)
 	})
 }

@@ -110,6 +110,9 @@ func ParseConf(conf []byte) (Configuration, error) {
 	 then called like
 
 	 err := myConfig.Valid()
+
+	 Also, if you using the validator package, why you are not using it to automate
+	 the validation ?!
 	*/
 	if myConf.Server.Host == "" || myConf.Server.Port == "" {
 		return myConf, errors.New("server configuration is required")

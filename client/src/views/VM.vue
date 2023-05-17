@@ -294,6 +294,10 @@ export default {
       toast.value.toast("IP Copied", "#388E3C");
     };
 
+    setInterval(() => {
+      getVMS();
+    }, 30 * 1000);
+
     onMounted(() => {
       let token = localStorage.getItem("token");
       if (token) getVMS();

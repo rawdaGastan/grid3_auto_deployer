@@ -42,7 +42,8 @@ example `config.json`:
     "version": "v1",
     "salt": "<salt>",
     "admins": [],
-    "notifyAdminsIntervalHours": 6
+    "notifyAdminsIntervalHours": 6,
+    "adminSSHKey": "<ssh key>"
 }
 ```
 

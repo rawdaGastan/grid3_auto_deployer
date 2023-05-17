@@ -84,7 +84,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = r.deployer.Redis.PushVMRequest(streams.VMDeployRequest{User: user, Input: input})
+	err = r.deployer.Redis.PushVMRequest(streams.VMDeployRequest{User: user, Input: input, AdminSSHKey: r.config.AdminSSHKey})
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)

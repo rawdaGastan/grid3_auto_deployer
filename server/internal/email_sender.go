@@ -42,7 +42,7 @@ func SignUpMailContent(code int, timeout int) (string, string) {
 // ApprovedVoucherMailContent gets the content for approved voucher
 func ApprovedVoucherMailContent(voucher string, user string) (string, string) {
 	subject := "Your voucher request is approved 🎆"
-	body := fmt.Sprintf("Welcome %v,\n\nWe are so glad to inform you that your voucher has been approved successfully.\n\nYour voucher is %s\n\nBest regards,\nCodescalers team", user, voucher)
+	body := fmt.Sprintf("Welcome %v,\n\nWe are so glad to inform you that your voucher request has been approved successfully.\n\nYour voucher is %s\n\nYou can apply the voucher from your profile page.\n\nBest regards,\nCodescalers team", user, voucher)
 
 	return subject, body
 }

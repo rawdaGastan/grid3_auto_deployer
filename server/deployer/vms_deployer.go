@@ -60,7 +60,7 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, s
 	dl.SolutionType = vmInput.Name
 
 	// add network and deployment to be deployed
-	err = d.Redis.PushVM(streams.NetDeployment{DL: &network}, streams.VMDeployment{DL: &dl})
+	err = d.Redis.PushVM(streams.VMDeployment{Net: &network, DL: &dl})
 	if err != nil {
 		return nil, 0, 0, 0, err
 	}

@@ -160,7 +160,7 @@ func (r *Router) DeleteVM(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = r.deployer.CancelDeployment(vm.ContractID, vm.NetworkContractID)
+	err = r.deployer.CancelDeployment(vm.ContractID, vm.NetworkContractID, "vm", vm.Name)
 	if err != nil && !strings.Contains(err.Error(), "ContractNotExists") {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -193,7 +193,7 @@ func (r *Router) DeleteAllVMs(w http.ResponseWriter, req *http.Request) {
 	}
 
 	for _, vm := range vms {
-		err = r.deployer.CancelDeployment(vm.ContractID, vm.NetworkContractID)
+		err = r.deployer.CancelDeployment(vm.ContractID, vm.NetworkContractID, "vm", vm.Name)
 		if err != nil && !strings.Contains(err.Error(), "ContractNotExists") {
 			log.Error().Err(err).Send()
 			writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)

@@ -84,7 +84,7 @@ func (d *Deployer) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInp
 	}
 
 	// add network and cluster to be deployed
-	err = d.Redis.PushK8s(streams.NetDeployment{DL: &network}, streams.K8sDeployment{DL: &cluster})
+	err = d.Redis.PushK8s(streams.K8sDeployment{Net: &network, DL: &cluster})
 	if err != nil {
 		return 0, 0, 0, err
 	}
@@ -233,7 +233,7 @@ func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDe
 	neededQuota, err := ValidateK8sQuota(k8sDeployInput, quota.Vms, quota.PublicIPs)
 	if err != nil {
 		log.Error().Err(err).Send()
-		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
+		return http.StatusBadRequest, err
 	}
 
 	// deploy network and cluster

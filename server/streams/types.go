@@ -11,8 +11,6 @@ const (
 	DeployVMConsumerGroupName = "vms-group"
 	// DeployK8sConsumerGroupName consumer group name
 	DeployK8sConsumerGroupName = "k8s-group"
-	// DeployNetConsumerGroupName consumer group name
-	DeployNetConsumerGroupName = "nets-group"
 
 	// ReqVMConsumerGroupName consumer group name
 	ReqVMConsumerGroupName = "vms-req-group"
@@ -23,20 +21,12 @@ const (
 	DeployVMStreamName = "vms"
 	// DeployK8sStreamName stream name
 	DeployK8sStreamName = "k8s"
-	// DeployNetStreamName stream name
-	DeployNetStreamName = "nets"
 
 	// ReqVMStreamName stream name
 	ReqVMStreamName = "vms-req"
 	// ReqK8sStreamName stream name
 	ReqK8sStreamName = "k8s-req"
 )
-
-// ErrResponse is a response for deployment requests
-type ErrResponse struct {
-	Code *int
-	Err  error
-}
 
 // VMDeployRequest type for redis vm deployment request
 type VMDeployRequest struct {
@@ -54,15 +44,12 @@ type K8sDeployRequest struct {
 
 // VMDeployment type for redis vm deployment
 type VMDeployment struct {
-	DL *workloads.Deployment
+	Net *workloads.ZNet
+	DL  *workloads.Deployment
 }
 
 // K8sDeployment type for redis k8s deployment
 type K8sDeployment struct {
-	DL *workloads.K8sCluster
-}
-
-// NetDeployment type for redis network deployment
-type NetDeployment struct {
-	DL *workloads.ZNet
+	Net *workloads.ZNet
+	DL  *workloads.K8sCluster
 }

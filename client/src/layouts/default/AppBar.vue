@@ -275,9 +275,17 @@ export default {
     onMounted(() => {
       if (route.redirectedFrom) checkTitle(route.redirectedFrom.name);
       checkExcludedFromNavBar(route.path);
+
       if (token.value) {
         getNotifications();
         getUserName();
+      }
+
+      var pathIndex = items.value.findIndex(item => item.path == route.path || item.path == route.path.slice(1));
+      setActive(pathIndex, route.path);
+
+      if (route.path == "admin") {
+        setActive(4, route.path);
       }
     });
 

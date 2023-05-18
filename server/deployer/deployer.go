@@ -26,13 +26,13 @@ var (
 
 	smallCPU     = uint64(1)
 	smallMemory  = uint64(2)
-	smallDisk    = uint64(5)
+	smallDisk    = uint64(25)
 	mediumCPU    = uint64(2)
 	mediumMemory = uint64(4)
-	mediumDisk   = uint64(10)
+	mediumDisk   = uint64(50)
 	largeCPU     = uint64(4)
 	largeMemory  = uint64(8)
-	largeDisk    = uint64(15)
+	largeDisk    = uint64(100)
 
 	smallQuota  = 1
 	mediumQuota = 2

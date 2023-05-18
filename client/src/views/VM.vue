@@ -137,9 +137,9 @@ export default {
     const confirm = ref(null);
     const selectedResource = ref(undefined);
     const resources = ref([
-      { title: "Small VM (1 CPU, 2GB, 5GB)", value: "small" },
-      { title: "Medium VM (2 CPU, 4GB, 10GB)", value: "medium" },
-      { title: "Large VM (4 CPU, 8GB, 15GB)", value: "large" },
+      { title: "Small VM (1 CPU, 2GB, 25GB)", value: "small" },
+      { title: "Medium VM (2 CPU, 4GB, 50GB)", value: "medium" },
+      { title: "Large VM (4 CPU, 8GB, 100GB)", value: "large" },
     ]);
     const headers = ref([
       {

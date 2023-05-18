@@ -3,7 +3,9 @@
     <v-app-bar>
       <v-container class="d-flex">
         <v-app-bar-title>
-          <router-link to="/">
+          <router-link 
+          to="/"
+          @click="setActive(0, '/')">
             <v-img
               src="@/assets/codescalers.png"
               height="100%"
@@ -284,7 +286,7 @@ export default {
       var pathIndex = items.value.findIndex(item => item.path == route.path || item.path == route.path.slice(1));
       setActive(pathIndex, route.path);
 
-      if (route.path == "admin") {
+      if (route.path == "admin" || route.path == "/admin") {
         setActive(4, route.path);
       }
     });

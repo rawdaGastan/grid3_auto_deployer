@@ -145,13 +145,13 @@ func (d *Deployer) ConsumeK8sRequest(ctx context.Context, pending bool) {
 	}
 }
 
-func (d *Deployer) consumeVMs(ctx context.Context) (vms []*workloads.Deployment, err error) {
+func (d *Deployer) consumeVMs(ctx context.Context) (nets []*workloads.ZNet, vms []*workloads.Deployment, err error) {
 	result, err := d.Redis.Read(streams.DeployVMStreamName, streams.DeployVMConsumerGroupName, 5, false)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return vms, nil
+			return nets, vms, nil
 		}
-		return vms, errors.Wrap(err, "failed to read vm stream deployment")
+		return nets, vms, errors.Wrap(err, "failed to read vm stream deployment")
 	}
 
 	for _, s := range result {
@@ -167,6 +167,7 @@ func (d *Deployer) consumeVMs(ctx context.Context) (vms []*workloads.Deployment,
 
 			if !reflect.DeepEqual(vm, streams.VMDeployment{}) {
 				vms = append(vms, vm.DL)
+				nets = append(nets, vm.Net)
 			}
 
 			if err = d.Redis.DB.XAck(streams.DeployVMStreamName, streams.DeployVMConsumerGroupName, s.Messages[i].ID).Err(); err != nil {
@@ -178,13 +179,13 @@ func (d *Deployer) consumeVMs(ctx context.Context) (vms []*workloads.Deployment,
 	return
 }
 
-func (d *Deployer) consumeK8s(ctx context.Context) (clusters []*workloads.K8sCluster, err error) {
+func (d *Deployer) consumeK8s(ctx context.Context) (nets []*workloads.ZNet, clusters []*workloads.K8sCluster, err error) {
 	result, err := d.Redis.Read(streams.DeployK8sStreamName, streams.DeployK8sConsumerGroupName, 5, false)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return clusters, nil
+			return nets, clusters, nil
 		}
-		return clusters, errors.Wrap(err, "failed to read clusters stream deployment")
+		return nets, clusters, errors.Wrap(err, "failed to read clusters stream deployment")
 	}
 
 	for _, s := range result {
@@ -200,43 +201,11 @@ func (d *Deployer) consumeK8s(ctx context.Context) (clusters []*workloads.K8sClu
 
 			if !reflect.DeepEqual(k8s, streams.K8sDeployment{}) {
 				clusters = append(clusters, k8s.DL)
+				nets = append(nets, k8s.Net)
 			}
 
 			if err = d.Redis.DB.XAck(streams.DeployK8sStreamName, streams.DeployK8sConsumerGroupName, s.Messages[i].ID).Err(); err != nil {
 				log.Error().Err(err).Msgf("failed to acknowledge k8s request with ID: %s", s.Messages[i].ID)
-			}
-		}
-	}
-
-	return
-}
-
-func (d *Deployer) consumeNets(ctx context.Context) (nets []*workloads.ZNet, err error) {
-	result, err := d.Redis.Read(streams.DeployNetStreamName, streams.DeployNetConsumerGroupName, 10, false)
-	if err != nil {
-		if errors.Is(err, redis.Nil) {
-			return nets, nil
-		}
-		return nets, errors.Wrap(err, "failed to read network stream deployment")
-	}
-
-	for _, s := range result {
-		for i, message := range s.Messages {
-			var net streams.NetDeployment
-			for _, v := range message.Values {
-				err = json.Unmarshal([]byte(v.(string)), &net)
-				if err != nil {
-					log.Err(err).Msg("failed to unmarshal network request")
-					continue
-				}
-			}
-
-			if !reflect.DeepEqual(net, streams.NetDeployment{}) {
-				nets = append(nets, net.DL)
-			}
-
-			if err = d.Redis.DB.XAck(streams.DeployNetStreamName, streams.DeployNetConsumerGroupName, s.Messages[i].ID).Err(); err != nil {
-				log.Error().Err(err).Msgf("failed to acknowledge network request with ID: %s", s.Messages[i].ID)
 			}
 		}
 	}

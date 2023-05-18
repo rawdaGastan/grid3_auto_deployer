@@ -94,30 +94,23 @@ func (d *Deployer) PeriodicDeploy(ctx context.Context, sec int) {
 	ticker := time.NewTicker(time.Second * time.Duration(sec))
 
 	for range ticker.C {
-		vms, err := d.consumeVMs(ctx)
+		vmNets, vms, err := d.consumeVMs(ctx)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to consume vms")
 		}
 
-		nets, err := d.consumeNets(ctx)
-		if err != nil {
-			log.Error().Err(err).Msg("failed to consume networks")
-		}
-
-		clusters, err := d.consumeK8s(ctx)
+		k8sNets, clusters, err := d.consumeK8s(ctx)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to consume clusters")
 		}
 
-		if len(nets) > 0 {
-			err := d.tfPluginClient.NetworkDeployer.BatchDeploy(ctx, nets)
+		if len(vms) > 0 {
+			err := d.tfPluginClient.NetworkDeployer.BatchDeploy(ctx, vmNets)
 			if err != nil {
 				log.Error().Err(err).Msg("failed to batch deploy network")
 			}
-		}
 
-		if len(vms) > 0 {
-			err := d.tfPluginClient.DeploymentDeployer.BatchDeploy(ctx, vms)
+			err = d.tfPluginClient.DeploymentDeployer.BatchDeploy(ctx, vms)
 			if err != nil {
 				log.Error().Err(err).Msg("failed to batch deploy vm")
 			}
@@ -128,7 +121,12 @@ func (d *Deployer) PeriodicDeploy(ctx context.Context, sec int) {
 		}
 
 		if len(clusters) > 0 {
-			err := d.tfPluginClient.K8sDeployer.BatchDeploy(ctx, clusters)
+			err := d.tfPluginClient.NetworkDeployer.BatchDeploy(ctx, k8sNets)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to batch deploy network")
+			}
+
+			err = d.tfPluginClient.K8sDeployer.BatchDeploy(ctx, clusters)
 			if err != nil {
 				log.Error().Err(err).Msg("failed to batch deploy clusters")
 			}
@@ -141,7 +139,7 @@ func (d *Deployer) PeriodicDeploy(ctx context.Context, sec int) {
 }
 
 // CancelDeployment cancel deployments from grid
-func (d *Deployer) CancelDeployment(contractID uint64, netContractID uint64) error {
+func (d *Deployer) CancelDeployment(contractID uint64, netContractID uint64, dlType string, dlName string) error {
 	// cancel deployment
 	err := d.tfPluginClient.SubstrateConn.CancelContract(d.tfPluginClient.Identity, contractID)
 	if err != nil {
@@ -152,6 +150,15 @@ func (d *Deployer) CancelDeployment(contractID uint64, netContractID uint64) err
 	err = d.tfPluginClient.SubstrateConn.CancelContract(d.tfPluginClient.Identity, netContractID)
 	if err != nil {
 		return err
+	}
+
+	// update state
+	for node, contracts := range d.tfPluginClient.State.CurrentNodeDeployments {
+		contracts = workloads.Delete(contracts, contractID)
+		contracts = workloads.Delete(contracts, netContractID)
+		d.tfPluginClient.State.CurrentNodeDeployments[node] = contracts
+
+		d.tfPluginClient.State.Networks.DeleteNetwork(fmt.Sprintf("%s%sNet", dlType, dlName))
 	}
 
 	return nil

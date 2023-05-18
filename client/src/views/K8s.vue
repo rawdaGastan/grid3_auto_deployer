@@ -377,6 +377,7 @@ export default {
       selectedResources.value = null;
       workerSelResources.value = null;
       workerName.value = null;
+      savedWorkers.value = [];
     };
 
     const deployK8s = () => {
@@ -487,12 +488,14 @@ export default {
 
     setInterval(() => {
       getK8s();
+      emitQuota();
     }, 30 * 1000);
 
     onMounted(() => {
       let token = localStorage.getItem("token");
       if (token) getK8s();
     });
+    
     return {
       checked,
       verify,

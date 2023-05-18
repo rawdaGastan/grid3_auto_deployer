@@ -62,7 +62,7 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 	_, err = deployer.ValidateK8sQuota(k8sDeployInput, quota.Vms, quota.PublicIPs)
 	if err != nil {
 		log.Error().Err(err).Send()
-		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
+		writeErrResponse(req, w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -155,7 +155,7 @@ func (r *Router) K8sDeleteHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = r.deployer.CancelDeployment(uint64(cluster.ClusterContract), uint64(cluster.NetworkContract))
+	err = r.deployer.CancelDeployment(uint64(cluster.ClusterContract), uint64(cluster.NetworkContract), "k8s", cluster.Master.Name)
 	if err != nil && !strings.Contains(err.Error(), "ContractNotExists") {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -190,7 +190,7 @@ func (r *Router) K8sDeleteAllHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	for _, cluster := range clusters {
-		err = r.deployer.CancelDeployment(uint64(cluster.ClusterContract), uint64(cluster.NetworkContract))
+		err = r.deployer.CancelDeployment(uint64(cluster.ClusterContract), uint64(cluster.NetworkContract), "k8s", cluster.Master.Name)
 		if err != nil && !strings.Contains(err.Error(), "ContractNotExists") {
 			log.Error().Err(err).Send()
 			writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)

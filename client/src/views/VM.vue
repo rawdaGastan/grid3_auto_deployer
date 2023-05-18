@@ -299,12 +299,14 @@ export default {
 
     setInterval(() => {
       getVMS();
+      emitQuota();
     }, 30 * 1000);
 
     onMounted(() => {
       let token = localStorage.getItem("token");
       if (token) getVMS();
     });
+    
     return {
       verify,
       name,

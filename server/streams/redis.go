@@ -26,7 +26,6 @@ func NewRedisClient(config internal.Configuration) (RedisClient, error) {
 
 	client.XGroupCreateMkStream(DeployK8sStreamName, DeployK8sConsumerGroupName, "$")
 	client.XGroupCreateMkStream(DeployVMStreamName, DeployVMConsumerGroupName, "$")
-	client.XGroupCreateMkStream(DeployNetStreamName, DeployNetConsumerGroupName, "$")
 	client.XGroupCreateMkStream(ReqVMStreamName, ReqVMConsumerGroupName, "$")
 	client.XGroupCreateMkStream(ReqK8sStreamName, ReqK8sConsumerGroupName, "$")
 

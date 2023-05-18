@@ -7,26 +7,8 @@ import (
 	"github.com/go-redis/redis"
 )
 
-// PushNet pushes a network deployment to the stream
-func (r *RedisClient) PushNet(net NetDeployment) error {
-	bytes, err := json.Marshal(net)
-	if err != nil {
-		return err
-	}
-
-	return r.DB.XAdd(&redis.XAddArgs{
-		Stream: DeployNetStreamName,
-		Values: map[string]interface{}{net.DL.Name: bytes},
-	}).Err()
-}
-
 // PushVM pushes a vm deployment to the stream
-func (r *RedisClient) PushVM(net NetDeployment, vm VMDeployment) error {
-	err := r.PushNet(net)
-	if err != nil {
-		return err
-	}
-
+func (r *RedisClient) PushVM(vm VMDeployment) error {
 	bytes, err := json.Marshal(vm)
 	if err != nil {
 		return err
@@ -39,12 +21,7 @@ func (r *RedisClient) PushVM(net NetDeployment, vm VMDeployment) error {
 }
 
 // PushK8s pushes a k8s cluster deployment to the stream
-func (r *RedisClient) PushK8s(net NetDeployment, k8s K8sDeployment) error {
-	err := r.PushNet(net)
-	if err != nil {
-		return err
-	}
-
+func (r *RedisClient) PushK8s(k8s K8sDeployment) error {
 	bytes, err := json.Marshal(k8s)
 	if err != nil {
 		return err

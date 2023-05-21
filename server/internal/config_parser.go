@@ -59,6 +59,33 @@ type GridAccount struct {
 
 // ReadConfFile read configurations of json file
 func ReadConfFile(path string) ([]byte, error) {
+	/*
+		It's not a good practice to LOAD the entire file in memory then parse because
+		that is a vulnerability
+		I can give you a bad (huge) file that causes the app to crash.
+
+		> NOTE: already there is a `os.ReadFile` function that does what u do here
+
+		instead the right way to do it is.
+		- open the file
+		- create the json decoder with that file
+		- do decode
+
+		```go
+		var config Configuration
+		file, err := os.Open(path)
+		if err != nil {
+			return config, fmt.Errorf("failed to open config file: %w", err)
+		}
+		dec := json.NewDecoder(file)
+		if err := dec.Decode(&config); err != nil {
+			return config, fmt.Errorf("failed to load config: %w", err)
+		}
+
+		return config, config.Valid()
+		```
+	*/
+
 	confFile, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -80,6 +107,15 @@ func ParseConf(conf []byte) (Configuration, error) {
 		return myConf, err
 	}
 
+	/*
+	 I would move all verification code to `Configuration` itself.
+	 then called like
+
+	 err := myConfig.Valid()
+
+	 Also, if you using the validator package, why you are not using it to automate
+	 the validation ?!
+	*/
 	if myConf.Server.Host == "" || myConf.Server.Port == "" {
 		return myConf, errors.New("server configuration is required")
 	}

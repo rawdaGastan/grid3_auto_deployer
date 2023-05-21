@@ -15,6 +15,29 @@ import (
 // SendMail sends verification mails
 func SendMail(sender, sendGridKey, receiver, subject, body string) error {
 	from := mail.NewEmail("Cloud4Students", sender)
+	/*
+		I really don't think this is the right way to use the validator. If you gonna call
+		a validator on specific value with a function then why bother defining custom validators
+		with the validator package.
+
+		according to the docs, the validator package is mainly used to add validation annotation on structures
+		so for example
+		type Config struct{
+			Email string `validate:"email"`
+		}
+
+		then when let's say u have
+		config := //load config
+
+		then do
+		validator.Validate(config)
+
+		this will then run validation on all the struct fields based on given config given that
+		there is a validator registered with name `email`
+
+		If this is not how u using validator then it's an over kill to just call the ValidateMail function
+		directly this way (which has to do reflection!)
+	*/
 	err := validators.ValidateMail(receiver, "")
 	if err != nil {
 		return fmt.Errorf("email %v is not valid", receiver)
@@ -34,6 +57,14 @@ func SendMail(sender, sendGridKey, receiver, subject, body string) error {
 // SignUpMailContent gets the email content for signup
 func SignUpMailContent(code int, timeout int) (string, string) {
 	subject := "Welcome to Cloud4Students 🎉"
+	/*
+		please use templates instead of this very long and ugly string, then it can also has html and css
+
+		templates can be defined as text files, and then loaded using `embed` package from std.
+		you can then use `text/template` or even `html/template` to build a decent template for your email
+
+		this comment applies to all other functions
+	*/
 	body := fmt.Sprintf("We are so glad to have you here.\n\nYour code is %s\nThe code will expire in %d seconds.\nPlease don't share it with anyone.", strconv.Itoa(code), timeout)
 
 	return subject, body

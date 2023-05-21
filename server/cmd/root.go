@@ -17,16 +17,22 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "cloud4Students",
 	Short: "Cloud helps students to deploy their projects",
-	Long: `Cloud for students helps them to deploy their projects with 
+	Long: `Cloud for students helps them to deploy their projects with
 	applying for a voucher, For example :
 		They can deploy virtual machine that can be small, medium or large.
 		They can deploy Kubernetes that can be small, medium, or large.
 		The Amount of resources available will depend on their voucher.
 		`,
 
+	/*
+	 Use RunE instead, this way you can return an error instead of calling
+	 Fatal, the error will be returned by the Execute function. Where you can
+	 then LOG IT and do the exit.
+	*/
 	Run: func(cmd *cobra.Command, args []string) {
 		configFile, err := cmd.Flags().GetString("config")
 		if err != nil {
+			/// this should be `return fmt.Errors("failed to parse config: %w", err)` instead
 			log.Fatal().Err(err).Send()
 		}
 
@@ -47,6 +53,7 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
+		/// Log the the error here and do the exit.
 		os.Exit(1)
 	}
 }

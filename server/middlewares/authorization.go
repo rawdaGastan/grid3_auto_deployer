@@ -17,6 +17,12 @@ import (
 // UserIDKey key saved in request context
 type UserIDKey string
 
+/*
+Same comment as per the admin access. the router itself (if used correctly) will match the middleware with
+the path. hence the middleware need to only to take care of authorization of the request
+
+
+*/
 // Authorization to authorize users in requests
 func Authorization(excludedRoutes []*mux.Route, secret string, timeout int) func(http.Handler) http.Handler {
 	// Cache the regex object of each route (obviously for performance purposes)

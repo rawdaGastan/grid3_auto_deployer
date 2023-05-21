@@ -12,6 +12,13 @@ import (
 	"gorm.io/gorm"
 )
 
+/*
+this is totally 100% wrong the way you filter out which paths need to bt included in the admin access
+
+check the other comment on the route registration method.
+
+the Router does this if u using subrouter correctly
+*/
 // AdminAccess to authorize admins in requests
 func AdminAccess(includedRoutes []*mux.Route, db models.DB) func(http.Handler) http.Handler {
 	// Cache the regex object of each route (obviously for performance purposes)

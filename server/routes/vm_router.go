@@ -80,7 +80,7 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !available {
-		writeErrResponse(req, w, http.StatusBadRequest, "vm name is not available, please choose a different name")
+		writeErrResponse(req, w, http.StatusBadRequest, "Virtual machine name is not available, please choose a different name")
 		return
 	}
 
@@ -92,6 +92,33 @@ func (r *Router) DeployVMHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	writeMsgResponse(req, w, "Virtual machine request is being deployed, you'll receive a confirmation notification soon", "")
+}
+
+// ValidateVMNameHandler validates a vm name
+func (r *Router) ValidateVMNameHandler(w http.ResponseWriter, req *http.Request) {
+	name := mux.Vars(req)["name"]
+
+	err := validator.Validate(name)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusBadRequest, "invalid vm data")
+		return
+	}
+
+	// unique names
+	available, err := r.db.AvailableVMName(name)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	if !available {
+		writeErrResponse(req, w, http.StatusBadRequest, "Virtual machine name is not available, please choose a different name")
+		return
+	}
+
+	writeMsgResponse(req, w, "Virtual machine name is available", "")
 }
 
 // GetVMHandler returns vm by its id

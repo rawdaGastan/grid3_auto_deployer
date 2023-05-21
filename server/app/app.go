@@ -157,12 +157,14 @@ func (a *App) registerHandlers() {
 	r.HandleFunc(version+"/notification/{id}", a.router.UpdateNotificationsHandler).Methods("PUT", "OPTIONS")
 
 	r.HandleFunc(version+"/vm", a.router.DeployVMHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc(version+"/vm/validate/{name}", a.router.ValidateVMNameHandler).Methods("Get", "OPTIONS")
 	r.HandleFunc(version+"/vm/{id}", a.router.GetVMHandler).Methods("GET", "OPTIONS")
 	r.HandleFunc(version+"/vm", a.router.ListVMsHandler).Methods("GET", "OPTIONS")
 	r.HandleFunc(version+"/vm/{id}", a.router.DeleteVM).Methods("DELETE", "OPTIONS")
 	r.HandleFunc(version+"/vm", a.router.DeleteAllVMs).Methods("DELETE", "OPTIONS")
 
 	r.HandleFunc(version+"/k8s", a.router.K8sDeployHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc(version+"/k8s/validate/{name}", a.router.ValidateK8sNameHandler).Methods("Get", "OPTIONS")
 	r.HandleFunc(version+"/k8s", a.router.K8sGetAllHandler).Methods("GET", "OPTIONS")
 	r.HandleFunc(version+"/k8s", a.router.K8sDeleteAllHandler).Methods("DELETE", "OPTIONS")
 	r.HandleFunc(version+"/k8s/{id}", a.router.K8sGetHandler).Methods("GET", "OPTIONS")

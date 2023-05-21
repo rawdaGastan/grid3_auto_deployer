@@ -6,6 +6,7 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/codescalers/cloud4students/app"
@@ -24,21 +25,23 @@ var rootCmd = &cobra.Command{
 		The Amount of resources available will depend on their voucher.
 		`,
 
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		configFile, err := cmd.Flags().GetString("config")
 		if err != nil {
-			log.Fatal().Err(err).Send()
+			return fmt.Errorf("failed to parse config: %w", err)
 		}
 
 		app, err := app.NewApp(cmd.Context(), configFile)
 		if err != nil {
-			log.Fatal().Err(err).Send()
+			return fmt.Errorf("failed to create new app: %w", err)
 		}
 
 		err = app.Start(cmd.Context())
 		if err != nil {
-			log.Fatal().Err(err).Send()
+			return fmt.Errorf("failed to start app: %w", err)
 		}
+
+		return nil
 	},
 }
 
@@ -47,6 +50,7 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
+		log.Err(err).Send()
 		os.Exit(1)
 	}
 }

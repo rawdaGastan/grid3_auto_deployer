@@ -20,6 +20,7 @@ type Configuration struct {
 	Admins                    []string    `json:"admins"`
 	NotifyAdminsIntervalHours int         `json:"notifyAdminsIntervalHours"`
 	AdminSSHKey               string      `json:"adminSSHKey"`
+	BalanceThreshold          int         `json:"balanceThreshold"`
 }
 
 // Server struct to hold server's information
@@ -113,6 +114,10 @@ func ParseConf(conf []byte) (Configuration, error) {
 
 	if myConf.NotifyAdminsIntervalHours == 0 {
 		myConf.NotifyAdminsIntervalHours = 6
+	}
+
+	if myConf.BalanceThreshold == 0 {
+		myConf.BalanceThreshold = 2000
 	}
 
 	return myConf, nil

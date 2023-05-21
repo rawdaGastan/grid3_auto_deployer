@@ -256,6 +256,7 @@ export default {
         if (value.length >= 3 && value.length <= 20) return true;
         return "Name needs to be more than 2 characters and less than 20";
       },
+      (value) => validateK8sName(value),
     ]);
     const savedWorkers = ref([]);
     const rules = ref([
@@ -405,6 +406,21 @@ export default {
         });
     };
 
+    const validateK8sName = async (name) => {
+      var msg = "";
+      await userService
+        .validateK8sName(name)
+        .catch((response) => {
+          const { err } = response.response.data;
+          msg = err;
+        });
+
+      if (!msg) {
+        return true;
+      }
+      return msg;
+    };
+
     const deleteAllK8s = () => {
       confirm.value
         .open("Delete All K8s", "Are you sure?", { color: "red-accent-2" })
@@ -524,6 +540,7 @@ export default {
       savedWorkers,
       showInputs,
       deleteWorker,
+      validateK8sName,
       copyIP,
       resetInputs,
       deployK8s,

@@ -191,6 +191,7 @@ export default {
         if (value.length >= 3 && value.length <= 20) return true;
         return "Name needs to be more than 2 characters and less than 20.";
       },
+      (value) => validateVMName(value),
     ]);
 
     const getVMS = () => {
@@ -226,6 +227,21 @@ export default {
           loading.value = false;
           checked.value = false;
         });
+    };
+
+    const validateVMName = async (name) => {
+      var msg = "";
+      await userService
+        .validateVMName(name)
+        .catch((response) => {
+          const { err } = response.response.data;
+          msg = err;
+        });
+
+      if (!msg) {
+        return true;
+      }
+      return msg;
     };
 
     const deleteVms = () => {
@@ -327,6 +343,7 @@ export default {
       itemsPerPage,
       reset,
       getVMS,
+      validateVMName,
       deployVm,
       deleteVms,
       deleteVm,

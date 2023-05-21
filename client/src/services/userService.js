@@ -74,6 +74,11 @@ export default {
     return await authClient().get("/vm");
   },
 
+  async validateVMName(name) {
+    await this.refresh_token();
+    return await authClient().get(`/vm/validate/${name}`);
+  },
+
   async deployVm(name, resources, checked) {
     await this.refresh_token();
     return await authClient().post("/vm", { name, resources, public: checked });
@@ -93,6 +98,11 @@ export default {
   async getK8s() {
     await this.refresh_token();
     return await authClient().get("/k8s");
+  },
+
+  async validateK8sName(name) {
+    await this.refresh_token();
+    return await authClient().get(`/k8s/validate/${name}`);
   },
 
   async deployK8s(master_name, resources, workers, checked) {
@@ -135,6 +145,12 @@ export default {
   async approveAllVouchers() {
     await this.refresh_token();
     return await authClient().put("/voucher");
+  },
+
+  // balance
+  async getBalance() {
+    await this.refresh_token();
+    return await authClient().get("/balance");
   },
 
   // notifications

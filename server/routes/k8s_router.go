@@ -94,6 +94,33 @@ func (r *Router) K8sDeployHandler(w http.ResponseWriter, req *http.Request) {
 	writeMsgResponse(req, w, "Kubernetes cluster request is being deployed, you'll receive a confirmation notification soon", "")
 }
 
+// ValidateK8sNameHandler validates a cluster name
+func (r *Router) ValidateK8sNameHandler(w http.ResponseWriter, req *http.Request) {
+	name := mux.Vars(req)["name"]
+
+	err := validator.Validate(name)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusBadRequest, "invalid k8s data")
+		return
+	}
+
+	// unique names
+	available, err := r.db.AvailableK8sName(name)
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	if !available {
+		writeErrResponse(req, w, http.StatusBadRequest, "kubernetes cluster name is not available, please choose a different name")
+		return
+	}
+
+	writeMsgResponse(req, w, "kubernetes cluster name is available", "")
+}
+
 // K8sGetHandler gets a cluster for a user
 func (r *Router) K8sGetHandler(w http.ResponseWriter, req *http.Request) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)

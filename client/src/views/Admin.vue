@@ -195,7 +195,6 @@ export default {
         .getVouchers()
         .then((response) => {
           const { data } = response.data;
-          vouchers.value = data;
           approveAllCount.value = 0;
 
           for (let voucher of data) {
@@ -215,6 +214,8 @@ export default {
               }
             }
           }
+
+          vouchers.value = data;
         })
         .catch((response) => {
           const { err } = response.response.data;

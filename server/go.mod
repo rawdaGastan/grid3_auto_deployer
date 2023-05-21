@@ -14,7 +14,7 @@ require (
 	github.com/rs/zerolog v1.29.1
 	github.com/sendgrid/sendgrid-go v3.12.0+incompatible
 	github.com/spf13/cobra v1.7.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	github.com/threefoldtech/tfgrid-sdk-go/grid-client v0.5.0
 	github.com/threefoldtech/tfgrid-sdk-go/grid-proxy v0.5.0
 	github.com/threefoldtech/zos v0.5.6-0.20230426125942-0ea2f91b21f5

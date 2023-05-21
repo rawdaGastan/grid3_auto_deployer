@@ -336,15 +336,15 @@ export default {
       },
     ]);
     const resources = ref([
-      { title: "Small K8s (1 CPU, 2GB, 5GB)", value: "small" },
-      { title: "Medium K8s (2 CPU, 4GB, 10GB)", value: "medium" },
-      { title: "Large K8s (4 CPU, 8GB, 15GB)", value: "large" },
+      { title: "Small K8s (1 CPU, 2GB, 25GB)", value: "small" },
+      { title: "Medium K8s (2 CPU, 4GB, 50GB)", value: "medium" },
+      { title: "Large K8s (4 CPU, 8GB, 100GB)", value: "large" },
     ]);
     const workerName = ref(null);
     const workerResources = ref([
-      { title: "Small K8s (1 CPU, 2GB, 5GB)", value: "small" },
-      { title: "Medium K8s (2 CPU, 4GB, 10GB)", value: "medium" },
-      { title: "Large K8s (4 CPU, 8GB, 15GB)", value: "large" },
+      { title: "Small K8s (1 CPU, 2GB, 25GB)", value: "small" },
+      { title: "Medium K8s (2 CPU, 4GB, 50GB)", value: "medium" },
+      { title: "Large K8s (4 CPU, 8GB, 100GB)", value: "large" },
     ]);
     const selectedResources = ref(null);
     const workerSelResources = ref(null);

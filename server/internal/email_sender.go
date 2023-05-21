@@ -62,3 +62,11 @@ func NotifyAdminsMailContent(vouchers int) (string, string) {
 
 	return subject, body
 }
+
+// NotifyAdminsMailLowBalanceContent gets the content for notifying admins when balance is low
+func NotifyAdminsMailLowBalanceContent(balance float64) (string, string) {
+	subject := "Your account balance is low"
+	body := fmt.Sprintf("Hello,\n\nYour account balance (%v tft) is low. Please, make sure it is funded.\n\nBest regards,\nCodescalers team", balance)
+
+	return subject, body
+}

@@ -32,6 +32,18 @@ func (r *Router) GetAllUsersHandler(w http.ResponseWriter, req *http.Request) {
 	writeMsgResponse(req, w, "Users are found", users)
 }
 
+// GetBalance return account balance information
+func (r *Router) GetBalance(w http.ResponseWriter, req *http.Request) {
+	balance, err := r.deployer.GetBalance()
+	if err != nil {
+		log.Error().Err(err).Send()
+		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
+		return
+	}
+
+	writeMsgResponse(req, w, "Balance is found", balance)
+}
+
 // UpdateMaintenanceHandler updates maintenance flag
 func (r *Router) UpdateMaintenanceHandler(w http.ResponseWriter, req *http.Request) {
 	var input UpdateMaintenanceInput

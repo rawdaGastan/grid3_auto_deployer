@@ -1,8 +1,19 @@
 <template>
   <v-container style="max-width: 1700px;" fill-height>
-    <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
-      Admin Panel
-    </h5>
+    <v-row>
+      <v-col></v-col>
+      <v-col>
+        <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
+          Admin Panel
+        </h5>
+      </v-col>
+      <v-col>
+        <div class="balance text-primary text-center rounded-lg bg-white shadow">
+          <strong style="font-size: 2rem;">{{ balance }} TFT</strong>
+          <p class="mx-lg-auto font-weight-medium">Balance</p>
+        </div>
+      </v-col>
+    </v-row>
     <v-row>
       <v-col cols="12" md="8">
         <div class="actions d-flex justify-end my-2">
@@ -86,7 +97,7 @@
               class="resources text-white text-center rounded-lg bg-primary py-5 shadow"
             >
               <p>
-                <strong style="font-size: 2.5rem;">{{ usedResources }}</strong>
+                <strong style="font-size: 2rem;">{{ usedResources }}</strong>
               </p>
               <p class="mx-lg-auto font-weight-medium">
                 Used VMs
@@ -98,7 +109,7 @@
               class="resources text-white text-center rounded-lg bg-primary py-5 shadow"
             >
               <p>
-                <strong style="font-size: 2.5rem;">{{ usedIPs }}</strong>
+                <strong style="font-size: 2rem;">{{ usedIPs }}</strong>
               </p>
               <p class="mx-lg-auto font-weight-medium">
                 Used IPs
@@ -186,6 +197,7 @@ export default {
     const toast = ref(null);
     const loading = ref(false);
     const usedResources = ref(null);
+    const balance = ref(0);
     const usedIPs = ref(null);
     const approveAllCount = ref(null);
     const userInfo = ref(null);
@@ -266,15 +278,33 @@ export default {
         });
     };
 
+    const getBalance = () => {
+      userService
+        .getBalance()
+        .then((response) => {
+          const { data } = response.data;
+          balance.value = data;
+        })
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
+        });
+    };
+
     const addAvatar = (name) => {
       return name.charAt(0);
     };
+
+    setInterval(() => {
+      getBalance();
+    }, 30 * 1000);
 
     onMounted(() => {
       let token = localStorage.getItem("token");
       if (token) {
         getUsers();
         getVouchers();
+        getBalance();
       }
     });
 
@@ -282,6 +312,7 @@ export default {
       vouchersHeaders,
       vouchers,
       usedResources,
+      balance,
       approveAllCount,
       usersHeaders,
       users,
@@ -291,6 +322,7 @@ export default {
       toast,
       itemsPerPage,
       getVouchers,
+      getBalance,
       approveVoucher,
       approveAllVouchers,
       getUsers,
@@ -320,6 +352,12 @@ export default {
 <style>
 .resources {
   margin-top: 0.5rem;
+}
+
+.balance {
+  border: 3px solid #5CBBF6;
+  margin-top: 2.5rem;
+  height: 70%;
 }
 
 td {

@@ -112,6 +112,13 @@ func (a *App) notifyAdmins() {
 	ticker := time.NewTicker(time.Hour * time.Duration(a.config.NotifyAdminsIntervalHours))
 
 	for range ticker.C {
+		// get admins
+		admins, err := a.db.ListAdmins()
+		if err != nil {
+			log.Error().Err(err).Send()
+		}
+
+		// check pending voucher requests
 		pending, err := a.db.GetAllPendingVouchers()
 		if err != nil {
 			log.Error().Err(err).Send()
@@ -120,10 +127,22 @@ func (a *App) notifyAdmins() {
 		if len(pending) > 0 {
 			subject, body := internal.NotifyAdminsMailContent(len(pending))
 
-			admins, err := a.db.ListAdmins()
-			if err != nil {
-				log.Error().Err(err).Send()
+			for _, admin := range admins {
+				err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, admin.Email, subject, body)
+				if err != nil {
+					log.Error().Err(err).Send()
+				}
 			}
+		}
+
+		// check account balance
+		balance, err := a.deployer.GetBalance()
+		if err != nil {
+			log.Error().Err(err).Send()
+		}
+
+		if int(balance) < a.config.BalanceThreshold {
+			subject, body := internal.NotifyAdminsMailLowBalanceContent(balance)
 
 			for _, admin := range admins {
 				err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, admin.Email, subject, body)
@@ -173,6 +192,7 @@ func (a *App) registerHandlers() {
 	maintenance := r.HandleFunc(version+"/maintenance", a.router.GetMaintenanceHandler).Methods("GET", "OPTIONS")
 
 	// ADMIN ACCESS
+	getBalance := r.HandleFunc(version+"/balance", a.router.GetBalance).Methods("GET", "OPTIONS")
 	listUsers := r.HandleFunc(version+"/user/all", a.router.GetAllUsersHandler).Methods("GET", "OPTIONS")
 	generateVoucher := r.HandleFunc(version+"/voucher", a.router.GenerateVoucherHandler).Methods("POST", "OPTIONS")
 	listVouchers := r.HandleFunc(version+"/voucher", a.router.ListVouchersHandler).Methods("GET", "OPTIONS")
@@ -185,7 +205,7 @@ func (a *App) registerHandlers() {
 	r.Use(middlewares.EnableCors)
 	excludedRoutes := []*mux.Route{maintenance, signUp, signUpVerify, signIn, refreshToken, forgetPass, forgetPassVerify}
 	r.Use(middlewares.Authorization(excludedRoutes, a.config.Token.Secret, a.config.Token.Timeout))
-	includedRoutes := []*mux.Route{listUsers, generateVoucher, listVouchers, updateVoucherRequest, approveAllVouchers, updateMaintenance}
+	includedRoutes := []*mux.Route{getBalance, listUsers, generateVoucher, listVouchers, updateVoucherRequest, approveAllVouchers, updateMaintenance}
 	r.Use(middlewares.AdminAccess(includedRoutes, a.db))
 
 	// prometheus registration

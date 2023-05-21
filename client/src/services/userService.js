@@ -147,6 +147,12 @@ export default {
     return await authClient().put("/voucher");
   },
 
+  // balance
+  async getBalance() {
+    await this.refresh_token();
+    return await authClient().get("/balance");
+  },
+
   // notifications
   async getNotifications() {
     await this.refresh_token();

@@ -14,7 +14,7 @@ import (
 func ValidateSSHKey(v interface{}, param string) error {
 	st := reflect.ValueOf(v)
 	if st.Kind() != reflect.String {
-		return errors.New("ValidateSSHKey only validates strings")
+		return errors.New("validateSSHKey only validates strings")
 	}
 	return ValidateSSH(st.String())
 }
@@ -23,7 +23,7 @@ func ValidateSSHKey(v interface{}, param string) error {
 func ValidateMail(v interface{}, param string) error {
 	st := reflect.ValueOf(v)
 	if st.Kind() != reflect.String {
-		return errors.New("ValidateMail only validates strings")
+		return errors.New("validateMail only validates strings")
 	}
 	return ValidMail(st.String())
 }
@@ -32,7 +32,7 @@ func ValidateMail(v interface{}, param string) error {
 func ValidatePassword(v interface{}, param string) error {
 	st := reflect.ValueOf(v)
 	if st.Kind() != reflect.String {
-		return errors.New("ValidatePassword only validates strings")
+		return errors.New("validatePassword only validates strings")
 	}
 	return ValidatePass(st.String())
 }

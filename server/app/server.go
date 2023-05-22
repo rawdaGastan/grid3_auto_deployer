@@ -23,7 +23,7 @@ type server struct {
 }
 
 // NewServer create new server with all configurations
-func newServer(ctx context.Context, config internal.Configuration) (server server, err error) {
+func newServer(ctx context.Context, config internal.Configuration) (server *server, err error) {
 	server.port = config.Server.Port
 	server.host = config.Server.Host
 	return

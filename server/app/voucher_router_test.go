@@ -1,4 +1,5 @@
-package routes
+// Package app for c4s backend app
+package app
 
 import (
 	"bytes"
@@ -16,7 +17,7 @@ import (
 )
 
 func TestGenerateVoucherHandler(t *testing.T) {
-	router, db, config, version := SetUp(t)
+	app := SetUp(t)
 	admin := models.User{
 		Name:           "admin",
 		Email:          "admin@gmail.com",
@@ -25,14 +26,14 @@ func TestGenerateVoucherHandler(t *testing.T) {
 		SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 		Admin:          true,
 	}
-	err := db.CreateUser(&admin)
+	err := app.db.CreateUser(&admin)
 	assert.NoError(t, err)
 
 	t.Run("generate voucher ", func(t *testing.T) {
-		user, err := db.GetUserByEmail("admin@gmail.com")
+		user, err := app.db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
@@ -41,20 +42,20 @@ func TestGenerateVoucherHandler(t *testing.T) {
 		"public_ips": 1
 		}`)
 
-		request := httptest.NewRequest("POST", version+"/voucher", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/voucher", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.GenerateVoucherHandler(response, newRequest)
+		app.GenerateVoucherHandler(newRequest)
 		assert.Equal(t, response.Code, http.StatusOK)
 	})
 
 	t.Run("generate voucher with invalid body", func(t *testing.T) {
-		user, err := db.GetUserByEmail("admin@gmail.com")
+		user, err := app.db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
@@ -63,22 +64,22 @@ func TestGenerateVoucherHandler(t *testing.T) {
 		"public_ips": 1
 		}`)
 
-		request := httptest.NewRequest("POST", version+"/voucher", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/voucher", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.GenerateVoucherHandler(response, newRequest)
+		app.GenerateVoucherHandler(newRequest)
 		want := `{"err":"Invalid voucher data"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})
 
 	t.Run("failed to read voucher data", func(t *testing.T) {
-		user, err := db.GetUserByEmail("admin@gmail.com")
+		user, err := app.db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
@@ -87,12 +88,12 @@ func TestGenerateVoucherHandler(t *testing.T) {
 		"public_ips": 1
 		}`)
 
-		request := httptest.NewRequest("POST", version+"/voucher", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/voucher", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.GenerateVoucherHandler(response, newRequest)
+		app.GenerateVoucherHandler(newRequest)
 		want := `{"err":"Failed to read voucher data"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -101,7 +102,7 @@ func TestGenerateVoucherHandler(t *testing.T) {
 }
 
 func TestListVouchersHandler(t *testing.T) {
-	router, db, config, version := SetUp(t)
+	app := SetUp(t)
 	admin := models.User{
 		Name:           "admin",
 		Email:          "admin@gmail.com",
@@ -110,22 +111,22 @@ func TestListVouchersHandler(t *testing.T) {
 		SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 		Admin:          true,
 	}
-	err := db.CreateUser(&admin)
+	err := app.db.CreateUser(&admin)
 	assert.NoError(t, err)
 
 	t.Run("no vouchers found", func(t *testing.T) {
-		userAdmin, err := db.GetUserByEmail("admin@gmail.com")
+		userAdmin, err := app.db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
-		request := httptest.NewRequest("GET", version+"/voucher", nil)
+		request := httptest.NewRequest("GET", app.config.Version+"/voucher", nil)
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), userAdmin.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.ListVouchersHandler(response, newRequest)
+		app.ListVouchersHandler(newRequest)
 		want := `{"msg":"Vouchers are not found","data":[]}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusOK)
@@ -133,10 +134,10 @@ func TestListVouchersHandler(t *testing.T) {
 	})
 
 	t.Run("list all vouchers ", func(t *testing.T) {
-		userAdmin, err := db.GetUserByEmail("admin@gmail.com")
+		userAdmin, err := app.db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		u := models.User{
@@ -146,10 +147,10 @@ func TestListVouchersHandler(t *testing.T) {
 			Verified:       true,
 			SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 		}
-		err = db.CreateUser(&u)
+		err = app.db.CreateUser(&u)
 		assert.NoError(t, err)
 
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
 		v := models.Voucher{
@@ -162,15 +163,15 @@ func TestListVouchersHandler(t *testing.T) {
 			Approved:  true,
 			Rejected:  false,
 		}
-		err = db.CreateVoucher(&v)
+		err = app.db.CreateVoucher(&v)
 		assert.NoError(t, err)
 
-		request := httptest.NewRequest("GET", version+"/voucher", nil)
+		request := httptest.NewRequest("GET", app.config.Version+"/voucher", nil)
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), userAdmin.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.ListVouchersHandler(response, newRequest)
+		app.ListVouchersHandler(newRequest)
 		assert.Equal(t, response.Code, http.StatusOK)
 
 	})
@@ -178,7 +179,7 @@ func TestListVouchersHandler(t *testing.T) {
 }
 
 func TestUpdateVoucherHandler(t *testing.T) {
-	router, db, config, version := SetUp(t)
+	app := SetUp(t)
 	admin := models.User{
 		Name:           "admin",
 		Email:          "admin@gmail.com",
@@ -187,14 +188,14 @@ func TestUpdateVoucherHandler(t *testing.T) {
 		SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 		Admin:          true,
 	}
-	err := db.CreateUser(&admin)
+	err := app.db.CreateUser(&admin)
 	assert.NoError(t, err)
 
 	t.Run("user not found", func(t *testing.T) {
-		userAdmin, err := db.GetUserByEmail("admin@gmail.com")
+		userAdmin, err := app.db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		v := models.Voucher{
@@ -208,14 +209,14 @@ func TestUpdateVoucherHandler(t *testing.T) {
 			Approved:  false,
 			Rejected:  false,
 		}
-		err = db.CreateVoucher(&v)
+		err = app.db.CreateVoucher(&v)
 		assert.NoError(t, err)
 
 		body := []byte(`{
 		"approved": true
 		}`)
 
-		req := httptest.NewRequest("PUT", version+"/voucher/1", bytes.NewBuffer(body))
+		req := httptest.NewRequest("PUT", app.config.Version+"/voucher/1", bytes.NewBuffer(body))
 		request := mux.SetURLVars(req, map[string]string{
 			"id": "1",
 		})
@@ -223,7 +224,7 @@ func TestUpdateVoucherHandler(t *testing.T) {
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), userAdmin.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.UpdateVoucherHandler(response, newRequest)
+		app.UpdateVoucherHandler(newRequest)
 		want := `{"err":"User is not found"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusNotFound)
@@ -231,10 +232,10 @@ func TestUpdateVoucherHandler(t *testing.T) {
 	})
 
 	t.Run("approve user voucher ", func(t *testing.T) {
-		userAdmin, err := db.GetUserByEmail("admin@gmail.com")
+		userAdmin, err := app.db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		u := models.User{
@@ -244,10 +245,10 @@ func TestUpdateVoucherHandler(t *testing.T) {
 			Verified:       true,
 			SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 		}
-		err = db.CreateUser(&u)
+		err = app.db.CreateUser(&u)
 		assert.NoError(t, err)
 
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
 		v := models.Voucher{
@@ -261,14 +262,14 @@ func TestUpdateVoucherHandler(t *testing.T) {
 			Approved:  false,
 			Rejected:  false,
 		}
-		err = db.CreateVoucher(&v)
+		err = app.db.CreateVoucher(&v)
 		assert.NoError(t, err)
 
 		body := []byte(`{
 		"approved": true
 		}`)
 
-		req := httptest.NewRequest("PUT", version+"/voucher/1", bytes.NewBuffer(body))
+		req := httptest.NewRequest("PUT", app.config.Version+"/voucher/1", bytes.NewBuffer(body))
 		request := mux.SetURLVars(req, map[string]string{
 			"id": "2",
 		})
@@ -276,16 +277,16 @@ func TestUpdateVoucherHandler(t *testing.T) {
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), userAdmin.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.UpdateVoucherHandler(response, newRequest)
+		app.UpdateVoucherHandler(newRequest)
 		assert.Equal(t, response.Code, http.StatusOK)
 
 	})
 
 	t.Run("reject user voucher ", func(t *testing.T) {
-		userAdmin, err := db.GetUserByEmail("admin@gmail.com")
+		userAdmin, err := app.db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		u := models.User{
@@ -295,10 +296,10 @@ func TestUpdateVoucherHandler(t *testing.T) {
 			Verified:       true,
 			SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 		}
-		err = db.CreateUser(&u)
+		err = app.db.CreateUser(&u)
 		assert.NoError(t, err)
 
-		user, err := db.GetUserByEmail("bbbb@gmail.com")
+		user, err := app.db.GetUserByEmail("bbbb@gmail.com")
 		assert.NoError(t, err)
 
 		v := models.Voucher{
@@ -312,14 +313,14 @@ func TestUpdateVoucherHandler(t *testing.T) {
 			Approved:  false,
 			Rejected:  false,
 		}
-		err = db.CreateVoucher(&v)
+		err = app.db.CreateVoucher(&v)
 		assert.NoError(t, err)
 
 		body := []byte(`{
 		"approved": false
 		}`)
 
-		req := httptest.NewRequest("PUT", version+"/voucher/2", bytes.NewBuffer(body))
+		req := httptest.NewRequest("PUT", app.config.Version+"/voucher/2", bytes.NewBuffer(body))
 		request := mux.SetURLVars(req, map[string]string{
 			"id": "3",
 		})
@@ -327,16 +328,16 @@ func TestUpdateVoucherHandler(t *testing.T) {
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), userAdmin.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.UpdateVoucherHandler(response, newRequest)
+		app.UpdateVoucherHandler(newRequest)
 		assert.Equal(t, response.Code, http.StatusOK)
 
 	})
 
 	t.Run("voucher already approved", func(t *testing.T) {
-		userAdmin, err := db.GetUserByEmail("admin@gmail.com")
+		userAdmin, err := app.db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		u := models.User{
@@ -346,10 +347,10 @@ func TestUpdateVoucherHandler(t *testing.T) {
 			Verified:       true,
 			SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 		}
-		err = db.CreateUser(&u)
+		err = app.db.CreateUser(&u)
 		assert.NoError(t, err)
 
-		user, err := db.GetUserByEmail("user@gmail.com")
+		user, err := app.db.GetUserByEmail("user@gmail.com")
 		assert.NoError(t, err)
 
 		v := models.Voucher{
@@ -363,14 +364,14 @@ func TestUpdateVoucherHandler(t *testing.T) {
 			Approved:  true,
 			Rejected:  false,
 		}
-		err = db.CreateVoucher(&v)
+		err = app.db.CreateVoucher(&v)
 		assert.NoError(t, err)
 
 		body := []byte(`{
 		"approved": true
 		}`)
 
-		req := httptest.NewRequest("PUT", version+"/voucher/4", bytes.NewBuffer(body))
+		req := httptest.NewRequest("PUT", app.config.Version+"/voucher/4", bytes.NewBuffer(body))
 		request := mux.SetURLVars(req, map[string]string{
 			"id": "4",
 		})
@@ -378,7 +379,7 @@ func TestUpdateVoucherHandler(t *testing.T) {
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), userAdmin.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.UpdateVoucherHandler(response, newRequest)
+		app.UpdateVoucherHandler(newRequest)
 		want := `{"err":"Voucher is already approved"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, 400)
@@ -386,17 +387,17 @@ func TestUpdateVoucherHandler(t *testing.T) {
 	})
 
 	t.Run("failed to read voucher id", func(t *testing.T) {
-		userAdmin, err := db.GetUserByEmail("admin@gmail.com")
+		userAdmin, err := app.db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
 		"approved": true
 		}`)
 
-		req := httptest.NewRequest("PUT", version+"/voucher/", bytes.NewBuffer(body))
+		req := httptest.NewRequest("PUT", app.config.Version+"/voucher/", bytes.NewBuffer(body))
 		request := mux.SetURLVars(req, map[string]string{
 			"id": "",
 		})
@@ -404,7 +405,7 @@ func TestUpdateVoucherHandler(t *testing.T) {
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), userAdmin.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.UpdateVoucherHandler(response, newRequest)
+		app.UpdateVoucherHandler(newRequest)
 		want := `{"err":"Failed to read voucher id"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -412,17 +413,17 @@ func TestUpdateVoucherHandler(t *testing.T) {
 	})
 
 	t.Run("voucher not found", func(t *testing.T) {
-		userAdmin, err := db.GetUserByEmail("admin@gmail.com")
+		userAdmin, err := app.db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
 		"approved": true
 		}`)
 
-		req := httptest.NewRequest("PUT", version+"/voucher/10", bytes.NewBuffer(body))
+		req := httptest.NewRequest("PUT", app.config.Version+"/voucher/10", bytes.NewBuffer(body))
 		request := mux.SetURLVars(req, map[string]string{
 			"id": "10",
 		})
@@ -430,17 +431,17 @@ func TestUpdateVoucherHandler(t *testing.T) {
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), userAdmin.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.UpdateVoucherHandler(response, newRequest)
+		app.UpdateVoucherHandler(newRequest)
 		want := `{"err":"Voucher is not found"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusNotFound)
 	})
 
 	t.Run("voucher is already rejected", func(t *testing.T) {
-		userAdmin, err := db.GetUserByEmail("admin@gmail.com")
+		userAdmin, err := app.db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		u := models.User{
@@ -450,10 +451,10 @@ func TestUpdateVoucherHandler(t *testing.T) {
 			Verified:       true,
 			SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 		}
-		err = db.CreateUser(&u)
+		err = app.db.CreateUser(&u)
 		assert.NoError(t, err)
 
-		user, err := db.GetUserByEmail("aaaa@gmail.com")
+		user, err := app.db.GetUserByEmail("aaaa@gmail.com")
 		assert.NoError(t, err)
 
 		v := models.Voucher{
@@ -467,14 +468,14 @@ func TestUpdateVoucherHandler(t *testing.T) {
 			Approved:  false,
 			Rejected:  true,
 		}
-		err = db.CreateVoucher(&v)
+		err = app.db.CreateVoucher(&v)
 		assert.NoError(t, err)
 
 		body := []byte(`{
 		"rejected": true
 		}`)
 
-		req := httptest.NewRequest("PUT", version+"/voucher/5", bytes.NewBuffer(body))
+		req := httptest.NewRequest("PUT", app.config.Version+"/voucher/5", bytes.NewBuffer(body))
 		request := mux.SetURLVars(req, map[string]string{
 			"id": "5",
 		})
@@ -482,7 +483,7 @@ func TestUpdateVoucherHandler(t *testing.T) {
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), userAdmin.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.UpdateVoucherHandler(response, newRequest)
+		app.UpdateVoucherHandler(newRequest)
 		want := `{"err":"Voucher is already rejected"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, 400)
@@ -490,17 +491,17 @@ func TestUpdateVoucherHandler(t *testing.T) {
 	})
 
 	t.Run("failed to read data", func(t *testing.T) {
-		userAdmin, err := db.GetUserByEmail("admin@gmail.com")
+		userAdmin, err := app.db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
 		"rejected": 
 		}`)
 
-		req := httptest.NewRequest("PUT", version+"/voucher/1", bytes.NewBuffer(body))
+		req := httptest.NewRequest("PUT", app.config.Version+"/voucher/1", bytes.NewBuffer(body))
 		request := mux.SetURLVars(req, map[string]string{
 			"id": "1",
 		})
@@ -508,7 +509,7 @@ func TestUpdateVoucherHandler(t *testing.T) {
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), userAdmin.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.UpdateVoucherHandler(response, newRequest)
+		app.UpdateVoucherHandler(newRequest)
 		want := `{"err":"Failed to read voucher update data"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, 400)
@@ -518,7 +519,7 @@ func TestUpdateVoucherHandler(t *testing.T) {
 }
 
 func TestApproveAllVouchers(t *testing.T) {
-	router, db, config, version := SetUp(t)
+	app := SetUp(t)
 	admin := models.User{
 		Name:           "admin",
 		Email:          "admin@gmail.com",
@@ -527,7 +528,7 @@ func TestApproveAllVouchers(t *testing.T) {
 		SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 		Admin:          true,
 	}
-	err := db.CreateUser(&admin)
+	err := app.db.CreateUser(&admin)
 	assert.NoError(t, err)
 
 	// t.Run("wrong access to endpoint", func(t *testing.T) {
@@ -538,46 +539,46 @@ func TestApproveAllVouchers(t *testing.T) {
 	// 		Verified:       true,
 	// 		SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 	// 	}
-	// 	err := db.CreateUser(&user)
+	// 	err := app.db.CreateUser(&user)
 	// 	assert.NoError(t, err)
 
-	// 	u, err := db.GetUserByEmail("abcd@gmail.com")
+	// 	u, err := app.db.GetUserByEmail("abcd@gmail.com")
 	// 	assert.NoError(t, err)
 
-	// 	token, err := internal.CreateJWT(u.ID.String(), u.Email, config.Token.Secret, config.Token.Timeout)
+	// 	token, err := internal.CreateJWT(u.ID.String(), u.Email, app.config.Token.Secret, app.config.Token.Timeout)
 	// 	assert.NoError(t, err)
 
-	// 	request := httptest.NewRequest("PUT", version+"/voucher", nil)
+	// 	request := httptest.NewRequest("PUT", app.config.Version+"/voucher", nil)
 	// 	request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 	// 	ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), u.ID.String())
 	// 	newRequest := request.WithContext(ctx)
 	// 	response := httptest.NewRecorder()
-	// 	router.ApproveAllVouchers(response, newRequest)
+	// 	app.ApproveAllVouchers(newRequest)
 	// 	assert.Equal(t, response.Code, http.StatusOK)
 
 	// })
 
 	t.Run("no vouchers found", func(t *testing.T) {
-		userAdmin, err := db.GetUserByEmail("admin@gmail.com")
+		userAdmin, err := app.db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
-		request := httptest.NewRequest("PUT", version+"/voucher", nil)
+		request := httptest.NewRequest("PUT", app.config.Version+"/voucher", nil)
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), userAdmin.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.ApproveAllVouchers(response, newRequest)
+		app.ApproveAllVouchersHandler(newRequest)
 		assert.Equal(t, response.Code, http.StatusOK)
 
 	})
 
 	t.Run("admin approve all vouchers ", func(t *testing.T) {
-		userAdmin, err := db.GetUserByEmail("admin@gmail.com")
+		userAdmin, err := app.db.GetUserByEmail("admin@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(userAdmin.ID.String(), userAdmin.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		user1 := models.User{
@@ -587,10 +588,10 @@ func TestApproveAllVouchers(t *testing.T) {
 			Verified:       true,
 			SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 		}
-		err = db.CreateUser(&user1)
+		err = app.db.CreateUser(&user1)
 		assert.NoError(t, err)
 
-		user, err := db.GetUserByEmail("abcd@gmail.com")
+		user, err := app.db.GetUserByEmail("abcd@gmail.com")
 		assert.NoError(t, err)
 
 		v1 := models.Voucher{
@@ -604,7 +605,7 @@ func TestApproveAllVouchers(t *testing.T) {
 			Approved:  false,
 			Rejected:  false,
 		}
-		err = db.CreateVoucher(&v1)
+		err = app.db.CreateVoucher(&v1)
 		assert.NoError(t, err)
 
 		user2 := models.User{
@@ -614,10 +615,10 @@ func TestApproveAllVouchers(t *testing.T) {
 			Verified:       true,
 			SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 		}
-		err = db.CreateUser(&user2)
+		err = app.db.CreateUser(&user2)
 		assert.NoError(t, err)
 
-		user, err = db.GetUserByEmail("aaaa@gmail.com")
+		user, err = app.db.GetUserByEmail("aaaa@gmail.com")
 		assert.NoError(t, err)
 
 		v2 := models.Voucher{
@@ -631,19 +632,17 @@ func TestApproveAllVouchers(t *testing.T) {
 			Approved:  false,
 			Rejected:  false,
 		}
-		err = db.CreateVoucher(&v2)
+		err = app.db.CreateVoucher(&v2)
 		assert.NoError(t, err)
 
-		request := httptest.NewRequest("PUT", version+"/voucher", nil)
+		request := httptest.NewRequest("PUT", app.config.Version+"/voucher", nil)
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), userAdmin.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.ApproveAllVouchers(response, newRequest)
+		app.ApproveAllVouchersHandler(newRequest)
 		want := `{"msg":"All vouchers are approved and confirmation mails has been sent to the users","data":""}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusOK)
-
 	})
-
 }

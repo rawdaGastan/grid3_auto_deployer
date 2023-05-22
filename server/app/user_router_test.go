@@ -1,5 +1,5 @@
-// Package routes for API endpoints
-package routes
+// Package app for c4s backend app
+package app
 
 import (
 	"bytes"
@@ -8,23 +8,26 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"time"
 
 	"testing"
 
-	c4sDeployer "github.com/codescalers/cloud4students/deployer"
 	"github.com/codescalers/cloud4students/internal"
 	"github.com/codescalers/cloud4students/middlewares"
-	"github.com/codescalers/cloud4students/streams"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/codescalers/cloud4students/models"
-	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 )
 
 // SetUp sets the needed configuration for testing
-func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Configuration, version string) {
-	config :=
+func SetUp(t testing.TB) *App {
+	dir := t.TempDir()
+
+	configPath := filepath.Join(dir, "config.json")
+	dbPath := filepath.Join(dir, "testing.db")
+
+	config := fmt.Sprintf(
 		`
 {
 	"server": {
@@ -48,46 +51,25 @@ func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Confi
         "timeout": 10
     },
 	"database": {
-        "file": "testing.db"
+        "file": %s
     },
-	"version": "v1",
+	"app.config.Version": "v1",
 	"salt": "salt"
 }
-	`
-	dir := t.TempDir()
-	configPath := dir + "/config.json"
-	dbPath := dir + "testing.db"
+	`, dbPath)
 
 	err := os.WriteFile(configPath, []byte(config), 0644)
 	assert.NoError(t, err)
 
-	configuration, err := internal.ReadConfFile(configPath)
+	app, err := NewApp(context.Background(), configPath)
 	assert.NoError(t, err)
 
-	db = models.NewDB()
-	err = db.Connect(dbPath)
-	assert.NoError(t, err)
-
-	err = db.Migrate()
-	assert.NoError(t, err)
-
-	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, false)
-	assert.NoError(t, err)
-
-	newDeployer, err := c4sDeployer.NewDeployer(db, streams.RedisClient{}, tfPluginClient)
-	if err != nil {
-		return
-	}
-
-	version = "/" + configuration.Version
-	router, err := NewRouter(configuration, db, streams.RedisClient{}, newDeployer)
-	assert.NoError(t, err)
-
-	return &router, db, configuration, version
+	return app
 }
 
 func TestSignUpHandler(t *testing.T) {
-	router, db, _, version := SetUp(t)
+	app := SetUp(t)
+
 	// json Body of request
 	body := []byte(`{
 		"name": "name",
@@ -98,10 +80,11 @@ func TestSignUpHandler(t *testing.T) {
 		"project_desc":"desc",
 		"college":"clg"
 	}`)
+
 	t.Run("signup successfully", func(t *testing.T) {
-		request := httptest.NewRequest("POST", version+"/user/signup", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/signup", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.SignUpHandler(response, request)
+		app.SignUpHandler(request)
 		got := response.Body.String()
 		want := `{"msg":"Verification code has been sent to name@gmail.com","data":{"timeout":60}}`
 		if got != want {
@@ -122,9 +105,9 @@ func TestSignUpHandler(t *testing.T) {
 		
 	}`)
 
-		request := httptest.NewRequest("POST", version+"/user/signup", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/signup", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.SignUpHandler(response, request)
+		app.SignUpHandler(request)
 		want := `{"err":"Invalid sign up data"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -132,9 +115,9 @@ func TestSignUpHandler(t *testing.T) {
 	})
 
 	t.Run("send empty data", func(t *testing.T) {
-		request := httptest.NewRequest("POST", version+"/user/signup", nil)
+		request := httptest.NewRequest("POST", app.config.Version+"/user/signup", nil)
 		response := httptest.NewRecorder()
-		router.SignUpHandler(response, request)
+		app.SignUpHandler(request)
 		want := `{"err":"Failed to read sign up data"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -152,9 +135,9 @@ func TestSignUpHandler(t *testing.T) {
 		
 	}`)
 
-		request := httptest.NewRequest("POST", version+"/user/signup", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/signup", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.SignUpHandler(response, request)
+		app.SignUpHandler(request)
 		want := `{"err":"Password and confirm password don't match"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -171,19 +154,19 @@ func TestSignUpHandler(t *testing.T) {
 		"project_desc":"desc",
 		"college":"clg"
 	}`)
-		err := db.CreateUser(
+		err := app.db.CreateUser(
 			&models.User{Name: "aaaa", Email: "aaaa@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: true})
 		assert.NoError(t, err)
-		request := httptest.NewRequest("POST", version+"/user/signup", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/signup", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.SignUpHandler(response, request)
+		app.SignUpHandler(request)
 		want := `{"err":"User already exists"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})
 
 	t.Run("user exists but not verified", func(t *testing.T) {
-		err := db.CreateUser(&models.User{Name: "person", Email: "person@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false})
+		err := app.db.CreateUser(&models.User{Name: "person", Email: "person@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false})
 		assert.NoError(t, err)
 		body := []byte(`{
 		"name": "person",
@@ -194,9 +177,9 @@ func TestSignUpHandler(t *testing.T) {
 		"project_desc":"desc",
 		"college":"clg"
 	}`)
-		request := httptest.NewRequest("POST", version+"/user/signup", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/signup", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.SignUpHandler(response, request)
+		app.SignUpHandler(request)
 		want := `{"msg":"Verification code has been sent to person@gmail.com","data":{"timeout":60}}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusOK)
@@ -206,7 +189,7 @@ func TestSignUpHandler(t *testing.T) {
 }
 
 func TestVerifySignUpCodeHandler(t *testing.T) {
-	router, db, _, version := SetUp(t)
+	app := SetUp(t)
 	body := []byte(`{
 		"name":"name",
 		"email":"name@gmail.com",
@@ -216,12 +199,12 @@ func TestVerifySignUpCodeHandler(t *testing.T) {
 		"project_desc":"desc",
 		"college":"clg"
 	}`)
-	request1 := httptest.NewRequest("POST", version+"/user/signup", bytes.NewBuffer(body))
+	request1 := httptest.NewRequest("POST", app.config.Version+"/user/signup", bytes.NewBuffer(body))
 	response1 := httptest.NewRecorder()
-	router.SignUpHandler(response1, request1)
+	app.SignUpHandler(request1)
 	assert.Equal(t, response1.Code, http.StatusOK)
 
-	code, err := db.GetCodeByEmail("name@gmail.com")
+	code, err := app.db.GetCodeByEmail("name@gmail.com")
 	if err != nil {
 		t.Error(err)
 	}
@@ -231,17 +214,17 @@ func TestVerifySignUpCodeHandler(t *testing.T) {
 			"code": %d
 		}`, code)
 		body = []byte(data)
-		request2 := httptest.NewRequest("POST", version+"/user/signup/verify_email", bytes.NewBuffer(body))
+		request2 := httptest.NewRequest("POST", app.config.Version+"/user/signup/verify_email", bytes.NewBuffer(body))
 		response2 := httptest.NewRecorder()
-		router.VerifySignUpCodeHandler(response2, request2)
+		app.VerifySignUpCodeHandler(request2)
 		assert.Equal(t, response2.Code, http.StatusOK)
 
 	})
 
 	t.Run("add empty code", func(t *testing.T) {
-		request2 := httptest.NewRequest("POST", version+"/user/signup/verify_email", nil)
+		request2 := httptest.NewRequest("POST", app.config.Version+"/user/signup/verify_email", nil)
 		response2 := httptest.NewRecorder()
-		router.VerifySignUpCodeHandler(response2, request2)
+		app.VerifySignUpCodeHandler(request2)
 		assert.Equal(t, response2.Code, http.StatusBadRequest)
 	})
 
@@ -250,55 +233,55 @@ func TestVerifySignUpCodeHandler(t *testing.T) {
 			"email":"user@gmail.com",
 			"code": 1234
 		}`)
-		request2 := httptest.NewRequest("POST", version+"/user/signup/verify_email", bytes.NewBuffer(body))
+		request2 := httptest.NewRequest("POST", app.config.Version+"/user/signup/verify_email", bytes.NewBuffer(body))
 		response2 := httptest.NewRecorder()
-		router.VerifySignUpCodeHandler(response2, request2)
+		app.VerifySignUpCodeHandler(request2)
 		want := `{"err":"User is not found"}`
 		assert.Equal(t, response2.Body.String(), want)
 		assert.Equal(t, response2.Code, http.StatusNotFound)
 	})
 
 	t.Run("user already verified", func(t *testing.T) {
-		err := db.CreateUser(&models.User{Name: "person", Email: "person@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: true})
+		err := app.db.CreateUser(&models.User{Name: "person", Email: "person@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: true})
 		assert.NoError(t, err)
 		body := []byte(`{
 			"email":"person@gmail.com",
 			"code": 1234
 		}`)
 		want := `{"err":"Account is already created"}`
-		request2 := httptest.NewRequest("POST", version+"/user/signup/verify_email", bytes.NewBuffer(body))
+		request2 := httptest.NewRequest("POST", app.config.Version+"/user/signup/verify_email", bytes.NewBuffer(body))
 		response2 := httptest.NewRecorder()
-		router.VerifySignUpCodeHandler(response2, request2)
+		app.VerifySignUpCodeHandler(request2)
 		assert.Equal(t, response2.Body.String(), want)
 		assert.Equal(t, response2.Code, http.StatusBadRequest)
 
 	})
 
 	t.Run("wrong code", func(t *testing.T) {
-		err := db.CreateUser(&models.User{Name: "new-person", Email: "newperson@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false, Code: 0000})
+		err := app.db.CreateUser(&models.User{Name: "new-person", Email: "newperson@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false, Code: 0000})
 		assert.NoError(t, err)
 		body := []byte(`{
 			"email":"newperson@gmail.com",
 			"code": 1234
 		}`)
 		want := `{"err":"Wrong code"}`
-		request := httptest.NewRequest("POST", version+"/user/signup/verify_email", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/signup/verify_email", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.VerifySignUpCodeHandler(response, request)
+		app.VerifySignUpCodeHandler(request)
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})
 
 	t.Run("code expired", func(t *testing.T) {
-		err := db.CreateUser(&models.User{Name: "newp", Email: "newp@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false, Code: 1234, UpdatedAt: time.Now().Add(-time.Hour * 25)})
+		err := app.db.CreateUser(&models.User{Name: "newp", Email: "newp@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false, Code: 1234, UpdatedAt: time.Now().Add(-time.Hour * 25)})
 		assert.NoError(t, err)
 		body := []byte(`{
 			"email":"newp@gmail.com",
 			"code": 1234
 		}`)
-		request := httptest.NewRequest("POST", version+"/user/signup/verify_email", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/signup/verify_email", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.VerifySignUpCodeHandler(response, request)
+		app.VerifySignUpCodeHandler(request)
 		want := `{"err":"Code has expired"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -307,7 +290,7 @@ func TestVerifySignUpCodeHandler(t *testing.T) {
 }
 
 func TestSignInHandler(t *testing.T) {
-	router, db, _, version := SetUp(t)
+	app := SetUp(t)
 
 	hashed, err := internal.HashAndSaltPassword([]byte("strongpass"))
 	assert.NoError(t, err)
@@ -318,7 +301,7 @@ func TestSignInHandler(t *testing.T) {
 		HashedPassword: hashed,
 		Verified:       true,
 	}
-	err = db.CreateUser(&u)
+	err = app.db.CreateUser(&u)
 	assert.NoError(t, err)
 
 	t.Run("signIn successfully", func(t *testing.T) {
@@ -327,9 +310,9 @@ func TestSignInHandler(t *testing.T) {
 			"email":"name@gmail.com",
 			"password":"strongpass"
 		}`)
-		request := httptest.NewRequest("POST", version+"/user/signin", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/signin", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.SignInHandler(response, request)
+		app.SignInHandler(request)
 		assert.Equal(t, response.Code, http.StatusOK)
 
 	})
@@ -340,9 +323,9 @@ func TestSignInHandler(t *testing.T) {
 			"email":"name@gmail.com",
 			"password":"wrongpass"
 		}`)
-		request := httptest.NewRequest("POST", version+"/user/signin", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/signin", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.SignInHandler(response, request)
+		app.SignInHandler(request)
 		got := response.Body.String()
 		want := `{"err":"Password is not correct"}`
 		if got != want {
@@ -358,9 +341,9 @@ func TestSignInHandler(t *testing.T) {
 			"email":name@gmail.com,
 			"password":"wrongpass"
 		}`)
-		request := httptest.NewRequest("POST", version+"/user/signin", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/signin", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.SignInHandler(response, request)
+		app.SignInHandler(request)
 		want := `{"err":"Failed to read sign in data"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -373,9 +356,9 @@ func TestSignInHandler(t *testing.T) {
 			"email":"aaaa@gmail.com",
 			"password":"wrongpass"
 		}`)
-		request := httptest.NewRequest("POST", version+"/user/signin", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/signin", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.SignInHandler(response, request)
+		app.SignInHandler(request)
 		want := `{"err":"User is not found"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusNotFound)
@@ -383,16 +366,16 @@ func TestSignInHandler(t *testing.T) {
 	})
 
 	t.Run("user's not verified yet", func(t *testing.T) {
-		err := db.CreateUser(&models.User{Name: "new-person", Email: "newperson@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false, Code: 0000})
+		err := app.db.CreateUser(&models.User{Name: "new-person", Email: "newperson@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false, Code: 0000})
 		assert.NoError(t, err)
 		body := []byte(`{
 			"name":"new-person",
 			"email":"newperson@gmail.com",
 			"password":"1234567"
 		}`)
-		request := httptest.NewRequest("POST", version+"/user/signin", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/signin", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.SignInHandler(response, request)
+		app.SignInHandler(request)
 		want := `{"err":"Email is not verified yet, please check the verification email in your inbox"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -401,33 +384,33 @@ func TestSignInHandler(t *testing.T) {
 }
 
 func TestRefreshJWTHandler(t *testing.T) {
-	router, db, config, version := SetUp(t)
+	app := SetUp(t)
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
 		HashedPassword: []byte{},
 		Verified:       true,
 	}
-	err := db.CreateUser(&u)
+	err := app.db.CreateUser(&u)
 	assert.NoError(t, err)
 
 	t.Run("refresh token not expired yet", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
-		request := httptest.NewRequest("POST", version+"/user/refresh_token", nil)
+		request := httptest.NewRequest("POST", app.config.Version+"/user/refresh_token", nil)
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		response := httptest.NewRecorder()
-		router.RefreshJWTHandler(response, request)
+		app.RefreshJWTHandler(request)
 		assert.Equal(t, response.Code, http.StatusOK)
 	})
 	t.Run("add empty token", func(t *testing.T) {
-		request := httptest.NewRequest("POST", version+"/user/refresh_token", nil)
+		request := httptest.NewRequest("POST", app.config.Version+"/user/refresh_token", nil)
 		response := httptest.NewRecorder()
-		router.RefreshJWTHandler(response, request)
+		app.RefreshJWTHandler(request)
 		want := `{"err":"Token is required"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -435,42 +418,42 @@ func TestRefreshJWTHandler(t *testing.T) {
 	})
 
 	t.Run("refresh expired token", func(t *testing.T) {
-		err := db.CreateUser(&models.User{Name: "newp", Email: "newp@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: true, Code: 1234})
+		err := app.db.CreateUser(&models.User{Name: "newp", Email: "newp@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: true, Code: 1234})
 		assert.NoError(t, err)
 
-		user, err := db.GetUserByEmail("newp@gmail.com")
+		user, err := app.db.GetUserByEmail("newp@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, 0)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, 0)
 		assert.NoError(t, err)
 
-		request := httptest.NewRequest("POST", version+"/user/refresh_token", nil)
+		request := httptest.NewRequest("POST", app.config.Version+"/user/refresh_token", nil)
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		response := httptest.NewRecorder()
-		router.RefreshJWTHandler(response, request)
+		app.RefreshJWTHandler(request)
 		assert.Equal(t, response.Code, http.StatusOK)
 	})
 
 }
 
 func TestForgotPasswordHandler(t *testing.T) {
-	router, db, _, version := SetUp(t)
+	app := SetUp(t)
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
 		HashedPassword: []byte{},
 		Verified:       true,
 	}
-	err := db.CreateUser(&u)
+	err := app.db.CreateUser(&u)
 	assert.NoError(t, err)
 
 	t.Run("forgot password", func(t *testing.T) {
 		body := []byte(`{
 			"email":"name@gmail.com"
 		}`)
-		request := httptest.NewRequest("POST", version+"/user/forgot_password", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/forgot_password", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.ForgotPasswordHandler(response, request)
+		app.ForgotPasswordHandler(request)
 		got := response.Body.String()
 		want := `{"msg":"Verification code has been sent to name@gmail.com","data":{"timeout":60}}`
 		assert.Equal(t, got, want)
@@ -481,9 +464,9 @@ func TestForgotPasswordHandler(t *testing.T) {
 		body := []byte(`{
 			"email":"abcde@gmail.com"
 		}`)
-		request := httptest.NewRequest("POST", version+"/user/forgot_password", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/forgot_password", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.ForgotPasswordHandler(response, request)
+		app.ForgotPasswordHandler(request)
 		assert.Equal(t, response.Code, http.StatusNotFound)
 	})
 
@@ -491,9 +474,9 @@ func TestForgotPasswordHandler(t *testing.T) {
 		body := []byte(`{
 			"email":abcde@gmail.com
 		}`)
-		request := httptest.NewRequest("POST", version+"/user/forgot_password", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/forgot_password", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.ForgotPasswordHandler(response, request)
+		app.ForgotPasswordHandler(request)
 		want := `{"err":"Failed to read email data"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -502,26 +485,26 @@ func TestForgotPasswordHandler(t *testing.T) {
 }
 
 func TestVerifyForgetPasswordCodeHandler(t *testing.T) {
-	router, db, _, version := SetUp(t)
+	app := SetUp(t)
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
 		HashedPassword: []byte{},
 		Verified:       true,
 	}
-	err := db.CreateUser(&u)
+	err := app.db.CreateUser(&u)
 	assert.NoError(t, err)
 
 	body := []byte(`{
 			"email":"name@gmail.com"
 		}`)
-	request1 := httptest.NewRequest("POST", version+"/user/forgot_password", bytes.NewBuffer(body))
+	request1 := httptest.NewRequest("POST", app.config.Version+"/user/forgot_password", bytes.NewBuffer(body))
 	response1 := httptest.NewRecorder()
-	router.ForgotPasswordHandler(response1, request1)
+	app.ForgotPasswordHandler(request1)
 	assert.Equal(t, response1.Code, http.StatusOK)
 
 	t.Run("verify code", func(t *testing.T) {
-		code, err := db.GetCodeByEmail("name@gmail.com")
+		code, err := app.db.GetCodeByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
 		data := fmt.Sprintf(`{
@@ -529,9 +512,9 @@ func TestVerifyForgetPasswordCodeHandler(t *testing.T) {
 			"code": %d
 		}`, code)
 		body = []byte(data)
-		request2 := httptest.NewRequest("POST", version+"/user/forget_password/verify_email", bytes.NewBuffer(body))
+		request2 := httptest.NewRequest("POST", app.config.Version+"/user/forget_password/verify_email", bytes.NewBuffer(body))
 		response2 := httptest.NewRecorder()
-		router.VerifyForgetPasswordCodeHandler(response2, request2)
+		app.VerifyForgetPasswordCodeHandler(request2)
 		assert.Equal(t, response2.Code, http.StatusOK)
 	})
 
@@ -541,9 +524,9 @@ func TestVerifyForgetPasswordCodeHandler(t *testing.T) {
 			"code": %d
 		}`, 00000)
 		body = []byte(data)
-		request2 := httptest.NewRequest("POST", version+"/user/forget_password/verify_email", bytes.NewBuffer(body))
+		request2 := httptest.NewRequest("POST", app.config.Version+"/user/forget_password/verify_email", bytes.NewBuffer(body))
 		response2 := httptest.NewRecorder()
-		router.VerifyForgetPasswordCodeHandler(response2, request2)
+		app.VerifyForgetPasswordCodeHandler(request2)
 		assert.Equal(t, response2.Code, http.StatusBadRequest)
 	})
 
@@ -553,9 +536,9 @@ func TestVerifyForgetPasswordCodeHandler(t *testing.T) {
 			"code": "1234"
 		}`)
 
-		request := httptest.NewRequest("POST", version+"/user/forget_password/verify_email", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/forget_password/verify_email", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.VerifyForgetPasswordCodeHandler(response, request)
+		app.VerifyForgetPasswordCodeHandler(request)
 		want := `{"err":"Failed to read password code"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -567,9 +550,9 @@ func TestVerifyForgetPasswordCodeHandler(t *testing.T) {
 			"code": 1234
 		}`)
 
-		request := httptest.NewRequest("POST", version+"/user/forget_password/verify_email", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/forget_password/verify_email", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.VerifyForgetPasswordCodeHandler(response, request)
+		app.VerifyForgetPasswordCodeHandler(request)
 		want := `{"err":"User is not found"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusNotFound)
@@ -578,14 +561,14 @@ func TestVerifyForgetPasswordCodeHandler(t *testing.T) {
 }
 
 func TestChangePasswordHandler(t *testing.T) {
-	router, db, _, version := SetUp(t)
+	app := SetUp(t)
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
 		HashedPassword: []byte{},
 		Verified:       true,
 	}
-	err := db.CreateUser(&u)
+	err := app.db.CreateUser(&u)
 	assert.NoError(t, err)
 
 	t.Run("change password", func(t *testing.T) {
@@ -595,9 +578,9 @@ func TestChangePasswordHandler(t *testing.T) {
 		"confirm_password":"newpass"
 		}`)
 
-		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.ChangePasswordHandler(response, request)
+		app.ChangePasswordHandler(request)
 		got := response.Body.String()
 		want := `{"msg":"Password is updated successfully","data":""}`
 		assert.Equal(t, got, want)
@@ -611,9 +594,9 @@ func TestChangePasswordHandler(t *testing.T) {
 		"confirm_password":"oldpass"
 		}`)
 
-		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.ChangePasswordHandler(response, request)
+		app.ChangePasswordHandler(request)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})
 
@@ -624,9 +607,9 @@ func TestChangePasswordHandler(t *testing.T) {
 		"confirm_password":"oldpass"
 		}`)
 
-		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.ChangePasswordHandler(response, request)
+		app.ChangePasswordHandler(request)
 		want := `{"err":"Failed to read password data"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -639,9 +622,9 @@ func TestChangePasswordHandler(t *testing.T) {
 		"confirm_password":""
 		}`)
 
-		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.ChangePasswordHandler(response, request)
+		app.ChangePasswordHandler(request)
 		want := `{"err":"Invalid password data"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -653,9 +636,9 @@ func TestChangePasswordHandler(t *testing.T) {
 		"confirm_password":"newpass"
 		}`)
 
-		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
-		router.ChangePasswordHandler(response, request)
+		app.ChangePasswordHandler(request)
 		want := `{"err":"User is not found"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusNotFound)
@@ -664,21 +647,21 @@ func TestChangePasswordHandler(t *testing.T) {
 }
 
 func TestUpdateUserHandler(t *testing.T) {
-	router, db, config, version := SetUp(t)
+	app := SetUp(t)
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
 		HashedPassword: []byte{},
 		Verified:       true,
 	}
-	err := db.CreateUser(&u)
+	err := app.db.CreateUser(&u)
 	assert.NoError(t, err)
 
 	t.Run("update data of user", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
@@ -688,12 +671,12 @@ func TestUpdateUserHandler(t *testing.T) {
 		"confirm_password":"newpass"
 		}`)
 
-		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.UpdateUserHandler(response, newRequest)
+		app.UpdateUserHandler(newRequest)
 		got := response.Body.String()
 		want := fmt.Sprintf(`{"msg":"User is updated successfully","data":{"user_id":"%s"}}`, user.ID.String())
 		assert.Equal(t, got, want)
@@ -701,26 +684,26 @@ func TestUpdateUserHandler(t *testing.T) {
 	})
 
 	t.Run("add empty data", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
-		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(nil))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user", bytes.NewBuffer(nil))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.UpdateUserHandler(response, newRequest)
+		app.UpdateUserHandler(newRequest)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})
 
 	t.Run("password and confirm password don't match", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
@@ -730,22 +713,22 @@ func TestUpdateUserHandler(t *testing.T) {
 		"confirm_password":"oldpas"
 		}`)
 
-		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.UpdateUserHandler(response, newRequest)
+		app.UpdateUserHandler(newRequest)
 		want := `{"err":"Password and confirm password don't match"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})
 
 	t.Run("invalid password", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
@@ -755,12 +738,12 @@ func TestUpdateUserHandler(t *testing.T) {
 		"confirm_password":"z"
 		}`)
 
-		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.UpdateUserHandler(response, newRequest)
+		app.UpdateUserHandler(newRequest)
 		want := `{"err":"Invalid password"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -769,10 +752,10 @@ func TestUpdateUserHandler(t *testing.T) {
 
 	t.Run("invalid ssh key", func(t *testing.T) {
 		u.SSHKey = "z"
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
@@ -781,36 +764,36 @@ func TestUpdateUserHandler(t *testing.T) {
 		"ssh_key":"k"	
 		}`)
 
-		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.UpdateUserHandler(response, newRequest)
+		app.UpdateUserHandler(newRequest)
 		want := `{"err":"Invalid sshKey"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})
 
 	t.Run("nothing to update", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{}`)
-		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.UpdateUserHandler(response, newRequest)
+		app.UpdateUserHandler(newRequest)
 		assert.Equal(t, response.Code, http.StatusOK)
 	})
 
 	t.Run("wrong user ID", func(t *testing.T) {
-		token, err := internal.CreateJWT("", u.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT("", u.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
@@ -819,55 +802,55 @@ func TestUpdateUserHandler(t *testing.T) {
 		"password":"newpass",
 		"confirm_password":"newpass"
 		}`)
-		request := httptest.NewRequest("PUT", version+"/user", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), "")
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.UpdateUserHandler(response, newRequest)
+		app.UpdateUserHandler(newRequest)
 		assert.Equal(t, response.Code, http.StatusInternalServerError)
 	})
 
 }
 
 func TestGetUserHandler(t *testing.T) {
-	router, db, config, version := SetUp(t)
+	app := SetUp(t)
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
 		HashedPassword: []byte{},
 		Verified:       true,
 	}
-	err := db.CreateUser(&u)
+	err := app.db.CreateUser(&u)
 	assert.NoError(t, err)
 
 	t.Run("get user", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
-		request := httptest.NewRequest("GET", version+"/user", nil)
+		request := httptest.NewRequest("GET", app.config.Version+"/user", nil)
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.GetUserHandler(response, newRequest)
+		app.GetUserHandler(newRequest)
 		assert.Equal(t, response.Code, http.StatusOK)
 	})
 
 	t.Run("user not found", func(t *testing.T) {
 
-		token, err := internal.CreateJWT("2", u.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT("2", u.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
-		request := httptest.NewRequest("GET", version+"/user", nil)
+		request := httptest.NewRequest("GET", app.config.Version+"/user", nil)
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), "2")
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.GetUserHandler(response, newRequest)
+		app.GetUserHandler(newRequest)
 		want := `{"err":"User is not found"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusNotFound)
@@ -876,21 +859,21 @@ func TestGetUserHandler(t *testing.T) {
 }
 
 func TestApplyForVoucherHandler(t *testing.T) {
-	router, db, config, version := SetUp(t)
+	app := SetUp(t)
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
 		HashedPassword: []byte{},
 		Verified:       true,
 	}
-	err := db.CreateUser(&u)
+	err := app.db.CreateUser(&u)
 	assert.NoError(t, err)
 
 	t.Run("failed to read voucher data", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
@@ -900,22 +883,22 @@ func TestApplyForVoucherHandler(t *testing.T) {
 
 		}`)
 
-		request := httptest.NewRequest("POST", version+"/user/apply_voucher", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/apply_voucher", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.ApplyForVoucherHandler(response, newRequest)
+		app.ApplyForVoucherHandler(newRequest)
 		want := `{"err":"Failed to read voucher data"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})
 
 	t.Run("apply for voucher", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
@@ -925,12 +908,12 @@ func TestApplyForVoucherHandler(t *testing.T) {
 
 		}`)
 
-		request := httptest.NewRequest("POST", version+"/user/apply_voucher", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/apply_voucher", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.ApplyForVoucherHandler(response, newRequest)
+		app.ApplyForVoucherHandler(newRequest)
 		want := `{"msg":"Voucher request is being reviewed, you'll receive a confirmation mail soon","data":""}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusOK)
@@ -938,10 +921,10 @@ func TestApplyForVoucherHandler(t *testing.T) {
 	})
 
 	t.Run("user already applied before", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		v := models.Voucher{
@@ -951,7 +934,7 @@ func TestApplyForVoucherHandler(t *testing.T) {
 			Approved: false,
 			Rejected: false,
 		}
-		err = db.CreateVoucher(&v)
+		err = app.db.CreateVoucher(&v)
 		assert.NoError(t, err)
 
 		body := []byte(`{
@@ -961,12 +944,12 @@ func TestApplyForVoucherHandler(t *testing.T) {
 
 		}`)
 
-		request := httptest.NewRequest("POST", version+"/user/apply_voucher", bytes.NewBuffer(body))
+		request := httptest.NewRequest("POST", app.config.Version+"/user/apply_voucher", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.ApplyForVoucherHandler(response, newRequest)
+		app.ApplyForVoucherHandler(newRequest)
 		want := `{"err":"You have already a voucher request, please wait for the confirmation mail"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -976,14 +959,14 @@ func TestApplyForVoucherHandler(t *testing.T) {
 }
 
 func TestActivateVoucherHandler(t *testing.T) {
-	router, db, config, version := SetUp(t)
+	app := SetUp(t)
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
 		HashedPassword: []byte{},
 		Verified:       true,
 	}
-	err := db.CreateUser(&u)
+	err := app.db.CreateUser(&u)
 	assert.NoError(t, err)
 
 	t.Run("activate voucher ", func(t *testing.T) {
@@ -992,13 +975,13 @@ func TestActivateVoucherHandler(t *testing.T) {
 			VMs:      10,
 			Approved: true,
 		}
-		err = db.CreateVoucher(&v)
+		err = app.db.CreateVoucher(&v)
 		assert.NoError(t, err)
 
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		err = db.CreateQuota(
+		err = app.db.CreateQuota(
 			&models.Quota{
 				UserID: user.ID.String(),
 				Vms:    0,
@@ -1006,18 +989,18 @@ func TestActivateVoucherHandler(t *testing.T) {
 		)
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
 		"voucher" : "voucher"
 		}`)
-		request := httptest.NewRequest("PUT", version+"/user/activate_voucher", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user/activate_voucher", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.ActivateVoucherHandler(response, newRequest)
+		app.ActivateVoucherHandler(newRequest)
 		got := response.Body.String()
 		want := `{"msg":"Voucher is applied successfully","data":""}`
 		assert.Equal(t, got, want)
@@ -1025,10 +1008,10 @@ func TestActivateVoucherHandler(t *testing.T) {
 	})
 
 	t.Run("apply wrong voucher ", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		err = db.CreateQuota(
+		err = app.db.CreateQuota(
 			&models.Quota{
 				UserID: user.ID.String(),
 				Vms:    10,
@@ -1036,37 +1019,37 @@ func TestActivateVoucherHandler(t *testing.T) {
 		)
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
 		"voucher" : "voucher"
 		}`)
-		request := httptest.NewRequest("PUT", version+"/user/activate_voucher", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user/activate_voucher", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.ActivateVoucherHandler(response, newRequest)
+		app.ActivateVoucherHandler(newRequest)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})
 
 	t.Run("failed to read voucher data", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
 		"voucher" : voucher
 		}`)
-		request := httptest.NewRequest("PUT", version+"/user/activate_voucher", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user/activate_voucher", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.ActivateVoucherHandler(response, newRequest)
+		app.ActivateVoucherHandler(newRequest)
 		want := `{"err":"Failed to read voucher data"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -1080,7 +1063,7 @@ func TestActivateVoucherHandler(t *testing.T) {
 			HashedPassword: []byte{},
 			Verified:       true,
 		}
-		err := db.CreateUser(&u)
+		err := app.db.CreateUser(&u)
 		assert.NoError(t, err)
 
 		v := models.Voucher{
@@ -1088,24 +1071,24 @@ func TestActivateVoucherHandler(t *testing.T) {
 			VMs:      10,
 			Approved: true,
 		}
-		err = db.CreateVoucher(&v)
+		err = app.db.CreateVoucher(&v)
 		assert.NoError(t, err)
 
-		user, err := db.GetUserByEmail("ffff@gmail.com")
+		user, err := app.db.GetUserByEmail("ffff@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
 		"voucher" : "testing"
 		}`)
-		request := httptest.NewRequest("PUT", version+"/user/activate_voucher", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user/activate_voucher", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.ActivateVoucherHandler(response, newRequest)
+		app.ActivateVoucherHandler(newRequest)
 		want := `{"err":"User quota not found"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusNotFound)
@@ -1113,10 +1096,10 @@ func TestActivateVoucherHandler(t *testing.T) {
 	})
 
 	t.Run("voucher not found", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		err = db.CreateQuota(
+		err = app.db.CreateQuota(
 			&models.Quota{
 				UserID: user.ID.String(),
 				Vms:    10,
@@ -1124,18 +1107,18 @@ func TestActivateVoucherHandler(t *testing.T) {
 		)
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
 		"voucher" : "abcd"
 		}`)
-		request := httptest.NewRequest("PUT", version+"/user/activate_voucher", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user/activate_voucher", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.ActivateVoucherHandler(response, newRequest)
+		app.ActivateVoucherHandler(newRequest)
 		want := `{"err":"User voucher not found"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusNotFound)
@@ -1143,7 +1126,7 @@ func TestActivateVoucherHandler(t *testing.T) {
 	})
 
 	t.Run("voucher is rejected", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
 		v := models.Voucher{
@@ -1151,10 +1134,10 @@ func TestActivateVoucherHandler(t *testing.T) {
 			VMs:      10,
 			Rejected: true,
 		}
-		err = db.CreateVoucher(&v)
+		err = app.db.CreateVoucher(&v)
 		assert.NoError(t, err)
 
-		err = db.CreateQuota(
+		err = app.db.CreateQuota(
 			&models.Quota{
 				UserID: user.ID.String(),
 				Vms:    0,
@@ -1162,19 +1145,19 @@ func TestActivateVoucherHandler(t *testing.T) {
 		)
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
 		"voucher" : "newvoucher"
 		}`)
 
-		request := httptest.NewRequest("PUT", version+"/user/activate_voucher", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user/activate_voucher", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.ActivateVoucherHandler(response, newRequest)
+		app.ActivateVoucherHandler(newRequest)
 		want := `{"err":"Voucher is rejected"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -1182,7 +1165,7 @@ func TestActivateVoucherHandler(t *testing.T) {
 
 	t.Run("voucher is not approved yet", func(t *testing.T) {
 
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
 		v := models.Voucher{
@@ -1191,10 +1174,10 @@ func TestActivateVoucherHandler(t *testing.T) {
 			Approved: false,
 			Rejected: false,
 		}
-		err = db.CreateVoucher(&v)
+		err = app.db.CreateVoucher(&v)
 		assert.NoError(t, err)
 
-		err = db.CreateQuota(
+		err = app.db.CreateQuota(
 			&models.Quota{
 				UserID: user.ID.String(),
 				Vms:    10,
@@ -1202,19 +1185,19 @@ func TestActivateVoucherHandler(t *testing.T) {
 		)
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		body := []byte(`{
 		"voucher" : "123456"
 		}`)
 
-		request := httptest.NewRequest("PUT", version+"/user/activate_voucher", bytes.NewBuffer(body))
+		request := httptest.NewRequest("PUT", app.config.Version+"/user/activate_voucher", bytes.NewBuffer(body))
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.ActivateVoucherHandler(response, newRequest)
+		app.ActivateVoucherHandler(newRequest)
 		want := `{"err":"Voucher is not approved yet"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)

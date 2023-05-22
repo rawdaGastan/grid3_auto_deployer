@@ -1,9 +1,13 @@
 package internal
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func TestSendMail(t *testing.T) {
@@ -16,25 +20,69 @@ func TestSendMail(t *testing.T) {
 		err := SendMail("sender@gmail.com", "1234", "receiver", "subject", "body")
 		assert.Error(t, err)
 	})
-
 }
 
 func TestSignUpMailContent(t *testing.T) {
-	subject, body := SignUpMailContent(1234, 60)
+	subject, body := SignUpMailContent(1234, 60, "user")
 	assert.Equal(t, subject, "Welcome to Cloud4Students 🎉")
-	assert.Equal(t, body, "We are so glad to have you here.\n\nYour code is 1234\nThe code will expire in 60 seconds.\nPlease don't share it with anyone.")
+
+	want := string(signUpMail)
+	want = strings.ReplaceAll(want, "-code-", fmt.Sprint(1234))
+	want = strings.ReplaceAll(want, "-time-", fmt.Sprint(60))
+	want = strings.ReplaceAll(want, "-name-", cases.Title(language.Und).String("user"))
+
+	assert.Equal(t, body, want)
+}
+
+func TestResetPassMailContent(t *testing.T) {
+	subject, body := ResetPasswordMailContent(1234, 60, "user")
+	assert.Equal(t, subject, "Reset password")
+
+	want := string(resetPassMail)
+	want = strings.ReplaceAll(want, "-code-", fmt.Sprint(1234))
+	want = strings.ReplaceAll(want, "-time-", fmt.Sprint(60))
+	want = strings.ReplaceAll(want, "-name-", cases.Title(language.Und).String("user"))
+
+	assert.Equal(t, body, want)
 }
 
 func TestApprovedVoucherMailContent(t *testing.T) {
 	subject, body := ApprovedVoucherMailContent("1234", "user")
 	assert.Equal(t, subject, "Your voucher request is approved 🎆")
-	assert.Equal(t, body, "Welcome user,\n\nWe are so glad to inform you that your voucher request has been approved successfully.\n\nYour voucher is 1234\n\nYou can apply the voucher from your profile page.\n\nBest regards,\nCodescalers team")
 
+	want := string(approveVoucherMail)
+	want = strings.ReplaceAll(want, "-voucher-", fmt.Sprint(1234))
+	want = strings.ReplaceAll(want, "-name-", cases.Title(language.Und).String("user"))
+
+	assert.Equal(t, body, want)
 }
 
 func TestRejectedVoucherMailContent(t *testing.T) {
 	subject, body := RejectedVoucherMailContent("user")
 	assert.Equal(t, subject, "Your voucher request is rejected 😔")
-	assert.Equal(t, body, "Welcome user,\n\nWe are sorry to inform you that your voucher request has been rejected.\n\nBest regards,\nCodescalers team")
 
+	want := string(rejectedVoucherMail)
+	want = strings.ReplaceAll(want, "-name-", cases.Title(language.Und).String("user"))
+
+	assert.Equal(t, body, want)
+}
+
+func TestNotifyVoucherMailContent(t *testing.T) {
+	subject, body := NotifyAdminsMailContent(7)
+	assert.Equal(t, subject, "There're pending voucher requests for you to review")
+
+	want := string(notifyVoucherMail)
+	want = strings.ReplaceAll(want, "-vouchers-", fmt.Sprint(7))
+
+	assert.Equal(t, body, want)
+}
+
+func TestNotifyBalanceMailContent(t *testing.T) {
+	subject, body := NotifyAdminsMailLowBalanceContent(200)
+	assert.Equal(t, subject, "Your account balance is low")
+
+	want := string(balanceMail)
+	want = strings.ReplaceAll(want, "-balance-", fmt.Sprint(200))
+
+	assert.Equal(t, body, want)
 }

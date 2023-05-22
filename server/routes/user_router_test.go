@@ -61,10 +61,7 @@ func SetUp(t testing.TB) (r *Router, db models.DB, configurations internal.Confi
 	err := os.WriteFile(configPath, []byte(config), 0644)
 	assert.NoError(t, err)
 
-	data, err := internal.ReadConfFile(configPath)
-	assert.NoError(t, err)
-
-	configuration, err := internal.ParseConf(data)
+	configuration, err := internal.ReadConfFile(configPath)
 	assert.NoError(t, err)
 
 	db = models.NewDB()
@@ -175,7 +172,7 @@ func TestSignUpHandler(t *testing.T) {
 		"college":"clg"
 	}`)
 		err := db.CreateUser(
-			&models.User{Name: "aaaa", Email: "aaaa@gmail.com", HashedPassword: "$2a$04$3WF5ZN8c5OXmFwbj8oFsN.BdRvJRDUt8zfP0vS2A7Zzx6K2rMrmg.", TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: true})
+			&models.User{Name: "aaaa", Email: "aaaa@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: true})
 		assert.NoError(t, err)
 		request := httptest.NewRequest("POST", version+"/user/signup", bytes.NewBuffer(body))
 		response := httptest.NewRecorder()
@@ -186,7 +183,7 @@ func TestSignUpHandler(t *testing.T) {
 	})
 
 	t.Run("user exists but not verified", func(t *testing.T) {
-		err := db.CreateUser(&models.User{Name: "person", Email: "person@gmail.com", HashedPassword: "$2a$04$3WF5ZN8c5OXmFwbj8oFsN.BdRvJRDUt8zfP0vS2A7Zzx6K2rMrmg.", TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false})
+		err := db.CreateUser(&models.User{Name: "person", Email: "person@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false})
 		assert.NoError(t, err)
 		body := []byte(`{
 		"name": "person",
@@ -262,7 +259,7 @@ func TestVerifySignUpCodeHandler(t *testing.T) {
 	})
 
 	t.Run("user already verified", func(t *testing.T) {
-		err := db.CreateUser(&models.User{Name: "person", Email: "person@gmail.com", HashedPassword: "$2a$04$3WF5ZN8c5OXmFwbj8oFsN.BdRvJRDUt8zfP0vS2A7Zzx6K2rMrmg.", TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: true})
+		err := db.CreateUser(&models.User{Name: "person", Email: "person@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: true})
 		assert.NoError(t, err)
 		body := []byte(`{
 			"email":"person@gmail.com",
@@ -278,7 +275,7 @@ func TestVerifySignUpCodeHandler(t *testing.T) {
 	})
 
 	t.Run("wrong code", func(t *testing.T) {
-		err := db.CreateUser(&models.User{Name: "new-person", Email: "newperson@gmail.com", HashedPassword: "$2a$04$3WF5ZN8c5OXmFwbj8oFsN.BdRvJRDUt8zfP0vS2A7Zzx6K2rMrmg.", TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false, Code: 0000})
+		err := db.CreateUser(&models.User{Name: "new-person", Email: "newperson@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false, Code: 0000})
 		assert.NoError(t, err)
 		body := []byte(`{
 			"email":"newperson@gmail.com",
@@ -293,7 +290,7 @@ func TestVerifySignUpCodeHandler(t *testing.T) {
 	})
 
 	t.Run("code expired", func(t *testing.T) {
-		err := db.CreateUser(&models.User{Name: "newp", Email: "newp@gmail.com", HashedPassword: "$2a$04$3WF5ZN8c5OXmFwbj8oFsN.BdRvJRDUt8zfP0vS2A7Zzx6K2rMrmg.", TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false, Code: 1234, UpdatedAt: time.Now().Add(-time.Hour * 25)})
+		err := db.CreateUser(&models.User{Name: "newp", Email: "newp@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false, Code: 1234, UpdatedAt: time.Now().Add(-time.Hour * 25)})
 		assert.NoError(t, err)
 		body := []byte(`{
 			"email":"newp@gmail.com",
@@ -310,15 +307,15 @@ func TestVerifySignUpCodeHandler(t *testing.T) {
 }
 
 func TestSignInHandler(t *testing.T) {
-	router, db, config, version := SetUp(t)
+	router, db, _, version := SetUp(t)
 
-	hashedPass, err := internal.HashAndSaltPassword("strongpass", config.Salt)
+	hashed, err := internal.HashAndSaltPassword([]byte("strongpass"))
 	assert.NoError(t, err)
 
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
-		HashedPassword: hashedPass,
+		HashedPassword: hashed,
 		Verified:       true,
 	}
 	err = db.CreateUser(&u)
@@ -386,7 +383,7 @@ func TestSignInHandler(t *testing.T) {
 	})
 
 	t.Run("user's not verified yet", func(t *testing.T) {
-		err := db.CreateUser(&models.User{Name: "new-person", Email: "newperson@gmail.com", HashedPassword: "$2a$04$3WF5ZN8c5OXmFwbj8oFsN.BdRvJRDUt8zfP0vS2A7Zzx6K2rMrmg.", TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false, Code: 0000})
+		err := db.CreateUser(&models.User{Name: "new-person", Email: "newperson@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: false, Code: 0000})
 		assert.NoError(t, err)
 		body := []byte(`{
 			"name":"new-person",
@@ -408,7 +405,7 @@ func TestRefreshJWTHandler(t *testing.T) {
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
-		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		HashedPassword: []byte{},
 		Verified:       true,
 	}
 	err := db.CreateUser(&u)
@@ -438,7 +435,7 @@ func TestRefreshJWTHandler(t *testing.T) {
 	})
 
 	t.Run("refresh expired token", func(t *testing.T) {
-		err := db.CreateUser(&models.User{Name: "newp", Email: "newp@gmail.com", HashedPassword: "$2a$04$3WF5ZN8c5OXmFwbj8oFsN.BdRvJRDUt8zfP0vS2A7Zzx6K2rMrmg.", TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: true, Code: 1234})
+		err := db.CreateUser(&models.User{Name: "newp", Email: "newp@gmail.com", HashedPassword: []byte{}, TeamSize: 5, ProjectDesc: "desc", College: "clg", Verified: true, Code: 1234})
 		assert.NoError(t, err)
 
 		user, err := db.GetUserByEmail("newp@gmail.com")
@@ -461,7 +458,7 @@ func TestForgotPasswordHandler(t *testing.T) {
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
-		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		HashedPassword: []byte{},
 		Verified:       true,
 	}
 	err := db.CreateUser(&u)
@@ -509,7 +506,7 @@ func TestVerifyForgetPasswordCodeHandler(t *testing.T) {
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
-		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		HashedPassword: []byte{},
 		Verified:       true,
 	}
 	err := db.CreateUser(&u)
@@ -585,7 +582,7 @@ func TestChangePasswordHandler(t *testing.T) {
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
-		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		HashedPassword: []byte{},
 		Verified:       true,
 	}
 	err := db.CreateUser(&u)
@@ -671,7 +668,7 @@ func TestUpdateUserHandler(t *testing.T) {
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
-		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		HashedPassword: []byte{},
 		Verified:       true,
 	}
 	err := db.CreateUser(&u)
@@ -838,7 +835,7 @@ func TestGetUserHandler(t *testing.T) {
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
-		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		HashedPassword: []byte{},
 		Verified:       true,
 	}
 	err := db.CreateUser(&u)
@@ -883,7 +880,7 @@ func TestApplyForVoucherHandler(t *testing.T) {
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
-		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		HashedPassword: []byte{},
 		Verified:       true,
 	}
 	err := db.CreateUser(&u)
@@ -983,7 +980,7 @@ func TestActivateVoucherHandler(t *testing.T) {
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
-		HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+		HashedPassword: []byte{},
 		Verified:       true,
 	}
 	err := db.CreateUser(&u)
@@ -1080,7 +1077,7 @@ func TestActivateVoucherHandler(t *testing.T) {
 		u := models.User{
 			Name:           "ffff",
 			Email:          "ffff@gmail.com",
-			HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+			HashedPassword: []byte{},
 			Verified:       true,
 		}
 		err := db.CreateUser(&u)

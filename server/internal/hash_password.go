@@ -2,23 +2,32 @@
 package internal
 
 import (
-	"fmt"
-
-	"golang.org/x/crypto/bcrypt"
+	"bytes"
+	"crypto/rand"
+	"crypto/sha256"
+	"io"
 )
 
-// HashAndSaltPassword hashes password of user
-func HashAndSaltPassword(password string, salt string) (string, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(salt+password), bcrypt.MinCost)
+var saltLen = 16
 
-	if err != nil {
-		return "", fmt.Errorf("could not hash password %w", err)
+// HashAndSaltPassword hashes password of user
+func HashAndSaltPassword(password []byte) ([]byte, error) {
+	salt := make([]byte, saltLen)
+	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
+		return []byte{}, err
 	}
-	return string(hashedPassword), nil
+
+	hashedPassword := sha256.Sum256(append(salt, password...))
+	return append(salt, hashedPassword[:]...), nil
 }
 
 // VerifyPassword checks if given password is same as hashed one
-func VerifyPassword(hashedPassword string, password string, salt string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(salt+password))
-	return err == nil
+func VerifyPassword(hashedPassword []byte, password string) bool {
+	hashedPasswordCopy := make([]byte, len(hashedPassword))
+
+	copy(hashedPasswordCopy, hashedPassword)
+	salt := hashedPasswordCopy[:saltLen]
+
+	checkedPass := sha256.Sum256(append(salt, []byte(password)...))
+	return bytes.Equal(append(salt, checkedPass[:]...), hashedPassword)
 }

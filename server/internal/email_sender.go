@@ -2,39 +2,75 @@
 package internal
 
 import (
+	_ "embed"
 	"fmt"
-
-	"strconv"
+	"strings"
 
 	"github.com/codescalers/cloud4students/validators"
-	"github.com/rs/zerolog/log"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+)
+
+var (
+	//go:embed templates/signup.html
+	signUpMail []byte
+
+	//go:embed templates/reset_pass.html
+	resetPassMail []byte
+
+	//go:embed templates/approvedVoucher.html
+	approveVoucherMail []byte
+
+	//go:embed templates/rejectedVoucher.html
+	rejectedVoucherMail []byte
+
+	//go:embed templates/voucherNotification.html
+	notifyVoucherMail []byte
+
+	//go:embed templates/balanceNotification.html
+	balanceMail []byte
 )
 
 // SendMail sends verification mails
 func SendMail(sender, sendGridKey, receiver, subject, body string) error {
 	from := mail.NewEmail("Cloud4Students", sender)
-	err := validators.ValidateMail(receiver, "")
+
+	err := validators.ValidMail(receiver)
 	if err != nil {
 		return fmt.Errorf("email %v is not valid", receiver)
 	}
+
 	to := mail.NewEmail("Cloud4Students User", receiver)
 
-	message := mail.NewSingleEmail(from, subject, to, body, "")
-
+	message := mail.NewSingleEmail(from, subject, to, "", body)
 	client := sendgrid.NewSendClient(sendGridKey)
-	response, err := client.Send(message)
-
-	log.Debug().Msgf("response: %+v", response)
+	_, err = client.Send(message)
 
 	return err
 }
 
 // SignUpMailContent gets the email content for signup
-func SignUpMailContent(code int, timeout int) (string, string) {
+func SignUpMailContent(code int, timeout int, name string) (string, string) {
 	subject := "Welcome to Cloud4Students 🎉"
-	body := fmt.Sprintf("We are so glad to have you here.\n\nYour code is %s\nThe code will expire in %d seconds.\nPlease don't share it with anyone.", strconv.Itoa(code), timeout)
+	body := string(signUpMail)
+
+	body = strings.ReplaceAll(body, "-code-", fmt.Sprint(code))
+	body = strings.ReplaceAll(body, "-time-", fmt.Sprint(timeout))
+	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(name))
+
+	return subject, body
+}
+
+// ResetPasswordMailContent gets the email content for reset password
+func ResetPasswordMailContent(code int, timeout int, name string) (string, string) {
+	subject := "Reset password"
+	body := string(resetPassMail)
+
+	body = strings.ReplaceAll(body, "-code-", fmt.Sprint(code))
+	body = strings.ReplaceAll(body, "-time-", fmt.Sprint(timeout))
+	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(name))
 
 	return subject, body
 }
@@ -42,7 +78,10 @@ func SignUpMailContent(code int, timeout int) (string, string) {
 // ApprovedVoucherMailContent gets the content for approved voucher
 func ApprovedVoucherMailContent(voucher string, user string) (string, string) {
 	subject := "Your voucher request is approved 🎆"
-	body := fmt.Sprintf("Welcome %v,\n\nWe are so glad to inform you that your voucher request has been approved successfully.\n\nYour voucher is %s\n\nYou can apply the voucher from your profile page.\n\nBest regards,\nCodescalers team", user, voucher)
+	body := string(approveVoucherMail)
+
+	body = strings.ReplaceAll(body, "-voucher-", fmt.Sprint(voucher))
+	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(user))
 
 	return subject, body
 }
@@ -50,7 +89,9 @@ func ApprovedVoucherMailContent(voucher string, user string) (string, string) {
 // RejectedVoucherMailContent gets the content for rejected voucher
 func RejectedVoucherMailContent(user string) (string, string) {
 	subject := "Your voucher request is rejected 😔"
-	body := fmt.Sprintf("Welcome %v,\n\nWe are sorry to inform you that your voucher request has been rejected.\n\nBest regards,\nCodescalers team", user)
+	body := string(rejectedVoucherMail)
+
+	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(user))
 
 	return subject, body
 }
@@ -58,7 +99,9 @@ func RejectedVoucherMailContent(user string) (string, string) {
 // NotifyAdminsMailContent gets the content for notifying admins
 func NotifyAdminsMailContent(vouchers int) (string, string) {
 	subject := "There're pending voucher requests for you to review"
-	body := fmt.Sprintf("Hello,\n\nThere are %d voucher requests that need to be reviewed. Kindly check them.\n\nBest regards,\nCodescalers team", vouchers)
+	body := string(notifyVoucherMail)
+
+	body = strings.ReplaceAll(body, "-vouchers-", fmt.Sprint(vouchers))
 
 	return subject, body
 }
@@ -66,7 +109,9 @@ func NotifyAdminsMailContent(vouchers int) (string, string) {
 // NotifyAdminsMailLowBalanceContent gets the content for notifying admins when balance is low
 func NotifyAdminsMailLowBalanceContent(balance float64) (string, string) {
 	subject := "Your account balance is low"
-	body := fmt.Sprintf("Hello,\n\nYour account balance (%v tft) is low. Please, make sure it is funded.\n\nBest regards,\nCodescalers team", balance)
+	body := string(balanceMail)
+
+	body = strings.ReplaceAll(body, "-balance-", fmt.Sprint(balance))
 
 	return subject, body
 }

@@ -13,7 +13,7 @@ type User struct {
 	ID             uuid.UUID `gorm:"primary_key; unique; type:uuid; column:id"`
 	Name           string    `json:"name" binding:"required"`
 	Email          string    `json:"email" gorm:"unique" binding:"required"`
-	HashedPassword string    `json:"hashed_password" binding:"required"`
+	HashedPassword []byte    `json:"hashed_password" binding:"required"`
 	UpdatedAt      time.Time `json:"updated_at"`
 	Code           int       `json:"code"`
 	SSHKey         string    `json:"ssh_key"`
@@ -41,7 +41,7 @@ type UserUsedQuota struct {
 	UserID         string    `json:"user_id"`
 	Name           string    `json:"name"`
 	Email          string    `json:"email"`
-	HashedPassword string    `json:"hashed_password"`
+	HashedPassword []byte    `json:"hashed_password"`
 	Voucher        string    `json:"voucher"`
 	UpdatedAt      time.Time `json:"updated_at"`
 	Code           int       `json:"code"`

@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/codescalers/cloud4students/app"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -48,6 +49,8 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
 	err := rootCmd.Execute()
 	if err != nil {
 		log.Err(err).Send()

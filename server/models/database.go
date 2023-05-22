@@ -94,7 +94,7 @@ func (d *DB) GetCodeByEmail(email string) (int, error) {
 }
 
 // UpdatePassword updates password of user
-func (d *DB) UpdatePassword(email string, password string) error {
+func (d *DB) UpdatePassword(email string, password []byte) error {
 	var res User
 	result := d.db.Model(&res).Where("email = ?", email).Update("hashed_password", password)
 	if result.RowsAffected == 0 {

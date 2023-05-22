@@ -19,6 +19,7 @@ require (
 	github.com/threefoldtech/tfgrid-sdk-go/grid-proxy v0.6.0
 	github.com/threefoldtech/zos v0.5.6-0.20230426125942-0ea2f91b21f5
 	golang.org/x/crypto v0.9.0
+	golang.org/x/text v0.9.0
 	gopkg.in/validator.v2 v2.0.1
 	gorm.io/driver/sqlite v1.5.1
 	gorm.io/gorm v1.25.1

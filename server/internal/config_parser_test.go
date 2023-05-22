@@ -8,63 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestReadConfFile(t *testing.T) {
-	config :=
-		`
-{
-	"server": {
-		"host": "localhost",
-		"port": ":3000"
-	}
-}
-	`
-	t.Run("read config file ", func(t *testing.T) {
-		dir := t.TempDir()
-		configPath := dir + "/config.json"
-
-		err := os.WriteFile(configPath, []byte(config), 0644)
-		assert.NoError(t, err)
-
-		data, err := ReadConfFile(configPath)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, data)
-
-	})
-
-	t.Run("change permissions of file", func(t *testing.T) {
-		dir := t.TempDir()
-		configPath := dir + "/config.json"
-
-		err := os.WriteFile(configPath, []byte(config), fs.FileMode(os.O_RDONLY))
-		assert.NoError(t, err)
-
-		data, err := ReadConfFile(configPath)
-		assert.Error(t, err)
-		assert.Empty(t, data)
-
-	})
-
-	t.Run("no file exists", func(t *testing.T) {
-		data, err := ReadConfFile("./testing.json")
-		assert.Error(t, err)
-		assert.Empty(t, data)
-
-	})
-
-}
-
-func TestParseConf(t *testing.T) {
-
-	t.Run("can't unmarshal", func(t *testing.T) {
-		config := `{testing}`
-		_, err := ParseConf([]byte(config))
-		assert.Error(t, err)
-
-	})
-
-	t.Run("parse config file", func(t *testing.T) {
-		config :=
-			`
+var rightConfig = `
 {
 	"server": {
 		"host": "localhost",
@@ -93,13 +37,67 @@ func TestParseConf(t *testing.T) {
 	"salt": "salt"
 }
 	`
+
+func TestReadConfFile(t *testing.T) {
+	t.Run("read config file ", func(t *testing.T) {
+		dir := t.TempDir()
+		configPath := dir + "/config.json"
+
+		err := os.WriteFile(configPath, []byte(rightConfig), 0644)
+		assert.NoError(t, err)
+
+		data, err := ReadConfFile(configPath)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, data)
+
+	})
+
+	t.Run("change permissions of file", func(t *testing.T) {
+		dir := t.TempDir()
+		configPath := dir + "/config.json"
+
+		err := os.WriteFile(configPath, []byte(rightConfig), fs.FileMode(os.O_RDONLY))
+		assert.NoError(t, err)
+
+		data, err := ReadConfFile(configPath)
+		assert.Error(t, err)
+		assert.Empty(t, data)
+
+	})
+
+	t.Run("no file exists", func(t *testing.T) {
+		data, err := ReadConfFile("./testing.json")
+		assert.Error(t, err)
+		assert.Empty(t, data)
+
+	})
+
+}
+
+func TestParseConf(t *testing.T) {
+
+	t.Run("can't unmarshal", func(t *testing.T) {
+		config := `{testing}`
+
 		dir := t.TempDir()
 		configPath := dir + "/config.json"
 
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)
 
-		data, err := ReadConfFile(configPath)
+		_, err = ReadConfFile(configPath)
+		assert.Error(t, err)
+
+	})
+
+	t.Run("parse config file", func(t *testing.T) {
+		dir := t.TempDir()
+		configPath := dir + "/config.json"
+
+		err := os.WriteFile(configPath, []byte(rightConfig), 0644)
+		assert.NoError(t, err)
+
+		got, err := ReadConfFile(configPath)
 		assert.NoError(t, err)
 
 		expected := Configuration{
@@ -128,7 +126,6 @@ func TestParseConf(t *testing.T) {
 			Version: "v1",
 		}
 
-		got, err := ParseConf(data)
 		assert.NoError(t, err)
 		assert.Equal(t, got.Server, expected.Server)
 		assert.Equal(t, got.MailSender.Email, expected.MailSender.Email)
@@ -161,12 +158,8 @@ func TestParseConf(t *testing.T) {
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)
 
-		data, err := ReadConfFile(configPath)
-		assert.NoError(t, err)
-
-		_, err = ParseConf(data)
+		_, err = ReadConfFile(configPath)
 		assert.Error(t, err, "server configuration is required")
-
 	})
 
 	t.Run("no mail sender configuration", func(t *testing.T) {
@@ -191,10 +184,7 @@ func TestParseConf(t *testing.T) {
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)
 
-		data, err := ReadConfFile(configPath)
-		assert.NoError(t, err)
-
-		_, err = ParseConf(data)
+		_, err = ReadConfFile(configPath)
 		assert.Error(t, err, "mail sender configuration is required")
 
 	})
@@ -224,10 +214,7 @@ func TestParseConf(t *testing.T) {
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)
 
-		data, err := ReadConfFile(configPath)
-		assert.NoError(t, err)
-
-		_, err = ParseConf(data)
+		_, err = ReadConfFile(configPath)
 		assert.Error(t, err, "database configuration is required")
 
 	})
@@ -261,10 +248,7 @@ func TestParseConf(t *testing.T) {
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)
 
-		data, err := ReadConfFile(configPath)
-		assert.NoError(t, err)
-
-		_, err = ParseConf(data)
+		_, err = ReadConfFile(configPath)
 		assert.Error(t, err, "account configuration is required")
 
 	})
@@ -302,10 +286,7 @@ func TestParseConf(t *testing.T) {
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)
 
-		data, err := ReadConfFile(configPath)
-		assert.NoError(t, err)
-
-		_, err = ParseConf(data)
+		_, err = ReadConfFile(configPath)
 		assert.Error(t, err, "jwt token configuration is required")
 
 	})
@@ -344,10 +325,7 @@ func TestParseConf(t *testing.T) {
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)
 
-		data, err := ReadConfFile(configPath)
-		assert.NoError(t, err)
-
-		_, err = ParseConf(data)
+		_, err = ReadConfFile(configPath)
 		assert.Error(t, err, "version is required")
 
 	})
@@ -386,10 +364,7 @@ func TestParseConf(t *testing.T) {
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)
 
-		data, err := ReadConfFile(configPath)
-		assert.NoError(t, err)
-
-		_, err = ParseConf(data)
+		_, err = ReadConfFile(configPath)
 		assert.Error(t, err, "salt is required")
 
 	})

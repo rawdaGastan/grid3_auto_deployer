@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/codescalers/cloud4students/internal"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -32,7 +31,6 @@ func newServer(ctx context.Context, config internal.Configuration) (server serve
 
 // Start starts the server
 func (s *server) start() (err error) {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	log.Info().Msgf("Server is listening on %s%s", s.host, s.port)
 
 	srv := &http.Server{

@@ -105,7 +105,7 @@ func TestListAllUsers(t *testing.T) {
 		user1 := User{
 			Name:           "user1",
 			Email:          "user1@gmail.com",
-			HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+			HashedPassword: []byte{},
 			Verified:       true,
 		}
 
@@ -131,7 +131,7 @@ func TestGetCodeByEmail(t *testing.T) {
 		user := User{
 			Name:           "user",
 			Email:          "user@gmail.com",
-			HashedPassword: "$2a$14$EJtkQHG54.wyFnBMBJn2lus5OkIZn3l/MtuqbaaX1U3KpttvxVGN6",
+			HashedPassword: []byte{},
 			Verified:       true,
 			Code:           1234,
 		}
@@ -148,7 +148,7 @@ func TestGetCodeByEmail(t *testing.T) {
 func TestUpdatePassword(t *testing.T) {
 	db := setupDB(t)
 	t.Run("user not found so nothing updated", func(t *testing.T) {
-		err := db.UpdatePassword("email", "new-pass")
+		err := db.UpdatePassword("email", []byte("new-pass"))
 		assert.Error(t, err)
 		var user User
 		err = db.db.First(&user).Error
@@ -158,15 +158,15 @@ func TestUpdatePassword(t *testing.T) {
 	t.Run("user found", func(t *testing.T) {
 		user := User{
 			Email:          "email",
-			HashedPassword: "pass",
+			HashedPassword: []byte("new-pass"),
 		}
 		err := db.CreateUser(&user)
 		assert.NoError(t, err)
-		err = db.UpdatePassword("email", "new-pass")
+		err = db.UpdatePassword("email", []byte("new-pass"))
 		assert.NoError(t, err)
 		u, err := db.GetUserByEmail("email")
 		assert.Equal(t, u.Email, "email")
-		assert.Equal(t, u.HashedPassword, "new-pass")
+		assert.Equal(t, u.HashedPassword, []byte("new-pass"))
 		assert.NoError(t, err)
 	})
 }
@@ -184,14 +184,14 @@ func TestUpdateUserByID(t *testing.T) {
 	t.Run("user found", func(t *testing.T) {
 		user := User{
 			Email:          "email",
-			HashedPassword: "pass",
+			HashedPassword: []byte{},
 		}
 		err := db.CreateUser(&user)
 		assert.NoError(t, err)
 		err = db.UpdateUserByID(User{
 			ID:             user.ID,
 			Email:          "",
-			HashedPassword: "new-pass",
+			HashedPassword: []byte("new-pass"),
 			Name:           "name",
 		})
 		assert.NoError(t, err)
@@ -200,7 +200,7 @@ func TestUpdateUserByID(t *testing.T) {
 		// shouldn't change
 		assert.Equal(t, u.Email, user.Email)
 		// should change
-		assert.Equal(t, u.HashedPassword, "new-pass")
+		assert.Equal(t, u.HashedPassword, []byte("new-pass"))
 		assert.Equal(t, u.Name, "name")
 
 		assert.NoError(t, err)

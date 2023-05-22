@@ -3,9 +3,10 @@ package internal
 
 import (
 	"encoding/json"
-	"errors"
-	"io"
+	"fmt"
 	"os"
+
+	"gopkg.in/validator.v2"
 )
 
 // Configuration struct to hold app configurations
@@ -15,8 +16,7 @@ type Configuration struct {
 	Database                  DB          `json:"database"`
 	Token                     JwtToken    `json:"token"`
 	Account                   GridAccount `json:"account"`
-	Version                   string      `json:"version"`
-	Salt                      string      `json:"salt"`
+	Version                   string      `json:"version" validate:"nonzero"`
 	Admins                    []string    `json:"admins"`
 	NotifyAdminsIntervalHours int         `json:"notifyAdminsIntervalHours"`
 	AdminSSHKey               string      `json:"adminSSHKey"`
@@ -25,100 +25,50 @@ type Configuration struct {
 
 // Server struct to hold server's information
 type Server struct {
-	Host string `json:"host"`
-	Port string `json:"port"`
+	Host string `json:"host" validate:"nonzero"`
+	Port string `json:"port" validate:"nonzero"`
 
-	RedisHost string `json:"redisHost"`
-	RedisPort string `json:"redisPort"`
+	RedisHost string `json:"redisHost" validate:"nonzero"`
+	RedisPort string `json:"redisPort" validate:"nonzero"`
 	RedisPass string `json:"redisPass"`
 }
 
 // MailSender struct to hold sender's email, password
 type MailSender struct {
-	Email       string `json:"email"`
-	SendGridKey string `json:"sendgrid_key"`
-	Timeout     int    `json:"timeout"`
+	Email       string `json:"email" validate:"nonzero"`
+	SendGridKey string `json:"sendgrid_key" validate:"nonzero"`
+	Timeout     int    `json:"timeout" validate:"min=30"`
 }
 
 // DB struct to hold database file
 type DB struct {
-	File string `json:"file"`
+	File string `json:"file" validate:"nonzero"`
 }
 
 // JwtToken struct to hold JWT information
 type JwtToken struct {
-	Secret  string `json:"secret"`
-	Timeout int    `json:"timeout"`
+	Secret  string `json:"secret" validate:"nonzero"`
+	Timeout int    `json:"timeout" validate:"min=5"`
 }
 
 // GridAccount struct to hold grid account mnemonics
 type GridAccount struct {
-	Mnemonics string `json:"mnemonics"`
-	Network   string `json:"network"`
+	Mnemonics string `json:"mnemonics" validate:"nonzero"`
+	Network   string `json:"network" validate:"nonzero"`
 }
 
 // ReadConfFile read configurations of json file
-func ReadConfFile(path string) ([]byte, error) {
-	confFile, err := os.Open(path)
+func ReadConfFile(path string) (Configuration, error) {
+	config := Configuration{NotifyAdminsIntervalHours: 6, BalanceThreshold: 2000}
+	file, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return Configuration{}, fmt.Errorf("failed to open config file: %w", err)
 	}
 
-	defer confFile.Close()
-	conf, err := io.ReadAll(confFile)
-	if err != nil {
-		return conf, err
-	}
-	return conf, nil
-}
-
-// ParseConf parses content of file to Configurations struct
-func ParseConf(conf []byte) (Configuration, error) {
-	var myConf Configuration
-	err := json.Unmarshal(conf, &myConf)
-	if err != nil {
-		return myConf, err
+	dec := json.NewDecoder(file)
+	if err := dec.Decode(&config); err != nil {
+		return Configuration{}, fmt.Errorf("failed to load config: %w", err)
 	}
 
-	if myConf.Server.Host == "" || myConf.Server.Port == "" {
-		return myConf, errors.New("server configuration is required")
-	}
-
-	if myConf.Server.RedisHost == "" || myConf.Server.RedisPort == "" {
-		return myConf, errors.New("server redis configuration is required")
-	}
-
-	if myConf.MailSender.Email == "" || myConf.MailSender.SendGridKey == "" || myConf.MailSender.Timeout == 0 {
-		return myConf, errors.New("mail sender configuration is required")
-	}
-
-	if myConf.Database.File == "" {
-		return myConf, errors.New("database configuration is required")
-	}
-
-	if myConf.Account.Mnemonics == "" || myConf.Account.Network == "" {
-		return myConf, errors.New("account configuration is required")
-	}
-
-	if myConf.Token.Secret == "" || myConf.Token.Timeout == 0 {
-		return myConf, errors.New("jwt token configuration is required")
-	}
-
-	if myConf.Version == "" {
-		return myConf, errors.New("version is required")
-	}
-
-	if myConf.Salt == "" {
-		return myConf, errors.New("salt is required")
-	}
-
-	if myConf.NotifyAdminsIntervalHours == 0 {
-		myConf.NotifyAdminsIntervalHours = 6
-	}
-
-	if myConf.BalanceThreshold == 0 {
-		myConf.BalanceThreshold = 2000
-	}
-
-	return myConf, nil
+	return config, validator.Validate(config)
 }

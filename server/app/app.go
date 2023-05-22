@@ -31,12 +31,7 @@ type App struct {
 
 // NewApp creates new server app all configurations
 func NewApp(ctx context.Context, file string) (app App, err error) {
-	data, err := internal.ReadConfFile(file)
-	if err != nil {
-		return
-	}
-
-	config, err := internal.ParseConf(data)
+	config, err := internal.ReadConfFile(file)
 	if err != nil {
 		return
 	}

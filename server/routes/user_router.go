@@ -109,7 +109,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 
 	// send verification code if user is not verified or not exist
 	code := internal.GenerateRandomCode()
-	subject, body := internal.SignUpMailContent(code, r.config.MailSender.Timeout)
+	subject, body := internal.SignUpMailContent(code, r.config.MailSender.Timeout, signUp.Name)
 	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.SendGridKey, signUp.Email, subject, body)
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -117,7 +117,7 @@ func (r *Router) SignUpHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	hashedPassword, err := internal.HashAndSaltPassword(signUp.Password, r.config.Salt)
+	hashedPassword, err := internal.HashAndSaltPassword([]byte(signUp.Password))
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -246,7 +246,7 @@ func (r *Router) SignInHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	match := internal.VerifyPassword(user.HashedPassword, input.Password, r.config.Salt)
+	match := internal.VerifyPassword(user.HashedPassword, input.Password)
 	if !match {
 		writeErrResponse(req, w, http.StatusBadRequest, "Password is not correct")
 		return
@@ -325,7 +325,7 @@ func (r *Router) ForgotPasswordHandler(w http.ResponseWriter, req *http.Request)
 
 	// send verification code
 	code := internal.GenerateRandomCode()
-	subject, body := internal.SignUpMailContent(code, r.config.MailSender.Timeout)
+	subject, body := internal.ResetPasswordMailContent(code, r.config.MailSender.Timeout, user.Name)
 	err = internal.SendMail(r.config.MailSender.Email, r.config.MailSender.SendGridKey, email.Email, subject, body)
 
 	if err != nil {
@@ -413,8 +413,7 @@ func (r *Router) ChangePasswordHandler(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	// hash password
-	hashedPassword, err := internal.HashAndSaltPassword(data.Password, r.config.Salt)
+	hashedPassword, err := internal.HashAndSaltPassword([]byte(data.Password))
 	if err != nil {
 		log.Error().Err(err).Send()
 		writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)
@@ -447,7 +446,7 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 	}
 	updates := 0
 
-	var hashedPassword string
+	var hashedPassword []byte
 	if len(strings.TrimSpace(input.Password)) != 0 {
 		updates++
 		// password and confirm password should match
@@ -464,7 +463,7 @@ func (r *Router) UpdateUserHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		// hash password
-		hashedPassword, err = internal.HashAndSaltPassword(input.Password, r.config.Salt)
+		hashedPassword, err = internal.HashAndSaltPassword([]byte(input.Password))
 		if err != nil {
 			log.Error().Err(err).Send()
 			writeErrResponse(req, w, http.StatusInternalServerError, internalServerErrorMsg)

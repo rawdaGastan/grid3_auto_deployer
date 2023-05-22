@@ -25,8 +25,7 @@ func ValidateMail(v interface{}, param string) error {
 	if st.Kind() != reflect.String {
 		return errors.New("ValidateMail only validates strings")
 	}
-	_, err := mail.ParseAddress(st.String())
-	return err
+	return ValidMail(st.String())
 }
 
 // ValidatePassword used for validating passwords before creating user
@@ -36,6 +35,12 @@ func ValidatePassword(v interface{}, param string) error {
 		return errors.New("ValidatePassword only validates strings")
 	}
 	return ValidatePass(st.String())
+}
+
+// ValidMail used for validating syntax mails
+func ValidMail(email string) error {
+	_, err := mail.ParseAddress(email)
+	return err
 }
 
 // ValidatePass used for validating passwords before creating user

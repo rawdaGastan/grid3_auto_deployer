@@ -26,5 +26,4 @@ func CreateJWT(userID string, email string, secret string, timeout int) (string,
 	}
 
 	return signedToken, nil
-
 }

@@ -35,7 +35,7 @@ func TestQuotaRouter(t *testing.T) {
 		}
 
 		response := authorizedHandler(req)
-		want := `{"err":"user quota is not found""}` + "\n"
+		want := `{"err":"user quota is not found"}` + "\n"
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusNotFound)
 	})

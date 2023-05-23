@@ -125,7 +125,7 @@ func (a *App) K8sGetHandler(req *http.Request) (interface{}, Response) {
 
 	cluster, err := a.db.GetK8s(id)
 	if err == gorm.ErrRecordNotFound || cluster.UserID != userID {
-		return nil, NotFound(errors.New("kubernetes cluster not found"))
+		return nil, NotFound(errors.New("kubernetes cluster is not found"))
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -170,7 +170,7 @@ func (a *App) K8sDeleteHandler(req *http.Request) (interface{}, Response) {
 
 	cluster, err := a.db.GetK8s(id)
 	if err == gorm.ErrRecordNotFound || cluster.UserID != userID {
-		return nil, NotFound(errors.New("kubernetes cluster not found"))
+		return nil, NotFound(errors.New("kubernetes cluster is not found"))
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -205,7 +205,7 @@ func (a *App) K8sDeleteAllHandler(req *http.Request) (interface{}, Response) {
 	clusters, err := a.db.GetAllK8s(userID)
 	if err == gorm.ErrRecordNotFound || len(clusters) == 0 {
 		return ResponseMsg{
-			Message: "kubernetes cluster are not found",
+			Message: "Kubernetes clusters are not found",
 			Data:    nil,
 		}, Ok()
 	}

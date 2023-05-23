@@ -14,6 +14,7 @@ import (
 	"github.com/codescalers/cloud4students/internal"
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -97,27 +98,31 @@ func authorizedNoMiddlewareHandler(req authHandlerConfig) (response *httptest.Re
 
 func authorizedHandler(req authHandlerConfig) (response *httptest.ResponseRecorder) {
 	request := httptest.NewRequest("GET", req.api, req.body)
+
+	// add id to url vars if it has id as last index in the api request
+	if string(req.api[len(req.api)-1]) == "1" {
+		request = mux.SetURLVars(request, map[string]string{
+			"id": "1",
+		})
+	}
+
 	request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", req.token))
-	ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), req.userID)
-	newRequest := request.WithContext(ctx)
 	response = httptest.NewRecorder()
 
 	handler := WrapFunc(req.handlerFunc)
 	handlerWithAuth := middlewares.Authorization(req.db, req.config.Token.Secret, req.config.Token.Timeout)(handler)
-	handlerWithAuth.ServeHTTP(response, newRequest)
+	handlerWithAuth.ServeHTTP(response, request)
 	return
 }
 
 func adminHandler(req authHandlerConfig) (response *httptest.ResponseRecorder) {
 	request := httptest.NewRequest("GET", req.api, req.body)
 	request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", req.token))
-	ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), req.userID)
-	newRequest := request.WithContext(ctx)
 	response = httptest.NewRecorder()
 
 	handler := WrapFunc(req.handlerFunc)
 	handlerWithAdmin := middlewares.AdminAccess(req.db)(handler)
 	handlerWithAuth := middlewares.Authorization(req.db, req.config.Token.Secret, req.config.Token.Timeout)(handlerWithAdmin)
-	handlerWithAuth.ServeHTTP(response, newRequest)
+	handlerWithAuth.ServeHTTP(response, request)
 	return
 }

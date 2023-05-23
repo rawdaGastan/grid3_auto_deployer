@@ -8,7 +8,7 @@ import (
 	"io"
 )
 
-var saltLen = 16
+const saltLen = 16
 
 // HashAndSaltPassword hashes password of user
 func HashAndSaltPassword(password []byte) ([]byte, error) {

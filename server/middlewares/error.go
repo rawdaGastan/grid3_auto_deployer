@@ -16,12 +16,11 @@ type ErrorMsg struct {
 
 // writeErrResponse write error messages in api
 func writeErrResponse(r *http.Request, w http.ResponseWriter, statusCode int, errStr string) {
-	jsonErrRes, _ := json.Marshal(ErrorMsg{Error: errStr})
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	_, err := w.Write(jsonErrRes)
-	if err != nil {
-		log.Error().Err(err).Msg("write error response failed")
+	if err := json.NewEncoder(w).Encode(ErrorMsg{Error: errStr}); err != nil {
+		log.Error().Err(err).Msg("failed to encode response object")
 	}
+
 	Requests.WithLabelValues(r.Method, r.RequestURI, fmt.Sprint(statusCode)).Inc()
 }

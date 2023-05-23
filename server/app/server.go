@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/codescalers/cloud4students/internal"
 	"github.com/rs/zerolog/log"
 )
 
@@ -23,10 +22,8 @@ type server struct {
 }
 
 // NewServer create new server with all configurations
-func newServer(ctx context.Context, config internal.Configuration) (server server, err error) {
-	server.port = config.Server.Port
-	server.host = config.Server.Host
-	return
+func newServer(host, port string) *server {
+	return &server{host, port}
 }
 
 // Start starts the server

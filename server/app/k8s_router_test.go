@@ -1,4 +1,5 @@
-package routes
+// Package app for c4s backend app
+package app
 
 import (
 	"context"
@@ -15,7 +16,7 @@ import (
 )
 
 func TestK8sGetAllHandler(t *testing.T) {
-	router, db, config, version := SetUp(t)
+	app := SetUp(t)
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
@@ -23,31 +24,31 @@ func TestK8sGetAllHandler(t *testing.T) {
 		Verified:       true,
 		SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 	}
-	err := db.CreateUser(&u)
+	err := app.db.CreateUser(&u)
 	assert.NoError(t, err)
 
 	t.Run("no clusters for user", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
-		request := httptest.NewRequest("GET", version+"/k8s", nil)
+		request := httptest.NewRequest("GET", app.config.Version+"/k8s", nil)
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.K8sGetAllHandler(response, newRequest)
+		app.K8sGetAllHandler(newRequest)
 		want := `{"msg":"Kubernetes clusters not found","data":[]}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusOK)
 	})
 	t.Run("get all k8s ", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		cluster := models.K8sCluster{
@@ -76,21 +77,21 @@ func TestK8sGetAllHandler(t *testing.T) {
 			},
 		}
 
-		err = db.CreateK8s(&cluster)
+		err = app.db.CreateK8s(&cluster)
 		assert.NoError(t, err)
 
 		cluster.ID = 2
 		cluster.Master.Name = cluster.Master.Name + "3"
 
-		err = db.CreateK8s(&cluster)
+		err = app.db.CreateK8s(&cluster)
 		assert.NoError(t, err)
 
-		request := httptest.NewRequest("GET", version+"/k8s", nil)
+		request := httptest.NewRequest("GET", app.config.Version+"/k8s", nil)
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.K8sGetAllHandler(response, newRequest)
+		app.K8sGetAllHandler(newRequest)
 		assert.Equal(t, response.Code, http.StatusOK)
 
 	})
@@ -98,7 +99,7 @@ func TestK8sGetAllHandler(t *testing.T) {
 }
 
 func TestK8sDeleteAllHandler(t *testing.T) {
-	router, db, config, version := SetUp(t)
+	app := SetUp(t)
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
@@ -106,22 +107,22 @@ func TestK8sDeleteAllHandler(t *testing.T) {
 		Verified:       true,
 		SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 	}
-	err := db.CreateUser(&u)
+	err := app.db.CreateUser(&u)
 	assert.NoError(t, err)
 
 	t.Run("no clusters found", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
-		request := httptest.NewRequest("DELETE", version+"/k8s", nil)
+		request := httptest.NewRequest("DELETE", app.config.Version+"/k8s", nil)
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.K8sDeleteAllHandler(response, newRequest)
+		app.K8sDeleteAllHandler(newRequest)
 		want := `{"msg":"Kubernetes clusters not found"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusOK)
@@ -129,10 +130,10 @@ func TestK8sDeleteAllHandler(t *testing.T) {
 	})
 
 	t.Run("delete all k8s of user ", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		cluster := models.K8sCluster{
@@ -161,28 +162,28 @@ func TestK8sDeleteAllHandler(t *testing.T) {
 			},
 		}
 
-		err = db.CreateK8s(&cluster)
+		err = app.db.CreateK8s(&cluster)
 		assert.NoError(t, err)
 
 		cluster.ID = 2
 		cluster.Master.Name = cluster.Master.Name + "3"
 
-		err = db.CreateK8s(&cluster)
+		err = app.db.CreateK8s(&cluster)
 		assert.NoError(t, err)
 
-		request := httptest.NewRequest("DELETE", version+"/k8s", nil)
+		request := httptest.NewRequest("DELETE", app.config.Version+"/k8s", nil)
 		request.Header.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.K8sDeleteAllHandler(response, newRequest)
+		app.K8sDeleteAllHandler(newRequest)
 		assert.Equal(t, response.Code, http.StatusOK)
 
 	})
 }
 
 func TestK8sGetHandler(t *testing.T) {
-	router, db, config, version := SetUp(t)
+	app := SetUp(t)
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
@@ -190,14 +191,14 @@ func TestK8sGetHandler(t *testing.T) {
 		Verified:       true,
 		SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 	}
-	err := db.CreateUser(&u)
+	err := app.db.CreateUser(&u)
 	assert.NoError(t, err)
 
 	t.Run("get k8s of user ", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		cluster := models.K8sCluster{
@@ -226,10 +227,10 @@ func TestK8sGetHandler(t *testing.T) {
 			},
 		}
 
-		err = db.CreateK8s(&cluster)
+		err = app.db.CreateK8s(&cluster)
 		assert.NoError(t, err)
 
-		req := httptest.NewRequest("GET", version+"/k8s/1", nil)
+		req := httptest.NewRequest("GET", app.config.Version+"/k8s/1", nil)
 		request := mux.SetURLVars(req, map[string]string{
 			"id": "1",
 		})
@@ -238,19 +239,19 @@ func TestK8sGetHandler(t *testing.T) {
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.K8sGetHandler(response, newRequest)
+		app.K8sGetHandler(newRequest)
 		assert.Equal(t, response.Code, http.StatusOK)
 
 	})
 
 	t.Run("failed to read cluster id", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
-		req := httptest.NewRequest("GET", version+"/k8s/", nil)
+		req := httptest.NewRequest("GET", app.config.Version+"/k8s/", nil)
 		request := mux.SetURLVars(req, map[string]string{
 			"id": "",
 		})
@@ -259,20 +260,20 @@ func TestK8sGetHandler(t *testing.T) {
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.K8sGetHandler(response, newRequest)
+		app.K8sGetHandler(newRequest)
 		want := `{"err":"Failed to read cluster id"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})
 
 	t.Run("k8s cluster not found", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
-		req := httptest.NewRequest("GET", version+"/k8s/10", nil)
+		req := httptest.NewRequest("GET", app.config.Version+"/k8s/10", nil)
 		request := mux.SetURLVars(req, map[string]string{
 			"id": "10",
 		})
@@ -281,7 +282,7 @@ func TestK8sGetHandler(t *testing.T) {
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.K8sGetHandler(response, newRequest)
+		app.K8sGetHandler(newRequest)
 		want := `{"err":"Kubernetes cluster not found"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusNotFound)
@@ -290,7 +291,7 @@ func TestK8sGetHandler(t *testing.T) {
 }
 
 func TestK8sDeleteHandler(t *testing.T) {
-	router, db, config, version := SetUp(t)
+	app := SetUp(t)
 	u := models.User{
 		Name:           "name",
 		Email:          "name@gmail.com",
@@ -298,14 +299,14 @@ func TestK8sDeleteHandler(t *testing.T) {
 		Verified:       true,
 		SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 	}
-	err := db.CreateUser(&u)
+	err := app.db.CreateUser(&u)
 	assert.NoError(t, err)
 
 	t.Run("delete k8s of user ", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		cluster := models.K8sCluster{
@@ -334,10 +335,10 @@ func TestK8sDeleteHandler(t *testing.T) {
 			},
 		}
 
-		err = db.CreateK8s(&cluster)
+		err = app.db.CreateK8s(&cluster)
 		assert.NoError(t, err)
 
-		req := httptest.NewRequest("DELETE", version+"/k8s/1", nil)
+		req := httptest.NewRequest("DELETE", app.config.Version+"/k8s/1", nil)
 		request := mux.SetURLVars(req, map[string]string{
 			"id": "1",
 		})
@@ -346,19 +347,19 @@ func TestK8sDeleteHandler(t *testing.T) {
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.K8sDeleteHandler(response, newRequest)
+		app.K8sDeleteHandler(newRequest)
 		assert.Equal(t, response.Code, http.StatusOK)
 
 	})
 
 	t.Run("failed to read k8s id", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
-		req := httptest.NewRequest("DELETE", version+"/k8s/", nil)
+		req := httptest.NewRequest("DELETE", app.config.Version+"/k8s/", nil)
 		request := mux.SetURLVars(req, map[string]string{
 			"id": "",
 		})
@@ -367,7 +368,7 @@ func TestK8sDeleteHandler(t *testing.T) {
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.K8sDeleteHandler(response, newRequest)
+		app.K8sDeleteHandler(newRequest)
 		want := `{"err":"Failed to read cluster id"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
@@ -375,10 +376,10 @@ func TestK8sDeleteHandler(t *testing.T) {
 	})
 
 	t.Run("k8s cluster not found", func(t *testing.T) {
-		user, err := db.GetUserByEmail("name@gmail.com")
+		user, err := app.db.GetUserByEmail("name@gmail.com")
 		assert.NoError(t, err)
 
-		token, err := internal.CreateJWT(user.ID.String(), user.Email, config.Token.Secret, config.Token.Timeout)
+		token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
 		assert.NoError(t, err)
 
 		cluster := models.K8sCluster{
@@ -399,10 +400,10 @@ func TestK8sDeleteHandler(t *testing.T) {
 			},
 		}
 
-		err = db.CreateK8s(&cluster)
+		err = app.db.CreateK8s(&cluster)
 		assert.NoError(t, err)
 
-		req := httptest.NewRequest("DELETE", version+"/k8s/2", nil)
+		req := httptest.NewRequest("DELETE", app.config.Version+"/k8s/2", nil)
 		request := mux.SetURLVars(req, map[string]string{
 			"id": "2",
 		})
@@ -411,7 +412,7 @@ func TestK8sDeleteHandler(t *testing.T) {
 		ctx := context.WithValue(request.Context(), middlewares.UserIDKey("UserID"), user.ID.String())
 		newRequest := request.WithContext(ctx)
 		response := httptest.NewRecorder()
-		router.K8sDeleteHandler(response, newRequest)
+		app.K8sDeleteHandler(newRequest)
 		want := `{"err":"Kubernetes cluster not found"}`
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusNotFound)

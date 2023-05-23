@@ -2,6 +2,7 @@
 package internal
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/codescalers/cloud4students/models"
@@ -26,4 +27,24 @@ func CreateJWT(userID string, email string, secret string, timeout int) (string,
 	}
 
 	return signedToken, nil
+}
+
+// ValidateJWTToken validates if the token is valid
+func ValidateJWTToken(token, secret string, timeout int) (models.Claims, error) {
+	claims := &models.Claims{}
+	tkn, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	})
+	if err != nil {
+		return models.Claims{}, err
+	}
+	if !tkn.Valid {
+		return models.Claims{}, fmt.Errorf("token '%s' is invalid", token)
+	}
+
+	if time.Until(claims.ExpiresAt.Time) > time.Duration(timeout)*time.Minute {
+		return models.Claims{}, fmt.Errorf("token '%s' is expired", token)
+	}
+
+	return *claims, nil
 }

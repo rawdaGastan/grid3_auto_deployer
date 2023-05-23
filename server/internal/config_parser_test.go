@@ -3,6 +3,7 @@ package internal
 import (
 	"io/fs"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -41,7 +42,7 @@ var rightConfig = `
 func TestReadConfFile(t *testing.T) {
 	t.Run("read config file ", func(t *testing.T) {
 		dir := t.TempDir()
-		configPath := dir + "/config.json"
+		configPath := filepath.Join(dir, "/config.json")
 
 		err := os.WriteFile(configPath, []byte(rightConfig), 0644)
 		assert.NoError(t, err)
@@ -54,7 +55,7 @@ func TestReadConfFile(t *testing.T) {
 
 	t.Run("change permissions of file", func(t *testing.T) {
 		dir := t.TempDir()
-		configPath := dir + "/config.json"
+		configPath := filepath.Join(dir, "/config.json")
 
 		err := os.WriteFile(configPath, []byte(rightConfig), fs.FileMode(os.O_RDONLY))
 		assert.NoError(t, err)
@@ -80,7 +81,7 @@ func TestParseConf(t *testing.T) {
 		config := `{testing}`
 
 		dir := t.TempDir()
-		configPath := dir + "/config.json"
+		configPath := filepath.Join(dir, "/config.json")
 
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)
@@ -92,7 +93,7 @@ func TestParseConf(t *testing.T) {
 
 	t.Run("parse config file", func(t *testing.T) {
 		dir := t.TempDir()
-		configPath := dir + "/config.json"
+		configPath := filepath.Join(dir, "/config.json")
 
 		err := os.WriteFile(configPath, []byte(rightConfig), 0644)
 		assert.NoError(t, err)
@@ -153,7 +154,7 @@ func TestParseConf(t *testing.T) {
 	`
 
 		dir := t.TempDir()
-		configPath := dir + "/config.json"
+		configPath := filepath.Join(dir, "/config.json")
 
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)
@@ -179,7 +180,7 @@ func TestParseConf(t *testing.T) {
 	`
 
 		dir := t.TempDir()
-		configPath := dir + "/config.json"
+		configPath := filepath.Join(dir, "/config.json")
 
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)
@@ -209,7 +210,7 @@ func TestParseConf(t *testing.T) {
 	`
 
 		dir := t.TempDir()
-		configPath := dir + "/config.json"
+		configPath := filepath.Join(dir, "/config.json")
 
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)
@@ -243,7 +244,7 @@ func TestParseConf(t *testing.T) {
 	`
 
 		dir := t.TempDir()
-		configPath := dir + "/config.json"
+		configPath := filepath.Join(dir, "/config.json")
 
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)
@@ -281,7 +282,7 @@ func TestParseConf(t *testing.T) {
 	`
 
 		dir := t.TempDir()
-		configPath := dir + "/config.json"
+		configPath := filepath.Join(dir, "/config.json")
 
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)
@@ -320,7 +321,7 @@ func TestParseConf(t *testing.T) {
 	`
 
 		dir := t.TempDir()
-		configPath := dir + "/config.json"
+		configPath := filepath.Join(dir, "/config.json")
 
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)
@@ -359,7 +360,7 @@ func TestParseConf(t *testing.T) {
 }
 	`
 		dir := t.TempDir()
-		configPath := dir + "/config.json"
+		configPath := filepath.Join(dir, "/config.json")
 
 		err := os.WriteFile(configPath, []byte(config), 0644)
 		assert.NoError(t, err)

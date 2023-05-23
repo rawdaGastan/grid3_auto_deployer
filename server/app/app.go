@@ -57,7 +57,7 @@ func NewApp(ctx context.Context, configFile string) (app *App, err error) {
 		return
 	}
 
-	server, err := newServer(ctx, config)
+	server := newServer(config.Server.Host, config.Server.Port)
 	if err != nil {
 		return
 	}
@@ -76,10 +76,6 @@ func (a *App) Start(ctx context.Context) (err error) {
 	a.registerHandlers()
 	a.startBackgroundWorkers(ctx)
 
-	// check pending deployments
-	a.deployer.ConsumeVMRequest(ctx, true)
-	a.deployer.ConsumeK8sRequest(ctx, true)
-
 	return a.server.start()
 }
 
@@ -90,74 +86,78 @@ func (a *App) startBackgroundWorkers(ctx context.Context) {
 	// periodic deployments
 	go a.deployer.PeriodicRequests(ctx, substrateBlockDiffInSeconds)
 	go a.deployer.PeriodicDeploy(ctx, substrateBlockDiffInSeconds)
+
+	// check pending deployments
+	a.deployer.ConsumeVMRequest(ctx, true)
+	a.deployer.ConsumeK8sRequest(ctx, true)
 }
 
 func (a *App) registerHandlers() {
 	r := mux.NewRouter()
 
 	// version router
-	versionRouter := r.PathPrefix(a.config.Version).Subrouter()
+	versionRouter := r.PathPrefix("/" + a.config.Version).Subrouter()
 	authRouter := versionRouter.NewRoute().Subrouter()
 	adminRouter := authRouter.NewRoute().Subrouter()
 
-	// sub routes
-	userRouter := authRouter.PathPrefix("user").Subrouter()
-	quotaRouter := authRouter.PathPrefix("quota").Subrouter()
-	notificationRouter := authRouter.PathPrefix("notification").Subrouter()
-	vmRouter := authRouter.PathPrefix("vm").Subrouter()
-	k8sRouter := authRouter.PathPrefix("k8s").Subrouter()
+	// sub routes with authorization
+	userRouter := authRouter.PathPrefix("/user").Subrouter()
+	quotaRouter := authRouter.PathPrefix("/quota").Subrouter()
+	notificationRouter := authRouter.PathPrefix("/notification").Subrouter()
+	vmRouter := authRouter.PathPrefix("/vm").Subrouter()
+	k8sRouter := authRouter.PathPrefix("/k8s").Subrouter()
 
 	// sub routes with no authorization
-	unAuthUserRouter := versionRouter.PathPrefix("user").Subrouter()
-	unAuthMaintenanceRouter := versionRouter.PathPrefix("maintenance").Subrouter()
+	unAuthUserRouter := versionRouter.PathPrefix("/user").Subrouter()
+	unAuthMaintenanceRouter := versionRouter.PathPrefix("/maintenance").Subrouter()
 
 	// sub routes with admin access
-	voucherRouter := adminRouter.PathPrefix("voucher").Subrouter()
-	maintenanceRouter := adminRouter.PathPrefix("maintenance").Subrouter()
-	balanceRouter := adminRouter.PathPrefix("balance").Subrouter()
+	voucherRouter := adminRouter.PathPrefix("/voucher").Subrouter()
+	maintenanceRouter := adminRouter.PathPrefix("/maintenance").Subrouter()
+	balanceRouter := adminRouter.PathPrefix("/balance").Subrouter()
 
-	unAuthUserRouter.HandleFunc("signup", WrapFunc(a.SignUpHandler)).Methods("POST", "OPTIONS")
-	unAuthUserRouter.HandleFunc("signup/verify_email", WrapFunc(a.VerifySignUpCodeHandler)).Methods("POST", "OPTIONS")
-	unAuthUserRouter.HandleFunc("signin", WrapFunc(a.SignInHandler)).Methods("POST", "OPTIONS")
-	unAuthUserRouter.HandleFunc("refresh_token", WrapFunc(a.RefreshJWTHandler)).Methods("POST", "OPTIONS")
-	unAuthUserRouter.HandleFunc("forgot_password", WrapFunc(a.ForgotPasswordHandler)).Methods("POST", "OPTIONS")
-	unAuthUserRouter.HandleFunc("forget_password/verify_email", WrapFunc(a.VerifyForgetPasswordCodeHandler)).Methods("POST", "OPTIONS")
+	unAuthUserRouter.HandleFunc("/signup", WrapFunc(a.SignUpHandler)).Methods("POST", "OPTIONS")
+	unAuthUserRouter.HandleFunc("/signup/verify_email", WrapFunc(a.VerifySignUpCodeHandler)).Methods("POST", "OPTIONS")
+	unAuthUserRouter.HandleFunc("/signin", WrapFunc(a.SignInHandler)).Methods("POST", "OPTIONS")
+	unAuthUserRouter.HandleFunc("/refresh_token", WrapFunc(a.RefreshJWTHandler)).Methods("POST", "OPTIONS")
+	unAuthUserRouter.HandleFunc("/forgot_password", WrapFunc(a.ForgotPasswordHandler)).Methods("POST", "OPTIONS")
+	unAuthUserRouter.HandleFunc("/forget_password/verify_email", WrapFunc(a.VerifyForgetPasswordCodeHandler)).Methods("POST", "OPTIONS")
 
-	userRouter.HandleFunc("change_password", WrapFunc(a.ChangePasswordHandler)).Methods("PUT", "OPTIONS")
+	userRouter.HandleFunc("/change_password", WrapFunc(a.ChangePasswordHandler)).Methods("PUT", "OPTIONS")
 	userRouter.HandleFunc("", WrapFunc(a.UpdateUserHandler)).Methods("PUT", "OPTIONS")
 	userRouter.HandleFunc("", WrapFunc(a.GetUserHandler)).Methods("GET", "OPTIONS")
-	userRouter.HandleFunc("apply_voucher", WrapFunc(a.ApplyForVoucherHandler)).Methods("POST", "OPTIONS")
-	userRouter.HandleFunc("activate_voucher", WrapFunc(a.ActivateVoucherHandler)).Methods("PUT", "OPTIONS")
+	userRouter.HandleFunc("/apply_voucher", WrapFunc(a.ApplyForVoucherHandler)).Methods("POST", "OPTIONS")
+	userRouter.HandleFunc("/activate_voucher", WrapFunc(a.ActivateVoucherHandler)).Methods("PUT", "OPTIONS")
 
 	quotaRouter.HandleFunc("", WrapFunc(a.GetQuotaHandler)).Methods("GET", "OPTIONS")
 
 	notificationRouter.HandleFunc("", WrapFunc(a.ListNotificationsHandler)).Methods("GET", "OPTIONS")
-	notificationRouter.HandleFunc("{id}", WrapFunc(a.UpdateNotificationsHandler)).Methods("PUT", "OPTIONS")
+	notificationRouter.HandleFunc("/{id}", WrapFunc(a.UpdateNotificationsHandler)).Methods("PUT", "OPTIONS")
 
 	vmRouter.HandleFunc("", WrapFunc(a.DeployVMHandler)).Methods("POST", "OPTIONS")
-	vmRouter.HandleFunc("validate/{name}", WrapFunc(a.ValidateVMNameHandler)).Methods("Get", "OPTIONS")
-	vmRouter.HandleFunc("{id}", WrapFunc(a.GetVMHandler)).Methods("GET", "OPTIONS")
-	vmRouter.HandleFunc("{id}", WrapFunc(a.DeleteVMHandler)).Methods("DELETE", "OPTIONS")
+	vmRouter.HandleFunc("/validate/{name}", WrapFunc(a.ValidateVMNameHandler)).Methods("Get", "OPTIONS")
+	vmRouter.HandleFunc("/{id}", WrapFunc(a.GetVMHandler)).Methods("GET", "OPTIONS")
+	vmRouter.HandleFunc("/{id}", WrapFunc(a.DeleteVMHandler)).Methods("DELETE", "OPTIONS")
 	vmRouter.HandleFunc("", WrapFunc(a.ListVMsHandler)).Methods("GET", "OPTIONS")
 	vmRouter.HandleFunc("", WrapFunc(a.DeleteAllVMsHandler)).Methods("DELETE", "OPTIONS")
 
 	k8sRouter.HandleFunc("", WrapFunc(a.K8sDeployHandler)).Methods("POST", "OPTIONS")
-	k8sRouter.HandleFunc("validate/{name}", WrapFunc(a.ValidateK8sNameHandler)).Methods("Get", "OPTIONS")
-	k8sRouter.HandleFunc("{id}", WrapFunc(a.K8sGetHandler)).Methods("GET", "OPTIONS")
-	k8sRouter.HandleFunc("{id}", WrapFunc(a.K8sDeleteHandler)).Methods("DELETE", "OPTIONS")
+	k8sRouter.HandleFunc("/validate/{name}", WrapFunc(a.ValidateK8sNameHandler)).Methods("Get", "OPTIONS")
+	k8sRouter.HandleFunc("/{id}", WrapFunc(a.K8sGetHandler)).Methods("GET", "OPTIONS")
+	k8sRouter.HandleFunc("/{id}", WrapFunc(a.K8sDeleteHandler)).Methods("DELETE", "OPTIONS")
 	k8sRouter.HandleFunc("", WrapFunc(a.K8sGetAllHandler)).Methods("GET", "OPTIONS")
 	k8sRouter.HandleFunc("", WrapFunc(a.K8sDeleteAllHandler)).Methods("DELETE", "OPTIONS")
 
 	unAuthMaintenanceRouter.HandleFunc("", WrapFunc(a.GetMaintenanceHandler)).Methods("GET", "OPTIONS")
 
 	// ADMIN ACCESS
-	adminRouter.HandleFunc("user/all", WrapFunc(a.GetAllUsersHandler)).Methods("GET", "OPTIONS")
-	balanceRouter.HandleFunc("balance", WrapFunc(a.GetBalanceHandler)).Methods("GET", "OPTIONS")
+	adminRouter.HandleFunc("/user/all", WrapFunc(a.GetAllUsersHandler)).Methods("GET", "OPTIONS")
+	balanceRouter.HandleFunc("", WrapFunc(a.GetBalanceHandler)).Methods("GET", "OPTIONS")
 	maintenanceRouter.HandleFunc("", WrapFunc(a.UpdateMaintenanceHandler)).Methods("PUT", "OPTIONS")
 
 	voucherRouter.HandleFunc("", WrapFunc(a.GenerateVoucherHandler)).Methods("POST", "OPTIONS")
 	voucherRouter.HandleFunc("", WrapFunc(a.ListVouchersHandler)).Methods("GET", "OPTIONS")
-	voucherRouter.HandleFunc("{id}", WrapFunc(a.UpdateVoucherHandler)).Methods("PUT", "OPTIONS")
+	voucherRouter.HandleFunc("/{id}", WrapFunc(a.UpdateVoucherHandler)).Methods("PUT", "OPTIONS")
 	voucherRouter.HandleFunc("", WrapFunc(a.ApproveAllVouchersHandler)).Methods("PUT", "OPTIONS")
 
 	// middlewares

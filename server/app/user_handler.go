@@ -258,6 +258,10 @@ func (a *App) RefreshJWTHandler(req *http.Request) (interface{}, Response) {
 	if len(splitToken) != 2 {
 		return nil, BadRequest(errors.New("token is required"))
 	}
+
+	if strings.TrimSpace(splitToken[1]) == "" {
+		return nil, BadRequest(errors.New("token is required"))
+	}
 	reqToken = splitToken[1]
 
 	claims := &models.Claims{}
@@ -295,7 +299,6 @@ func (a *App) RefreshJWTHandler(req *http.Request) (interface{}, Response) {
 
 // ForgotPasswordHandler sends user verification code
 func (a *App) ForgotPasswordHandler(req *http.Request) (interface{}, Response) {
-
 	var email EmailInput
 	err := json.NewDecoder(req.Body).Decode(&email)
 	if err != nil {
@@ -310,6 +313,10 @@ func (a *App) ForgotPasswordHandler(req *http.Request) (interface{}, Response) {
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	if !user.Verified {
+		return nil, BadRequest(errors.New("email is not verified yet, please check the verification email in your inbox"))
 	}
 
 	// send verification code
@@ -356,6 +363,10 @@ func (a *App) VerifyForgetPasswordCodeHandler(req *http.Request) (interface{}, R
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	if !user.Verified {
+		return nil, BadRequest(errors.New("email is not verified yet, please check the verification email in your inbox"))
 	}
 
 	if user.Code != data.Code {
@@ -519,6 +530,12 @@ func (a *App) GetUserHandler(req *http.Request) (interface{}, Response) {
 
 // ApplyForVoucherHandler makes user apply for voucher that would be accepted by admin
 func (a *App) ApplyForVoucherHandler(req *http.Request) (interface{}, Response) {
+	var input ApplyForVoucherInput
+	err := json.NewDecoder(req.Body).Decode(&input)
+	if err != nil {
+		return nil, BadRequest(errors.New("failed to read voucher data"))
+	}
+
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	userVoucher, err := a.db.GetNotUsedVoucherByUserID(userID)
 	if err != nil && err != gorm.ErrRecordNotFound {
@@ -528,10 +545,10 @@ func (a *App) ApplyForVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, BadRequest(errors.New("you have already a voucher request, please wait for the confirmation mail"))
 	}
 
-	var input ApplyForVoucherInput
-	err = json.NewDecoder(req.Body).Decode(&input)
+	err = validator.Validate(input)
 	if err != nil {
-		return nil, BadRequest(errors.New("failed to read voucher data"))
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("invalid voucher data"))
 	}
 
 	// generate voucher for user but can't use it until admin approves it

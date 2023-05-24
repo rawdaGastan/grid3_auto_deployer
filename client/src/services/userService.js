@@ -147,6 +147,11 @@ export default {
     return await authClient().put("/voucher");
   },
 
+  async generateVoucher(length, vms, public_ips) {
+    await this.refresh_token();
+    return await authClient().post("/voucher", { length, vms, public_ips });
+  },
+
   // balance
   async getBalance() {
     await this.refresh_token();

@@ -33,6 +33,7 @@ func TestGetAndDeleteVMHandler(t *testing.T) {
 			token:  token,
 			config: app.config,
 			db:     app.db,
+			varID:  1,
 		}
 
 		response := authorizedHandler(req)

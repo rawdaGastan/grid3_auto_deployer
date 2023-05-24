@@ -11,11 +11,14 @@ import (
 
 	"testing"
 
+	c4sDeployer "github.com/codescalers/cloud4students/deployer"
 	"github.com/codescalers/cloud4students/internal"
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
+	"github.com/codescalers/cloud4students/streams"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 )
 
 type authHandlerConfig struct {
@@ -72,8 +75,29 @@ func SetUp(t testing.TB) *App {
 	err := os.WriteFile(configPath, []byte(config), 0644)
 	assert.NoError(t, err)
 
-	app, err := NewApp(context.Background(), configPath)
+	configuration, err := internal.ReadConfFile(configPath)
 	assert.NoError(t, err)
+
+	db := models.NewDB()
+	err = db.Connect(configuration.Database.File)
+	assert.NoError(t, err)
+
+	err = db.Migrate()
+	assert.NoError(t, err)
+
+	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, false)
+	assert.NoError(t, err)
+
+	newDeployer, err := c4sDeployer.NewDeployer(db, streams.RedisClient{}, tfPluginClient)
+	assert.NoError(t, err)
+
+	app := &App{
+		config:   configuration,
+		server:   server{},
+		db:       db,
+		redis:    streams.RedisClient{},
+		deployer: newDeployer,
+	}
 
 	return app
 }

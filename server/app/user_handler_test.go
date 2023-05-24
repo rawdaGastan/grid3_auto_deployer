@@ -145,6 +145,7 @@ func TestVerifySignUpCodeHandler(t *testing.T) {
 	app := SetUp(t)
 
 	user.Code = 1234
+	user.Verified = false
 	err := app.db.CreateUser(user)
 	assert.NoError(t, err)
 

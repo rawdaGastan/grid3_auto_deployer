@@ -1,34 +1,20 @@
 <template>
   <v-container style="max-width: 1700px;" fill-height>
     <v-row>
-      <v-col></v-col>
       <v-col>
-        <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
+        <h5
+          class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary"
+        >
           Admin Panel
         </h5>
-      </v-col>
-      <v-col>
-        <div class="balance text-primary text-center rounded-lg bg-white shadow">
-          <strong style="font-size: 2rem;">{{ balance }} TFT</strong>
-          <p class="mx-lg-auto font-weight-medium">Balance</p>
-        </div>
       </v-col>
     </v-row>
     <v-row>
       <v-col cols="12" md="8">
-        <div class="actions d-flex justify-end my-2">
-          <BaseButton
-            :disabled="approveAllCount <= 0"
-            color="primary"
-            text="Approve All"
-            class="approve text-capitalize"
-            @click="approveAllVouchers"
-          />
-        </div>
         <v-data-table
           :headers="vouchersHeaders"
           :items="vouchers"
-          class="elevation-1 rounded shadow"
+          class="elevation-1 my-2 rounded shadow"
         >
           <template v-slot:item="{ item }">
             <tr>
@@ -89,8 +75,108 @@
             </tr>
           </template>
         </v-data-table>
+        <div class="actions d-flex justify-end my-2">
+          <div class="text-center">
+            <v-dialog v-model="dialog" width="auto">
+              <template v-slot:activator="{ props }">
+                <BaseButton
+                  color="warning"
+                  text="Generate Voucher"
+                  class="text-capitalize mr-2"
+                  v-bind="props"
+                />
+              </template>
+
+              <v-card class="pa-5">
+                <v-form
+                  v-model="genVoucherVerify"
+                  @submit.prevent="generateVoucher"
+                  ref="form"
+                >
+                  <v-card-text>
+                    <h5
+                      class="text-h5 text-md-h4 text-center mb-5 pa-5 secondary"
+                    >
+                      Generate Voucher
+                    </h5>
+                    <v-row>
+                      <v-col>
+                        <v-text-field
+                          label="VMs"
+                          v-model="vms"
+                          :rules="rules"
+                          type="number"
+                          oninput="validity.valid||(value='')"
+                          bg-color="accent"
+                          variant="outlined"
+                          density="compact"
+                        ></v-text-field>
+                      </v-col>
+                      <v-col>
+                        <v-text-field
+                          label="IPs"
+                          v-model="ips"
+                          :rules="rules"
+                          oninput="validity.valid||(value='')"
+                          type="number"
+                          bg-color="accent"
+                          variant="outlined"
+                          density="compact"
+                        ></v-text-field>
+                      </v-col>
+                    </v-row>
+
+                    <v-text-field
+                      label="Length"
+                      v-model="length"
+                      :rules="lenRules"
+                      oninput="validity.valid||(value='')"
+                      type="number"
+                      bg-color="accent"
+                      variant="outlined"
+                      density="compact"
+                      class="my-3"
+                    ></v-text-field>
+                  </v-card-text>
+                  <v-card-actions class="justify-center">
+                    <BaseButton
+                      class="bg-primary mr-5"
+                      text="Cancel"
+                      @click="
+                        form.reset();
+                        dialog = false;
+                      "
+                    />
+                    <BaseButton
+                      type="submit"
+                      class="bg-primary"
+                      text="Generate"
+                      :disabled="!genVoucherVerify"
+                      @click="dialog = false"
+                    />
+                  </v-card-actions>
+                </v-form>
+              </v-card>
+            </v-dialog>
+          </div>
+          <BaseButton
+            :disabled="approveAllCount <= 0"
+            color="primary"
+            text="Approve All"
+            class="approve text-capitalize"
+            @click="approveAllVouchers"
+          />
+        </div>
       </v-col>
       <v-col cols="12" md="4">
+        <v-col class="pa-0">
+          <div
+            class="balance text-primary pa-3 my-2 text-center rounded-lg bg-white shadow"
+          >
+            <p class="mx-lg-auto font-weight-medium">Balance</p>
+            <strong style="font-size: 2rem;">{{ balance }} TFT</strong>
+          </div>
+        </v-col>
         <v-row>
           <v-col>
             <div
@@ -117,10 +203,10 @@
             </div>
           </v-col>
         </v-row>
-        <section class="my-5 shadow">
-          <h5 class="bg-grey-lighten-5 text-h5 bg-primary text-center pa-4">
+        <section class="my-5">
+          <!-- <h5 class="text-h5 text-center pa-4">
             Users
-          </h5>
+          </h5> -->
           <v-data-table
             v-model:items-per-page="itemsPerPage"
             :headers="usersHeaders"
@@ -160,6 +246,12 @@
       </v-col>
     </v-row>
     <Toast ref="toast" />
+    <Voucher
+      v-if="voucher"
+      :msg="message"
+      :voucher="voucher"
+      @reset="resetVoucher"
+    />
   </v-container>
 </template>
 
@@ -168,11 +260,12 @@ import { ref, onMounted } from "vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import userService from "@/services/userService.js";
 import Toast from "@/components/Toast.vue";
-
+import Voucher from "@/components/Voucher.vue";
 export default {
   components: {
     BaseButton,
     Toast,
+    Voucher,
   },
   setup() {
     const confirm = ref(null);
@@ -202,6 +295,32 @@ export default {
     const approveAllCount = ref(null);
     const userInfo = ref(null);
     const itemsPerPage = ref(5);
+    const dialog = ref(false);
+    const form = ref(null);
+    const genVoucherVerify = ref(false);
+    const vms = ref(null);
+    const ips = ref(null);
+    const length = ref(null);
+    const message = ref(null);
+    const voucher = ref(null);
+
+    const rules = ref([
+      (value) => {
+        if (!value) return "Field is required";
+        if (value < 1) return "Value should at least 1";
+        return true;
+      },
+    ]);
+
+    const lenRules = ref([
+      (value) => {
+        if (!value) return "Field is required";
+        if (value < 3) return "Length should be at least 3";
+        if (value > 20) return "Length should be 20 max";
+        return true;
+      },
+    ]);
+
     const getVouchers = () => {
       userService
         .getVouchers()
@@ -299,6 +418,27 @@ export default {
       getBalance();
     }, 30 * 1000);
 
+    const generateVoucher = () => {
+      userService
+        .generateVoucher(+length.value, +vms.value, +ips.value)
+        .then((response) => {
+          const { data, msg } = response.data;
+          message.value = msg;
+          voucher.value = data.voucher;
+        })
+        .catch((response) => {
+          toast.value.toast(response, "#FF5252");
+        })
+        .finally(() => {
+          form.value.reset();
+        });
+    };
+
+    const resetVoucher = () => {
+      message.value = null;
+      voucher.value = null;
+    };
+
     onMounted(() => {
       let token = localStorage.getItem("token");
       if (token) {
@@ -321,13 +461,25 @@ export default {
       confirm,
       toast,
       itemsPerPage,
+      dialog,
+      form,
+      genVoucherVerify,
+      vms,
+      ips,
+      length,
+      rules,
+      voucher,
+      message,
+      lenRules,
       getVouchers,
       getBalance,
       approveVoucher,
       approveAllVouchers,
       getUsers,
       addAvatar,
+      generateVoucher,
       usedIPs,
+      resetVoucher,
     };
   },
   beforeRouteEnter(to, from, next) {
@@ -355,9 +507,7 @@ export default {
 }
 
 .balance {
-  border: 3px solid #5CBBF6;
-  margin-top: 2.5rem;
-  height: 70%;
+  border: 3px solid #217dbb;
 }
 
 td {

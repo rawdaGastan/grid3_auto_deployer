@@ -170,6 +170,7 @@ func TestK8sGetAndDeleteHandler(t *testing.T) {
 			token:  token,
 			config: app.config,
 			db:     app.db,
+			varID:  1,
 		}
 
 		response := authorizedHandler(req)
@@ -189,6 +190,7 @@ func TestK8sGetAndDeleteHandler(t *testing.T) {
 			token:  token,
 			config: app.config,
 			db:     app.db,
+			varID:  1,
 		}
 
 		response := authorizedHandler(req)
@@ -220,6 +222,7 @@ func TestK8sGetAndDeleteHandler(t *testing.T) {
 			token:  token,
 			config: app.config,
 			db:     app.db,
+			varID:  1,
 		}
 
 		response := authorizedHandler(req)
@@ -237,6 +240,7 @@ func TestK8sGetAndDeleteHandler(t *testing.T) {
 			token:  token,
 			config: app.config,
 			db:     app.db,
+			varID:  1,
 		}
 
 		response := authorizedHandler(req)

@@ -24,6 +24,7 @@ type authHandlerConfig struct {
 	token  string
 	config internal.Configuration
 	db     models.DB
+	varID  int
 }
 
 type unAuthHandlerConfig struct {
@@ -100,9 +101,9 @@ func authorizedHandler(req authHandlerConfig) (response *httptest.ResponseRecord
 	request := httptest.NewRequest("GET", req.api, req.body)
 
 	// add id to url vars if it has id as last index in the api request
-	if string(req.api[len(req.api)-1]) == "1" {
+	if req.varID != 0 {
 		request = mux.SetURLVars(request, map[string]string{
-			"id": "1",
+			"id": fmt.Sprint(req.varID),
 		})
 	}
 

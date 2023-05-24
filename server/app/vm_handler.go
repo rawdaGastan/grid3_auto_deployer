@@ -123,7 +123,7 @@ func (a *App) GetVMHandler(req *http.Request) (interface{}, Response) {
 
 	vm, err := a.db.GetVMByID(id)
 	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("virtual machine not found"))
+		return nil, NotFound(errors.New("virtual machine is not found"))
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -131,7 +131,7 @@ func (a *App) GetVMHandler(req *http.Request) (interface{}, Response) {
 	}
 
 	if vm.UserID != userID {
-		return nil, NotFound(errors.New("virtual machine not found"))
+		return nil, NotFound(errors.New("virtual machine is not found"))
 	}
 
 	return ResponseMsg{

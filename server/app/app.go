@@ -164,7 +164,7 @@ func (a *App) registerHandlers() {
 	r.Use(middlewares.LoggingMW)
 	r.Use(middlewares.EnableCors)
 
-	authRouter.Use(middlewares.Authorization(a.config.Token.Secret, a.config.Token.Timeout))
+	authRouter.Use(middlewares.Authorization(a.db, a.config.Token.Secret, a.config.Token.Timeout))
 	adminRouter.Use(middlewares.AdminAccess(a.db))
 
 	// prometheus registration

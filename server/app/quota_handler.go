@@ -16,7 +16,7 @@ func (a *App) GetQuotaHandler(req *http.Request) (interface{}, Response) {
 
 	quota, err := a.db.GetUserQuota(userID)
 	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("user quota not found"))
+		return nil, NotFound(errors.New("user quota is not found"))
 	}
 	if err != nil {
 		log.Error().Err(err).Send()

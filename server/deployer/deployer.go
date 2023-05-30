@@ -211,6 +211,7 @@ func filterNode(resource string, public bool) (types.NodeFilter, error) {
 	}
 
 	return types.NodeFilter{
+		FarmIDs:  []uint64{1},
 		TotalCRU: &cru,
 		FreeSRU:  &sru,
 		FreeMRU:  &mru,

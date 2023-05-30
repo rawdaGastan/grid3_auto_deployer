@@ -21,8 +21,10 @@ import (
 const internalServerErrorMsg = "Something went wrong"
 
 var (
+	vmEntryPoint = "/init.sh"
+
 	k8sFlist = "https://hub.grid.tf/tf-official-apps/threefoldtech-k3s-latest.flist"
-	vmFlist  = "https://hub.grid.tf/tf-official-apps/base:latest.flist"
+	vmFlist  = "https://hub.grid.tf/tf-official-vms/ubuntu-22.04.flist"
 
 	smallCPU     = uint64(1)
 	smallMemory  = uint64(2)

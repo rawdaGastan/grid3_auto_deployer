@@ -12,6 +12,7 @@ services:
  
   redis-db:
     image: redis:alpine
+    command: redis-server --requirepass pass
     ports:
       - 6379:6379
     container_name: redis-db

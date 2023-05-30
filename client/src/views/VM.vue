@@ -129,13 +129,10 @@ export default {
     const itemsPerPage = ref(null);
     const name = ref(null);
     const rules = ref([
-      (value) => {
-        if (value) return true;
-        return "This field is required.";
-      },
+      (value) => value.length != 0 || "This field is required."
     ]);
     const confirm = ref(null);
-    const selectedResource = ref(undefined);
+    const selectedResource = ref("");
     const resources = ref([
       { title: "Small VM (1 CPU, 2GB, 25GB)", value: "small" },
       { title: "Medium VM (2 CPU, 4GB, 50GB)", value: "medium" },
@@ -199,7 +196,7 @@ export default {
         .getVms()
         .then((response) => {
           const { data } = response.data;
-          data.map(item => item.deleting = false);
+          data.map(item => { item.deleting = false; item.public_ip = item.public_ip.split('/')[0]; });
           results.value = data;
         })
         .catch((response) => {
@@ -214,18 +211,16 @@ export default {
         .deployVm(name.value, selectedResource.value, checked.value)
         .then((response) => {
           toast.value.toast(response.data.msg, "#388E3C");
-          reset();
           emitQuota();
           getVMS();
         })
         .catch((response) => {
-          reset();
           const { err } = response.response.data;
           toast.value.toast(err, "#FF5252");
         })
         .finally(() => {
+          reset();
           loading.value = false;
-          checked.value = false;
         });
     };
 
@@ -263,7 +258,6 @@ export default {
               })
               .finally(() => {
                 deLoading.value = false;
-                checked.value = false;
               });
           }
         });

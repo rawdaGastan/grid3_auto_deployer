@@ -49,7 +49,7 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, s
 		Mounts: []workloads.Mount{
 			{DiskName: disk.Name, MountPoint: "/disk"},
 		},
-		Entrypoint: "/sbin/zinit init",
+		Entrypoint: vmEntryPoint,
 		EnvVars: map[string]string{
 			"SSH_KEY": sshKey + "\n" + adminSSHKey,
 		},

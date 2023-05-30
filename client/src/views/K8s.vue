@@ -260,10 +260,7 @@ export default {
     ]);
     const savedWorkers = ref([]);
     const rules = ref([
-      (value) => {
-        if (value) return true;
-        return "This field is required.";
-      },
+      (value) => value.length != 0 || "This field is required."
     ]);
     const headers = ref([
       {
@@ -364,7 +361,7 @@ export default {
         .getK8s()
         .then((response) => {
           const { data } = response.data;
-          data.map(item => item.deleting = false);
+          data.map(item => { item.deleting = false; item.master.public_ip = item.master.public_ip.split('/')[0]; });
           results.value = data;
         })
         .catch((response) => {

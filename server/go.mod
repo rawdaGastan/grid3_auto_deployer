@@ -14,9 +14,9 @@ require (
 	github.com/sendgrid/sendgrid-go v3.12.0+incompatible
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.3
-	github.com/threefoldtech/tfgrid-sdk-go/grid-client v0.7.0
+	github.com/threefoldtech/tfgrid-sdk-go/grid-client v0.8.0
 	github.com/threefoldtech/tfgrid-sdk-go/grid-proxy v0.7.0
-	github.com/threefoldtech/zos v0.5.6-0.20230426125942-0ea2f91b21f5
+	github.com/threefoldtech/zos v0.5.6-0.20230526112430-f620733482d7
 	golang.org/x/crypto v0.9.0
 	golang.org/x/text v0.9.0
 	gopkg.in/validator.v2 v2.0.1
@@ -34,10 +34,10 @@ require (
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deckarep/golang-set v1.8.0 // indirect
-	github.com/decred/base58 v1.0.4 // indirect
-	github.com/decred/dcrd/crypto/blake256 v1.0.0 // indirect
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
-	github.com/ethereum/go-ethereum v1.11.5 // indirect
+	github.com/decred/base58 v1.0.5 // indirect
+	github.com/decred/dcrd/crypto/blake256 v1.0.1 // indirect
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
+	github.com/ethereum/go-ethereum v1.11.6 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -47,6 +47,7 @@ require (
 	github.com/gtank/ristretto255 v0.1.2 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/holiman/uint256 v1.2.2-0.20230321075855-87b91420868c // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-base58 v0.0.0-20150317085156-6237cf65f3a6 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
@@ -64,10 +65,10 @@ require (
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.42.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
-	github.com/rs/cors v1.8.3 // indirect
+	github.com/rs/cors v1.9.0 // indirect
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/threefoldtech/tfchain/clients/tfchain-client-go v0.0.0-20230509101146-8e43c43597cd // indirect
+	github.com/threefoldtech/tfchain/clients/tfchain-client-go v0.0.0-20230530114457-e57ee9560f79 // indirect
 	github.com/threefoldtech/tfgrid-sdk-go/rmb-sdk-go v0.6.0 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
 	github.com/vedhavyas/go-subkey v1.0.3 // indirect

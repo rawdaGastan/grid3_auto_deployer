@@ -66,7 +66,7 @@ func SignUpMailContent(code int, timeout int, name string) (string, string) {
 	return subject, body
 }
 
-// WelcomeMailContent gets the email content for sign up
+// WelcomeMailContent gets the email content for welcome messages
 func WelcomeMailContent(name string) (string, string) {
 	subject := "Welcome to Cloud4Students 🎉"
 	body := string(welcomeMail)

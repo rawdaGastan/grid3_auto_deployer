@@ -270,9 +270,11 @@ export default {
         });
     };
 
-    setInterval(() => {
-      getNotifications();
-    }, 30 * 1000);
+		if (localStorage.getItem("token")) {
+			setInterval(() => {
+				getNotifications();
+			}, 30 * 1000);
+		}
 
     onMounted(() => {
       if (route.redirectedFrom) checkTitle(route.redirectedFrom.name);

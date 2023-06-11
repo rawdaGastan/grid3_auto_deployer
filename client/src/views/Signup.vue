@@ -28,6 +28,17 @@
 						placeholder="Enter your project description" bg-color="accent" variant="outlined" class="my-2">
 					</v-textarea>
 
+					<v-row>
+						<v-col>
+							<v-text-field v-model="vms" :rules="vmRules" label="VMs" type="number" min="1" bg-color="accent"
+								variant="outlined" density="compact"></v-text-field>
+						</v-col>
+						<v-col>
+							<v-text-field v-model="ips" :rules="ipsRules" label="public IPs" type="number" min="0" bg-color="accent"
+								variant="outlined" density="compact"></v-text-field>
+						</v-col>
+					</v-row>
+
 					<v-tooltip block
 						text="You can generate SSH key using 'ssh-keygen' command. Once generated, your public key will be stored in ~/.ssh/id_rsa.pub"
 						left>
@@ -100,6 +111,9 @@ export default {
 		const loading = ref(false);
 		const toast = ref(null);
 		const checked = ref(false);
+		const sshKey = ref(null);
+		const vms = ref(1);
+		const ips = ref(0);
 		const nameRegex = /^(\w+\s){0,3}\w*$/;
 		const nameValidation = ref([
 			(value) => {
@@ -134,6 +148,22 @@ export default {
 			},
 		]);
 
+		const vmRules = ref([
+			(value) => {
+				if (!value) return "VMs is required";
+				if (value < 1) return "VMs should at least 1";
+				return true;
+			},
+		]);
+
+		const ipsRules = ref([
+			(value) => {
+				if (ips.value >= 0) return true;
+				if (!value) return "Public IPs is required";
+				return true;
+			},
+		]);
+
 		const teamSizeRules = ref([
 			(value) => {
 				if (!value) return "Team size is required";
@@ -142,6 +172,7 @@ export default {
 				return true;
 			},
 		]);
+
 		const emailRules = ref([
 			(value) => {
 				if (!value) return "Email is required";
@@ -149,6 +180,7 @@ export default {
 				return true;
 			},
 		]);
+
 		const passwordRules = ref([
 			(value) => {
 				if (!value) return "Password is required";
@@ -157,6 +189,7 @@ export default {
 				return true;
 			},
 		]);
+
 		const cPasswordRules = ref([
 			(value) => {
 				if (!value) return "Confirm password is required";
@@ -179,6 +212,7 @@ export default {
 					team_size: Number(teamSize.value),
 					project_desc: projectDescription.value,
 					college: faculty.value,
+					ssh_key: sshKey.value,
 				})
 				.then((response) => {
 					localStorage.setItem("fullName", fullName.value);
@@ -187,6 +221,9 @@ export default {
 					localStorage.setItem("teamSize", Number(teamSize.value));
 					localStorage.setItem("projectDescription", projectDescription.value);
 					localStorage.setItem("faculty", faculty.value);
+					localStorage.setItem("sshKey", sshKey.value);
+					localStorage.setItem("vms", vms.value);
+					localStorage.setItem("ips", ips.value);
 					toast.value.toast(response.data.msg);
 					router.push({
 						name: "OTP",
@@ -210,6 +247,9 @@ export default {
 			cPassword,
 			password,
 			email,
+			sshKey,
+			vms,
+			ips,
 			toast,
 			fullName,
 			emailRules,
@@ -224,6 +264,8 @@ export default {
 			teamSizeRules,
 			sshValidation,
 			descRules,
+			vmRules,
+			ipsRules,
 			facultyRules,
 			checked,
 		};

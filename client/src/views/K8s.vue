@@ -499,10 +499,12 @@ export default {
       workers.value = items;
     };
 
-    setInterval(() => {
-      getK8s();
-      emitQuota();
-    }, 30 * 1000);
+		if (localStorage.getItem("token")) {
+			setInterval(() => {
+				getK8s();
+				emitQuota();
+			}, 30 * 1000);
+		}
 
     onMounted(() => {
       let token = localStorage.getItem("token");

@@ -11,7 +11,7 @@
 						<v-img :style="isHovering
 							? 'transform:scale(1.1);transition: transform .5s;'
 							: 'transition: transform .5s;'
-							" transition="transform .2s" src="@/assets/verfication_code.png" class="w-50 mx-auto"
+							" transition="transform .2s" src="@/assets/verification_code.png" class="w-50 mx-auto"
 							:class="{ 'on-hover': isHovering }" v-bind="props" />
 					</v-hover>
 
@@ -76,6 +76,7 @@ export default {
 		const clearInput = () => {
 			otpInput.value.clearInput();
 		};
+
 		watchEffect(() => {
 			if (countDown.value > 0) {
 				setTimeout(() => {
@@ -84,9 +85,9 @@ export default {
 			}
 		});
 
-		const resetHandler = () => {
+		const resetHandler = async () => {
 			if (route.query.isForgetPassword) {
-				axios
+				await axios
 					.post(window.configs.vite_app_endpoint + "/user/forgot_password", {
 						email: route.query.email,
 					})
@@ -98,7 +99,7 @@ export default {
 						toast.value.toast(error.response.data.err, "#FF5252");
 					});
 			} else {
-				axios
+				await axios
 					.post(window.configs.vite_app_endpoint + "/user/signup", {
 						name: localStorage.getItem("fullName"),
 						email: route.query.email,
@@ -107,6 +108,7 @@ export default {
 						team_size: Number(localStorage.getItem("teamSize")),
 						project_desc: localStorage.getItem("projectDescription"),
 						college: localStorage.getItem("faculty"),
+						ssh_key: localStorage.getItem("sshKey"),
 					})
 					.then((response) => {
 						toast.value.toast(response.data.msg);
@@ -118,12 +120,12 @@ export default {
 			}
 		};
 
-		const onSubmit = () => {
+		const onSubmit = async () => {
 			if (!verify.value) return;
 			loading.value = true;
 
 			if (route.query.isSignup) {
-				axios
+				await axios
 					.post(
 						window.configs.vite_app_endpoint + "/user/signup/verify_email",
 						{
@@ -131,7 +133,18 @@ export default {
 							code: Number(otp.value),
 						}
 					)
-					.then((response) => {
+					.then(async (response) => {
+						await axios.post(window.configs.vite_app_endpoint + "/user/apply_voucher", {
+							vms: Number(localStorage.getItem("vms")),
+							public_ips: Number(localStorage.getItem("ips")),
+							reason: localStorage.getItem("projectDescription"),
+						}, {
+							headers: {
+								Authorization: "Bearer " + response.data.data.access_token,
+							}
+						}).catch((error) => {
+							toast.value.toast(error.response.data.err, "#FF5252");
+						});
 						toast.value.toast(response.data.msg);
 						localStorage.removeItem("fullName");
 						localStorage.removeItem("password");
@@ -139,6 +152,9 @@ export default {
 						localStorage.removeItem("teamSize");
 						localStorage.removeItem("projectDescription");
 						localStorage.removeItem("faculty");
+						localStorage.removeItem("sshKey");
+						localStorage.removeItem("vms");
+						localStorage.removeItem("ips");
 						router.push({
 							name: "Login",
 						});
@@ -148,7 +164,7 @@ export default {
 						loading.value = false;
 					});
 			} else {
-				axios
+				await axios
 					.post(
 						window.configs.vite_app_endpoint +
 						"/user/forget_password/verify_email",

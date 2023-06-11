@@ -214,9 +214,23 @@ func (a *App) VerifySignUpCodeHandler(req *http.Request) (interface{}, Response)
 	}
 	middlewares.UserCreations.WithLabelValues(user.ID.String(), user.Email, user.College, fmt.Sprint(user.TeamSize)).Inc()
 
+	// token
+	token, err := internal.CreateJWT(user.ID.String(), user.Email, a.config.Token.Secret, a.config.Token.Timeout)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	subject, body := internal.WelcomeMailContent(user.Name)
+	err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
 	return ResponseMsg{
-		Message: "Account is created successfully",
-		Data:    map[string]string{"user_id": user.ID.String()},
+		Message: "Account is created successfully.",
+		Data:    map[string]string{"user_id": user.ID.String(), "access_token": token},
 	}, Ok()
 }
 

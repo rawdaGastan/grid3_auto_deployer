@@ -1,10 +1,10 @@
 <template>
-  <v-app>
-    <default-bar v-if="!maintenance"/>
-    <Quota class="quota" v-if="!isAdmin && !maintenance && !noQuota" />
-    <default-view />
-    <FooterComponent/>
-  </v-app>
+	<v-app>
+		<default-bar :key="$route.fullPath" v-if="!maintenance" />
+		<Quota class="quota" v-if="!isAdmin && !maintenance && !noQuota" />
+		<default-view />
+		<FooterComponent />
+	</v-app>
 </template>
 
 <script>
@@ -17,48 +17,48 @@ import userService from "@/services/userService.js";
 import FooterComponent from "@/components/Footer.vue";
 
 export default {
-  components: {
-    DefaultBar,
-    DefaultView,
-    Quota,
-    FooterComponent
-  },
+	components: {
+		DefaultBar,
+		DefaultView,
+		Quota,
+		FooterComponent
+	},
 
-  setup() {
-    const route = useRoute();
-    const router = useRouter();
-    const maintenance = ref(false);
-    const noQuota = ref(false);
-    const excludedRoutes = ref(["/login", "/signup", "/forgetPassword", "/otp", "/newPassword", "/about"])
+	setup() {
+		const route = useRoute();
+		const router = useRouter();
+		const maintenance = ref(false);
+		const noQuota = ref(false);
+		const excludedRoutes = ref(["/", "/login", "/signup", "/forgetPassword", "/otp", "/newPassword", "/about"])
 
-    userService.maintenance();
-    maintenance.value = localStorage.getItem("maintenance") == "true";
+		userService.maintenance();
+		maintenance.value = localStorage.getItem("maintenance") == "true";
 
-    const isAdmin = computed(() => {
-      if (route.path !== "/admin") {
-        return false;
-      }
-      return true;
-    });
+		const isAdmin = computed(() => {
+			if (route.path !== "/admin") {
+				return false;
+			}
+			return true;
+		});
 
-    if (excludedRoutes.value.includes(route.path)) {
-      noQuota.value = true;
-    }
+		if (excludedRoutes.value.includes(route.path)) {
+			noQuota.value = true;
+		}
 
-    if (maintenance.value) {
-      router.push({name: "Maintenance"})
-    }
+		if (maintenance.value) {
+			router.push({ name: "Maintenance" })
+		}
 
-    return { isAdmin, maintenance, noQuota };
-  },
+		return { isAdmin, maintenance, noQuota };
+	},
 };
 </script>
 
 <style>
 .quota {
-  position: fixed;
-  top: 15%;
-  right: 0;
-  z-index: 999;
+	position: fixed;
+	top: 15%;
+	right: 0;
+	z-index: 999;
 }
 </style>

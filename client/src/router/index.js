@@ -11,6 +11,15 @@ import userService from "@/services/userService.js";
 
 const routes = [
   {
+    path: "/",
+    name: "Landing",
+    component: () => import("@/views/Landing_page.vue"),
+    meta: {
+      requiredAuth: false,
+      layout: "Default",
+    },
+  },
+  {
     path: "/login",
     name: "Login",
     component: () => import("@/views/Login.vue"),
@@ -81,7 +90,7 @@ const routes = [
     },
     children: [
       {
-        path: "/",
+        path: "/home",
         name: "Home",
         component: Home,
         meta: {
@@ -156,6 +165,9 @@ router.beforeEach(async (to, from, next) => {
 
   if (to.meta.requiredAuth && !token) {
     next("/login");
+  } else if (to.path == "/" && token) {
+    await userService.refresh_token();
+    next("/home");
   } else if (to.meta.requiredAuth) {
     await userService.refresh_token();
     next();

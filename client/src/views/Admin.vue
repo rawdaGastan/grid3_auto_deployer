@@ -407,7 +407,7 @@ export default {
 				if (isAdmin) {
 					next();
 				} else {
-					next("/");
+					next("/home");
 				}
 			})
 			.catch((err) => {

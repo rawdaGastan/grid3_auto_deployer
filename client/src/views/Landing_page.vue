@@ -13,12 +13,17 @@
 						Computing, working with startups to help them achieve their goals.
 					</p>
 
-					<p class="px-15 pl-0 text-subtitle-1 font-weight-regular secondary">
-						<strong>Cloud for Students</strong> Cloud for Students provides
+					<p class="px-15 pl-0 text-subtitle-1 mb-5 font-weight-regular secondary">
+						<strong>Cloud for Students</strong> provides
 						fast, flexible, and affordable computing capacity to fit any
 						workload need, from high performance bare metal servers and flexible
 						Virtual Machines to lightweight containers and serverless computing.
 					</p>
+
+					<p class="px-15 pl-0 text-subtitle-1 mb-5 font-weight-regular secondary">
+						<strong class="primary text-decoration-none font-weight-bold">Want to get free vouchers?</strong> Create a new account and tell us about your project now!
+					</p>
+
 					<v-btn :onclick="register" color="primary" rel="noopener noreferrer" class="w-100 d-block my-5" variant="flat">
 							Create new account
 					</v-btn>

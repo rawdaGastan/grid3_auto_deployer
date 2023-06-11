@@ -258,7 +258,7 @@ func (a *App) SignInHandler(req *http.Request) (interface{}, Response) {
 
 	match := internal.VerifyPassword(user.HashedPassword, input.Password)
 	if !match {
-		return nil, BadRequest(errors.New("password is not correct"))
+		return nil, BadRequest(errors.New("email or password is not correct"))
 	}
 
 	token, err := internal.CreateJWT(user.ID.String(), user.Email, a.config.Token.Secret, a.config.Token.Timeout)

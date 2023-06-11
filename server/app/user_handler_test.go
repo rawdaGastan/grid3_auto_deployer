@@ -271,7 +271,7 @@ func TestSignInHandler(t *testing.T) {
 		}
 
 		response := unAuthorizedHandler(req)
-		want := `{"err":"password is not correct"}` + "\n"
+		want := `{"err":"email or password is not correct"}` + "\n"
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
 	})

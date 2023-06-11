@@ -18,6 +18,10 @@ var rightConfig = `
 		"redisPort": "6379",
 		"redisPass": ""		
 	},
+	"backup": {
+		"file": "../backup.sh",
+		"interval": 24
+	},
 	"mailSender": {
         "email": "email",
         "sendgrid_key": "my sendgrid_key",

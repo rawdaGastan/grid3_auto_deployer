@@ -4,6 +4,8 @@ package app
 import (
 	"context"
 	"net/http"
+	"os/exec"
+	"time"
 
 	c4sDeployer "github.com/codescalers/cloud4students/deployer"
 	"github.com/codescalers/cloud4students/internal"
@@ -13,6 +15,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 )
 
@@ -80,6 +83,9 @@ func (a *App) Start(ctx context.Context) (err error) {
 }
 
 func (a *App) startBackgroundWorkers(ctx context.Context) {
+	// backup service
+	go a.backupDB()
+
 	// notify admins
 	go a.notifyAdmins()
 
@@ -90,6 +96,16 @@ func (a *App) startBackgroundWorkers(ctx context.Context) {
 	// check pending deployments
 	a.deployer.ConsumeVMRequest(ctx, true)
 	a.deployer.ConsumeK8sRequest(ctx, true)
+}
+
+func (a *App) backupDB() {
+	ticker := time.NewTicker(time.Hour * time.Duration(a.config.Backup.IntervalInHours))
+	for range ticker.C {
+		_, err := exec.Command("/bin/sh", a.config.Backup.File).Output()
+		if err != nil {
+			log.Err(err).Msg("Backup failed")
+		}
+	}
 }
 
 func (a *App) registerHandlers() {

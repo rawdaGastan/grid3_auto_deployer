@@ -14,6 +14,7 @@ type Configuration struct {
 	Server                    Server      `json:"server"`
 	MailSender                MailSender  `json:"mailSender"`
 	Database                  DB          `json:"database"`
+	Backup                    Backup      `json:"backup" validate:"nonzero"`
 	Token                     JwtToken    `json:"token"`
 	Account                   GridAccount `json:"account"`
 	Version                   string      `json:"version" validate:"nonzero"`
@@ -43,6 +44,11 @@ type MailSender struct {
 // DB struct to hold database file
 type DB struct {
 	File string `json:"file" validate:"nonzero"`
+}
+
+type Backup struct {
+	File            string `json:"file" validate:"nonzero"`
+	IntervalInHours int    `json:"interval" validate:"nonzero"`
 }
 
 // JwtToken struct to hold JWT information

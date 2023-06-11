@@ -13,7 +13,7 @@ const routes = [
   {
     path: "/",
     name: "Landing",
-    component: () => import("@/views/Landing_page.vue"),
+    component: () => import("@/views/LandingPage.vue"),
     meta: {
       requiredAuth: false,
       layout: "Default",

@@ -17,6 +17,9 @@ var (
 	//go:embed templates/signup.html
 	signUpMail []byte
 
+	//go:embed templates/welcome.html
+	welcomeMail []byte
+
 	//go:embed templates/reset_pass.html
 	resetPassMail []byte
 
@@ -51,13 +54,23 @@ func SendMail(sender, sendGridKey, receiver, subject, body string) error {
 	return err
 }
 
-// SignUpMailContent gets the email content for signup
+// SignUpMailContent gets the email content for sign up
 func SignUpMailContent(code int, timeout int, name string) (string, string) {
 	subject := "Welcome to Cloud4Students 🎉"
 	body := string(signUpMail)
 
 	body = strings.ReplaceAll(body, "-code-", fmt.Sprint(code))
 	body = strings.ReplaceAll(body, "-time-", fmt.Sprint(timeout))
+	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(name))
+
+	return subject, body
+}
+
+// WelcomeMailContent gets the email content for welcome messages
+func WelcomeMailContent(name string) (string, string) {
+	subject := "Welcome to Cloud4Students 🎉"
+	body := string(welcomeMail)
+
 	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(name))
 
 	return subject, body

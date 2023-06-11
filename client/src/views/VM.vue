@@ -307,10 +307,12 @@ export default {
       toast.value.toast("IP Copied", "#388E3C");
     };
 
-    setInterval(() => {
-      getVMS();
-      emitQuota();
-    }, 30 * 1000);
+		if (localStorage.getItem("token")) {
+			setInterval(() => {
+				getVMS();
+				emitQuota();
+			}, 30 * 1000);
+		}
 
     onMounted(() => {
       let token = localStorage.getItem("token");

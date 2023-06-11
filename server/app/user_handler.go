@@ -29,6 +29,7 @@ type SignUpInput struct {
 	TeamSize        int    `json:"team_size" binding:"required" validate:"min=1,max=20"`
 	ProjectDesc     string `json:"project_desc" binding:"required" validate:"nonzero"`
 	College         string `json:"college" binding:"required" validate:"nonzero"`
+	SSHKey          string `json:"ssh_key"  binding:"required"`
 }
 
 // VerifyCodeInput struct takes verification code from user
@@ -104,6 +105,13 @@ func (a *App) SignUpHandler(req *http.Request) (interface{}, Response) {
 		}
 	}
 
+	if len(strings.TrimSpace(signUp.SSHKey)) != 0 {
+		if err := validators.ValidateSSH(signUp.SSHKey); err != nil {
+			log.Error().Err(err).Send()
+			return nil, BadRequest(errors.New("invalid sshKey"))
+		}
+	}
+
 	// send verification code if user is not verified or not exist
 	code := internal.GenerateRandomCode()
 	subject, body := internal.SignUpMailContent(code, a.config.MailSender.Timeout, signUp.Name)
@@ -124,7 +132,7 @@ func (a *App) SignUpHandler(req *http.Request) (interface{}, Response) {
 		Email:          signUp.Email,
 		HashedPassword: hashedPassword,
 		Code:           code,
-		SSHKey:         user.SSHKey,
+		SSHKey:         signUp.SSHKey,
 		TeamSize:       signUp.TeamSize,
 		ProjectDesc:    signUp.ProjectDesc,
 		College:        signUp.College,
@@ -206,9 +214,23 @@ func (a *App) VerifySignUpCodeHandler(req *http.Request) (interface{}, Response)
 	}
 	middlewares.UserCreations.WithLabelValues(user.ID.String(), user.Email, user.College, fmt.Sprint(user.TeamSize)).Inc()
 
+	// token
+	token, err := internal.CreateJWT(user.ID.String(), user.Email, a.config.Token.Secret, a.config.Token.Timeout)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	subject, body := internal.WelcomeMailContent(user.Name)
+	err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
 	return ResponseMsg{
-		Message: "Account is created successfully",
-		Data:    map[string]string{"user_id": user.ID.String()},
+		Message: "Account is created successfully.",
+		Data:    map[string]string{"user_id": user.ID.String(), "access_token": token},
 	}, Ok()
 }
 

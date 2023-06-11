@@ -25,7 +25,7 @@
 					</p>
 
 					<v-btn :onclick="register" color="primary" rel="noopener noreferrer" class="w-100 d-block my-5" variant="flat">
-							Create new account
+							Create a new account
 					</v-btn>
 				</div>
 			</v-col>

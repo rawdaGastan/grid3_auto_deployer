@@ -39,6 +39,27 @@ func (a *App) GetAllUsersHandler(req *http.Request) (interface{}, Response) {
 	}, Ok()
 }
 
+// GetDlsCountHandler returns deployments count
+func (a *App) GetDlsCountHandler(req *http.Request) (interface{}, Response) {
+	count, err := a.db.CountAllDeployments()
+	if err == gorm.ErrRecordNotFound {
+		return ResponseMsg{
+			Message: "Deployments count is not found",
+			Data:    count,
+		}, Ok()
+	}
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	return ResponseMsg{
+		Message: "Deployments count is returned successfully",
+		Data:    count,
+	}, Ok()
+}
+
 // GetBalanceHandler return account balance information
 func (a *App) GetBalanceHandler(req *http.Request) (interface{}, Response) {
 	balance, err := a.deployer.GetBalance()

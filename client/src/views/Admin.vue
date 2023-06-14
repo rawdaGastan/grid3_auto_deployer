@@ -109,21 +109,21 @@
 				<v-row>
 					<v-col>
 						<div class="resources text-white text-center rounded-lg bg-primary py-5 shadow">
-							<p>
-								<strong style="font-size: 2rem;">{{ usedResources }}</strong>
+							<p class="mx-lg-auto font-weight-medium">
+								Used VMs: {{ usedResources }}
 							</p>
 							<p class="mx-lg-auto font-weight-medium">
-								Used VMs
+								Deployed VMs: {{ deployedResources }}
 							</p>
 						</div>
 					</v-col>
 					<v-col>
 						<div class="resources text-white text-center rounded-lg bg-primary py-5 shadow">
-							<p>
-								<strong style="font-size: 2rem;">{{ usedIPs }}</strong>
+							<p class="mx-lg-auto font-weight-medium">
+								Used IPs: {{ usedIPs }}
 							</p>
 							<p class="mx-lg-auto font-weight-medium">
-								Used IPs
+								Reserved IPs: {{ reservedIPs }}
 							</p>
 						</div>
 					</v-col>
@@ -204,9 +204,11 @@ export default {
 		const users = ref([]);
 		const toast = ref(null);
 		const loading = ref(false);
-		const usedResources = ref(null);
+		const usedResources = ref(0);
+		const deployedResources = ref(0);
 		const balance = ref(0);
-		const usedIPs = ref(null);
+		const usedIPs = ref(0);
+		const reservedIPs = ref(0);
 		const approveAllCount = ref(null);
 		const userInfo = ref(null);
 		const itemsPerPage = ref(5);
@@ -308,6 +310,20 @@ export default {
 				});
 		};
 
+		const getDeploymentsCount = () => {
+			userService
+				.getDeploymentsCount()
+				.then((response) => {
+					const { data } = response.data;
+					deployedResources.value += data.vms;
+					reservedIPs.value += data.ips;
+				})
+				.catch((response) => {
+					const { err } = response.response.data;
+					toast.value.toast(err, "#FF5252");
+				});
+		};
+
 		const getBalance = () => {
 			userService
 				.getBalance()
@@ -366,6 +382,7 @@ export default {
 				getUsers();
 				getVouchers();
 				getBalance();
+				getDeploymentsCount();
 			}
 		});
 
@@ -373,6 +390,9 @@ export default {
 			vouchersHeaders,
 			vouchers,
 			usedResources,
+			usedIPs,
+			deployedResources,
+			reservedIPs,
 			balance,
 			approveAllCount,
 			usersHeaders,
@@ -397,8 +417,8 @@ export default {
 			getUsers,
 			addAvatar,
 			generateVoucher,
-			usedIPs,
 			resetVoucher,
+			getDeploymentsCount,
 		};
 	},
 	beforeRouteEnter(to, from, next) {

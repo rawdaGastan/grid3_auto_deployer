@@ -16,3 +16,9 @@ type VM struct {
 	ContractID        uint64 `json:"contractID"`
 	NetworkContractID uint64 `json:"networkContractID"`
 }
+
+// DeploymentsCount has the vms and ips reserved in the grid
+type DeploymentsCount struct {
+	VMs int64 `json:"vms"`
+	IPs int64 `json:"ips"`
+}

@@ -131,6 +131,12 @@ export default {
     return await authClient().get("/user/all");
   },
 
+  // Deployments
+  async getDeploymentsCount() {
+    await this.refresh_token();
+    return await authClient().get("/deployment/count");
+  },
+
   // Vouchers
   async getVouchers() {
     await this.refresh_token();

@@ -70,24 +70,23 @@
 										</h5>
 										<v-row>
 											<v-col>
-												<v-text-field label="VMs" v-model="vms" :rules="rules" type="number"
+												<v-text-field label="VMs" v-model="vms" :rules="requiredRules" min="1" type="number"
 													oninput="validity.valid||(value='')" bg-color="accent" variant="outlined"
 													density="compact"></v-text-field>
 											</v-col>
 											<v-col>
-												<v-text-field label="IPs" v-model="ips" :rules="rules" oninput="validity.valid||(value='')"
-													type="number" bg-color="accent" variant="outlined" density="compact"></v-text-field>
+												<v-text-field label="IPs" v-model="ips" :rules="requiredRules" min="0"
+													oninput="validity.valid||(value='')" type="number" bg-color="accent" variant="outlined"
+													density="compact"></v-text-field>
 											</v-col>
 										</v-row>
 
-										<v-text-field label="Length" v-model="length" :rules="lenRules" oninput="validity.valid||(value='')"
-											type="number" bg-color="accent" variant="outlined" density="compact" class="my-3"></v-text-field>
+										<v-text-field label="Length" v-model="length" :rules="requiredRules" min="3" max="20"
+											oninput="validity.valid||(value='')" type="number" bg-color="accent" variant="outlined"
+											density="compact" class="my-3"></v-text-field>
 									</v-card-text>
 									<v-card-actions class="justify-center">
-										<BaseButton class="bg-primary mr-5" text="Cancel" @click="
-											form.reset();
-										dialog = false;
-										" />
+										<BaseButton class="bg-primary mr-5" text="Cancel" @click="dialog = false" />
 										<BaseButton type="submit" class="bg-primary" text="Generate" :disabled="!genVoucherVerify"
 											@click="dialog = false" />
 									</v-card-actions>
@@ -165,12 +164,12 @@
 			</v-col>
 		</v-row>
 		<Toast ref="toast" />
-		<Voucher v-if="voucher" :msg="message" :voucher="voucher" @reset="resetVoucher" />
+		<Voucher v-if="voucher" :msg="message" :voucher="voucher" :reset="resetVoucher" />
 	</v-container>
 </template>
 
 <script>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import userService from "@/services/userService.js";
 import Toast from "@/components/Toast.vue";
@@ -210,7 +209,6 @@ export default {
 		const userInfo = ref(null);
 		const itemsPerPage = ref(5);
 		const dialog = ref(false);
-		const form = ref(null);
 		const genVoucherVerify = ref(false);
 		const vms = ref(null);
 		const ips = ref(null);
@@ -218,19 +216,9 @@ export default {
 		const message = ref(null);
 		const voucher = ref(null);
 
-		const rules = ref([
+		const requiredRules = ref([
 			(value) => {
 				if (!value) return "Field is required";
-				if (value < 1) return "Value should at least 1";
-				return true;
-			},
-		]);
-
-		const lenRules = ref([
-			(value) => {
-				if (!value) return "Field is required";
-				if (value < 3) return "Length should be at least 3";
-				if (value > 20) return "Length should be 20 max";
 				return true;
 			},
 		]);
@@ -242,25 +230,32 @@ export default {
 					const { data } = response.data;
 					approveAllCount.value = 0;
 
-					for (let voucher of data) {
-						if (!voucher?.approved && !voucher?.rejected) {
-							approveAllCount.value++;
-						}
+					let updateDataPromise = data.map(function (voucher) {
+						return new Promise(function (resolve) {
+							setTimeout(() => {
+								if (!voucher?.approved && !voucher?.rejected) {
+									approveAllCount.value++;
+								}
 
-						if (voucher.user_id) {
-							userInfo.value = users?.value?.find(
-								(user) => user.user_id === voucher.user_id
-							);
-							if (voucher.user_id === userInfo?.value?.user_id) {
-								Object.assign(voucher, {
-									email: userInfo?.value?.email,
-									name: userInfo?.value?.name,
-								});
-							}
-						}
-					}
+								if (voucher.user_id) {
+									userInfo.value = users?.value?.find(
+										(user) => user.user_id === voucher.user_id
+									);
+									if (voucher.user_id === userInfo?.value?.user_id) {
+										Object.assign(voucher, {
+											email: userInfo?.value?.email,
+											name: userInfo?.value?.name,
+										});
+									}
+								}
+								resolve();
+							}, 10);
+						});
+					})
 
-					vouchers.value = data;
+					Promise.all(updateDataPromise).then(function () {
+						vouchers.value = data;
+					});
 				})
 				.catch((response) => {
 					const { err } = response.response.data;
@@ -334,6 +329,14 @@ export default {
 			}, 30 * 1000);
 		}
 
+		watch(dialog, (val) => {
+			if (val) {
+				vms.value = null;
+				ips.value = null;
+				length.value = null;
+			}
+		});
+
 		const generateVoucher = () => {
 			userService
 				.generateVoucher(+length.value, +vms.value, +ips.value)
@@ -346,7 +349,7 @@ export default {
 					toast.value.toast(response, "#FF5252");
 				})
 				.finally(() => {
-					form.value.reset();
+					getVouchers();
 				});
 		};
 
@@ -378,15 +381,13 @@ export default {
 			toast,
 			itemsPerPage,
 			dialog,
-			form,
 			genVoucherVerify,
 			vms,
 			ips,
 			length,
-			rules,
+			requiredRules,
 			voucher,
 			message,
-			lenRules,
 			getVouchers,
 			getBalance,
 			approveVoucher,

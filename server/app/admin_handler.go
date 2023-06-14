@@ -114,7 +114,7 @@ func (a *App) notifyAdmins() {
 		}
 
 		if len(pending) > 0 {
-			subject, body := internal.NotifyAdminsMailContent(len(pending))
+			subject, body := internal.NotifyAdminsMailContent(len(pending), a.config.Server.Host)
 
 			for _, admin := range admins {
 				err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, admin.Email, subject, body)
@@ -131,7 +131,7 @@ func (a *App) notifyAdmins() {
 		}
 
 		if int(balance) < a.config.BalanceThreshold {
-			subject, body := internal.NotifyAdminsMailLowBalanceContent(balance)
+			subject, body := internal.NotifyAdminsMailLowBalanceContent(balance, a.config.Server.Host)
 
 			for _, admin := range admins {
 				err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, admin.Email, subject, body)

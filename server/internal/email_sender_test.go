@@ -23,66 +23,72 @@ func TestSendMail(t *testing.T) {
 }
 
 func TestSignUpMailContent(t *testing.T) {
-	subject, body := SignUpMailContent(1234, 60, "user")
+	subject, body := SignUpMailContent(1234, 60, "user", "")
 	assert.Equal(t, subject, "Welcome to Cloud4Students 🎉")
 
 	want := string(signUpMail)
 	want = strings.ReplaceAll(want, "-code-", fmt.Sprint(1234))
 	want = strings.ReplaceAll(want, "-time-", fmt.Sprint(60))
 	want = strings.ReplaceAll(want, "-name-", cases.Title(language.Und).String("user"))
+	want = strings.ReplaceAll(want, "-host-", "")
 
 	assert.Equal(t, body, want)
 }
 
 func TestResetPassMailContent(t *testing.T) {
-	subject, body := ResetPasswordMailContent(1234, 60, "user")
+	subject, body := ResetPasswordMailContent(1234, 60, "user", "")
 	assert.Equal(t, subject, "Reset password")
 
 	want := string(resetPassMail)
 	want = strings.ReplaceAll(want, "-code-", fmt.Sprint(1234))
 	want = strings.ReplaceAll(want, "-time-", fmt.Sprint(60))
 	want = strings.ReplaceAll(want, "-name-", cases.Title(language.Und).String("user"))
+	want = strings.ReplaceAll(want, "-host-", "")
 
 	assert.Equal(t, body, want)
 }
 
 func TestApprovedVoucherMailContent(t *testing.T) {
-	subject, body := ApprovedVoucherMailContent("1234", "user")
+	subject, body := ApprovedVoucherMailContent("1234", "user", "")
 	assert.Equal(t, subject, "Your voucher request is approved 🎆")
 
 	want := string(approveVoucherMail)
 	want = strings.ReplaceAll(want, "-voucher-", fmt.Sprint(1234))
 	want = strings.ReplaceAll(want, "-name-", cases.Title(language.Und).String("user"))
+	want = strings.ReplaceAll(want, "-host-", "")
 
 	assert.Equal(t, body, want)
 }
 
 func TestRejectedVoucherMailContent(t *testing.T) {
-	subject, body := RejectedVoucherMailContent("user")
+	subject, body := RejectedVoucherMailContent("user", "")
 	assert.Equal(t, subject, "Your voucher request is rejected 😔")
 
 	want := string(rejectedVoucherMail)
 	want = strings.ReplaceAll(want, "-name-", cases.Title(language.Und).String("user"))
+	want = strings.ReplaceAll(want, "-host-", "")
 
 	assert.Equal(t, body, want)
 }
 
 func TestNotifyVoucherMailContent(t *testing.T) {
-	subject, body := NotifyAdminsMailContent(7)
+	subject, body := NotifyAdminsMailContent(7, "")
 	assert.Equal(t, subject, "There're pending voucher requests for you to review")
 
 	want := string(notifyVoucherMail)
 	want = strings.ReplaceAll(want, "-vouchers-", fmt.Sprint(7))
+	want = strings.ReplaceAll(want, "-host-", "")
 
 	assert.Equal(t, body, want)
 }
 
 func TestNotifyBalanceMailContent(t *testing.T) {
-	subject, body := NotifyAdminsMailLowBalanceContent(200)
+	subject, body := NotifyAdminsMailLowBalanceContent(200, "")
 	assert.Equal(t, subject, "Your account balance is low")
 
 	want := string(balanceMail)
 	want = strings.ReplaceAll(want, "-balance-", fmt.Sprint(200))
+	want = strings.ReplaceAll(want, "-host-", "")
 
 	assert.Equal(t, body, want)
 }

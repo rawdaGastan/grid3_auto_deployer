@@ -138,9 +138,9 @@ func (a *App) UpdateVoucherHandler(req *http.Request) (interface{}, Response) {
 
 	var subject, body string
 	if input.Approved {
-		subject, body = internal.ApprovedVoucherMailContent(updatedVoucher.Voucher, user.Name)
+		subject, body = internal.ApprovedVoucherMailContent(updatedVoucher.Voucher, user.Name, a.config.Server.Host)
 	} else {
-		subject, body = internal.RejectedVoucherMailContent(user.Name)
+		subject, body = internal.RejectedVoucherMailContent(user.Name, a.config.Server.Host)
 	}
 
 	err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
@@ -183,7 +183,7 @@ func (a *App) ApproveAllVouchersHandler(req *http.Request) (interface{}, Respons
 			return nil, InternalServerError(errors.New(internalServerErrorMsg))
 		}
 
-		subject, body := internal.ApprovedVoucherMailContent(v.Voucher, user.Name)
+		subject, body := internal.ApprovedVoucherMailContent(v.Voucher, user.Name, a.config.Server.Host)
 		err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
 		if err != nil {
 			log.Error().Err(err).Send()

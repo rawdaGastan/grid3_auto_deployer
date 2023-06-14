@@ -11,8 +11,8 @@
 						bg-color="accent" variant="outlined" class="my-2" density="compact">
 					</v-text-field>
 
-					<v-text-field v-model="email" :rules="emailRules" label="Email" placeholder="Enter your email" bg-color="accent"
-						variant="outlined" class="my-2" density="compact">
+					<v-text-field v-model="email" :rules="emailRules" type="email" label="Email" placeholder="Enter your email"
+						bg-color="accent" variant="outlined" class="my-2" density="compact">
 					</v-text-field>
 
 					<v-text-field v-model="faculty" :rules="facultyRules" label="Faculty" placeholder="Enter your faculty"
@@ -39,15 +39,24 @@
 						</v-col>
 					</v-row>
 
-					<v-tooltip block
-						text="You can generate SSH key using 'ssh-keygen' command. Once generated, your public key will be stored in ~/.ssh/id_rsa.pub"
-						left>
-						<template v-slot:activator="{ props }">
-							<v-icon v-bind="props" color="primary" dark class="d-block ml-auto">
-								mdi-information
+					<v-row class="my-2 mr-1">
+						<v-tooltip block
+							text="You can generate SSH key using 'ssh-keygen' command. Once generated, your public key will be stored in ~/.ssh/id_rsa.pub"
+							left>
+							<template v-slot:activator="{ props }">
+								<v-icon v-bind="props" color="primary" dark class="d-block ml-auto">
+									mdi-information
+								</v-icon>
+							</template>
+						</v-tooltip>
+						<a href="https://cloud.google.com/compute/docs/connect/create-ssh-keys#:~:text=Open%20a%20terminal%20and%20use,a%20new%20SSH%20key%20pair.&text=Replace%20the%20following%3A,named%20my%2Dssh%2Dkey."
+							target="_blank">
+							<v-icon color="primary" dark class="d-block ml-auto">
+								mdi-account-question
 							</v-icon>
-						</template>
-					</v-tooltip>
+						</a>
+					</v-row>
+
 					<v-textarea clearable label="SSH Key" v-model="sshKey" variant="outlined" bg-color="accent" class="my-2"
 						:rules="sshValidation" auto-grow>
 					</v-textarea>
@@ -65,7 +74,7 @@
 					</v-text-field>
 
 					<v-row>
-						<TermsAndConditions v-model="checked" />
+						<TermsAndConditions :modelValue="checked" />
 					</v-row>
 
 					<v-btn type="submit" block :loading="loading" variant="flat" color="primary"

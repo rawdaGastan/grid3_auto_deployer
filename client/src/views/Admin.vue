@@ -39,6 +39,7 @@
 							<td v-else>-</td>
 							<td>{{ item.columns.vms }}</td>
 							<td>{{ item.columns.public_ips }}</td>
+							<td>{{ item.columns.voucher }}</td>
 							<td v-if="!item.props.title.approved && !item.props.title.rejected">
 								<BaseButton color="primary" text="Approve" size="small" class="mr-2 text-capitalize" variant="flat"
 									@click="approveVoucher(item.columns.id, true)" />
@@ -188,6 +189,7 @@ export default {
 			{ title: "Reason for Voucher", key: "reason", sortable: false },
 			{ title: "VMs", key: "vms" },
 			{ title: "Public IPs", key: "public_ips" },
+			{ title: "Voucher", key: "voucher" },
 			{ title: "Actions", key: "actions", sortable: false },
 		]);
 

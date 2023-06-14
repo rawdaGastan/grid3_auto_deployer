@@ -3,7 +3,7 @@
 		<template v-slot:activator="{ props }">
 			<v-row class="ms-2 my-2">
 				<v-checkbox :checked="modelValue" v-model="checked" :rules="termsPrivacyError" density="compact"
-					@change="checked = terms || checked; $event.target.checked = checked; terms = false;">
+					@change="$emit('update:modelValue', $event.target.checked); checked = terms || checked; $event.target.checked = checked; terms = false;">
 					<template v-slot:label>
 						<a class="grey-darken-4" v-bind="props" @click="terms = true;">
 							Terms and Conditions
@@ -207,10 +207,12 @@
 			</v-card-text>
 			<v-card-actions>
 				<v-spacer></v-spacer>
-				<v-btn color="green-darken-1" variant="text" @click="checked = true; dialog = false;">
+				<v-btn color="green-darken-1" variant="text"
+					@click="$emit('update:modelValue', true); checked = true; dialog = false;">
 					Accept
 				</v-btn>
-				<v-btn color="red-darken-1" variant="text" @click="checked = false; dialog = false;">
+				<v-btn color="red-darken-1" variant="text"
+					@click="$emit('update:modelValue', false); checked = false; dialog = false;">
 					Decline
 				</v-btn>
 			</v-card-actions>

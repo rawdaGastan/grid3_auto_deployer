@@ -74,7 +74,7 @@
 					</v-text-field>
 
 					<v-row>
-						<TermsAndConditions :modelValue="checked" />
+						<TermsAndConditions v-model="checked" />
 					</v-row>
 
 					<v-btn type="submit" block :loading="loading" variant="flat" color="primary"

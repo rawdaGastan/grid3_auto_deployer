@@ -22,8 +22,8 @@
 				</p>
 
 				<v-form v-model="verify" @submit.prevent="onSubmit">
-					<v-text-field v-model="email" :rules="emailRules" clearable placeholder="Enter your email" label="Email"
-						bg-color="accent" variant="outlined" density="compact"></v-text-field>
+					<v-text-field v-model="email" :rules="emailRules" type="email" clearable placeholder="Enter your email"
+						label="Email" bg-color="accent" variant="outlined" density="compact"></v-text-field>
 
 					<v-text-field v-model="password" :rules="rules" clearable label="Password" placeholder="Enter your password"
 						bg-color="accent" variant="outlined" :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"

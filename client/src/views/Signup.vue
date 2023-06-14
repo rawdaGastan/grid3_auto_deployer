@@ -11,8 +11,8 @@
 						bg-color="accent" variant="outlined" class="my-2" density="compact">
 					</v-text-field>
 
-					<v-text-field v-model="email" :rules="emailRules" label="Email" placeholder="Enter your email" bg-color="accent"
-						variant="outlined" class="my-2" density="compact">
+					<v-text-field v-model="email" :rules="emailRules" type="email" label="Email" placeholder="Enter your email"
+						bg-color="accent" variant="outlined" class="my-2" density="compact">
 					</v-text-field>
 
 					<v-text-field v-model="faculty" :rules="facultyRules" label="Faculty" placeholder="Enter your faculty"
@@ -74,7 +74,7 @@
 					</v-text-field>
 
 					<v-row>
-						<TermsAndConditions v-model="checked" />
+						<TermsAndConditions :modelValue="checked" />
 					</v-row>
 
 					<v-btn type="submit" block :loading="loading" variant="flat" color="primary"

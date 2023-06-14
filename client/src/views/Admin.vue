@@ -230,25 +230,32 @@ export default {
 					const { data } = response.data;
 					approveAllCount.value = 0;
 
-					for (let voucher of data) {
-						if (!voucher?.approved && !voucher?.rejected) {
-							approveAllCount.value++;
-						}
+					let updateDataPromise = data.map(function (voucher) {
+						return new Promise(function (resolve) {
+							setTimeout(() => {
+								if (!voucher?.approved && !voucher?.rejected) {
+									approveAllCount.value++;
+								}
 
-						if (voucher.user_id) {
-							userInfo.value = users?.value?.find(
-								(user) => user.user_id === voucher.user_id
-							);
-							if (voucher.user_id === userInfo?.value?.user_id) {
-								Object.assign(voucher, {
-									email: userInfo?.value?.email,
-									name: userInfo?.value?.name,
-								});
-							}
-						}
-					}
+								if (voucher.user_id) {
+									userInfo.value = users?.value?.find(
+										(user) => user.user_id === voucher.user_id
+									);
+									if (voucher.user_id === userInfo?.value?.user_id) {
+										Object.assign(voucher, {
+											email: userInfo?.value?.email,
+											name: userInfo?.value?.name,
+										});
+									}
+								}
+								resolve();
+							}, 10);
+						});
+					})
 
-					vouchers.value = data;
+					Promise.all(updateDataPromise).then(function () {
+						vouchers.value = data;
+					});
 				})
 				.catch((response) => {
 					const { err } = response.response.data;

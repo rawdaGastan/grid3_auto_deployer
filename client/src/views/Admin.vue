@@ -158,10 +158,17 @@
 								<td>
 									<span class="text-red">{{ item.raw.used_public_ips }}</span>/<span>{{ item.columns.public_ips }}</span>
 								</td>
+								<td>
+									<font-awesome-icon class="ml-5 text-primary cursor-pointer" icon="fa-solid fa-info-circle"
+										@click="openUserInfo(item.raw)" />
+								</td>
 							</tr>
 						</template>
 					</v-data-table>
 				</section>
+				<v-dialog transition="dialog-top-transition" v-model="showUserInfo">
+					<UserInfo :user="userInfo"></UserInfo>
+				</v-dialog>
 			</v-col>
 		</v-row>
 		<Toast ref="toast" />
@@ -175,11 +182,14 @@ import BaseButton from "@/components/Form/BaseButton.vue";
 import userService from "@/services/userService.js";
 import Toast from "@/components/Toast.vue";
 import Voucher from "@/components/Voucher.vue";
+import UserInfo from "@/components/UserInfo.vue";
+
 export default {
 	components: {
 		BaseButton,
 		Toast,
 		Voucher,
+		UserInfo,
 	},
 	setup() {
 		const confirm = ref(null);
@@ -198,6 +208,7 @@ export default {
 			{ title: "Name", key: "name", sortable: false },
 			{ title: "VMs", key: "vms", sortable: false },
 			{ title: "IPs", key: "public_ips", sortable: false },
+			{ title: "Actions", key: "actions", sortable: false },
 		]);
 
 		const vouchers = ref([]);
@@ -214,6 +225,7 @@ export default {
 		const itemsPerPage = ref(5);
 		const dialog = ref(false);
 		const genVoucherVerify = ref(false);
+		const showUserInfo = ref(false);
 		const vms = ref(null);
 		const ips = ref(null);
 		const length = ref(null);
@@ -226,6 +238,11 @@ export default {
 				return true;
 			},
 		]);
+
+		const openUserInfo = (user) => {
+			showUserInfo.value = true;
+			userInfo.value = user;
+		}
 
 		const getVouchers = () => {
 			userService
@@ -403,6 +420,7 @@ export default {
 			toast,
 			itemsPerPage,
 			dialog,
+			showUserInfo,
 			genVoucherVerify,
 			vms,
 			ips,
@@ -419,6 +437,7 @@ export default {
 			generateVoucher,
 			resetVoucher,
 			getDeploymentsCount,
+			openUserInfo,
 		};
 	},
 	beforeRouteEnter(to, from, next) {

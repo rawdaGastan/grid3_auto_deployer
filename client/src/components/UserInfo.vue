@@ -23,7 +23,7 @@
 				</p>
 
 				<div class="text-center">
-					<BaseButton class="bg-primary text-capitalize" :icon="'fa-envelope'" :text="user.email">
+					<BaseButton class="bg-primary text-lowercase" :icon="'fa-envelope'" :text="user.email">
 					</BaseButton>
 				</div>
 

@@ -64,7 +64,7 @@
 							</template>
 
 							<v-card class="pa-5">
-								<v-form v-model="genVoucherVerify" @submit.prevent="generateVoucher" ref="form">
+								<v-form @submit.prevent="generateVoucher" ref="form">
 									<v-card-text>
 										<h5 class="text-h5 text-md-h4 text-center mb-5 pa-5 secondary">
 											Generate Voucher
@@ -88,8 +88,7 @@
 									</v-card-text>
 									<v-card-actions class="justify-center">
 										<BaseButton class="bg-primary mr-5" text="Cancel" @click="dialog = false" />
-										<BaseButton type="submit" class="bg-primary" text="Generate" :disabled="!genVoucherVerify"
-											@click="dialog = false" />
+										<BaseButton type="submit" class="bg-primary" text="Generate" />
 									</v-card-actions>
 								</v-form>
 							</v-card>
@@ -211,6 +210,7 @@ export default {
 			{ title: "Actions", key: "actions", sortable: false },
 		]);
 
+		const form = ref(null);
 		const vouchers = ref([]);
 		const users = ref([]);
 		const toast = ref(null);
@@ -224,17 +224,16 @@ export default {
 		const userInfo = ref(null);
 		const itemsPerPage = ref(5);
 		const dialog = ref(false);
-		const genVoucherVerify = ref(false);
 		const showUserInfo = ref(false);
-		const vms = ref(null);
-		const ips = ref(null);
-		const length = ref(null);
+		const vms = ref(1);
+		const ips = ref(0);
+		const length = ref(3);
 		const message = ref(null);
 		const voucher = ref(null);
 
 		const requiredRules = ref([
 			(value) => {
-				if (!value) return "Field is required";
+				if (value === '') return "Field is required";
 				return true;
 			},
 		]);
@@ -366,13 +365,16 @@ export default {
 
 		watch(dialog, (val) => {
 			if (val) {
-				vms.value = null;
-				ips.value = null;
-				length.value = null;
+				vms.value = 1;
+				ips.value = 0;
+				length.value = 3;
 			}
 		});
 
-		const generateVoucher = () => {
+		const generateVoucher = async () => {
+			var { valid } = await form.value.validate();
+			if (!valid) return;
+
 			userService
 				.generateVoucher(+length.value, +vms.value, +ips.value)
 				.then((response) => {
@@ -381,10 +383,11 @@ export default {
 					voucher.value = data.voucher;
 				})
 				.catch((response) => {
-					toast.value.toast(response, "#FF5252");
+					toast.value.toast(response.response.data.err, "#FF5252");
 				})
 				.finally(() => {
 					getVouchers();
+					dialog.value = false;
 				});
 		};
 
@@ -421,13 +424,13 @@ export default {
 			itemsPerPage,
 			dialog,
 			showUserInfo,
-			genVoucherVerify,
 			vms,
 			ips,
 			length,
 			requiredRules,
 			voucher,
 			message,
+			form,
 			getVouchers,
 			getBalance,
 			approveVoucher,

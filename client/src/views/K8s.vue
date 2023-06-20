@@ -265,7 +265,7 @@ export default {
         if (value.length < 3 || value.length > 20)
           return "Name needs to be more than 2 characters and less than 20";
         if (!/^[a-z]+$/.test(value))
-          return "Name can only include lowercase alphanumeric characters";
+          return "Name can only include lowercase alphabetic characters";
         return true;
       },
       (value) => validateK8sName(value),

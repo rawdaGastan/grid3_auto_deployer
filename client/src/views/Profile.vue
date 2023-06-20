@@ -28,18 +28,20 @@
 					<v-text-field label="E-mail" v-model="email" disabled bg-color="accent" variant="outlined"
 						density="compact"></v-text-field>
 
-					<v-row>
-						<v-col cols="12" sm="9">
-							<v-text-field label="Voucher" v-model="voucher" :loading="actLoading" bg-color="accent" variant="outlined"
-								density="compact" clearable></v-text-field>
-						</v-col>
+						<v-form @submit.prevent="activateVoucher" ref="form">
+							<v-row>
+								<v-col sm="9">
+									<v-text-field label="Voucher" v-model="voucher" :loading="actLoading" :rules="requiredRules" bg-color="accent" variant="outlined"
+											density="compact" clearable></v-text-field>
+								</v-col>
 
-						<v-col cols="12" sm="3">
-							<BaseButton class="bg-primary text-capitalize" text="Apply Voucher" @click="activateVoucher" />
-						</v-col>
-					</v-row>
+								<v-col class="text-right" sm="3">
+									<BaseButton type="submit" class="bg-primary text-capitalize" text="Apply Voucher" style="width: 100%;"/>
+								</v-col>
+							</v-row>
+						</v-form>
 
-					<v-row class="my-2 mr-1">
+					<v-row class="my-4 mr-1">
 						<v-tooltip block
 							text="You can generate SSH key using 'ssh-keygen' command. Once generated, your public key will be stored in ~/.ssh/id_rsa.pub"
 							left>
@@ -58,7 +60,7 @@
 					</v-row>
 
 					<v-textarea clearable label="SSH Key" v-model="sshKey" variant="outlined" bg-color="accent" class="my-2"
-						:rules="rules" auto-grow></v-textarea>
+						:rules="requiredRules" auto-grow></v-textarea>
 					<v-row>
 						<v-col>
 							<BaseButton type="submit" :disabled="!verify" class="w-100 bg-primary text-capitalize" text="Update" />
@@ -68,42 +70,34 @@
 								<template v-slot:activator="{ props }">
 									<BaseButton v-bind="props" class="w-100 bg-primary text-capitalize" text="Request New Voucher" />
 								</template>
-								<template v-slot:default="{ isActive }">
-									<v-card width="100%" size="100%" class="mx-auto pa-5">
-										<v-form v-model="newVoucherVerify" @submit.prevent="newVoucher">
-											<v-card-text>
-												<h5 class="text-h5 text-md-h4 text-center my-10 secondary">
-													Request New Voucher
-												</h5>
-												<v-row>
-													<v-col>
-														<v-text-field label="VMs" v-model="vms" :rules="vmRules" type="number"
-															oninput="validity.valid||(value='')" bg-color="accent" variant="outlined"
-															density="compact"></v-text-field>
-													</v-col>
-													<v-col>
-														<v-text-field label="IPs" v-model="ips" :rules="rules" oninput="validity.valid||(value='')"
-															type="number" bg-color="accent" variant="outlined" density="compact"></v-text-field>
-													</v-col>
-												</v-row>
+								<v-card width="100%" size="100%" class="mx-auto pa-5">
+									<v-form @submit.prevent="newVoucher" ref="form">
+										<v-card-text>
+											<h5 class="text-h5 text-md-h4 text-center my-10 secondary">
+												Request New Voucher
+											</h5>
+											<v-row>
+												<v-col>
+													<v-text-field label="VMs" v-model="vms" :rules="requiredRules" type="number" min="1"
+														oninput="validity.valid||(value='')" bg-color="accent" variant="outlined"
+														density="compact"></v-text-field>
+												</v-col>
+												<v-col>
+													<v-text-field label="IPs" v-model="ips" :rules="requiredRules" min="0" oninput="validity.valid||(value='')"
+														type="number" bg-color="accent" variant="outlined" density="compact"></v-text-field>
+												</v-col>
+											</v-row>
 
-												<v-text-field label="Reason" v-model="reason" bg-color="accent" :rules="rules" variant="outlined"
-													density="compact" clearable class="my-3"
-													hint="This field is used when the voucher request is reviewed, please be as detailed as possible"></v-text-field>
-											</v-card-text>
-											<v-card-actions class="justify-center">
-												<BaseButton class="bg-primary mr-5" @click="{
-													isActive.value = false;
-													vms = '';
-													ips = '';
-													reason = null;
-												}" text="Cancel" />
-												<BaseButton type="submit" :disabled="!newVoucherVerify" class="bg-primary" text="Request"
-													@click="isActive.value = false" />
-											</v-card-actions>
-										</v-form>
-									</v-card>
-								</template>
+											<v-text-field label="Reason" v-model="reason" bg-color="accent" :rules="requiredRules" variant="outlined"
+												density="compact" clearable class="my-3"
+												hint="This field is used when the voucher request is reviewed, please be as detailed as possible"></v-text-field>
+										</v-card-text>
+										<v-card-actions class="justify-center">
+											<BaseButton class="bg-primary mr-5" @click="openVoucher = false" text="Cancel" />
+											<BaseButton type="submit" class="bg-primary" text="Request"/>
+										</v-card-actions>
+									</v-form>
+								</v-card>
 							</v-dialog>
 						</v-col>
 					</v-row>
@@ -115,7 +109,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed, inject } from "vue";
+import { ref, onMounted, computed, inject, watch } from "vue";
 import userService from "@/services/userService";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import Toast from "@/components/Toast.vue";
@@ -143,10 +137,10 @@ export default {
 		const toast = ref(null);
 		const verified = ref(false);
 		const loading = ref(false);
-		const newVoucherVerify = ref(false);
-		const vms = ref(null);
-		const ips = ref(null);
-		const reason = ref(null);
+		const vms = ref(1);
+		const ips = ref(0);
+		const reason = ref("");
+		const form = ref(null);
 		const nameRegex = /^(\w+\s){0,3}\w*$/;
 		const nameValidation = ref([
 			(value) => {
@@ -157,20 +151,20 @@ export default {
 			},
 		]);
 
-		const vmRules = ref([
+		const requiredRules = ref([
 			(value) => {
-				if (!value) return "Field is required";
-				if (value < 1) return "VM should at least 1";
+				if (value === '') return "This field is required";
 				return true;
 			},
 		]);
 
-		const rules = ref([
-			(value) => {
-				if (value) return true;
-				return "This field is required.";
-			},
-		]);
+		watch(openVoucher, (val) => {
+			if (val) {
+				vms.value = 1;
+				ips.value = 0;
+				reason.value = "";
+			}
+		});
 
 		const getUser = () => {
 			userService
@@ -203,7 +197,10 @@ export default {
 				});
 		};
 
-		const activateVoucher = () => {
+		const activateVoucher = async () => {
+			var { valid } = await form.value.validate();
+			if (!valid) return;
+			
 			userService
 				.activateVoucher(voucher.value)
 				.then((response) => {
@@ -237,7 +234,10 @@ export default {
 				});
 		};
 
-		const newVoucher = () => {
+		const newVoucher = async () => {
+			var { valid } = await form.value.validate();
+			if (!valid) return;
+
 			userService
 				.newVoucher(Number(vms.value), Number(ips.value), reason.value)
 				.then((response) => {
@@ -249,9 +249,10 @@ export default {
 				})
 				.finally(() => {
 					actLoading.value = false;
-					vms.value = 0;
+					openVoucher.value = false;
+					vms.value = 1;
 					ips.value = 0;
-					reason.value = null;
+					reason.value = "";
 				});
 		};
 
@@ -281,16 +282,15 @@ export default {
 			verified,
 			avatar,
 			actLoading,
-			rules,
 			toast,
 			loading,
-			newVoucherVerify,
 			vms,
 			ips,
 			reason,
 			nameValidation,
 			openVoucher,
-			vmRules,
+			requiredRules,
+			form,
 			getUser,
 			activateVoucher,
 			update,

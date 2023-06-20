@@ -1,5 +1,5 @@
 <template>
-  <v-footer class="bg-grey-darken-4 pa-0" absolute app height="75">
+  <v-footer class="d-flex bg-grey-darken-4 pa-0" absolute app height="75">
     <v-row class="text-center">
       <v-col cols="12">
         All rights reserved &copy; {{ new Date().getFullYear() }} —
@@ -10,7 +10,7 @@
           >CodeScalers Egypt</a
         >
         <div class="d-inline-flex ml-5 social">
-          <a href="mailto:info@codescalers.com" class="mr-5 rounded-circle"
+          <a href="mailto:info@codescalers.com" class="mr-md-5 rounded-circle"
             ><font-awesome-icon :icon="['fas', 'envelope']" color="white"
           /></a>
           <a
@@ -32,5 +32,11 @@
   height: 40px;
   width: 40px;
   line-height: 20px;
+}
+
+@media only screen and (max-width: 960px) {
+  .social a {
+    border: none;
+  }
 }
 </style>

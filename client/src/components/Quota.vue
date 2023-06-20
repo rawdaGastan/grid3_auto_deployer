@@ -1,25 +1,24 @@
 <template>
   <v-card color="primary" theme="dark" :key="rerenderKey">
-    <div class="d-flex flex-no-wrap justify-space-between">
-      <div>
-        <v-card-title class="text-body-1">
-          <v-tooltip activator="parent" location="end">
-            Deployments consume: <br />small: 1 vm <br />medium: 2 vms
-            <br />large: 3 vms</v-tooltip
-          >
-          <div class="my-1">
-            <div class="my-1">Available quota</div>
-
-            <font-awesome-icon icon="fa-cube" />
-            <span class="pa-2"> VMs: {{ vm }}</span>
-          </div>
-          <hr />
-          <div class="mt-2">
-            <font-awesome-icon icon="fa-diagram-project" />
-            <span class="pa-2">IPs: {{ ips }}</span>
-          </div>
-        </v-card-title>
-      </div>
+    <div class="d-flex flex-no-wrap justify-space-between card-holder">
+      <v-card-title class="text-body-1">
+        <v-tooltip activator="parent" location="end">
+          Deployments consume: <br />small: 1 vm <br />medium: 2 vms
+          <br />large: 3 vms</v-tooltip
+        >
+        <div class="my-md-1 quota-title">
+          <div>Available Quota <span class="d-sm-flex d-md-none">:</span></div>
+        </div>
+        <div class="ma-md-1 mr-3">
+          <font-awesome-icon icon="fa-cube" />
+          <span class="pa-md-2"> VMs: {{ vm }}</span>
+        </div>
+        <hr />
+        <div class="mt-md-2">
+          <font-awesome-icon icon="fa-diagram-project" />
+          <span class="pa-md-2">IPs: {{ ips }}</span>
+        </div>
+      </v-card-title>
     </div>
   </v-card>
 </template>
@@ -63,3 +62,28 @@ export default {
   },
 };
 </script>
+
+<style>
+@media only screen and (max-width: 960px) {
+  .v-card .v-card-title {
+    line-height: 1.5rem !important;
+  }
+  .v-card .v-card-title > div {
+    justify-content: center;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .v-card .v-card-title > div svg {
+    margin: 0 5px;
+  }
+
+  .quota-title {
+    margin-right: 5px;
+  }
+
+  .quota hr {
+    display: none;
+  }
+}
+</style>

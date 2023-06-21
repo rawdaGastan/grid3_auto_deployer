@@ -10,7 +10,7 @@
       </p>
 
       <v-row justify="center">
-        <v-col cols="12" sm="6">
+        <v-col cols="12" sm="6" xl="4">
           <v-form v-model="verify" @submit.prevent="onSubmit">
             <v-text-field v-model="email" :rules="emailRules" class="mb-2" clearable placeholder="Enter your email"
               label="Email" bg-color="accent" variant="outlined" density="compact"></v-text-field>

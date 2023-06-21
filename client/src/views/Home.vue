@@ -53,7 +53,7 @@
                       icon="fa-rocket"
                       class="mr-3 fa-2xl secondary"
                     />
-                    <h5 class="text-h5 primary">
+                    <h5 class="text-h6 text-md-h5 primary">
                       Start your Deployments
                     </h5>
                   </v-col>

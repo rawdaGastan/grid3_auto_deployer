@@ -3,7 +3,7 @@
     <Toast ref="toast" />
 
     <v-row justify="center">
-      <v-col cols="9" sm="6">
+      <v-col cols="9" sm="6" xl="4">
         <v-hover v-slot="{ isHovering, props }" open-delay="200">
           <v-img
             :style="
@@ -21,7 +21,7 @@
         </v-hover>
       </v-col>
 
-      <v-col cols="12" sm="6">
+      <v-col cols="12" sm="6" xl="4">
         <h5
           class="text-h5 text-md-h4 font-weight-bold text-center mt-md-10 primary"
         >

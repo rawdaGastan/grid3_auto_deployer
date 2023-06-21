@@ -183,20 +183,22 @@ export default {
       { title: "Actions", key: "actions", sortable: false },
     ]);
 
-  	const toast = ref(null);
-		const loading = ref(false);
-		const results = ref([]);
-		const deLoading = ref(false);
-		const message = ref(null);
-		const form = ref(null);
-		const nameValidation = ref([
-			(value) => {
-				if (value.length < 3 || value.length > 20) return "Name needs to be more than 2 characters and less than 20";
-				if (!/^[a-z]+$/.test(value)) return "Name can only include lowercase alphabetic characters";
-				return true;
-			},
-			(value) => validateVMName(value),
-		]);
+    const toast = ref(null);
+    const loading = ref(false);
+    const results = ref([]);
+    const deLoading = ref(false);
+    const message = ref(null);
+    const form = ref(null);
+    const nameValidation = ref([
+      (value) => {
+        if (value.length < 3 || value.length > 20)
+          return "Name needs to be more than 2 characters and less than 20";
+        if (!/^[a-z]+$/.test(value))
+          return "Name can only include lowercase alphabetic characters";
+        return true;
+      },
+      (value) => validateVMName(value),
+    ]);
     const getVMS = () => {
       userService
         .getVms()

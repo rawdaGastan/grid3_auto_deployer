@@ -1,33 +1,67 @@
 <template>
-	<v-container>
-		<h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
-			Account Settings
-		</h5>
-		<v-avatar color="primary" size="50" class="d-flex mx-auto mt-5 mb-3">
-			<span class="text-h5 text-uppercase">{{ name ? avatar : "?" }}</span>
-		</v-avatar>
-		<v-row justify="center">
-			<v-col cols="12" sm="6">
-				<v-form v-model="verify" class="my-5" @submit.prevent="update">
-					<v-text-field class="my-2" label="Name" v-model="name" bg-color="accent" variant="outlined" density="compact"
-						:rules="nameValidation"></v-text-field>
-					<v-row>
-						<v-col cols="12" sm="6">
-							<v-text-field label="College" v-model="college" disabled hide-details="true" bg-color="accent"
-								variant="outlined" density="compact"></v-text-field>
-						</v-col>
-						<v-col cols="12" sm="6">
-							<v-text-field label="Team members" v-model="team_size" disabled hide-details="true" bg-color="accent"
-								variant="outlined" density="compact"></v-text-field>
-						</v-col>
-						<v-col>
-							<v-textarea clearable label="Project description" v-model="project_desc" variant="outlined"
-								bg-color="accent" rows="2" auto-grow disabled></v-textarea>
-						</v-col>
-					</v-row>
-					<v-text-field label="E-mail" v-model="email" disabled bg-color="accent" variant="outlined"
-						density="compact"></v-text-field>
-
+  <v-container>
+    <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
+      Account Settings
+    </h5>
+    <v-avatar color="primary" size="50" class="d-flex mx-auto mt-5 mb-3">
+      <span class="text-h5 text-uppercase">{{ name ? avatar : "?" }}</span>
+    </v-avatar>
+    <v-row justify="center">
+      <v-col cols="12" sm="6" xl="4">
+        <v-form v-model="verify" class="my-5" @submit.prevent="update">
+          <v-text-field
+            class="my-2"
+            label="Name"
+            v-model="name"
+            bg-color="accent"
+            variant="outlined"
+            density="compact"
+            :rules="nameValidation"
+          ></v-text-field>
+          <v-row>
+            <v-col cols="12" sm="6" xl="4">
+              <v-text-field
+                label="College"
+                v-model="college"
+                disabled
+                hide-details="true"
+                bg-color="accent"
+                variant="outlined"
+                density="compact"
+              ></v-text-field>
+            </v-col>
+            <v-col cols="12" sm="6" xl="4">
+              <v-text-field
+                label="Team members"
+                v-model="team_size"
+                disabled
+                hide-details="true"
+                bg-color="accent"
+                variant="outlined"
+                density="compact"
+              ></v-text-field>
+            </v-col>
+            <v-col>
+              <v-textarea
+                clearable
+                label="Project description"
+                v-model="project_desc"
+                variant="outlined"
+                bg-color="accent"
+                rows="2"
+                auto-grow
+                disabled
+              ></v-textarea>
+            </v-col>
+          </v-row>
+          <v-text-field
+            label="E-mail"
+            v-model="email"
+            disabled
+            bg-color="accent"
+            variant="outlined"
+            density="compact"
+          ></v-text-field>
 						<v-form @submit.prevent="activateVoucher" ref="form">
 							<v-row>
 								<v-col sm="9">
@@ -165,38 +199,36 @@ export default {
 				reason.value = "";
 			}
 		});
-
-		const getUser = () => {
-			userService
-				.getUser()
-				.then((response) => {
-					const { user } = response.data.data;
-					email.value = user.email;
-					name.value = user.name;
-					verified.value = user.verified;
-					sshKey.value = user.ssh_key;
-					if (!user.college) {
-						college.value = "-";
-					} else {
-						college.value = user.college;
-					}
-					if (!user.team_size) {
-						team_size.value = 0;
-					} else {
-						team_size.value = user.team_size;
-					}
-					if (!user.project_desc) {
-						project_desc.value = "Description..";
-					} else {
-						project_desc.value = user.project_desc;
-					}
-				})
-				.catch((response) => {
-					const { err } = response.response.data;
-					toast.value.toast(err, "#FF5252");
-				});
-		};
-
+    const getUser = () => {
+      userService
+        .getUser()
+        .then((response) => {
+          const { user } = response.data.data;
+          email.value = user.email;
+          name.value = user.name;
+          verified.value = user.verified;
+          sshKey.value = user.ssh_key;
+          if (!user.college) {
+            college.value = "-";
+          } else {
+            college.value = user.college;
+          }
+          if (!user.team_size) {
+            team_size.value = 0;
+          } else {
+            team_size.value = user.team_size;
+          }
+          if (!user.project_desc) {
+            project_desc.value = "Description..";
+          } else {
+            project_desc.value = user.project_desc;
+          }
+        })
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
+        });
+    };
 		const activateVoucher = async () => {
 			var { valid } = await form.value.validate();
 			if (!valid) return;
@@ -217,22 +249,21 @@ export default {
 					actLoading.value = false;
 				});
 		};
+    const update = () => {
+      if (!verify.value) return;
 
-		const update = () => {
-			if (!verify.value) return;
-
-			userService
-				.updateUser(name.value, sshKey.value)
-				.then((response) => {
-					router.go();
-					getUser();
-					toast.value.toast(response.data.msg, "#388E3C");
-				})
-				.catch((response) => {
-					const { err } = response.response.data;
-					toast.value.toast(err, "#FF5252");
-				});
-		};
+      userService
+        .updateUser(name.value, sshKey.value)
+        .then((response) => {
+          router.go();
+          getUser();
+          toast.value.toast(response.data.msg, "#388E3C");
+        })
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
+        });
+    };
 
 		const newVoucher = async () => {
 			var { valid } = await form.value.validate();
@@ -256,20 +287,19 @@ export default {
 				});
 		};
 
-		const avatar = computed(() => {
-			let val = String(name.value);
-			return val.charAt(0);
-		});
+    const avatar = computed(() => {
+      let val = String(name.value);
+      return val.charAt(0);
+    });
 
-		const emitQuota = () => {
-			emitter.emit("userUpdateQuota", true);
-		};
+    const emitQuota = () => {
+      emitter.emit("userUpdateQuota", true);
+    };
 
-		onMounted(() => {
-			let token = localStorage.getItem("token");
-			if (token) getUser();
-		});
-
+    onMounted(() => {
+      let token = localStorage.getItem("token");
+      if (token) getUser();
+    });
 		return {
 			college,
 			verify,
@@ -303,6 +333,6 @@ export default {
 
 <style>
 .pointer {
-	cursor: pointer;
+  cursor: pointer;
 }
 </style>

@@ -69,13 +69,11 @@ export default {
     line-height: 1.5rem !important;
   }
   .v-card .v-card-title > div {
-    justify-content: center;
     display: inline-flex;
-    align-items: center;
   }
 
   .v-card .v-card-title > div svg {
-    margin: 0 5px;
+    margin: 1px 5px 0;
   }
 
   .quota-title {

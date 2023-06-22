@@ -165,11 +165,11 @@
 						</template>
 					</v-data-table>
 				</section>
-				<v-dialog transition="dialog-top-transition" v-model="showUserInfo">
-					<UserInfo :user="userInfo"></UserInfo>
-				</v-dialog>
 			</v-col>
 		</v-row>
+    <v-dialog transition="dialog-top-transition" v-model="showUserInfo">
+      <UserInfo :user="userInfo"></UserInfo>
+    </v-dialog>
 		<Toast ref="toast" />
 		<Voucher v-if="voucher" :msg="message" :voucher="voucher" :reset="resetVoucher" />
 	</v-container>

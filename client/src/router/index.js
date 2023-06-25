@@ -152,6 +152,15 @@ const routes = [
       },
     ],
   },
+  {
+    path: "/:pathMatch(.*)*",
+    name: "PageNotFound",
+    component: () => import("@/views/PageNotFound.vue"),
+    meta: {
+      requiredAuth: false,
+      layout: "NoNavbar",
+    },
+  },
 ];
 
 const router = createRouter({

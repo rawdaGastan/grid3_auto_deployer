@@ -25,7 +25,7 @@
         <p class="text-center secondary">
           You may have mistyped address or the page may have moved
         </p>
-        <p class="text-center my-5 ">
+        <p class="text-center mt-5">
           <router-link
             class="text-body-1 text-center font-weight-bold text-decoration-none primary"
             to="/"

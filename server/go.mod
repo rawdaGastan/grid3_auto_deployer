@@ -14,7 +14,7 @@ require (
 	github.com/sendgrid/sendgrid-go v3.12.0+incompatible
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
-	github.com/threefoldtech/tfgrid-sdk-go/grid-client v0.9.0
+	github.com/threefoldtech/tfgrid-sdk-go/grid-client v0.9.1
 	github.com/threefoldtech/tfgrid-sdk-go/grid-proxy v0.9.1
 	github.com/threefoldtech/zos v0.5.6-0.20230526112430-f620733482d7
 	golang.org/x/crypto v0.11.0
@@ -69,7 +69,7 @@ require (
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/threefoldtech/tfchain/clients/tfchain-client-go v0.0.0-20230530114457-e57ee9560f79 // indirect
-	github.com/threefoldtech/tfgrid-sdk-go/rmb-sdk-go v0.6.0 // indirect
+	github.com/threefoldtech/tfgrid-sdk-go/rmb-sdk-go v0.9.1 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
 	github.com/vedhavyas/go-subkey v1.0.3 // indirect
 	golang.org/x/exp v0.0.0-20230206171751-46f607a40771 // indirect

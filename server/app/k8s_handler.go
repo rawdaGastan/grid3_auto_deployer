@@ -75,7 +75,7 @@ func (a *App) K8sDeployHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("kubernetes master name is not available, please choose a different name"))
 	}
 
-	err = a.deployer.Redis.PushK8sRequest(streams.K8sDeployRequest{User: user, Input: k8sDeployInput, AdminSSHKey: a.config.AdminSSHKey})
+	err = a.deployer.Redis.PushK8sRequest(streams.K8sDeployRequest{User: user, Input: k8sDeployInput, AdminSSHKey: a.config.AdminSSHKey, ExpirationToleranceInDays: a.config.ExpirationToleranceInDays})
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))

@@ -10,19 +10,20 @@ import (
 
 // User struct holds data of users
 type User struct {
-	ID             uuid.UUID `gorm:"primary_key; unique; type:uuid; column:id"`
-	Name           string    `json:"name" binding:"required"`
-	Email          string    `json:"email" gorm:"unique" binding:"required"`
-	HashedPassword []byte    `json:"hashed_password" binding:"required"`
-	UpdatedAt      time.Time `json:"updated_at"`
-	Code           int       `json:"code"`
-	SSHKey         string    `json:"ssh_key"`
-	Verified       bool      `json:"verified"`
-	TeamSize       int       `json:"team_size" binding:"required"`
-	ProjectDesc    string    `json:"project_desc" binding:"required"`
-	College        string    `json:"college" binding:"required"`
-	// checks if user type is admin
-	Admin bool `json:"admin"`
+	ID              uuid.UUID `gorm:"primary_key; unique; type:uuid; column:id"`
+	Name            string    `json:"name" binding:"required"`
+	Email           string    `json:"email" gorm:"unique" binding:"required"`
+	HashedPassword  []byte    `json:"hashed_password" binding:"required"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	Code            int       `json:"code"`
+	SSHKey          string    `json:"ssh_key"`
+	Verified        bool      `json:"verified"`
+	TeamSize        int       `json:"team_size" binding:"required"`
+	ProjectDesc     string    `json:"project_desc" binding:"required"`
+	College         string    `json:"college" binding:"required"`
+	Admin           bool      `json:"admin"`
+	Balance         float64   `json:"balance"`
+	LeftoverBalance int       `json:"leftover_balance"`
 }
 
 // BeforeCreate generates a new uuid

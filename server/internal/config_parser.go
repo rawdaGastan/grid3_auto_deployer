@@ -11,16 +11,18 @@ import (
 
 // Configuration struct to hold app configurations
 type Configuration struct {
-	Server                    Server      `json:"server"`
-	MailSender                MailSender  `json:"mailSender"`
-	Database                  DB          `json:"database"`
-	Token                     JwtToken    `json:"token"`
-	Account                   GridAccount `json:"account"`
-	Version                   string      `json:"version" validate:"nonzero"`
-	Admins                    []string    `json:"admins"`
-	NotifyAdminsIntervalHours int         `json:"notifyAdminsIntervalHours"`
-	AdminSSHKey               string      `json:"adminSSHKey"`
-	BalanceThreshold          int         `json:"balanceThreshold"`
+	Server                      Server      `json:"server"`
+	MailSender                  MailSender  `json:"mailSender"`
+	Database                    DB          `json:"database"`
+	Token                       JwtToken    `json:"token"`
+	Account                     GridAccount `json:"account"`
+	Version                     string      `json:"version" validate:"nonzero"`
+	Admins                      []string    `json:"admins"`
+	NotifyAdminsIntervalHours   int         `json:"notifyAdminsIntervalHours"`
+	AdminSSHKey                 string      `json:"adminSSHKey"`
+	BalanceThreshold            int         `json:"balanceThreshold"`
+	ExpirationToleranceInDays   int         `json:"expirationToleranceInDays"`
+	NotifyUsersExpirationInDays int         `json:"notifyUsersExpirationInDays"`
 }
 
 // Server struct to hold server's information
@@ -59,7 +61,7 @@ type GridAccount struct {
 
 // ReadConfFile read configurations of json file
 func ReadConfFile(path string) (Configuration, error) {
-	config := Configuration{NotifyAdminsIntervalHours: 6, BalanceThreshold: 2000}
+	config := Configuration{NotifyAdminsIntervalHours: 6, BalanceThreshold: 2000, ExpirationToleranceInDays: 30, NotifyUsersExpirationInDays: 1}
 	file, err := os.Open(path)
 	if err != nil {
 		return Configuration{}, fmt.Errorf("failed to open config file: %w", err)

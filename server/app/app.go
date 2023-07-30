@@ -13,16 +13,18 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/calculator"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 )
 
 // App for all dependencies of backend server
 type App struct {
-	config   internal.Configuration
-	server   server
-	db       models.DB
-	redis    streams.RedisClient
-	deployer c4sDeployer.Deployer
+	config     internal.Configuration
+	server     server
+	db         models.DB
+	redis      streams.RedisClient
+	deployer   c4sDeployer.Deployer
+	calculator calculator.Calculator
 }
 
 // NewApp creates new server app all configurations
@@ -63,11 +65,12 @@ func NewApp(ctx context.Context, configFile string) (app *App, err error) {
 	}
 
 	return &App{
-		config:   config,
-		server:   *server,
-		db:       db,
-		redis:    redis,
-		deployer: newDeployer,
+		config:     config,
+		server:     *server,
+		db:         db,
+		redis:      redis,
+		deployer:   newDeployer,
+		calculator: tfPluginClient.Calculator,
 	}, nil
 }
 
@@ -82,6 +85,9 @@ func (a *App) Start(ctx context.Context) (err error) {
 func (a *App) startBackgroundWorkers(ctx context.Context) {
 	// notify admins
 	go a.notifyAdmins()
+
+	// notify expired packages
+	go a.notifyUsersExpiredPackages()
 
 	// periodic deployments
 	go a.deployer.PeriodicRequests(ctx, substrateBlockDiffInSeconds)

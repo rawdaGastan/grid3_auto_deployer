@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
@@ -103,7 +104,7 @@ func ValidateVMQuota(vm models.DeployVMInput, availableResourcesQuota, available
 	return neededQuota, nil
 }
 
-func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input models.DeployVMInput, adminSSHKey string) (int, error) {
+func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input models.DeployVMInput, adminSSHKey string, expirationToleranceInDays int) (int, error) {
 	// check quota of user
 	quota, err := d.db.GetUserQuota(user.ID.String())
 	if err == gorm.ErrRecordNotFound {
@@ -125,6 +126,12 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
+	pkg, err := d.db.GetPkgByID(input.PkgID)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
+	}
+
 	userVM := models.VM{
 		UserID:            user.ID.String(),
 		Name:              vm.Name,
@@ -137,6 +144,8 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 		MRU:               uint64(vm.Memory),
 		ContractID:        contractID,
 		NetworkContractID: networkContractID,
+		CreatedAt:         time.Now(),
+		ExpiresAt:         time.Now().AddDate(0, pkg.PeriodInMonth, expirationToleranceInDays),
 	}
 
 	err = d.db.CreateVM(&userVM)

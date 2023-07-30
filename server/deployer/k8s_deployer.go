@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
@@ -110,7 +111,7 @@ func (d *Deployer) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInp
 	return node, loadedNet.NodeDeploymentID[node], loadedCluster.NodeDeploymentID[node], nil
 }
 
-func (d *Deployer) loadK8s(k8sDeployInput models.K8sDeployInput, userID string, node uint32, networkContractID uint64, k8sContractID uint64) (models.K8sCluster, error) {
+func (d *Deployer) loadK8s(k8sDeployInput models.K8sDeployInput, userID string, node uint32, networkContractID uint64, k8sContractID uint64, expirationToleranceInDays int) (models.K8sCluster, error) {
 	// load cluster
 	resCluster, err := d.tfPluginClient.State.LoadK8sFromGrid([]uint32{node}, k8sDeployInput.MasterName)
 	if err != nil {
@@ -148,12 +149,20 @@ func (d *Deployer) loadK8s(k8sDeployInput models.K8sDeployInput, userID string, 
 		}
 		workers = append(workers, workerModel)
 	}
+
+	pkg, err := d.db.GetPkgByID(k8sDeployInput.PkgID)
+	if err != nil {
+		return models.K8sCluster{}, err
+	}
+
 	k8sCluster := models.K8sCluster{
 		UserID:          userID,
 		NetworkContract: int(networkContractID),
 		ClusterContract: int(k8sContractID),
 		Master:          master,
 		Workers:         workers,
+		CreatedAt:       time.Now(),
+		ExpiresAt:       time.Now().AddDate(0, pkg.PeriodInMonth, expirationToleranceInDays),
 	}
 
 	return k8sCluster, nil
@@ -218,7 +227,7 @@ func ValidateK8sQuota(k models.K8sDeployInput, availableResourcesQuota, availabl
 	return neededQuota, nil
 }
 
-func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDeployInput models.K8sDeployInput, adminSSHKey string) (int, error) {
+func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDeployInput models.K8sDeployInput, adminSSHKey string, expirationToleranceInDays int) (int, error) {
 	// quota verification
 	quota, err := d.db.GetUserQuota(user.ID.String())
 	if err == gorm.ErrRecordNotFound {
@@ -243,7 +252,7 @@ func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDe
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
-	k8sCluster, err := d.loadK8s(k8sDeployInput, user.ID.String(), node, networkContractID, k8sContractID)
+	k8sCluster, err := d.loadK8s(k8sDeployInput, user.ID.String(), node, networkContractID, k8sContractID, expirationToleranceInDays)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)

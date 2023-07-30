@@ -74,7 +74,7 @@ func (a *App) DeployVMHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("virtual machine name is not available, please choose a different name"))
 	}
 
-	err = a.deployer.Redis.PushVMRequest(streams.VMDeployRequest{User: user, Input: input, AdminSSHKey: a.config.AdminSSHKey})
+	err = a.deployer.Redis.PushVMRequest(streams.VMDeployRequest{User: user, Input: input, AdminSSHKey: a.config.AdminSSHKey, ExpirationToleranceInDays: a.config.ExpirationToleranceInDays})
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))

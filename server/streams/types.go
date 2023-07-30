@@ -30,16 +30,18 @@ const (
 
 // VMDeployRequest type for redis vm deployment request
 type VMDeployRequest struct {
-	User        models.User
-	Input       models.DeployVMInput
-	AdminSSHKey string
+	User                      models.User
+	Input                     models.DeployVMInput
+	AdminSSHKey               string
+	ExpirationToleranceInDays int
 }
 
 // K8sDeployRequest type for redis k8s deployment request
 type K8sDeployRequest struct {
-	User        models.User
-	Input       models.K8sDeployInput
-	AdminSSHKey string
+	User                      models.User
+	Input                     models.K8sDeployInput
+	AdminSSHKey               string
+	ExpirationToleranceInDays int
 }
 
 // VMDeployment type for redis vm deployment

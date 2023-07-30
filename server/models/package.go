@@ -1,7 +1,11 @@
 // Package models for database models
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 // Package struct for user packages
 type Package struct {
@@ -24,6 +28,16 @@ func (d *DB) GetPkgByID(id int) (Package, error) {
 	var pkg Package
 	query := d.db.First(&pkg, id)
 	return pkg, query.Error
+}
+
+// UpdatePackage updates package
+func (d *DB) UpdatePackage(id int, period int) error {
+	var res User
+	result := d.db.Model(&res).Where("id = ?", id).Update("period", period)
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return result.Error
 }
 
 // ListPackages returns all packages of user

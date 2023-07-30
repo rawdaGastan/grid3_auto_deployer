@@ -23,7 +23,7 @@ type User struct {
 	College         string    `json:"college" binding:"required"`
 	Admin           bool      `json:"admin"`
 	Balance         float64   `json:"balance"`
-	LeftoverBalance int       `json:"leftover_balance"`
+	LeftoverBalance float64   `json:"leftover_balance"`
 }
 
 // BeforeCreate generates a new uuid

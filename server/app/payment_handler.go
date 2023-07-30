@@ -23,6 +23,13 @@ var (
 	vmDisk   = uint64(25)
 )
 
+//TODO: vouchers and quota
+
+// BalanceChargedInput struct for data needed when charging balance
+type BalanceChargedInput struct {
+	Balance float64 `json:"balance" binding:"required"`
+}
+
 // ChargeBalanceInput struct for data needed when charging balance
 type ChargeBalanceInput struct {
 	Balance int64 `json:"balance" binding:"required"`
@@ -36,6 +43,11 @@ type BuyPackageInput struct {
 	Vms           int `json:"vms"  binding:"required"`
 	PublicIPs     int `json:"public_ips"  binding:"required"`
 	PeriodInMonth int `json:"period"  binding:"required"`
+}
+
+// RenewPackageInput for data needed when renewing package
+type RenewPackageInput struct {
+	ID int `json:"id"  binding:"required"`
 }
 
 func (a *App) chargeBalanceHandler(req *http.Request) (interface{}, Response) {
@@ -76,11 +88,57 @@ func (a *App) chargeBalanceHandler(req *http.Request) (interface{}, Response) {
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	// TODO: add balance to the user
-	// TODO: leftovers
 	return ResponseMsg{
 		Message: "Redirect",
 		Data:    s.URL,
+	}, Ok()
+}
+
+func (a *App) balanceChargedHandler(req *http.Request) (interface{}, Response) {
+	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
+
+	var input BalanceChargedInput
+	err := json.NewDecoder(req.Body).Decode(&input)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("failed to read data"))
+	}
+
+	err = validator.Validate(input)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("invalid data"))
+	}
+
+	user, err := a.db.GetUserByID(userID)
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("user is not found"))
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	var balance float64
+	if user.LeftoverBalance > 0 {
+		if user.LeftoverBalance >= input.Balance {
+			user.LeftoverBalance -= input.Balance
+		} else {
+			balance = input.Balance - user.LeftoverBalance
+			user.LeftoverBalance = 0
+		}
+	}
+
+	user.Balance += balance
+	err = a.db.UpdateUserByID(user)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	return ResponseMsg{
+		Message: "Balance is updated successfully",
+		Data:    nil,
 	}, Ok()
 }
 
@@ -141,7 +199,6 @@ func (a *App) buyPackageHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("balance is not enough, please recharge your balance"))
 	}
 
-	// TODO: unlock expired deployments
 	err = a.db.CreatePackage(&pkg)
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -240,4 +297,59 @@ func (a *App) notifyUsersExpiredPackages() {
 	}
 }
 
-// TODO: renew
+func (a *App) renewPackageHandler(req *http.Request) (interface{}, Response) {
+	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
+
+	var input RenewPackageInput
+	err := json.NewDecoder(req.Body).Decode(&input)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("failed to read input data"))
+	}
+
+	err = validator.Validate(input)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("invalid input data"))
+	}
+
+	pkg, err := a.db.GetPkgByID(input.ID)
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("package is not found"))
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	user, err := a.db.GetUserByID(userID)
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("user is not found"))
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	if user.Balance < pkg.Cost {
+		return nil, BadRequest(errors.New("balance is not enough, please recharge your balance"))
+	}
+
+	err = a.db.UpdatePackage(pkg.ID, pkg.PeriodInMonth*2)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	user.Balance -= pkg.Cost
+	err = a.db.UpdateUserByID(user)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	return ResponseMsg{
+		Message: "Package is renewed successfully",
+		Data:    nil,
+	}, Ok()
+}

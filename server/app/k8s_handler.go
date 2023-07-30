@@ -44,17 +44,17 @@ func (a *App) K8sDeployHandler(req *http.Request) (interface{}, Response) {
 	}
 
 	// quota verification
-	quota, err := a.db.GetUserQuota(user.ID.String())
+	pkg, err := a.db.GetPkgByUserID(user.ID.String())
 	if err == gorm.ErrRecordNotFound {
 		log.Error().Err(err).Send()
-		return nil, NotFound(errors.New("user quota is not found"))
+		return nil, NotFound(errors.New("user package is not found"))
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	_, err = deployer.ValidateK8sQuota(k8sDeployInput, quota.Vms, quota.PublicIPs)
+	_, err = deployer.ValidateK8sQuota(k8sDeployInput, pkg.Vms, pkg.PublicIPs)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, BadRequest(errors.New(err.Error()))

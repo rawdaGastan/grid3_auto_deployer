@@ -159,17 +159,6 @@ func (a *App) SignUpHandler(req *http.Request) (interface{}, Response) {
 			log.Error().Err(err).Send()
 			return nil, InternalServerError(errors.New(internalServerErrorMsg))
 		}
-
-		// create empty quota
-		quota := models.Quota{
-			UserID: u.ID.String(),
-			Vms:    0,
-		}
-		err = a.db.CreateQuota(&quota)
-		if err != nil {
-			log.Error().Err(err).Send()
-			return nil, InternalServerError(errors.New(internalServerErrorMsg))
-		}
 	}
 
 	return ResponseMsg{
@@ -607,15 +596,6 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, BadRequest(errors.New("failed to read voucher data"))
 	}
 
-	oldQuota, err := a.db.GetUserQuota(userID)
-	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("user quota is not found"))
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
-	}
-
 	voucherQuota, err := a.db.GetVoucher(input.Voucher)
 	if err == gorm.ErrRecordNotFound {
 		return nil, NotFound(errors.New("user voucher is not found"))
@@ -643,13 +623,12 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	err = a.db.UpdateUserQuota(userID, oldQuota.Vms+voucherQuota.VMs, oldQuota.PublicIPs+voucherQuota.PublicIPs)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	res := a.activatePackage(userID, voucherQuota.VMs, voucherQuota.PublicIPs, 1)
+	if res != nil {
+		return nil, res
 	}
-	middlewares.VoucherActivated.WithLabelValues(userID, voucherQuota.Voucher, fmt.Sprint(voucherQuota.VMs), fmt.Sprint(voucherQuota.PublicIPs)).Inc()
 
+	middlewares.VoucherActivated.WithLabelValues(userID, voucherQuota.Voucher, fmt.Sprint(voucherQuota.VMs), fmt.Sprint(voucherQuota.PublicIPs)).Inc()
 	return ResponseMsg{
 		Message: "Voucher is applied successfully",
 		Data:    nil,

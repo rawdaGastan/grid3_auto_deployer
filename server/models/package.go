@@ -3,19 +3,19 @@ package models
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 // Package struct for user packages
 type Package struct {
-	ID            int       `json:"id" gorm:"primaryKey"`
-	UserID        string    `json:"user_id"`
-	Vms           int       `json:"vms"`
-	PublicIPs     int       `json:"public_ips"`
-	PeriodInMonth int       `json:"period"`
-	Cost          float64   `json:"cost"`
-	CreatedAt     time.Time `json:"Created_at"`
+	ID             int       `json:"id" gorm:"primaryKey"`
+	UserID         string    `json:"user_id"`
+	Vms            int       `json:"vms"`
+	PublicIPs      int       `json:"public_ips"`
+	VmsCount       int       `json:"vms_count"`
+	PublicIPsCount int       `json:"public_ips_count"`
+	PeriodInMonth  int       `json:"period"`
+	Cost           float64   `json:"cost"`
+	CreatedAt      time.Time `json:"Created_at"`
 }
 
 // CreatePackage creates new package
@@ -30,13 +30,16 @@ func (d *DB) GetPkgByID(id int) (Package, error) {
 	return pkg, query.Error
 }
 
+// GetPkgByUserID return pkg by its user ID
+func (d *DB) GetPkgByUserID(userID string) (Package, error) {
+	var pkg Package
+	query := d.db.First(&pkg, "user_id = ?", userID)
+	return pkg, query.Error
+}
+
 // UpdatePackage updates package
-func (d *DB) UpdatePackage(id int, period int) error {
-	var res User
-	result := d.db.Model(&res).Where("id = ?", id).Update("period", period)
-	if result.RowsAffected == 0 {
-		return gorm.ErrRecordNotFound
-	}
+func (d *DB) UpdatePackage(pkg Package) error {
+	result := d.db.Model(&User{}).Where("id = ?", pkg.ID).Updates(pkg)
 	return result.Error
 }
 
@@ -61,4 +64,9 @@ func (d *DB) GetExpiredPackages(expirationToleranceInDays int) ([]Package, error
 		Group("packages.user_id").
 		Scan(&res)
 	return res, query.Error
+}
+
+// UpdateUserPackage updates quota
+func (d *DB) UpdateUserPackage(userID string, vms int, publicIPs int) error {
+	return d.db.Model(&Package{}).Where("user_id = ?", userID).Updates(map[string]interface{}{"vms": vms, "public_ips": publicIPs}).Error
 }

@@ -948,13 +948,6 @@ func TestActivateVoucherHandler(t *testing.T) {
 	err := app.db.CreateUser(user)
 	assert.NoError(t, err)
 
-	err = app.db.CreateQuota(
-		&models.Quota{
-			UserID: user.ID.String(),
-		},
-	)
-	assert.NoError(t, err)
-
 	v := models.Voucher{
 		Voucher:  "voucher",
 		VMs:      10,

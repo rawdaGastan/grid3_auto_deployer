@@ -32,7 +32,7 @@ func (d *DB) Connect(file string) error {
 
 // Migrate migrates db schema
 func (d *DB) Migrate() error {
-	err := d.db.AutoMigrate(&User{}, &Quota{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{}, &Maintenance{}, &Notification{}, &Package{})
+	err := d.db.AutoMigrate(&User{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{}, &Maintenance{}, &Notification{}, &Package{})
 	if err != nil {
 		return err
 	}
@@ -208,24 +208,6 @@ func (d *DB) DeleteAllVms(userID string) error {
 	var vms []VM
 	result := d.db.Clauses(clause.Returning{}).Where("user_id = ?", userID).Delete(&vms)
 	return result.Error
-}
-
-// CreateQuota creates a new quota
-func (d *DB) CreateQuota(q *Quota) error {
-	result := d.db.Create(&q)
-	return result.Error
-}
-
-// UpdateUserQuota updates quota
-func (d *DB) UpdateUserQuota(userID string, vms int, publicIPs int) error {
-	return d.db.Model(&Quota{}).Where("user_id = ?", userID).Updates(map[string]interface{}{"vms": vms, "public_ips": publicIPs}).Error
-}
-
-// GetUserQuota gets user quota available vms (vms will be used for both vms and k8s clusters)
-func (d *DB) GetUserQuota(userID string) (Quota, error) {
-	var res Quota
-	query := d.db.First(&res, "user_id = ?", userID)
-	return res, query.Error
 }
 
 // CreateVoucher creates a new voucher

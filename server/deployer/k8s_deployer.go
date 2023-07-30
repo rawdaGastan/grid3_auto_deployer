@@ -228,18 +228,13 @@ func ValidateK8sQuota(k models.K8sDeployInput, availableResourcesQuota, availabl
 }
 
 func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDeployInput models.K8sDeployInput, adminSSHKey string, expirationToleranceInDays int) (int, error) {
-	// quota verification
-	quota, err := d.db.GetUserQuota(user.ID.String())
-	if err == gorm.ErrRecordNotFound {
-		log.Error().Err(err).Send()
-		return http.StatusNotFound, errors.New("user quota is not found")
-	}
+	pkg, err := d.db.GetPkgByID(k8sDeployInput.PkgID)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
-	neededQuota, err := ValidateK8sQuota(k8sDeployInput, quota.Vms, quota.PublicIPs)
+	neededQuota, err := ValidateK8sQuota(k8sDeployInput, pkg.Vms, pkg.PublicIPs)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return http.StatusBadRequest, err
@@ -257,12 +252,13 @@ func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDe
 		log.Error().Err(err).Send()
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
-	publicIPsQuota := quota.PublicIPs
+	publicIPsQuota := pkg.PublicIPs
 	if k8sDeployInput.Public {
 		publicIPsQuota -= publicQuota
 	}
-	// update quota
-	err = d.db.UpdateUserQuota(user.ID.String(), quota.Vms-neededQuota, publicIPsQuota)
+
+	// update package
+	err = d.db.UpdateUserPackage(user.ID.String(), pkg.Vms-neededQuota, publicIPsQuota)
 	if err == gorm.ErrRecordNotFound {
 		return http.StatusNotFound, errors.New("user quota is not found")
 	}

@@ -17,30 +17,25 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	vmCPU    = uint64(1)
-	vmMemory = uint64(2)
-	vmDisk   = uint64(25)
-)
-
 // BalanceChargedInput struct for data needed when charging balance
 type BalanceChargedInput struct {
-	Balance float64 `json:"balance" binding:"required"`
+	Balance uint64 `json:"balance" binding:"required"`
 }
 
 // ChargeBalanceInput struct for data needed when charging balance
 type ChargeBalanceInput struct {
 	Balance int64 `json:"balance" binding:"required"`
 
-	SuccessUrl string `json:"success_url" binding:"required"`
-	FailedUrl  string `json:"failure_url" binding:"required"`
+	SuccessURL string `json:"success_url" binding:"required"`
+	FailedURL  string `json:"failure_url" binding:"required"`
 }
 
 // BuyPackageInput for data needed when buying package
 type BuyPackageInput struct {
-	Vms           int `json:"vms"  binding:"required"`
-	PublicIPs     int `json:"public_ips"  binding:"required"`
-	PeriodInMonth int `json:"period"  binding:"required"`
+	Vms           int           `json:"vms"  binding:"required"`
+	PublicIPs     int           `json:"public_ips"  binding:"required"`
+	VMType        models.VMType `json:"vm_type" binding:"required"`
+	PeriodInMonth int           `json:"period"  binding:"required"`
 }
 
 // RenewPackageInput for data needed when renewing package
@@ -76,8 +71,8 @@ func (a *App) chargeBalanceHandler(req *http.Request) (interface{}, Response) {
 			},
 		},
 		Mode:       stripe.String(string(stripe.CheckoutSessionModePayment)),
-		SuccessURL: stripe.String(input.SuccessUrl),
-		CancelURL:  stripe.String(input.FailedUrl),
+		SuccessURL: stripe.String(input.SuccessURL),
+		CancelURL:  stripe.String(input.FailedURL),
 	}
 
 	s, err := session.New(paramsCheckout)
@@ -108,27 +103,27 @@ func (a *App) balanceChargedHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("invalid data"))
 	}
 
-	user, err := a.db.GetUserByID(userID)
+	balance, err := a.db.GetBalanceByUserID(userID)
 	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("user is not found"))
+		return nil, NotFound(errors.New("user balance is not found"))
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	var balance float64
-	if user.LeftoverBalance > 0 {
-		if user.LeftoverBalance >= input.Balance {
-			user.LeftoverBalance -= input.Balance
+	var balanceInUSD uint64
+	if balance.Leftover > 0 {
+		if balance.Leftover >= input.Balance {
+			balance.Leftover -= input.Balance
 		} else {
-			balance = input.Balance - user.LeftoverBalance
-			user.LeftoverBalance = 0
+			balanceInUSD = input.Balance - balance.Leftover
+			balance.Leftover = 0
 		}
 	}
 
-	user.Balance += balance
-	err = a.db.UpdateUserByID(user)
+	balance.BalanceInUSD += balanceInUSD
+	err = a.db.UpdateBalance(balance)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -156,7 +151,7 @@ func (a *App) buyPackageHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("invalid input data"))
 	}
 
-	res := a.activatePackage(userID, input.Vms, input.PublicIPs, input.PeriodInMonth)
+	res := a.activatePackage(userID, input.VMType, input.Vms, input.PublicIPs, input.PeriodInMonth, false)
 	if res != nil {
 		return nil, res
 	}
@@ -167,7 +162,76 @@ func (a *App) buyPackageHandler(req *http.Request) (interface{}, Response) {
 	}, Ok()
 }
 
-// ListPackagesHandler returns all packages of user
+func (a *App) renewPackageHandler(req *http.Request) (interface{}, Response) {
+	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
+
+	var input RenewPackageInput
+	err := json.NewDecoder(req.Body).Decode(&input)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("failed to read input data"))
+	}
+
+	err = validator.Validate(input)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("invalid input data"))
+	}
+
+	pkg, err := a.db.GetPackage(input.ID)
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("package is not found"))
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	balance, err := a.db.GetBalanceByUserID(userID)
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("user is not found"))
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	if balance.BalanceInUSD < pkg.Cost {
+		return nil, BadRequest(errors.New("balance is not enough, please recharge your balance"))
+	}
+
+	pkg.PeriodInMonth *= 2
+	err = a.db.UpdatePackage(pkg)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	switch pkg.VMType {
+	case models.Small:
+		balance.SmallVMsWithPublicIP += pkg.PublicIPs
+		balance.SmallVMs += pkg.Vms - pkg.PublicIPs
+	case models.Medium:
+		balance.MediumVMsWithPublicIP += pkg.PublicIPs
+		balance.MediumVMs += pkg.Vms - pkg.PublicIPs
+	case models.Large:
+		balance.LargeVMsWithPublicIP += pkg.PublicIPs
+		balance.LargeVMs += pkg.Vms - pkg.PublicIPs
+	}
+
+	balance.BalanceInUSD -= pkg.Cost
+	err = a.db.UpdateBalance(balance)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	return ResponseMsg{
+		Message: "Package is renewed successfully",
+		Data:    nil,
+	}, Ok()
+}
+
 func (a *App) listPackagesHandler(req *http.Request) (interface{}, Response) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 
@@ -189,98 +253,29 @@ func (a *App) listPackagesHandler(req *http.Request) (interface{}, Response) {
 	}, Ok()
 }
 
-func (a *App) renewPackageHandler(req *http.Request) (interface{}, Response) {
-	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
-
-	var input RenewPackageInput
-	err := json.NewDecoder(req.Body).Decode(&input)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, BadRequest(errors.New("failed to read input data"))
-	}
-
-	err = validator.Validate(input)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, BadRequest(errors.New("invalid input data"))
-	}
-
-	pkg, err := a.db.GetPkgByID(input.ID)
-	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("package is not found"))
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
-	}
-
-	user, err := a.db.GetUserByID(userID)
-	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("user is not found"))
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
-	}
-
-	if user.Balance < pkg.Cost {
-		return nil, BadRequest(errors.New("balance is not enough, please recharge your balance"))
-	}
-
-	pkg.PeriodInMonth *= 2
-	pkg.Vms = pkg.VmsCount
-	pkg.PublicIPs = pkg.PublicIPsCount
-	err = a.db.UpdatePackage(pkg)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
-	}
-
-	user.Balance -= pkg.Cost
-	err = a.db.UpdateUserByID(user)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
-	}
-
-	return ResponseMsg{
-		Message: "Package is renewed successfully",
-		Data:    nil,
-	}, Ok()
-}
-
-func (a *App) activatePackage(userID string, vms int, publicIPs int, periodInMonth int) Response {
+func (a *App) activatePackage(userID string, vmType models.VMType, vms, publicIPs, periodInMonth int, free bool) Response {
 	if vms < publicIPs {
-		return BadRequest(errors.New("virtual machines must be greater than public ips"))
+		return BadRequest(errors.New("virtual machines must be greater than or equal public ips"))
 	}
 
-	var pkgCost float64
-	for i := 1; i <= vms; i++ {
-		publicIP := publicIPs > 0
-		cost, err := a.calculator.CalculateCost(int64(vmCPU)*int64(vms), int64(vmMemory)*int64(vms), 0, int64(vmDisk)*int64(vms), publicIP, false)
-		if err != nil {
-			log.Error().Err(err).Send()
-			return InternalServerError(errors.New(internalServerErrorMsg))
-		}
-
-		pkgCost += cost
-		publicIPs--
+	pkgRealCost, pkgCost, err := a.calculatePackageCost(vms, publicIPs, periodInMonth, vmType)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return InternalServerError(errors.New(internalServerErrorMsg))
 	}
-
-	pkgCost = pkgCost * float64(periodInMonth)
 
 	pkg := models.Package{
-		UserID:         userID,
-		Vms:            vms,
-		PublicIPs:      publicIPs,
-		VmsCount:       vms,
-		PublicIPsCount: publicIPs,
-		PeriodInMonth:  periodInMonth,
-		Cost:           pkgCost,
-		CreatedAt:      time.Now(),
+		UserID:        userID,
+		Vms:           vms,
+		PublicIPs:     publicIPs,
+		PeriodInMonth: periodInMonth,
+		Cost:          pkgCost,
+		RealCost:      pkgRealCost,
+		CreatedAt:     time.Now(),
+		VMType:        vmType,
 	}
 
-	user, err := a.db.GetUserByID(userID)
+	balance, err := a.db.GetBalanceByUserID(userID)
 	if err == gorm.ErrRecordNotFound {
 		return NotFound(errors.New("user is not found"))
 	}
@@ -289,7 +284,7 @@ func (a *App) activatePackage(userID string, vms int, publicIPs int, periodInMon
 		return InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	if user.Balance < pkgCost {
+	if balance.BalanceInUSD < pkgCost && !free {
 		return BadRequest(errors.New("balance is not enough, please recharge your balance"))
 	}
 
@@ -299,14 +294,75 @@ func (a *App) activatePackage(userID string, vms int, publicIPs int, periodInMon
 		return InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	user.Balance -= pkgCost
-	err = a.db.UpdateUserByID(user)
+	switch vmType {
+	case models.Small:
+		balance.SmallVMsWithPublicIP += publicIPs
+		balance.SmallVMs += vms - publicIPs
+	case models.Medium:
+		balance.MediumVMsWithPublicIP += publicIPs
+		balance.MediumVMs += vms - publicIPs
+	case models.Large:
+		balance.LargeVMsWithPublicIP += publicIPs
+		balance.LargeVMs += vms - publicIPs
+	}
+
+	if !free {
+		balance.BalanceInUSD -= pkgCost
+	}
+
+	err = a.db.UpdateBalance(balance)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
 	return nil
+}
+
+func (a *App) calculatePackageCost(vms, publicIPs, periodInMonth int, vmType models.VMType) (uint64, uint64, error) {
+	var vmCPU, vmMemory, vmDisk, vmCost, vmCostWithPublicIP uint64
+	switch vmType {
+	case models.Small:
+		vmCPU = SmallCPU
+		vmMemory = SmallMemory
+		vmDisk = SmallDisk
+		vmCost = a.config.Prices.SmallVM
+		vmCostWithPublicIP = a.config.Prices.SmallVMWithPublicIP
+	case models.Medium:
+		vmCPU = MediumCPU
+		vmMemory = MediumMemory
+		vmDisk = MediumDisk
+		vmCost = a.config.Prices.MediumVM
+		vmCostWithPublicIP = a.config.Prices.MediumVMWithPublicIP
+	case models.Large:
+		vmCPU = LargeCPU
+		vmMemory = LargeMemory
+		vmDisk = LargeDisk
+		vmCost = a.config.Prices.LargeVM
+		vmCostWithPublicIP = a.config.Prices.LargeVMWithPublicIP
+	}
+
+	var pkgRealCost, pkgCost uint64
+	for i := 1; i <= vms; i++ {
+		publicIP := publicIPs > 0
+		cost, err := a.calculator.CalculateCost(int64(vmCPU)*int64(vms), int64(vmMemory)*int64(vms), 0, int64(vmDisk)*int64(vms), publicIP, false)
+		if err != nil {
+			return 0, 0, err
+		}
+
+		if publicIPs > 0 {
+			pkgCost += vmCostWithPublicIP
+		} else {
+			pkgCost += vmCost
+		}
+
+		pkgRealCost += uint64(cost * 1e7)
+		publicIPs--
+	}
+
+	pkgRealCost = pkgRealCost * uint64(periodInMonth)
+	pkgCost = pkgCost * uint64(periodInMonth)
+	return pkgRealCost, pkgCost, nil
 }
 
 func (a *App) notifyUsersExpiredPackages() {
@@ -324,6 +380,11 @@ func (a *App) notifyUsersExpiredPackages() {
 				log.Error().Err(err).Send()
 			}
 
+			balance, err := a.db.GetBalanceByUserID(pkg.UserID)
+			if err != nil {
+				log.Error().Err(err).Send()
+			}
+
 			expiredAt := time.Since(pkg.CreatedAt.AddDate(0, pkg.PeriodInMonth, 0))
 			daysLeft := a.config.ExpirationToleranceInDays - int(expiredAt)
 
@@ -336,8 +397,8 @@ func (a *App) notifyUsersExpiredPackages() {
 				}
 
 				// add a daily leftover
-				user.LeftoverBalance += pkg.Cost / float64(30*pkg.PeriodInMonth)
-				err = a.db.UpdateUserByID(user)
+				balance.Leftover += pkg.Cost / uint64(30*pkg.PeriodInMonth)
+				err = a.db.UpdateBalance(balance)
 				if err != nil {
 					log.Error().Err(err).Send()
 				}

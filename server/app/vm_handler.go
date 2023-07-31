@@ -44,8 +44,8 @@ func (a *App) DeployVMHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("invalid vm data"))
 	}
 
-	// check package of user
-	pkg, err := a.db.GetPkgByUserID(user.ID.String())
+	// check balance of user
+	balance, err := a.db.GetBalanceByUserID(user.ID.String())
 	if err == gorm.ErrRecordNotFound {
 		return nil, NotFound(errors.New("user package is not found"))
 	}
@@ -54,7 +54,7 @@ func (a *App) DeployVMHandler(req *http.Request) (interface{}, Response) {
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	_, err = deployer.ValidateVMQuota(input, pkg.Vms, pkg.PublicIPs)
+	err = deployer.ValidateVMQuota(input, balance)
 	if err != nil {
 		return nil, BadRequest(errors.New(err.Error()))
 	}

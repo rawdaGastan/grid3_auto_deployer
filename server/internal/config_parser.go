@@ -23,6 +23,7 @@ type Configuration struct {
 	BalanceThreshold            int         `json:"balanceThreshold"`
 	ExpirationToleranceInDays   int         `json:"expirationToleranceInDays"`
 	NotifyUsersExpirationInDays int         `json:"notifyUsersExpirationInDays"`
+	Prices                      Price       `json:"prices"`
 }
 
 // Server struct to hold server's information
@@ -51,6 +52,16 @@ type DB struct {
 type JwtToken struct {
 	Secret  string `json:"secret" validate:"nonzero"`
 	Timeout int    `json:"timeout" validate:"min=5"`
+}
+
+// Price struct to hold prices info
+type Price struct {
+	SmallVM              uint64 `json:"small_vm" validate:"nonzero"`
+	SmallVMWithPublicIP  uint64 `json:"small_vm_with_public_ip" validate:"nonzero"`
+	MediumVM             uint64 `json:"medium_vm" validate:"nonzero"`
+	MediumVMWithPublicIP uint64 `json:"medium_vm_with_public_ip" validate:"nonzero"`
+	LargeVM              uint64 `json:"large_vm" validate:"nonzero"`
+	LargeVMWithPublicIP  uint64 `json:"large_vm_with_public_ip" validate:"nonzero"`
 }
 
 // GridAccount struct to hold grid account mnemonics

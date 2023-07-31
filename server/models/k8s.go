@@ -35,7 +35,7 @@ type Worker struct {
 	CRU       uint64 `json:"cru"`
 	MRU       uint64 `json:"mru"`
 	SRU       uint64 `json:"sru"`
-	Resources string `json:"resources"`
+	Resources VMType `json:"resources"`
 }
 
 // GetExpiredK8s gets expired k8s clusters

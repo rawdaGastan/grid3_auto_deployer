@@ -36,11 +36,6 @@ var (
 	largeMemory  = uint64(8)
 	largeDisk    = uint64(100)
 
-	smallQuota  = 1
-	mediumQuota = 2
-	largeQuota  = 3
-	publicQuota = 1
-
 	trueVal  = true
 	statusUp = "up"
 
@@ -178,21 +173,21 @@ func buildNetwork(node uint32, name string) workloads.ZNet {
 	}
 }
 
-func calcNodeResources(resources string, public bool) (uint64, uint64, uint64, uint64, error) {
+func calcNodeResources(resources models.VMType, public bool) (uint64, uint64, uint64, uint64, error) {
 	var cru uint64
 	var mru uint64
 	var sru uint64
 	var ips uint64
 	switch resources {
-	case "small":
+	case models.Small:
 		cru += smallCPU
 		mru += smallMemory
 		sru += smallDisk
-	case "medium":
+	case models.Medium:
 		cru += mediumCPU
 		mru += mediumMemory
 		sru += mediumDisk
-	case "large":
+	case models.Large:
 		cru += largeCPU
 		mru += largeMemory
 		sru += largeDisk
@@ -206,7 +201,7 @@ func calcNodeResources(resources string, public bool) (uint64, uint64, uint64, u
 }
 
 // choose suitable nodes based on needed resources
-func filterNode(resource string, public bool) (types.NodeFilter, error) {
+func filterNode(resource models.VMType, public bool) (types.NodeFilter, error) {
 	cru, mru, sru, ips, err := calcNodeResources(resource, public)
 	if err != nil {
 		return types.NodeFilter{}, err
@@ -224,18 +219,25 @@ func filterNode(resource string, public bool) (types.NodeFilter, error) {
 	}, nil
 }
 
-func calcNeededQuota(resources string) (int, error) {
-	var neededQuota int
+func calcNeededQuota(resources models.VMType, balance models.Balance, publicIP bool) {
 	switch resources {
-	case "small":
-		neededQuota += smallQuota
-	case "medium":
-		neededQuota += mediumQuota
-	case "large":
-		neededQuota += largeQuota
-	default:
-		return 0, fmt.Errorf("unknown resource type %s", resources)
+	case models.Small:
+		if publicIP {
+			balance.SmallVMsWithPublicIP--
+		} else {
+			balance.SmallVMs--
+		}
+	case models.Medium:
+		if publicIP {
+			balance.MediumVMsWithPublicIP--
+		} else {
+			balance.MediumVMs--
+		}
+	case models.Large:
+		if publicIP {
+			balance.LargeVMsWithPublicIP--
+		} else {
+			balance.LargeVMs--
+		}
 	}
-
-	return neededQuota, nil
 }

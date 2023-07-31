@@ -131,12 +131,12 @@ func (d *Deployer) loadK8s(k8sDeployInput models.K8sDeployInput, userID string, 
 		PublicIP:  resCluster.Master.ComputedIP,
 		Name:      k8sDeployInput.MasterName,
 		YggIP:     resCluster.Master.YggIP,
-		Resources: k8sDeployInput.Resources,
+		Resources: string(k8sDeployInput.Resources),
 	}
 	workers := []models.Worker{}
 	for _, worker := range k8sDeployInput.Workers {
 
-		cru, mru, sru, _, err := calcNodeResources(worker.Resources, false)
+		cru, mru, sru, _, err := calcNodeResources(models.VMType(worker.Resources), false)
 		if err != nil {
 			return models.K8sCluster{}, err
 		}
@@ -150,7 +150,7 @@ func (d *Deployer) loadK8s(k8sDeployInput models.K8sDeployInput, userID string, 
 		workers = append(workers, workerModel)
 	}
 
-	pkg, err := d.db.GetPkgByID(k8sDeployInput.PkgID)
+	pkg, err := d.db.GetPackage(k8sDeployInput.PkgID)
 	if err != nil {
 		return models.K8sCluster{}, err
 	}
@@ -175,7 +175,7 @@ func (d *Deployer) getK8sAvailableNode(ctx context.Context, k models.K8sDeployIn
 	}
 
 	for _, worker := range k.Workers {
-		_, m, s, _, err := calcNodeResources(worker.Resources, false)
+		_, m, s, _, err := calcNodeResources(models.VMType(worker.Resources), false)
 		if err != nil {
 			return 0, err
 		}
@@ -203,38 +203,32 @@ func (d *Deployer) getK8sAvailableNode(ctx context.Context, k models.K8sDeployIn
 }
 
 // ValidateK8sQuota validates the quota a k8s deployment need
-func ValidateK8sQuota(k models.K8sDeployInput, availableResourcesQuota, availablePublicIPsQuota int) (int, error) {
-	neededQuota, err := calcNeededQuota(k.Resources)
-	if err != nil {
-		return 0, err
-	}
+func ValidateK8sQuota(k models.K8sDeployInput, balance models.Balance) error {
+	calcNeededQuota(k.Resources, balance, k.Public)
 
 	for _, worker := range k.Workers {
-		workerQuota, err := calcNeededQuota(worker.Resources)
-		if err != nil {
-			return 0, err
-		}
-		neededQuota += workerQuota
+		calcNeededQuota(worker.Resources, balance, false)
 	}
 
-	if availableResourcesQuota < neededQuota {
-		return 0, fmt.Errorf("no available quota %d for kubernetes deployment, you can request a new voucher", availableResourcesQuota)
-	}
-	if k.Public && availablePublicIPsQuota < publicQuota {
-		return 0, fmt.Errorf("no available quota %d for public ips", availablePublicIPsQuota)
+	if balance.SmallVMs < 0 || balance.MediumVMs < 0 || balance.LargeVMs < 0 {
+		return fmt.Errorf("no available quota `%s vm for a master and %d vms for workers` for kubernetes deployment, you can buy a new package", k.Resources, len(k.Workers))
 	}
 
-	return neededQuota, nil
+	if balance.SmallVMsWithPublicIP < 0 || balance.MediumVMsWithPublicIP < 0 || balance.LargeVMsWithPublicIP < 0 {
+		return errors.New("no available quota for public ips")
+	}
+
+	return nil
 }
 
 func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDeployInput models.K8sDeployInput, adminSSHKey string, expirationToleranceInDays int) (int, error) {
-	pkg, err := d.db.GetPkgByID(k8sDeployInput.PkgID)
+	balance, err := d.db.GetBalanceByUserID(user.ID.String())
 	if err != nil {
 		log.Error().Err(err).Send()
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
-	neededQuota, err := ValidateK8sQuota(k8sDeployInput, pkg.Vms, pkg.PublicIPs)
+	err = ValidateK8sQuota(k8sDeployInput, balance)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return http.StatusBadRequest, err
@@ -252,15 +246,11 @@ func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDe
 		log.Error().Err(err).Send()
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
-	publicIPsQuota := pkg.PublicIPs
-	if k8sDeployInput.Public {
-		publicIPsQuota -= publicQuota
-	}
 
-	// update package
-	err = d.db.UpdateUserPackage(user.ID.String(), pkg.Vms-neededQuota, publicIPsQuota)
+	// update balance
+	err = d.db.UpdateBalanceQuota(user.ID.String(), balance)
 	if err == gorm.ErrRecordNotFound {
-		return http.StatusNotFound, errors.New("user quota is not found")
+		return http.StatusNotFound, errors.New("user balance is not found")
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -274,9 +264,9 @@ func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDe
 	}
 
 	// metrics
-	middlewares.Deployments.WithLabelValues(user.ID.String(), k8sDeployInput.Resources, "master").Inc()
+	middlewares.Deployments.WithLabelValues(user.ID.String(), string(k8sDeployInput.Resources), "master").Inc()
 	for _, worker := range k8sDeployInput.Workers {
-		middlewares.Deployments.WithLabelValues(user.ID.String(), worker.Resources, "worker").Inc()
+		middlewares.Deployments.WithLabelValues(user.ID.String(), string(worker.Resources), "worker").Inc()
 	}
 
 	return 0, nil

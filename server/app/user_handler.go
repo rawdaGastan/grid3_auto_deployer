@@ -66,9 +66,10 @@ type EmailInput struct {
 
 // ApplyForVoucherInput struct for user to apply for voucher
 type ApplyForVoucherInput struct {
-	VMs       int    `json:"vms" binding:"required" validate:"min=0"`
-	PublicIPs int    `json:"public_ips" binding:"required" validate:"min=0"`
-	Reason    string `json:"reason" binding:"required" validate:"nonzero"`
+	VMs       int           `json:"vms" binding:"required" validate:"min=0"`
+	PublicIPs int           `json:"public_ips" binding:"required" validate:"min=0"`
+	VMType    models.VMType `json:"vm_type" binding:"required" validate:"nonzero"`
+	Reason    string        `json:"reason" binding:"required" validate:"nonzero"`
 }
 
 // AddVoucherInput struct for voucher applied by user
@@ -568,6 +569,7 @@ func (a *App) ApplyForVoucherHandler(req *http.Request) (interface{}, Response) 
 		Voucher:   v,
 		UserID:    userID,
 		VMs:       input.VMs,
+		VMType:    input.VMType,
 		Reason:    input.Reason,
 		PublicIPs: input.PublicIPs,
 	}
@@ -623,7 +625,7 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	res := a.activatePackage(userID, voucherQuota.VMs, voucherQuota.PublicIPs, 1)
+	res := a.activatePackage(userID, voucherQuota.VMType, voucherQuota.VMs, voucherQuota.PublicIPs, 1, true)
 	if res != nil {
 		return nil, res
 	}

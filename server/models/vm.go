@@ -11,7 +11,7 @@ type VM struct {
 	YggIP             string    `json:"ygg_ip"`
 	Public            bool      `json:"public"`
 	PublicIP          string    `json:"public_ip"`
-	Resources         string    `json:"resources"`
+	Resources         VMType    `json:"resources"`
 	SRU               uint64    `json:"sru"`
 	CRU               uint64    `json:"cru"`
 	MRU               uint64    `json:"mru"`

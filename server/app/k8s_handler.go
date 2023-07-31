@@ -43,8 +43,8 @@ func (a *App) K8sDeployHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("invalid kubernetes data"))
 	}
 
-	// quota verification
-	pkg, err := a.db.GetPkgByUserID(user.ID.String())
+	// balance verification
+	balance, err := a.db.GetBalanceByUserID(user.ID.String())
 	if err == gorm.ErrRecordNotFound {
 		log.Error().Err(err).Send()
 		return nil, NotFound(errors.New("user package is not found"))
@@ -54,7 +54,7 @@ func (a *App) K8sDeployHandler(req *http.Request) (interface{}, Response) {
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	_, err = deployer.ValidateK8sQuota(k8sDeployInput, pkg.Vms, pkg.PublicIPs)
+	err = deployer.ValidateK8sQuota(k8sDeployInput, balance)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, BadRequest(errors.New(err.Error()))

@@ -5,17 +5,27 @@ import (
 	"time"
 )
 
+// VMType is the name of the VM type
+type VMType string
+
+// vm types
+const (
+	Small  VMType = "small"
+	Medium VMType = "medium"
+	Large  VMType = "large"
+)
+
 // Package struct for user packages
 type Package struct {
-	ID             int       `json:"id" gorm:"primaryKey"`
-	UserID         string    `json:"user_id"`
-	Vms            int       `json:"vms"`
-	PublicIPs      int       `json:"public_ips"`
-	VmsCount       int       `json:"vms_count"`
-	PublicIPsCount int       `json:"public_ips_count"`
-	PeriodInMonth  int       `json:"period"`
-	Cost           float64   `json:"cost"`
-	CreatedAt      time.Time `json:"Created_at"`
+	ID            int       `json:"id" gorm:"primaryKey"`
+	UserID        string    `json:"user_id"`
+	Vms           int       `json:"vms"`
+	PublicIPs     int       `json:"public_ips"`
+	PeriodInMonth int       `json:"period"`
+	Cost          uint64    `json:"cost"`
+	RealCost      uint64    `json:"real_cost"`
+	CreatedAt     time.Time `json:"Created_at"`
+	VMType        VMType    `json:"vm_type"`
 }
 
 // CreatePackage creates new package
@@ -23,8 +33,8 @@ func (d *DB) CreatePackage(p *Package) error {
 	return d.db.Create(&p).Error
 }
 
-// GetPkgByID return pkg by its id
-func (d *DB) GetPkgByID(id int) (Package, error) {
+// GetPackage return pkg by its id
+func (d *DB) GetPackage(id int) (Package, error) {
 	var pkg Package
 	query := d.db.First(&pkg, id)
 	return pkg, query.Error
@@ -64,9 +74,4 @@ func (d *DB) GetExpiredPackages(expirationToleranceInDays int) ([]Package, error
 		Group("packages.user_id").
 		Scan(&res)
 	return res, query.Error
-}
-
-// UpdateUserPackage updates quota
-func (d *DB) UpdateUserPackage(userID string, vms int, publicIPs int) error {
-	return d.db.Model(&Package{}).Where("user_id = ?", userID).Updates(map[string]interface{}{"vms": vms, "public_ips": publicIPs}).Error
 }

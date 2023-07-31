@@ -92,11 +92,12 @@ func SetUp(t testing.TB) *App {
 	assert.NoError(t, err)
 
 	app := &App{
-		config:   configuration,
-		server:   server{},
-		db:       db,
-		redis:    streams.RedisClient{},
-		deployer: newDeployer,
+		config:     configuration,
+		server:     server{},
+		db:         db,
+		redis:      streams.RedisClient{},
+		deployer:   newDeployer,
+		calculator: tfPluginClient.Calculator,
 	}
 
 	return app

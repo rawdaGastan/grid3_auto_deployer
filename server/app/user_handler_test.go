@@ -25,6 +25,7 @@ var user = &models.User{
 	TeamSize:       5,
 	ProjectDesc:    "desc",
 	College:        "clg",
+	Balance:        20000,
 	SSHKey:         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCSJYyNo6j1LxrjDTRGkbBgIyD/puMprzoepKr2zwbNobCEMfAx9DXBFstueQ9wYgcwO0Pu7/95BNgtGhjoRsNDEz5MBO0Iyhcr9hGYfoXrG2Ufr8IYu3i5DWLRmDERzuArZ6/aUWIpCfpheHX+/jH/R9vvnjO2phCutpkWrjx34/33U3pL+RRycA1uTsISZTyrcMZIXfABI4xBMFLundaBk6F4YFZaCjkUOLYld4KDxJ+N6cYnJ5pa5/hLzZQedn6h7SpMvSCghxOdCxqdEwF0m9odfsrXeKRBxRfL+HWxqytNKp9CgfLvE9Knmfn5GWhXYS6/7dY7GNUGxWSje6L1h9DFwhJLjTpEwoboNzveBmlcyDwduewFZZY+q1C/gKmJial3+0n6zkx4daQsiHc29KM5wiH8mvqpm5Ew9vWNOqw85sO7BaE1W5jMkZOuqIEJiz+KW6UicUBbv2YJ8kjvNtMLM1BiE3/WjVXQ3cMf1x1mUH4bFVgW7F42nnkuc2k= alaa@alaa-Inspiron-5537",
 }
 
@@ -950,7 +951,7 @@ func TestActivateVoucherHandler(t *testing.T) {
 
 	v := models.Voucher{
 		Voucher:  "voucher",
-		VMs:      10,
+		VMs:      2,
 		Approved: true,
 	}
 
@@ -1017,34 +1018,6 @@ func TestActivateVoucherHandler(t *testing.T) {
 		want := `{"err":"failed to read voucher data"}` + "\n"
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
-	})
-
-	t.Run("Activate voucher: user quota not found", func(t *testing.T) {
-		newUser := user
-		newUser.Verified = true
-		newUser.Email = "test@example.com"
-		err := app.db.CreateUser(newUser)
-		assert.NoError(t, err)
-
-		token, err := internal.CreateJWT(newUser.ID.String(), newUser.Email, app.config.Token.Secret, app.config.Token.Timeout)
-		assert.NoError(t, err)
-
-		req := authHandlerConfig{
-			unAuthHandlerConfig: unAuthHandlerConfig{
-				body:        bytes.NewBuffer(voucherBody),
-				handlerFunc: app.ActivateVoucherHandler,
-				api:         fmt.Sprintf("/%s/user/activate_voucher", app.config.Version),
-			},
-			userID: newUser.ID.String(),
-			token:  token,
-			config: app.config,
-			db:     app.db,
-		}
-
-		response := authorizedHandler(req)
-		want := `{"err":"user quota is not found"}` + "\n"
-		assert.Equal(t, response.Body.String(), want)
-		assert.Equal(t, response.Code, http.StatusNotFound)
 	})
 
 	t.Run("Activate voucher: voucher not found", func(t *testing.T) {

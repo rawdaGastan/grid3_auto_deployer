@@ -227,7 +227,6 @@ func (a *App) renewPackageHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("balance is not enough, please recharge your balance"))
 	}
 
-	// TODO: quota is subtracted
 	pkg.PeriodInMonth *= 2
 	pkg.Vms = pkg.VmsCount
 	pkg.PublicIPs = pkg.PublicIPsCount
@@ -332,6 +331,13 @@ func (a *App) notifyUsersExpiredPackages() {
 				subject, body := internal.NotifyExpiredPackages(daysLeft, a.config.Server.Host)
 
 				err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
+				if err != nil {
+					log.Error().Err(err).Send()
+				}
+
+				// add a daily leftover
+				user.LeftoverBalance += pkg.Cost / float64(30*pkg.PeriodInMonth)
+				err = a.db.UpdateUserByID(user)
 				if err != nil {
 					log.Error().Err(err).Send()
 				}

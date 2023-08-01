@@ -222,7 +222,7 @@ export default {
         .deployVm(name.value, selectedResource.value, checked.value)
         .then((response) => {
           toast.value.toast(response.data.msg, "#388E3C");
-          emitQuota();
+          emitBalance();
           getVMS();
         })
         .catch((response) => {
@@ -308,8 +308,8 @@ export default {
         toast.value.toast(err, "#FF5252");
       });
 
-    const emitQuota = () => {
-      emitter.emit("userUpdateQuota", true);
+    const emitBalance = () => {
+      emitter.emit("userUpdateBalance", true);
     };
     const copyIP = (ip) => {
       navigator.clipboard.writeText(ip);
@@ -319,7 +319,7 @@ export default {
     if (localStorage.getItem("token")) {
       setInterval(() => {
         getVMS();
-        emitQuota();
+        emitBalance();
       }, 30 * 1000);
     }
 
@@ -352,7 +352,7 @@ export default {
       deployVm,
       deleteVms,
       deleteVm,
-      emitQuota,
+      emitBalance,
       copyIP,
     };
   },

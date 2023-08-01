@@ -237,7 +237,7 @@ export default {
 				.activateVoucher(voucher.value)
 				.then((response) => {
 					actLoading.value = true;
-					emitQuota();
+					emitBalance();
 					getUser();
 					toast.value.toast(response.data.msg, "#388E3C");
 				})
@@ -292,8 +292,8 @@ export default {
       return val.charAt(0);
     });
 
-    const emitQuota = () => {
-      emitter.emit("userUpdateQuota", true);
+    const emitBalance = () => {
+      emitter.emit("userUpdateBalance", true);
     };
 
     onMounted(() => {
@@ -325,7 +325,7 @@ export default {
 			activateVoucher,
 			update,
 			newVoucher,
-			emitQuota,
+			emitBalance,
 		};
 	},
 };

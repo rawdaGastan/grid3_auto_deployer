@@ -340,9 +340,9 @@ export default {
 				});
 		};
 
-		const getBalance = () => {
+		const getBalanceTFT = () => {
 			userService
-				.getBalance()
+				.getBalanceTFT()
 				.then((response) => {
 					const { data } = response.data;
 					balance.value = data;
@@ -359,7 +359,7 @@ export default {
 
 		if (localStorage.getItem("token")) {
 			setInterval(() => {
-				getBalance();
+				getBalanceTFT();
 			}, 30 * 1000);
 		}
 
@@ -401,7 +401,7 @@ export default {
 			if (token) {
 				getUsers();
 				getVouchers();
-				getBalance();
+				getBalanceTFT();
 				getDeploymentsCount();
 			}
 		});
@@ -432,7 +432,7 @@ export default {
 			message,
 			form,
 			getVouchers,
-			getBalance,
+			getBalanceTFT,
 			approveVoucher,
 			approveAllVouchers,
 			getUsers,

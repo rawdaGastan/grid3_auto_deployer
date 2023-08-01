@@ -1,7 +1,7 @@
 <template>
   <v-app class="overflow-hidden">
     <default-bar :key="$route.fullPath" v-if="!maintenance" />
-    <Quota class="quota" v-if="!isAdmin && !maintenance && !noQuota" />
+    <Balance class="balance" v-if="!isAdmin && !maintenance && !noBalance" />
     <default-view />
     <FooterComponent />
   </v-app>
@@ -10,7 +10,7 @@
 <script>
 import DefaultBar from "./AppBar.vue";
 import DefaultView from "./View.vue";
-import Quota from "@/components/Quota.vue";
+import Balance from "@/components/Balance.vue";
 import { useRoute, useRouter } from "vue-router";
 import { computed, ref } from "vue";
 import userService from "@/services/userService.js";
@@ -20,7 +20,7 @@ export default {
   components: {
     DefaultBar,
     DefaultView,
-    Quota,
+    Balance,
     FooterComponent,
   },
 
@@ -28,7 +28,7 @@ export default {
     const route = useRoute();
     const router = useRouter();
     const maintenance = ref(false);
-    const noQuota = ref(false);
+    const noBalance = ref(false);
     const excludedRoutes = ref([
       "/",
       "/login",
@@ -50,20 +50,20 @@ export default {
     });
 
     if (excludedRoutes.value.includes(route.path)) {
-      noQuota.value = true;
+      noBalance.value = true;
     }
 
     if (maintenance.value) {
       router.push({ name: "Maintenance" });
     }
 
-    return { isAdmin, maintenance, noQuota };
+    return { isAdmin, maintenance, noBalance };
   },
 };
 </script>
 
 <style>
-.quota {
+.balance {
   position: fixed;
   top: 15%;
   right: 0;
@@ -71,7 +71,7 @@ export default {
 }
 
 @media only screen and (max-width: 960px) {
-  .quota {
+  .balance {
     position: relative;
     width: 100%;
     top: 65px;

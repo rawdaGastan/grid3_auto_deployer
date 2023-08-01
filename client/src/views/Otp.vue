@@ -137,6 +137,7 @@ export default {
 						await axios.post(window.configs.vite_app_endpoint + "/user/apply_voucher", {
 							vms: Number(localStorage.getItem("vms")),
 							public_ips: Number(localStorage.getItem("ips")),
+							vm_type: localStorage.getItem("vmType"),
 							reason: localStorage.getItem("projectDescription"),
 						}, {
 							headers: {
@@ -155,6 +156,7 @@ export default {
 						localStorage.removeItem("sshKey");
 						localStorage.removeItem("vms");
 						localStorage.removeItem("ips");
+						localStorage.removeItem("vmType")
 						router.push({
 							name: "Login",
 						});

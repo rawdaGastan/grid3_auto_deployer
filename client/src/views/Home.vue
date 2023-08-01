@@ -123,7 +123,7 @@ export default {
     const toast = ref(null);
     const checkVoucher = () => {
       userService
-        .getQuota()
+        .getBalance()
         .then((response) => {
           const { vms } = response.data.data;
           voucher.value = vms > 0;

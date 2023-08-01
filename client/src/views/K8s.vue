@@ -404,7 +404,7 @@ export default {
         )
         .then((response) => {
           toast.value.toast(response.data.msg, "#388E3C");
-          emitQuota();
+          emitBalance();
           getK8s();
         })
         .catch((response) => {
@@ -488,8 +488,8 @@ export default {
         toast.value.toast(err, "#FF5252");
       });
 
-    const emitQuota = () => {
-      emitter.emit("userUpdateQuota", true);
+    const emitBalance = () => {
+      emitter.emit("userUpdateBalance", true);
     };
 
     const copyIP = (ip) => {
@@ -517,7 +517,7 @@ export default {
     if (localStorage.getItem("token")) {
       setInterval(() => {
         getK8s();
-        emitQuota();
+        emitBalance();
       }, 30 * 1000);
     }
 
@@ -560,7 +560,7 @@ export default {
       deployK8s,
       deleteAllK8s,
       deleteK8s,
-      emitQuota,
+      emitBalance,
       addWorker,
       displayWorkers,
     };

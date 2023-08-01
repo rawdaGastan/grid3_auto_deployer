@@ -96,7 +96,15 @@
               ></v-text-field>
             </v-col>
           </v-row>
-
+					<BaseSelect
+						:value="vmType"
+						placeholder="Resources"
+						:modelValue="vmType"
+						:items="resources"
+						:rules="resourcesValidation"
+						class="mt-3"
+						@update:modelValue="vmType = $event"
+					/>
           <v-row class="my-2 mr-1">
             <v-tooltip
               block
@@ -204,10 +212,13 @@ import { useRouter } from "vue-router";
 import axios from "axios";
 import Toast from "@/components/Toast.vue";
 import TermsAndConditions from "@/components/TermsAndConditions.vue";
+import BaseSelect from "@/components/Form/BaseSelect.vue";
+
 export default {
   components: {
     Toast,
     TermsAndConditions,
+		BaseSelect,
   },
 
   setup() {
@@ -230,7 +241,17 @@ export default {
     const sshKey = ref(null);
     const vms = ref(1);
     const ips = ref(0);
+		const vmType = ref(null)
     const nameRegex = /^(\w+\s){0,3}\w*$/;
+		const resources = ref([
+      { title: "Small K8s (1 CPU, 2GB, 25GB)", value: "small" },
+      { title: "Medium K8s (2 CPU, 4GB, 50GB)", value: "medium" },
+      { title: "Large K8s (4 CPU, 8GB, 100GB)", value: "large" },
+    ]);
+		const resourcesValidation = ref([
+      (value) => value.length != 0 || "This field is required.",
+    ]);
+
     const nameValidation = ref([
       (value) => {
         if (!value) return "Name is required";
@@ -341,6 +362,7 @@ export default {
           localStorage.setItem("sshKey", sshKey.value);
           localStorage.setItem("vms", vms.value);
           localStorage.setItem("ips", ips.value);
+					localStorage.setItem("vmType", vmType.value);
           toast.value.toast(response.data.msg);
           router.push({
             name: "OTP",
@@ -369,7 +391,10 @@ export default {
       ips,
       toast,
       fullName,
+			resources,
+			vmType,
       emailRules,
+			resourcesValidation, 
       nameValidation,
       passwordRules,
       cPasswordRules,

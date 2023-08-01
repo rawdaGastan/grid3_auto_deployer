@@ -24,6 +24,7 @@ type Configuration struct {
 	ExpirationToleranceInDays   int         `json:"expirationToleranceInDays"`
 	NotifyUsersExpirationInDays int         `json:"notifyUsersExpirationInDays"`
 	Prices                      Price       `json:"prices"`
+	StripeSecret                string      `json:"stripe_secret" validate:"nonzero"`
 }
 
 // Server struct to hold server's information

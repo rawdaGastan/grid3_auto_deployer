@@ -47,7 +47,7 @@ func (a *App) DeployVMHandler(req *http.Request) (interface{}, Response) {
 	// check balance of user
 	balance, err := a.db.GetBalanceByUserID(user.ID.String())
 	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("user package is not found"))
+		return nil, NotFound(errors.New("balance is not found"))
 	}
 	if err != nil {
 		log.Error().Err(err).Send()

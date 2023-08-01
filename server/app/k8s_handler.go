@@ -47,7 +47,7 @@ func (a *App) K8sDeployHandler(req *http.Request) (interface{}, Response) {
 	balance, err := a.db.GetBalanceByUserID(user.ID.String())
 	if err == gorm.ErrRecordNotFound {
 		log.Error().Err(err).Send()
-		return nil, NotFound(errors.New("user package is not found"))
+		return nil, NotFound(errors.New("balance is not found"))
 	}
 	if err != nil {
 		log.Error().Err(err).Send()

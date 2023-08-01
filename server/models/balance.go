@@ -41,6 +41,6 @@ func (d *DB) UpdateBalanceQuota(userID string, b Balance) error {
 
 // UpdateBalance updates balance
 func (d *DB) UpdateBalance(b Balance) error {
-	result := d.db.Model(&User{}).Where("id = ?", b.ID).Updates(b)
+	result := d.db.Model(&Balance{}).Where("id = ?", b.ID).Updates(b)
 	return result.Error
 }

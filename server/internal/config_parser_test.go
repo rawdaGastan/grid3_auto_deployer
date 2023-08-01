@@ -43,7 +43,8 @@ var rightConfig = `
 		"medium_vm_with_public_ip": 5,
 		"large_vm": 5,
 		"large_vm_with_public_ip": 5
-	}
+	},
+	"stripe_secret": "secret"
 }
 	`
 

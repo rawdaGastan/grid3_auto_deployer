@@ -43,6 +43,23 @@ type RenewPackageInput struct {
 	ID int `json:"id"  binding:"required"`
 }
 
+func (a *App) getBalanceHandler(req *http.Request) (interface{}, Response) {
+	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
+	balance, err := a.db.GetBalanceByUserID(userID)
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("user balance is not found"))
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	return ResponseMsg{
+		Message: "Balance exists",
+		Data:    map[string]interface{}{"balance": balance},
+	}, Ok()
+}
+
 func (a *App) chargeBalanceHandler(req *http.Request) (interface{}, Response) {
 	var input ChargeBalanceInput
 	err := json.NewDecoder(req.Body).Decode(&input)
@@ -57,7 +74,7 @@ func (a *App) chargeBalanceHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("invalid input data"))
 	}
 
-	priceID, err := createBalanceProductInStripe(input.Balance)
+	priceID, err := createBalanceProductInStripe(input.Balance * 100)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -103,6 +120,13 @@ func (a *App) balanceChargedHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("invalid data"))
 	}
 
+	if input.Balance == 0 {
+		return ResponseMsg{
+			Message: "Balance has no change",
+			Data:    nil,
+		}, Ok()
+	}
+
 	balance, err := a.db.GetBalanceByUserID(userID)
 	if err == gorm.ErrRecordNotFound {
 		return nil, NotFound(errors.New("user balance is not found"))
@@ -112,17 +136,16 @@ func (a *App) balanceChargedHandler(req *http.Request) (interface{}, Response) {
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	var balanceInUSD uint64
+	balance.BalanceInUSD += input.Balance
 	if balance.Leftover > 0 {
 		if balance.Leftover >= input.Balance {
 			balance.Leftover -= input.Balance
 		} else {
-			balanceInUSD = input.Balance - balance.Leftover
+			balance.BalanceInUSD += input.Balance - balance.Leftover
 			balance.Leftover = 0
 		}
 	}
 
-	balance.BalanceInUSD += balanceInUSD
 	err = a.db.UpdateBalance(balance)
 	if err != nil {
 		log.Error().Err(err).Send()

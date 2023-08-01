@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/stripe/stripe-go/v74"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/calculator"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 )
@@ -76,6 +77,8 @@ func NewApp(ctx context.Context, configFile string) (app *App, err error) {
 
 // Start starts the app
 func (a *App) Start(ctx context.Context) (err error) {
+	stripe.Key = a.config.StripeSecret
+
 	a.registerHandlers()
 	a.startBackgroundWorkers(ctx)
 
@@ -112,6 +115,7 @@ func (a *App) registerHandlers() {
 	vmRouter := authRouter.PathPrefix("/vm").Subrouter()
 	k8sRouter := authRouter.PathPrefix("/k8s").Subrouter()
 	pkgRouter := authRouter.PathPrefix("/package").Subrouter()
+	balanceRouter := authRouter.PathPrefix("/balance").Subrouter()
 
 	// sub routes with no authorization
 	unAuthUserRouter := versionRouter.PathPrefix("/user").Subrouter()
@@ -120,7 +124,6 @@ func (a *App) registerHandlers() {
 	// sub routes with admin access
 	voucherRouter := adminRouter.PathPrefix("/voucher").Subrouter()
 	maintenanceRouter := adminRouter.PathPrefix("/maintenance").Subrouter()
-	balanceRouter := adminRouter.PathPrefix("/balance").Subrouter()
 
 	unAuthUserRouter.HandleFunc("/signup", WrapFunc(a.SignUpHandler)).Methods("POST", "OPTIONS")
 	unAuthUserRouter.HandleFunc("/signup/verify_email", WrapFunc(a.VerifySignUpCodeHandler)).Methods("POST", "OPTIONS")
@@ -152,8 +155,10 @@ func (a *App) registerHandlers() {
 	k8sRouter.HandleFunc("", WrapFunc(a.K8sGetAllHandler)).Methods("GET", "OPTIONS")
 	k8sRouter.HandleFunc("", WrapFunc(a.K8sDeleteAllHandler)).Methods("DELETE", "OPTIONS")
 
-	pkgRouter.HandleFunc("/charge", WrapFunc(a.chargeBalanceHandler)).Methods("POST", "OPTIONS")
-	pkgRouter.HandleFunc("/charged", WrapFunc(a.balanceChargedHandler)).Methods("POST", "OPTIONS")
+	balanceRouter.HandleFunc("/charge", WrapFunc(a.chargeBalanceHandler)).Methods("POST", "OPTIONS")
+	balanceRouter.HandleFunc("/charged", WrapFunc(a.balanceChargedHandler)).Methods("POST", "OPTIONS")
+	balanceRouter.HandleFunc("", WrapFunc(a.getBalanceHandler)).Methods("GET", "OPTIONS")
+
 	pkgRouter.HandleFunc("/buy", WrapFunc(a.buyPackageHandler)).Methods("POST", "OPTIONS")
 	pkgRouter.HandleFunc("/renew", WrapFunc(a.renewPackageHandler)).Methods("PUT", "OPTIONS")
 	pkgRouter.HandleFunc("/", WrapFunc(a.listPackagesHandler)).Methods("GET", "OPTIONS")
@@ -163,7 +168,7 @@ func (a *App) registerHandlers() {
 	// ADMIN ACCESS
 	adminRouter.HandleFunc("/user/all", WrapFunc(a.GetAllUsersHandler)).Methods("GET", "OPTIONS")
 	adminRouter.HandleFunc("/deployment/count", WrapFunc(a.GetDlsCountHandler)).Methods("GET", "OPTIONS")
-	balanceRouter.HandleFunc("", WrapFunc(a.GetBalanceHandler)).Methods("GET", "OPTIONS")
+	adminRouter.HandleFunc("/balance/tft", WrapFunc(a.GetBalanceHandler)).Methods("GET", "OPTIONS")
 	maintenanceRouter.HandleFunc("", WrapFunc(a.UpdateMaintenanceHandler)).Methods("PUT", "OPTIONS")
 
 	voucherRouter.HandleFunc("", WrapFunc(a.GenerateVoucherHandler)).Methods("POST", "OPTIONS")

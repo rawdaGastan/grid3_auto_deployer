@@ -47,6 +47,14 @@ func (d *DB) Migrate() error {
 // CreateUser creates new user
 func (d *DB) CreateUser(u *User) error {
 	result := d.db.Create(&u)
+
+	err := d.CreateBalance(&Balance{
+		UserID: u.ID.String(),
+	})
+	if err != nil {
+		return err
+	}
+
 	return result.Error
 }
 

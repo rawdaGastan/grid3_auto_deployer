@@ -872,6 +872,7 @@ func TestApplyForVoucherHandler(t *testing.T) {
 	voucherBody := []byte(`{
 		"vms":10,
 		"public_ips":1,
+		"vm_type": "small",
 		"reason":"strongReason"
 	}`)
 
@@ -952,6 +953,7 @@ func TestActivateVoucherHandler(t *testing.T) {
 		Voucher:  "voucher",
 		VMs:      2,
 		Approved: true,
+		VMType:   "small",
 	}
 
 	err = app.db.CreateVoucher(&v)

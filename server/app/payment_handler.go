@@ -277,7 +277,7 @@ func (a *App) activatePackage(userID string, vmType models.VMType, vms, publicIP
 
 	balance, err := a.db.GetBalanceByUserID(userID)
 	if err == gorm.ErrRecordNotFound {
-		return NotFound(errors.New("user is not found"))
+		return NotFound(errors.New("user balance is not found"))
 	}
 	if err != nil {
 		log.Error().Err(err).Send()

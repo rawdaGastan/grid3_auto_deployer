@@ -872,6 +872,7 @@ func TestApplyForVoucherHandler(t *testing.T) {
 	voucherBody := []byte(`{
 		"vms":10,
 		"public_ips":1,
+		"vm_type": "small",
 		"reason":"strongReason"
 	}`)
 
@@ -948,17 +949,11 @@ func TestActivateVoucherHandler(t *testing.T) {
 	err := app.db.CreateUser(user)
 	assert.NoError(t, err)
 
-	err = app.db.CreateQuota(
-		&models.Quota{
-			UserID: user.ID.String(),
-		},
-	)
-	assert.NoError(t, err)
-
 	v := models.Voucher{
 		Voucher:  "voucher",
-		VMs:      10,
+		VMs:      2,
 		Approved: true,
+		VMType:   "small",
 	}
 
 	err = app.db.CreateVoucher(&v)
@@ -1024,34 +1019,6 @@ func TestActivateVoucherHandler(t *testing.T) {
 		want := `{"err":"failed to read voucher data"}` + "\n"
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusBadRequest)
-	})
-
-	t.Run("Activate voucher: user quota not found", func(t *testing.T) {
-		newUser := user
-		newUser.Verified = true
-		newUser.Email = "test@example.com"
-		err := app.db.CreateUser(newUser)
-		assert.NoError(t, err)
-
-		token, err := internal.CreateJWT(newUser.ID.String(), newUser.Email, app.config.Token.Secret, app.config.Token.Timeout)
-		assert.NoError(t, err)
-
-		req := authHandlerConfig{
-			unAuthHandlerConfig: unAuthHandlerConfig{
-				body:        bytes.NewBuffer(voucherBody),
-				handlerFunc: app.ActivateVoucherHandler,
-				api:         fmt.Sprintf("/%s/user/activate_voucher", app.config.Version),
-			},
-			userID: newUser.ID.String(),
-			token:  token,
-			config: app.config,
-			db:     app.db,
-		}
-
-		response := authorizedHandler(req)
-		want := `{"err":"user quota is not found"}` + "\n"
-		assert.Equal(t, response.Body.String(), want)
-		assert.Equal(t, response.Code, http.StatusNotFound)
 	})
 
 	t.Run("Activate voucher: voucher not found", func(t *testing.T) {

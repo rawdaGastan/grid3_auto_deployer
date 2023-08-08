@@ -13,16 +13,19 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/stripe/stripe-go/v74"
+	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/calculator"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 )
 
 // App for all dependencies of backend server
 type App struct {
-	config   internal.Configuration
-	server   server
-	db       models.DB
-	redis    streams.RedisClient
-	deployer c4sDeployer.Deployer
+	config     internal.Configuration
+	server     server
+	db         models.DB
+	redis      streams.RedisClient
+	deployer   c4sDeployer.Deployer
+	calculator calculator.Calculator
 }
 
 // NewApp creates new server app all configurations
@@ -63,16 +66,19 @@ func NewApp(ctx context.Context, configFile string) (app *App, err error) {
 	}
 
 	return &App{
-		config:   config,
-		server:   *server,
-		db:       db,
-		redis:    redis,
-		deployer: newDeployer,
+		config:     config,
+		server:     *server,
+		db:         db,
+		redis:      redis,
+		deployer:   newDeployer,
+		calculator: tfPluginClient.Calculator,
 	}, nil
 }
 
 // Start starts the app
 func (a *App) Start(ctx context.Context) (err error) {
+	stripe.Key = a.config.StripeSecret
+
 	a.registerHandlers()
 	a.startBackgroundWorkers(ctx)
 
@@ -82,6 +88,9 @@ func (a *App) Start(ctx context.Context) (err error) {
 func (a *App) startBackgroundWorkers(ctx context.Context) {
 	// notify admins
 	go a.notifyAdmins()
+
+	// notify expired packages
+	go a.notifyUsersExpiredPackages()
 
 	// periodic deployments
 	go a.deployer.PeriodicRequests(ctx, substrateBlockDiffInSeconds)
@@ -102,10 +111,11 @@ func (a *App) registerHandlers() {
 
 	// sub routes with authorization
 	userRouter := authRouter.PathPrefix("/user").Subrouter()
-	quotaRouter := authRouter.PathPrefix("/quota").Subrouter()
 	notificationRouter := authRouter.PathPrefix("/notification").Subrouter()
 	vmRouter := authRouter.PathPrefix("/vm").Subrouter()
 	k8sRouter := authRouter.PathPrefix("/k8s").Subrouter()
+	pkgRouter := authRouter.PathPrefix("/package").Subrouter()
+	balanceRouter := authRouter.PathPrefix("/balance").Subrouter()
 
 	// sub routes with no authorization
 	unAuthUserRouter := versionRouter.PathPrefix("/user").Subrouter()
@@ -114,7 +124,6 @@ func (a *App) registerHandlers() {
 	// sub routes with admin access
 	voucherRouter := adminRouter.PathPrefix("/voucher").Subrouter()
 	maintenanceRouter := adminRouter.PathPrefix("/maintenance").Subrouter()
-	balanceRouter := adminRouter.PathPrefix("/balance").Subrouter()
 
 	unAuthUserRouter.HandleFunc("/signup", WrapFunc(a.SignUpHandler)).Methods("POST", "OPTIONS")
 	unAuthUserRouter.HandleFunc("/signup/verify_email", WrapFunc(a.VerifySignUpCodeHandler)).Methods("POST", "OPTIONS")
@@ -129,31 +138,37 @@ func (a *App) registerHandlers() {
 	userRouter.HandleFunc("/apply_voucher", WrapFunc(a.ApplyForVoucherHandler)).Methods("POST", "OPTIONS")
 	userRouter.HandleFunc("/activate_voucher", WrapFunc(a.ActivateVoucherHandler)).Methods("PUT", "OPTIONS")
 
-	quotaRouter.HandleFunc("", WrapFunc(a.GetQuotaHandler)).Methods("GET", "OPTIONS")
-
 	notificationRouter.HandleFunc("", WrapFunc(a.ListNotificationsHandler)).Methods("GET", "OPTIONS")
 	notificationRouter.HandleFunc("/{id}", WrapFunc(a.UpdateNotificationsHandler)).Methods("PUT", "OPTIONS")
 
 	vmRouter.HandleFunc("", WrapFunc(a.DeployVMHandler)).Methods("POST", "OPTIONS")
-	vmRouter.HandleFunc("/validate/{name}", WrapFunc(a.ValidateVMNameHandler)).Methods("Get", "OPTIONS")
+	vmRouter.HandleFunc("/validate/{name}", WrapFunc(a.ValidateVMNameHandler)).Methods("GET", "OPTIONS")
 	vmRouter.HandleFunc("/{id}", WrapFunc(a.GetVMHandler)).Methods("GET", "OPTIONS")
 	vmRouter.HandleFunc("/{id}", WrapFunc(a.DeleteVMHandler)).Methods("DELETE", "OPTIONS")
 	vmRouter.HandleFunc("", WrapFunc(a.ListVMsHandler)).Methods("GET", "OPTIONS")
 	vmRouter.HandleFunc("", WrapFunc(a.DeleteAllVMsHandler)).Methods("DELETE", "OPTIONS")
 
 	k8sRouter.HandleFunc("", WrapFunc(a.K8sDeployHandler)).Methods("POST", "OPTIONS")
-	k8sRouter.HandleFunc("/validate/{name}", WrapFunc(a.ValidateK8sNameHandler)).Methods("Get", "OPTIONS")
+	k8sRouter.HandleFunc("/validate/{name}", WrapFunc(a.ValidateK8sNameHandler)).Methods("GET", "OPTIONS")
 	k8sRouter.HandleFunc("/{id}", WrapFunc(a.K8sGetHandler)).Methods("GET", "OPTIONS")
 	k8sRouter.HandleFunc("/{id}", WrapFunc(a.K8sDeleteHandler)).Methods("DELETE", "OPTIONS")
 	k8sRouter.HandleFunc("", WrapFunc(a.K8sGetAllHandler)).Methods("GET", "OPTIONS")
 	k8sRouter.HandleFunc("", WrapFunc(a.K8sDeleteAllHandler)).Methods("DELETE", "OPTIONS")
+
+	balanceRouter.HandleFunc("/charge", WrapFunc(a.chargeBalanceHandler)).Methods("POST", "OPTIONS")
+	balanceRouter.HandleFunc("/charged", WrapFunc(a.balanceChargedHandler)).Methods("POST", "OPTIONS")
+	balanceRouter.HandleFunc("", WrapFunc(a.getBalanceHandler)).Methods("GET", "OPTIONS")
+
+	pkgRouter.HandleFunc("/buy", WrapFunc(a.buyPackageHandler)).Methods("POST", "OPTIONS")
+	pkgRouter.HandleFunc("/renew", WrapFunc(a.renewPackageHandler)).Methods("PUT", "OPTIONS")
+	pkgRouter.HandleFunc("/", WrapFunc(a.listPackagesHandler)).Methods("GET", "OPTIONS")
 
 	unAuthMaintenanceRouter.HandleFunc("", WrapFunc(a.GetMaintenanceHandler)).Methods("GET", "OPTIONS")
 
 	// ADMIN ACCESS
 	adminRouter.HandleFunc("/user/all", WrapFunc(a.GetAllUsersHandler)).Methods("GET", "OPTIONS")
 	adminRouter.HandleFunc("/deployment/count", WrapFunc(a.GetDlsCountHandler)).Methods("GET", "OPTIONS")
-	balanceRouter.HandleFunc("", WrapFunc(a.GetBalanceHandler)).Methods("GET", "OPTIONS")
+	adminRouter.HandleFunc("/balance/tft", WrapFunc(a.GetBalanceHandler)).Methods("GET", "OPTIONS")
 	maintenanceRouter.HandleFunc("", WrapFunc(a.UpdateMaintenanceHandler)).Methods("PUT", "OPTIONS")
 
 	voucherRouter.HandleFunc("", WrapFunc(a.GenerateVoucherHandler)).Methods("POST", "OPTIONS")

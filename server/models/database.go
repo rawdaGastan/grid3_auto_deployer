@@ -32,7 +32,7 @@ func (d *DB) Connect(file string) error {
 
 // Migrate migrates db schema
 func (d *DB) Migrate() error {
-	err := d.db.AutoMigrate(&User{}, &Quota{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{}, &Maintenance{}, &Notification{})
+	err := d.db.AutoMigrate(&User{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{}, &Maintenance{}, &Notification{}, &Package{}, &Balance{})
 	if err != nil {
 		return err
 	}
@@ -47,6 +47,14 @@ func (d *DB) Migrate() error {
 // CreateUser creates new user
 func (d *DB) CreateUser(u *User) error {
 	result := d.db.Create(&u)
+
+	err := d.CreateBalance(&Balance{
+		UserID: u.ID.String(),
+	})
+	if err != nil {
+		return err
+	}
+
 	return result.Error
 }
 
@@ -68,8 +76,8 @@ func (d *DB) GetUserByID(id string) (User, error) {
 func (d *DB) ListAllUsers() ([]UserUsedQuota, error) {
 	var res []UserUsedQuota
 	query := d.db.Table("users").
-		Select("*, users.id as user_id, sum(vouchers.vms) as vms, sum(vouchers.public_ips) as public_ips, sum(vouchers.vms) - quota.vms as used_vms, sum(vouchers.public_ips) - quota.public_ips as used_public_ips").
-		Joins("left join quota on quota.user_id = users.id").
+		Select("*, users.id as user_id, sum(vouchers.vms) as vms, sum(vouchers.public_ips) as public_ips, sum(vouchers.vms) - packages.vms as used_vms, sum(vouchers.public_ips) - packages.public_ips as used_public_ips").
+		Joins("left join packages on packages.user_id = users.id").
 		Joins("left join vouchers on vouchers.used = true and vouchers.user_id = users.id").
 		Where("verified = true").
 		Group("users.id").
@@ -208,24 +216,6 @@ func (d *DB) DeleteAllVms(userID string) error {
 	var vms []VM
 	result := d.db.Clauses(clause.Returning{}).Where("user_id = ?", userID).Delete(&vms)
 	return result.Error
-}
-
-// CreateQuota creates a new quota
-func (d *DB) CreateQuota(q *Quota) error {
-	result := d.db.Create(&q)
-	return result.Error
-}
-
-// UpdateUserQuota updates quota
-func (d *DB) UpdateUserQuota(userID string, vms int, publicIPs int) error {
-	return d.db.Model(&Quota{}).Where("user_id = ?", userID).Updates(map[string]interface{}{"vms": vms, "public_ips": publicIPs}).Error
-}
-
-// GetUserQuota gets user quota available vms (vms will be used for both vms and k8s clusters)
-func (d *DB) GetUserQuota(userID string) (Quota, error) {
-	var res Quota
-	query := d.db.First(&res, "user_id = ?", userID)
-	return res, query.Error
 }
 
 // CreateVoucher creates a new voucher

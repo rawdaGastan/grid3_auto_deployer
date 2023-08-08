@@ -66,9 +66,10 @@ type EmailInput struct {
 
 // ApplyForVoucherInput struct for user to apply for voucher
 type ApplyForVoucherInput struct {
-	VMs       int    `json:"vms" binding:"required" validate:"min=0"`
-	PublicIPs int    `json:"public_ips" binding:"required" validate:"min=0"`
-	Reason    string `json:"reason" binding:"required" validate:"nonzero"`
+	VMs       int           `json:"vms" binding:"required" validate:"min=0"`
+	PublicIPs int           `json:"public_ips" binding:"required" validate:"min=0"`
+	VMType    models.VMType `json:"vm_type" binding:"required" validate:"nonzero"`
+	Reason    string        `json:"reason" binding:"required" validate:"nonzero"`
 }
 
 // AddVoucherInput struct for voucher applied by user
@@ -155,17 +156,6 @@ func (a *App) SignUpHandler(req *http.Request) (interface{}, Response) {
 	// check if user doesn't exist
 	if getErr != nil {
 		err = a.db.CreateUser(&u)
-		if err != nil {
-			log.Error().Err(err).Send()
-			return nil, InternalServerError(errors.New(internalServerErrorMsg))
-		}
-
-		// create empty quota
-		quota := models.Quota{
-			UserID: u.ID.String(),
-			Vms:    0,
-		}
-		err = a.db.CreateQuota(&quota)
 		if err != nil {
 			log.Error().Err(err).Send()
 			return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -579,6 +569,7 @@ func (a *App) ApplyForVoucherHandler(req *http.Request) (interface{}, Response) 
 		Voucher:   v,
 		UserID:    userID,
 		VMs:       input.VMs,
+		VMType:    input.VMType,
 		Reason:    input.Reason,
 		PublicIPs: input.PublicIPs,
 	}
@@ -605,15 +596,6 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, BadRequest(errors.New("failed to read voucher data"))
-	}
-
-	oldQuota, err := a.db.GetUserQuota(userID)
-	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("user quota is not found"))
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
 	voucherQuota, err := a.db.GetVoucher(input.Voucher)
@@ -643,13 +625,12 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	err = a.db.UpdateUserQuota(userID, oldQuota.Vms+voucherQuota.VMs, oldQuota.PublicIPs+voucherQuota.PublicIPs)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	res := a.activatePackage(userID, voucherQuota.VMType, voucherQuota.VMs, voucherQuota.PublicIPs, 1, true)
+	if res != nil {
+		return nil, res
 	}
-	middlewares.VoucherActivated.WithLabelValues(userID, voucherQuota.Voucher, fmt.Sprint(voucherQuota.VMs), fmt.Sprint(voucherQuota.PublicIPs)).Inc()
 
+	middlewares.VoucherActivated.WithLabelValues(userID, voucherQuota.Voucher, fmt.Sprint(voucherQuota.VMs), fmt.Sprint(voucherQuota.PublicIPs)).Inc()
 	return ResponseMsg{
 		Message: "Voucher is applied successfully",
 		Data:    nil,

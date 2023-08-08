@@ -35,7 +35,16 @@ var rightConfig = `
         "file": "testing.db"
     },
 	"version": "v1",
-	"salt": "salt"
+	"salt": "salt",
+	"prices": {
+		"small_vm": 5,
+		"small_vm_with_public_ip": 5,
+		"medium_vm": 5,
+		"medium_vm_with_public_ip": 5,
+		"large_vm": 5,
+		"large_vm_with_public_ip": 5
+	},
+	"stripe_secret": "secret"
 }
 	`
 

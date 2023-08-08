@@ -21,8 +21,7 @@ type User struct {
 	TeamSize       int       `json:"team_size" binding:"required"`
 	ProjectDesc    string    `json:"project_desc" binding:"required"`
 	College        string    `json:"college" binding:"required"`
-	// checks if user type is admin
-	Admin bool `json:"admin"`
+	Admin          bool      `json:"admin"`
 }
 
 // BeforeCreate generates a new uuid

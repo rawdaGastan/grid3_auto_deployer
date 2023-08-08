@@ -34,6 +34,9 @@ var (
 
 	//go:embed templates/balanceNotification.html
 	balanceMail []byte
+
+	//go:embed templates/expirationNotification.html
+	expirationMail []byte
 )
 
 // SendMail sends verification mails
@@ -131,6 +134,17 @@ func NotifyAdminsMailLowBalanceContent(balance float64, host string) (string, st
 	body := string(balanceMail)
 
 	body = strings.ReplaceAll(body, "-balance-", fmt.Sprint(balance))
+	body = strings.ReplaceAll(body, "-host-", host)
+
+	return subject, body
+}
+
+// NotifyExpiredPackages gets the content for notifying users when packages have expired
+func NotifyExpiredPackages(days int, host string) (string, string) {
+	subject := "Your package has expired"
+	body := string(expirationMail)
+
+	body = strings.ReplaceAll(body, "-days-", fmt.Sprint(days))
 	body = strings.ReplaceAll(body, "-host-", host)
 
 	return subject, body

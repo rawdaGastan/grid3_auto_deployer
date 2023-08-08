@@ -44,17 +44,17 @@ func (a *App) DeployVMHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("invalid vm data"))
 	}
 
-	// check quota of user
-	quota, err := a.db.GetUserQuota(user.ID.String())
+	// check balance of user
+	balance, err := a.db.GetBalanceByUserID(user.ID.String())
 	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("user quota is not found"))
+		return nil, NotFound(errors.New("balance is not found"))
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	_, err = deployer.ValidateVMQuota(input, quota.Vms, quota.PublicIPs)
+	err = deployer.ValidateVMQuota(input, balance)
 	if err != nil {
 		return nil, BadRequest(errors.New(err.Error()))
 	}
@@ -74,7 +74,7 @@ func (a *App) DeployVMHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("virtual machine name is not available, please choose a different name"))
 	}
 
-	err = a.deployer.Redis.PushVMRequest(streams.VMDeployRequest{User: user, Input: input, AdminSSHKey: a.config.AdminSSHKey})
+	err = a.deployer.Redis.PushVMRequest(streams.VMDeployRequest{User: user, Input: input, AdminSSHKey: a.config.AdminSSHKey, ExpirationToleranceInDays: a.config.ExpirationToleranceInDays})
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))

@@ -11,16 +11,20 @@ import (
 
 // Configuration struct to hold app configurations
 type Configuration struct {
-	Server                    Server      `json:"server"`
-	MailSender                MailSender  `json:"mailSender"`
-	Database                  DB          `json:"database"`
-	Token                     JwtToken    `json:"token"`
-	Account                   GridAccount `json:"account"`
-	Version                   string      `json:"version" validate:"nonzero"`
-	Admins                    []string    `json:"admins"`
-	NotifyAdminsIntervalHours int         `json:"notifyAdminsIntervalHours"`
-	AdminSSHKey               string      `json:"adminSSHKey"`
-	BalanceThreshold          int         `json:"balanceThreshold"`
+	Server                      Server      `json:"server"`
+	MailSender                  MailSender  `json:"mailSender"`
+	Database                    DB          `json:"database"`
+	Token                       JwtToken    `json:"token"`
+	Account                     GridAccount `json:"account"`
+	Version                     string      `json:"version" validate:"nonzero"`
+	Admins                      []string    `json:"admins"`
+	NotifyAdminsIntervalHours   int         `json:"notifyAdminsIntervalHours"`
+	AdminSSHKey                 string      `json:"adminSSHKey"`
+	BalanceThreshold            int         `json:"balanceThreshold"`
+	ExpirationToleranceInDays   int         `json:"expirationToleranceInDays"`
+	NotifyUsersExpirationInDays int         `json:"notifyUsersExpirationInDays"`
+	Prices                      Price       `json:"prices"`
+	StripeSecret                string      `json:"stripe_secret" validate:"nonzero"`
 }
 
 // Server struct to hold server's information
@@ -51,6 +55,16 @@ type JwtToken struct {
 	Timeout int    `json:"timeout" validate:"min=5"`
 }
 
+// Price struct to hold prices info
+type Price struct {
+	SmallVM              uint64 `json:"small_vm" validate:"nonzero"`
+	SmallVMWithPublicIP  uint64 `json:"small_vm_with_public_ip" validate:"nonzero"`
+	MediumVM             uint64 `json:"medium_vm" validate:"nonzero"`
+	MediumVMWithPublicIP uint64 `json:"medium_vm_with_public_ip" validate:"nonzero"`
+	LargeVM              uint64 `json:"large_vm" validate:"nonzero"`
+	LargeVMWithPublicIP  uint64 `json:"large_vm_with_public_ip" validate:"nonzero"`
+}
+
 // GridAccount struct to hold grid account mnemonics
 type GridAccount struct {
 	Mnemonics string `json:"mnemonics" validate:"nonzero"`
@@ -59,7 +73,7 @@ type GridAccount struct {
 
 // ReadConfFile read configurations of json file
 func ReadConfFile(path string) (Configuration, error) {
-	config := Configuration{NotifyAdminsIntervalHours: 6, BalanceThreshold: 2000}
+	config := Configuration{NotifyAdminsIntervalHours: 6, BalanceThreshold: 2000, ExpirationToleranceInDays: 30, NotifyUsersExpirationInDays: 1}
 	file, err := os.Open(path)
 	if err != nil {
 		return Configuration{}, fmt.Errorf("failed to open config file: %w", err)

@@ -68,9 +68,15 @@ func SetUp(t testing.TB) *App {
 	"database": {
       "file": "%s"
     },
-	"version": "v1"
-}
-	`, dbPath)
+	"version": "v1",
+	"prices": {
+		"small_vm": 5,
+		"small_vm_with_public_ip": 5,
+		"medium_vm": 5,
+		"medium_vm_with_public_ip": 5,
+		"large_vm": 5,
+		"large_vm_with_public_ip": 5
+	}}`, dbPath)
 
 	err := os.WriteFile(configPath, []byte(config), 0644)
 	assert.NoError(t, err)
@@ -92,11 +98,12 @@ func SetUp(t testing.TB) *App {
 	assert.NoError(t, err)
 
 	app := &App{
-		config:   configuration,
-		server:   server{},
-		db:       db,
-		redis:    streams.RedisClient{},
-		deployer: newDeployer,
+		config:     configuration,
+		server:     server{},
+		db:         db,
+		redis:      streams.RedisClient{},
+		deployer:   newDeployer,
+		calculator: tfPluginClient.Calculator,
 	}
 
 	return app

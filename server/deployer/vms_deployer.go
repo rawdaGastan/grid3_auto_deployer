@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
@@ -87,39 +88,39 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, s
 }
 
 // ValidateVMQuota validates the quota a vm deployment need
-func ValidateVMQuota(vm models.DeployVMInput, availableResourcesQuota, availablePublicIPsQuota int) (int, error) {
-	neededQuota, err := calcNeededQuota(vm.Resources)
-	if err != nil {
-		return 0, err
+func ValidateVMQuota(vm models.DeployVMInput, balance models.Balance) error {
+	calcNeededQuota(vm.Resources, balance, vm.Public)
+
+	if balance.SmallVMs < 0 || balance.MediumVMs < 0 || balance.LargeVMs < 0 {
+		return fmt.Errorf("no available quota `%s vm` for deployment, you can buy a new package", vm.Resources)
 	}
 
-	if availableResourcesQuota < neededQuota {
-		return 0, fmt.Errorf("no available quota %d for deployment for resources %s, you can request a new voucher", availableResourcesQuota, vm.Resources)
-	}
-	if vm.Public && availablePublicIPsQuota < publicQuota {
-		return 0, fmt.Errorf("no available quota %d for public ips", availablePublicIPsQuota)
+	if balance.SmallVMsWithPublicIP < 0 || balance.MediumVMsWithPublicIP < 0 || balance.LargeVMsWithPublicIP < 0 {
+		return errors.New("no available quota for public ips")
 	}
 
-	return neededQuota, nil
+	return nil
 }
 
-func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input models.DeployVMInput, adminSSHKey string) (int, error) {
-	// check quota of user
-	quota, err := d.db.GetUserQuota(user.ID.String())
-	if err == gorm.ErrRecordNotFound {
-		return http.StatusNotFound, errors.New("user quota is not found")
-	}
+func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input models.DeployVMInput, adminSSHKey string, expirationToleranceInDays int) (int, error) {
+	balance, err := d.db.GetBalanceByUserID(user.ID.String())
 	if err != nil {
 		log.Error().Err(err).Send()
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
-	neededQuota, err := ValidateVMQuota(input, quota.Vms, quota.PublicIPs)
+	err = ValidateVMQuota(input, balance)
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
 
 	vm, contractID, networkContractID, diskSize, err := d.deployVM(ctx, input, user.SSHKey, adminSSHKey)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
+	}
+
+	pkg, err := d.db.GetPackage(input.PkgID)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
@@ -137,6 +138,8 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 		MRU:               uint64(vm.Memory),
 		ContractID:        contractID,
 		NetworkContractID: networkContractID,
+		CreatedAt:         time.Now(),
+		ExpiresAt:         time.Now().AddDate(0, pkg.PeriodInMonth, expirationToleranceInDays),
 	}
 
 	err = d.db.CreateVM(&userVM)
@@ -145,20 +148,16 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
-	publicIPsQuota := quota.PublicIPs
-	if input.Public {
-		publicIPsQuota -= publicQuota
-	}
-	// update quota of user
-	err = d.db.UpdateUserQuota(user.ID.String(), quota.Vms-neededQuota, publicIPsQuota)
+	// update balance
+	err = d.db.UpdateBalanceQuota(user.ID.String(), balance)
 	if err == gorm.ErrRecordNotFound {
-		return http.StatusNotFound, errors.New("User quota is not found")
+		return http.StatusNotFound, errors.New("user balance is not found")
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
-	middlewares.Deployments.WithLabelValues(user.ID.String(), input.Resources, "vm").Inc()
+	middlewares.Deployments.WithLabelValues(user.ID.String(), string(input.Resources), "vm").Inc()
 	return 0, nil
 }

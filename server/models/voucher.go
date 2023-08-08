@@ -8,6 +8,7 @@ type Voucher struct {
 	Voucher   string `json:"voucher" gorm:"unique"`
 	VMs       int    `json:"vms" binding:"required"`
 	PublicIPs int    `json:"public_ips" binding:"required"`
+	VMType    VMType `json:"vm_type" binding:"required"`
 	Reason    string `json:"reason" binding:"required"`
 	Used      bool   `json:"used" binding:"required"`
 	Approved  bool   `json:"approved" binding:"required"`

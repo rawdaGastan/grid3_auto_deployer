@@ -76,7 +76,8 @@ func SetUp(t testing.TB) *App {
 		"medium_vm_with_public_ip": 5,
 		"large_vm": 5,
 		"large_vm_with_public_ip": 5
-	}}`, dbPath)
+	},
+	"stripe_secret": "secret"}`, dbPath)
 
 	err := os.WriteFile(configPath, []byte(config), 0644)
 	assert.NoError(t, err)

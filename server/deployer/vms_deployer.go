@@ -23,7 +23,7 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, s
 		return nil, 0, 0, 0, err
 	}
 
-	nodeIDs, err := deployer.FilterNodes(ctx, d.tfPluginClient, filter)
+	nodeIDs, err := deployer.FilterNodes(ctx, d.tfPluginClient, filter, nil, nil, nil)
 	if err != nil {
 		return nil, 0, 0, 0, err
 	}

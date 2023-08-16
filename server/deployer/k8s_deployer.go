@@ -160,6 +160,8 @@ func (d *Deployer) loadK8s(k8sDeployInput models.K8sDeployInput, userID string, 
 }
 
 func (d *Deployer) getK8sAvailableNode(ctx context.Context, k models.K8sDeployInput) (uint32, error) {
+	rootfs := make([]uint64, len(k.Workers)+1)
+
 	_, mru, sru, ips, err := calcNodeResources(k.Resources, k.Public)
 	if err != nil {
 		return 0, err
@@ -172,6 +174,9 @@ func (d *Deployer) getK8sAvailableNode(ctx context.Context, k models.K8sDeployIn
 		}
 		mru += m
 		sru += s
+
+		// k8s rootfs is either 2 or 0.5
+		rootfs = append(rootfs, *convertGBToBytes(uint64(2)))
 	}
 
 	freeMRU := uint64(mru)
@@ -185,7 +190,7 @@ func (d *Deployer) getK8sAvailableNode(ctx context.Context, k models.K8sDeployIn
 		IPv6:    &trueVal,
 	}
 
-	nodes, err := deployer.FilterNodes(ctx, d.tfPluginClient, filter)
+	nodes, err := deployer.FilterNodes(ctx, d.tfPluginClient, filter, nil, nil, rootfs)
 	if err != nil {
 		return 0, err
 	}
@@ -275,4 +280,9 @@ func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDe
 	}
 
 	return 0, nil
+}
+
+func convertGBToBytes(gb uint64) *uint64 {
+	bytes := gb * 1024 * 1024 * 1024
+	return &bytes
 }

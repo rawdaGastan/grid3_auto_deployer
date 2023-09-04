@@ -22,7 +22,7 @@
     "roboto-fontface": "*",
     "vite-plugin-eslint": "^1.8.1",
     "vue": "^3.2.13",
-    "vue-router": "^4.0.0",
+    "vue-router": "^4.2.4",
     "vue3-otp-input": "^0.3.6",
     "vuetify": "^3.1.6",
     "webfontloader": "^1.0.0"

@@ -1441,10 +1441,10 @@ vue@^3.2.13:
     "@vue/server-renderer" "3.2.47"
     "@vue/shared" "3.2.47"
 
-vuetify@^3.1.6:
-  version "3.1.10"
-  resolved "https://registry.npmjs.org/vuetify/-/vuetify-3.1.10.tgz"
-  integrity sha512-TFugKhjYO+xktnexHcs/vdsqtq+MZk8MDLbSJX9vMsA58LPwO4atdBbWhQ1Pf8q1jPISpxDF6njjsZHPQQsHCA==
+vuetify@^3.3.15:
+  version "3.3.15"
+  resolved "https://registry.yarnpkg.com/vuetify/-/vuetify-3.3.15.tgz#54d3aa076082c62e0b3ef103636b85270a9aef39"
+  integrity sha512-n7GYBO31k8vA9UfvRwLNyBlkq1WoN3IJ9wNnIBFeV4axleSjFAzzR4WUw7rgj6Ba3q6N2hxXoyxJM21tseQTfQ==
 
 webfontloader@^1.0.0:
   version "1.6.28"

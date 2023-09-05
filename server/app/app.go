@@ -153,6 +153,7 @@ func (a *App) registerHandlers() {
 	// ADMIN ACCESS
 	adminRouter.HandleFunc("/user/all", WrapFunc(a.GetAllUsersHandler)).Methods("GET", "OPTIONS")
 	adminRouter.HandleFunc("/deployment/count", WrapFunc(a.GetDlsCountHandler)).Methods("GET", "OPTIONS")
+	adminRouter.HandleFunc("/announcement", WrapFunc(a.CreateNewAnnouncement)).Methods("POST", "OPTIONS")
 	balanceRouter.HandleFunc("", WrapFunc(a.GetBalanceHandler)).Methods("GET", "OPTIONS")
 	maintenanceRouter.HandleFunc("", WrapFunc(a.UpdateMaintenanceHandler)).Methods("PUT", "OPTIONS")
 

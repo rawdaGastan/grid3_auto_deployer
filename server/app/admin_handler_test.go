@@ -148,3 +148,40 @@ func TestGetAllUsersHandler(t *testing.T) {
 		assert.Equal(t, response.Code, http.StatusOK)
 	})
 }
+
+func TestCreateNewAnnouncement(t *testing.T) {
+	app := SetUp(t)
+	admin := models.User{
+		Name:     "admin",
+		Email:    "admin@gmail.com",
+		Verified: true,
+		Admin:    true,
+	}
+	err := app.db.CreateUser(&admin)
+	assert.NoError(t, err)
+
+	user, err := app.db.GetUserByEmail(admin.Email)
+	assert.NoError(t, err)
+
+	token, err := internal.CreateJWT(user.ID.String(), user.Email, app.config.Token.Secret, app.config.Token.Timeout)
+	assert.NoError(t, err)
+	t.Run("announcement created successfully", func(t *testing.T) {
+		adminAnnouncement := []byte(`{
+			"subject":"test subject",
+			"announcement":"test announcement"
+		}`)
+		req := authHandlerConfig{
+			unAuthHandlerConfig: unAuthHandlerConfig{
+				body:        bytes.NewBuffer(adminAnnouncement),
+				handlerFunc: app.CreateNewAnnouncement,
+				api:         fmt.Sprintf("/%s/announcement", app.config.Version),
+			},
+			userID: user.ID.String(),
+			token:  token,
+			config: app.config,
+			db:     app.db,
+		}
+		response := adminHandler(req)
+		assert.Equal(t, http.StatusCreated, response.Code)
+	})
+}

@@ -48,6 +48,7 @@ func TestResetPassMailContent(t *testing.T) {
 	assert.Equal(t, body, want)
 }
 
+
 func TestApprovedVoucherMailContent(t *testing.T) {
 	subject, body := ApprovedVoucherMailContent("1234", "user", "")
 	assert.Equal(t, subject, "Your voucher request is approved 🎆")
@@ -90,5 +91,15 @@ func TestNotifyBalanceMailContent(t *testing.T) {
 	want = strings.ReplaceAll(want, "-balance-", fmt.Sprint(200))
 	want = strings.ReplaceAll(want, "-host-", "")
 
+	assert.Equal(t, body, want)
+}
+
+func TestAdminAnnouncementMailContent(t *testing.T) {
+	subject, body := AdminAnnouncementMailContent("subject!", "announcement!", "")
+	assert.Equal(t, subject, "New Announcement! 📢 subject!")
+	want := string(adminAnnouncement)
+	want = strings.ReplaceAll(want, "-subject-", "subject!")
+	want = strings.ReplaceAll(want, "-announcement-", "announcement!")
+	want = strings.ReplaceAll(want, "-host-", "")
 	assert.Equal(t, body, want)
 }

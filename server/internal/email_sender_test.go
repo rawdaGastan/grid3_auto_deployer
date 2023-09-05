@@ -48,7 +48,6 @@ func TestResetPassMailContent(t *testing.T) {
 	assert.Equal(t, body, want)
 }
 
-
 func TestApprovedVoucherMailContent(t *testing.T) {
 	subject, body := ApprovedVoucherMailContent("1234", "user", "")
 	assert.Equal(t, subject, "Your voucher request is approved 🎆")

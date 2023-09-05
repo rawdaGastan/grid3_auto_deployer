@@ -210,6 +210,6 @@ func (a *App) CreateNewAnnouncement(req *http.Request) (interface{}, Response) {
 		}
 	}
 	return ResponseMsg{
-		Message: "new announcement created successfully",
+		Message: "new announcement is sent successfully",
 	}, Created()
 }

@@ -9,9 +9,17 @@ import (
 	"time"
 
 	"github.com/codescalers/cloud4students/internal"
+	"github.com/codescalers/cloud4students/models"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
 )
+
+// AdminAnnouncement struct for data needed when admin sends new announcement
+type AdminAnnouncement struct {
+	Subject string `json:"subject"  binding:"required"`
+	Body    string `json:"announcement" binding:"required"`
+}
 
 // UpdateMaintenanceInput struct for data needed when user update maintenance
 type UpdateMaintenanceInput struct {
@@ -162,4 +170,46 @@ func (a *App) notifyAdmins() {
 			}
 		}
 	}
+}
+
+// CreateNewAnnouncement creates a new admin announcement and sends it to all users as an email and notification
+func (a *App) CreateNewAnnouncement(req *http.Request) (interface{}, Response) {
+	var adminAnnouncement AdminAnnouncement
+	err := json.NewDecoder(req.Body).Decode(&adminAnnouncement)
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("failed to read announcement data"))
+	}
+
+	err = validator.Validate(adminAnnouncement)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("invalid announcement data"))
+	}
+
+	users, err := a.db.ListAllUsers()
+	if err == gorm.ErrRecordNotFound || len(users) == 0 {
+		return ResponseMsg{
+			Message: "Users are not found",
+			Data:    users,
+		}, Ok()
+	}
+	subject, body := internal.AdminAnnouncementMailContent(adminAnnouncement.Subject, adminAnnouncement.Body, a.config.Server.Host)
+	for _, user := range users {
+		err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+		notification := models.Notification{UserID: user.UserID, Msg: body}
+		err = a.db.CreateNotification(&notification)
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+	}
+	return ResponseMsg{
+		Message: "new announcement is sent successfully",
+	}, Created()
 }

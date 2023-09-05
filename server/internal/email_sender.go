@@ -34,6 +34,9 @@ var (
 
 	//go:embed templates/balanceNotification.html
 	balanceMail []byte
+
+	//go:embed templates/adminAnnouncement.html
+	adminAnnouncement []byte
 )
 
 // SendMail sends verification mails
@@ -133,5 +136,15 @@ func NotifyAdminsMailLowBalanceContent(balance float64, host string) (string, st
 	body = strings.ReplaceAll(body, "-balance-", fmt.Sprint(balance))
 	body = strings.ReplaceAll(body, "-host-", host)
 
+	return subject, body
+}
+
+// AdminAnnouncementMailContent gets the email content for admin announcements
+func AdminAnnouncementMailContent(adminSubject, announcement, host string) (string, string) {
+	subject := "New Announcement! 📢 " + adminSubject
+	body := string(adminAnnouncement)
+	body = strings.ReplaceAll(body, "-subject-", adminSubject)
+	body = strings.ReplaceAll(body, "-announcement-", announcement)
+	body = strings.ReplaceAll(body, "-host-", host)
 	return subject, body
 }

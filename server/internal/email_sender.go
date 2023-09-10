@@ -58,60 +58,60 @@ func SendMail(sender, sendGridKey, receiver, subject, body string) error {
 }
 
 // SignUpMailContent gets the email content for sign up
-func SignUpMailContent(code int, timeout int, name, host string) (string, string) {
+func SignUpMailContent(code int, timeout int, username, host string) (string, string) {
 	subject := "Welcome to Cloud4Students 🎉"
 	body := string(signUpMail)
 
 	body = strings.ReplaceAll(body, "-code-", fmt.Sprint(code))
 	body = strings.ReplaceAll(body, "-time-", fmt.Sprint(timeout))
-	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(name))
+	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(username))
 	body = strings.ReplaceAll(body, "-host-", host)
 
 	return subject, body
 }
 
 // WelcomeMailContent gets the email content for welcome messages
-func WelcomeMailContent(name, host string) (string, string) {
+func WelcomeMailContent(username, host string) (string, string) {
 	subject := "Welcome to Cloud4Students 🎉"
 	body := string(welcomeMail)
 
-	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(name))
+	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(username))
 	body = strings.ReplaceAll(body, "-host-", host)
 
 	return subject, body
 }
 
 // ResetPasswordMailContent gets the email content for reset password
-func ResetPasswordMailContent(code int, timeout int, name, host string) (string, string) {
+func ResetPasswordMailContent(code int, timeout int, username, host string) (string, string) {
 	subject := "Reset password"
 	body := string(resetPassMail)
 
 	body = strings.ReplaceAll(body, "-code-", fmt.Sprint(code))
 	body = strings.ReplaceAll(body, "-time-", fmt.Sprint(timeout))
-	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(name))
+	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(username))
 	body = strings.ReplaceAll(body, "-host-", host)
 
 	return subject, body
 }
 
 // ApprovedVoucherMailContent gets the content for approved voucher
-func ApprovedVoucherMailContent(voucher string, name, host string) (string, string) {
+func ApprovedVoucherMailContent(voucher string, username, host string) (string, string) {
 	subject := "Your voucher request is approved 🎆"
 	body := string(approveVoucherMail)
 
 	body = strings.ReplaceAll(body, "-voucher-", fmt.Sprint(voucher))
-	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(name))
+	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(username))
 	body = strings.ReplaceAll(body, "-host-", host)
 
 	return subject, body
 }
 
 // RejectedVoucherMailContent gets the content for rejected voucher
-func RejectedVoucherMailContent(user, host string) (string, string) {
+func RejectedVoucherMailContent(username, host string) (string, string) {
 	subject := "Your voucher request is rejected 😔"
 	body := string(rejectedVoucherMail)
 
-	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(user))
+	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(username))
 	body = strings.ReplaceAll(body, "-host-", host)
 
 	return subject, body
@@ -128,7 +128,7 @@ func NotifyAdminsMailContent(vouchers int, host string) (string, string) {
 	return subject, body
 }
 
-// NotifyAdminsMailLowBalanceContent gets the content for notifying admins when balance is low
+// NotifyAdminsMailLowBalanceContent gets the content for notifying admins when balance becomes low
 func NotifyAdminsMailLowBalanceContent(balance float64, host string) (string, string) {
 	subject := "Your account balance is low"
 	body := string(balanceMail)
@@ -139,12 +139,13 @@ func NotifyAdminsMailLowBalanceContent(balance float64, host string) (string, st
 	return subject, body
 }
 
-// AdminAnnouncementMailContent gets the email content for admin announcements
-func AdminAnnouncementMailContent(adminSubject, announcement, host string) (string, string) {
+// AdminAnnouncementMailContent gets the email content for administrator announcements
+func AdminAnnouncementMailContent(adminSubject, announcement, host, username string) (string, string) {
 	subject := "New Announcement! 📢 " + adminSubject
 	body := string(adminAnnouncement)
 	body = strings.ReplaceAll(body, "-subject-", adminSubject)
 	body = strings.ReplaceAll(body, "-announcement-", announcement)
+	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(username))
 	body = strings.ReplaceAll(body, "-host-", host)
 	return subject, body
 }

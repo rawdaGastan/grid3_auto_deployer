@@ -172,7 +172,7 @@ func (a *App) notifyAdmins() {
 	}
 }
 
-// CreateNewAnnouncement creates a new admin announcement and sends it to all users as an email and notification
+// CreateNewAnnouncement creates a new administrator announcement and sends it to all users as an email and notification
 func (a *App) CreateNewAnnouncement(req *http.Request) (interface{}, Response) {
 	var adminAnnouncement AdminAnnouncement
 	err := json.NewDecoder(req.Body).Decode(&adminAnnouncement)
@@ -195,13 +195,16 @@ func (a *App) CreateNewAnnouncement(req *http.Request) (interface{}, Response) {
 			Data:    users,
 		}, Ok()
 	}
-	subject, body := internal.AdminAnnouncementMailContent(adminAnnouncement.Subject, adminAnnouncement.Body, a.config.Server.Host)
+
 	for _, user := range users {
+		subject, body := internal.AdminAnnouncementMailContent(adminAnnouncement.Subject, adminAnnouncement.Body, a.config.Server.Host, user.Name)
+
 		err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
 		if err != nil {
 			log.Error().Err(err).Send()
 			return nil, InternalServerError(errors.New(internalServerErrorMsg))
 		}
+
 		notification := models.Notification{UserID: user.UserID, Msg: body}
 		err = a.db.CreateNotification(&notification)
 		if err != nil {
@@ -209,6 +212,7 @@ func (a *App) CreateNewAnnouncement(req *http.Request) (interface{}, Response) {
 			return nil, InternalServerError(errors.New(internalServerErrorMsg))
 		}
 	}
+
 	return ResponseMsg{
 		Message: "new announcement is sent successfully",
 	}, Created()

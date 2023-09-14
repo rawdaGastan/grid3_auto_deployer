@@ -40,7 +40,7 @@
 							<td>{{ item.columns.vms }}</td>
 							<td>{{ item.columns.public_ips }}</td>
 							<td>{{ item.columns.voucher }}</td>
-							<td v-if="!item.props.title.approved && !item.props.title.rejected">
+							<td v-if="!item.raw.approved && !item.raw.rejected">
 								<BaseButton color="primary" text="Approve" size="small" class="mr-2 text-capitalize" variant="flat"
 									@click="approveVoucher(item.columns.id, true)" />
 
@@ -167,9 +167,9 @@
 				</section>
 			</v-col>
 		</v-row>
-    <v-dialog transition="dialog-top-transition" v-model="showUserInfo">
-      <UserInfo :user="userInfo"></UserInfo>
-    </v-dialog>
+		<v-dialog transition="dialog-top-transition" v-model="showUserInfo">
+			<UserInfo :user="userInfo"></UserInfo>
+		</v-dialog>
 		<Toast ref="toast" />
 		<Voucher v-if="voucher" :msg="message" :voucher="voucher" :reset="resetVoucher" />
 	</v-container>

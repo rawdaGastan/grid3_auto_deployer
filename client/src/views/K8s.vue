@@ -27,7 +27,7 @@
             placeholder="Resources"
             :modelValue="selectedResources"
             :items="resources"
-            :rules="rules"
+						:rules="[() => !!selectedResources || 'This field is required']"
             class="mt-3"
             @update:modelValue="selectedResources = $event"
           />
@@ -81,7 +81,7 @@
                         placeholder="Resources"
                         :modelValue="workerSelResources"
                         :items="workerResources"
-                        :rules="rules"
+                        :rules="[() => !!workerSelResources || 'This field is required']"
                         class="my-3"
                         @update:modelValue="workerSelResources = $event"
                       />
@@ -271,9 +271,6 @@ export default {
       (value) => validateK8sName(value),
     ]);
     const savedWorkers = ref([]);
-    const rules = ref([
-      (value) => value !== null || "This field is required.",
-    ]);
     const headers = ref([
       {
         title: "ID",
@@ -356,8 +353,8 @@ export default {
       { title: "Medium K8s (2 CPU, 4GB, 50GB)", value: "medium" },
       { title: "Large K8s (4 CPU, 8GB, 100GB)", value: "large" },
     ]);
-    const selectedResources = ref(null);
-    const workerSelResources = ref(null);
+    const selectedResources = ref("");
+    const workerSelResources = ref("");
     const loading = ref(false);
     const results = ref([]);
     const workers = ref([]);
@@ -387,8 +384,8 @@ export default {
     const resetInputs = () => {
       k8Name.value = "";
       checked.value = false;
-      selectedResources.value = null;
-      workerSelResources.value = null;
+      selectedResources.value = "";
+      workerSelResources.value = "";
 			workerName.value = "";
 			savedWorkers.value = [];
     };
@@ -501,8 +498,8 @@ export default {
         name: workerName.value,
         resources: workerSelResources.value,
       });
-      workerName.value = null;
-      workerSelResources.value = null;
+      workerName.value = "";
+      workerSelResources.value = "";
       showInputs.value = false;
     };
     const deleteWorker = (name) => {
@@ -539,7 +536,6 @@ export default {
       workerResources,
       workerSelResources,
       loading,
-      rules,
       results,
       workers,
       deLoading,

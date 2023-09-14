@@ -27,7 +27,7 @@
             :items="resources"
             :reduce="(sel) => sel.value"
             placeholder="Resources"
-            :rules="rules"
+						:rules="[() => !!selectedResource || 'This field is required']"
             @update:modelValue="selectedResource = $event"
           />
           <v-checkbox v-model="checked" label="Public IP"></v-checkbox>
@@ -134,9 +134,6 @@ export default {
     const alert = ref(false);
     const itemsPerPage = ref(null);
     const name = ref("");
-    const rules = ref([
-      (value) => value.length != 0 || "This field is required.",
-    ]);
     const confirm = ref(null);
     const selectedResource = ref("");
     const resources = ref([
@@ -199,6 +196,7 @@ export default {
       },
       (value) => validateVMName(value),
     ]);
+    
     const getVMS = () => {
       userService
         .getVms()
@@ -336,7 +334,6 @@ export default {
       resources,
       loading,
       deLoading,
-      rules,
       results,
       headers,
       confirm,

@@ -161,7 +161,7 @@ export default {
 		const emitter = inject("emitter");
 		const verify = ref(null);
 		const email = ref(null);
-		const name = ref(null);
+		const name = ref("");
 		const college = ref("");
 		const team_size = ref(0);
 		const project_desc = ref("");
@@ -178,9 +178,7 @@ export default {
 		const nameRegex = /^(\w+\s){0,3}\w*$/;
 		const nameValidation = ref([
 			(value) => {
-				if (!RegExp(nameRegex).test(value)) {
-					return "Must be at most four names";
-				}
+				if (!value.match(nameRegex)) return "Must be at most four names";
 				if (value.length < 3) return "Field should be at least 3 characters";
 				if (value.length > 20) return "Field should be at most 20 characters";
 				return true;

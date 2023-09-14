@@ -258,7 +258,7 @@ export default {
     const checked = ref(false);
     const alert = ref(false);
     const workerVerify = ref(false);
-    const k8Name = ref(null);
+    const k8Name = ref("");
     const showInputs = ref(true);
     const nameValidation = ref([
       (value) => {
@@ -272,7 +272,7 @@ export default {
     ]);
     const savedWorkers = ref([]);
     const rules = ref([
-      (value) => value.length != 0 || "This field is required.",
+      (value) => value !== null || "This field is required.",
     ]);
     const headers = ref([
       {
@@ -350,7 +350,7 @@ export default {
       { title: "Medium K8s (2 CPU, 4GB, 50GB)", value: "medium" },
       { title: "Large K8s (4 CPU, 8GB, 100GB)", value: "large" },
     ]);
-    const workerName = ref(null);
+    const workerName = ref("");
     const workerResources = ref([
       { title: "Small K8s (1 CPU, 2GB, 25GB)", value: "small" },
       { title: "Medium K8s (2 CPU, 4GB, 50GB)", value: "medium" },
@@ -385,12 +385,12 @@ export default {
         });
     };
     const resetInputs = () => {
-      k8Name.value = null;
+      k8Name.value = "";
       checked.value = false;
       selectedResources.value = null;
       workerSelResources.value = null;
-      workerName.value = null;
-      savedWorkers.value = [];
+			workerName.value = "";
+			savedWorkers.value = [];
     };
 
     const deployK8s = () => {

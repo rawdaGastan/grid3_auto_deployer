@@ -133,7 +133,7 @@ export default {
     const checked = ref(false);
     const alert = ref(false);
     const itemsPerPage = ref(null);
-    const name = ref(null);
+    const name = ref("");
     const rules = ref([
       (value) => value.length != 0 || "This field is required.",
     ]);

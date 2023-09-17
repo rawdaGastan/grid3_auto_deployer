@@ -60,14 +60,14 @@
 					<div class="text-center">
 						<v-dialog v-model="announcementDialog" width="auto">
 							<template v-slot:activator="{ props }">
-								<BaseButton color="primary" text="Send announcement" class="text-capitalize mr-2" v-bind="props" />
+								<BaseButton color="primary" text="Send an announcement" class="text-capitalize mr-2" v-bind="props" />
 							</template>
 
 							<v-card class="pa-5">
 								<v-form @submit.prevent="sendAnnouncement" ref="form">
 									<v-card-text>
 										<h5 class="text-h5 text-md-h4 text-center mb-5 pa-5 secondary">
-											Send announcement
+											Send an announcement
 										</h5>
 										<v-text-field label="Subject" v-model="subject" :rules="requiredRules"
 											oninput="validity.valid||(value='')" bg-color="accent" variant="outlined"
@@ -88,14 +88,14 @@
 					<div class="text-center">
 						<v-dialog v-model="dialog" width="auto">
 							<template v-slot:activator="{ props }">
-								<BaseButton color="warning" text="Generate Voucher" class="text-capitalize mr-2" v-bind="props" />
+								<BaseButton color="warning" text="Generate a voucher" class="text-capitalize mr-2" v-bind="props" />
 							</template>
 
 							<v-card class="pa-5">
 								<v-form @submit.prevent="generateVoucher" ref="form">
 									<v-card-text>
 										<h5 class="text-h5 text-md-h4 text-center mb-5 pa-5 secondary">
-											Generate Voucher
+											Generate a voucher
 										</h5>
 										<v-row>
 											<v-col>

@@ -205,7 +205,7 @@ func (a *App) CreateNewAnnouncement(req *http.Request) (interface{}, Response) {
 			return nil, InternalServerError(errors.New(internalServerErrorMsg))
 		}
 
-		notification := models.Notification{UserID: user.UserID, Msg: body}
+		notification := models.Notification{UserID: user.UserID, Msg: fmt.Sprintf("Announcement: %s", adminAnnouncement.Body)}
 		err = a.db.CreateNotification(&notification)
 		if err != nil {
 			log.Error().Err(err).Send()

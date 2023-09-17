@@ -58,6 +58,34 @@
 				</v-data-table>
 				<div class="actions d-flex justify-end my-2">
 					<div class="text-center">
+						<v-dialog v-model="announcementDialog" width="auto">
+							<template v-slot:activator="{ props }">
+								<BaseButton color="primary" text="Send announcement" class="text-capitalize mr-2" v-bind="props" />
+							</template>
+
+							<v-card class="pa-5">
+								<v-form @submit.prevent="sendAnnouncement" ref="form">
+									<v-card-text>
+										<h5 class="text-h5 text-md-h4 text-center mb-5 pa-5 secondary">
+											Send announcement
+										</h5>
+										<v-text-field label="Subject" v-model="subject" :rules="requiredRules"
+											oninput="validity.valid||(value='')" bg-color="accent" variant="outlined"
+											density="compact" class="my-3"></v-text-field>
+
+										<v-textarea clearable label="Announcement" v-model="announcement" :rules="requiredRules" 
+											oninput="validity.valid||(value='')" bg-color="accent" variant="outlined"
+											density="compact" class="my-3"></v-textarea>
+									</v-card-text>
+									<v-card-actions class="justify-center">
+										<BaseButton class="bg-primary mr-5" text="Cancel" @click="announcementDialog = false" />
+										<BaseButton type="submit" class="bg-primary" text="Send" />
+									</v-card-actions>
+								</v-form>
+							</v-card>
+						</v-dialog>
+					</div>
+					<div class="text-center">
 						<v-dialog v-model="dialog" width="auto">
 							<template v-slot:activator="{ props }">
 								<BaseButton color="warning" text="Generate Voucher" class="text-capitalize mr-2" v-bind="props" />
@@ -94,7 +122,7 @@
 							</v-card>
 						</v-dialog>
 					</div>
-					<BaseButton :disabled="approveAllCount <= 0" color="primary" text="Approve All" class="approve text-capitalize"
+					<BaseButton :disabled="approveAllCount <= 0" color="success" text="Approve All" class="approve text-capitalize"
 						@click="approveAllVouchers" />
 				</div>
 			</v-col>
@@ -224,12 +252,15 @@ export default {
 		const userInfo = ref(null);
 		const itemsPerPage = ref(5);
 		const dialog = ref(false);
+		const announcementDialog = ref(false);
 		const showUserInfo = ref(false);
 		const vms = ref(1);
 		const ips = ref(0);
 		const length = ref(3);
 		const message = ref(null);
 		const voucher = ref(null);
+		const subject = ref(null);
+		const announcement = ref(null);
 
 		const requiredRules = ref([
 			(value) => {
@@ -371,6 +402,14 @@ export default {
 			}
 		});
 
+
+		watch(announcementDialog, (val) => {
+			if (val) {
+				announcement.value = "";
+				subject.value = "";
+			}
+		});
+
 		const generateVoucher = async () => {
 			var { valid } = await form.value.validate();
 			if (!valid) return;
@@ -388,6 +427,24 @@ export default {
 				.finally(() => {
 					getVouchers();
 					dialog.value = false;
+				});
+		};
+
+		const sendAnnouncement = async () => {
+			var { valid } = await form.value.validate();
+			if (!valid) return;
+
+			userService
+				.sendAnnouncement(subject.value, announcement.value)
+				.then((response) => {
+					const { msg } = response.data;
+					toast.value.toast(msg, "#388E3C");
+				})
+				.catch((response) => {
+					toast.value.toast(response.response.data.err, "#FF5252");
+				})
+				.finally(() => {
+					announcementDialog.value = false;
 				});
 		};
 
@@ -423,6 +480,7 @@ export default {
 			toast,
 			itemsPerPage,
 			dialog,
+			announcementDialog,
 			showUserInfo,
 			vms,
 			ips,
@@ -431,6 +489,8 @@ export default {
 			voucher,
 			message,
 			form,
+			announcement,
+			subject,
 			getVouchers,
 			getBalance,
 			approveVoucher,
@@ -441,6 +501,7 @@ export default {
 			resetVoucher,
 			getDeploymentsCount,
 			openUserInfo,
+			sendAnnouncement,
 		};
 	},
 	beforeRouteEnter(to, from, next) {

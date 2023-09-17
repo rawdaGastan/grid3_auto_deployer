@@ -52,11 +52,11 @@
 						<v-list-subheader>Unseen</v-list-subheader>
 						<v-list-item v-for="item in notifications" :key="item.id" class="tile">
 							<template v-slot:prepend>
-								<font-awesome-icon :icon="item.type == 'vms' ? ['fas', 'cube'] : ['fasr', 'dharmachakra']" />
+								<font-awesome-icon :icon="item.type == 'vms' ? ['fas', 'cube'] : item.type == 'k8s' ? ['fasr', 'dharmachakra'] : ['fasr', 'bullhorn']" />
 							</template>
 
 							<v-list-item-title>
-								<router-link style="padding: 15px" :to="item.type == 'vms' ? '/vm' : '/k8s'"
+								<router-link style="padding: 15px" :to="item.type == 'vms' ? '/vm' : item.type == 'k8s' ? '/k8s' : '/'"
 									class="d-flex primary text-decoration-none"
 									@click="seen(item.id); setActive(item.type == 'vms' ? 2 : 3, item.type);">
 									<span style="color: rgb(53, 52, 52)" @click="seen(item.id)">{{ item.msg }}</span>

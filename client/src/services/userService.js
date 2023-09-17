@@ -164,6 +164,13 @@ export default {
     return await authClient().get("/balance");
   },
 
+
+	// announcement
+	async sendAnnouncement(subject, announcement) {
+		await this.refresh_token();
+		return await authClient().post("/announcement", { subject, announcement });
+	},
+
   // notifications
   async getNotifications() {
     await this.refresh_token();

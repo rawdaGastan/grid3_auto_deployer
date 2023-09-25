@@ -167,9 +167,10 @@
 								</td>
 								<td v-if="item.columns.name" class="d-flex align-center">
 									<v-avatar color="primary" size="30" class="mr-2">
-										<span class="text-uppercase">{{
-											addAvatar(item.columns.name)
-										}}</span>
+										<v-icon v-if="item.raw.admin" icon="mdi-account-key" size="17"></v-icon>
+										<span v-else class="text-uppercase">
+											{{ addAvatar(item.columns.name) }}
+										</span>
 									</v-avatar>
 									<div>
 										<p>{{ item.columns.name }}</p>
@@ -189,7 +190,7 @@
 									<v-row>
 										<v-tooltip block text="View user" left>
 											<template v-slot:activator="{ props }">
-												<v-icon v-bind="props" color="primary" dark class="ml-1 text-primary cursor-pointer"
+												<v-icon v-bind="props" color="primary" dark class="ml-3 text-primary cursor-pointer"
 													@click="openUserInfo(item.raw)">
 													mdi-information
 												</v-icon>

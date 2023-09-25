@@ -164,12 +164,16 @@ export default {
     return await authClient().get("/balance");
   },
 
+  // announcement
+  async sendAnnouncement(subject, announcement) {
+    await this.refresh_token();
+    return await authClient().post("/announcement", { subject, announcement });
+  },
 
-	// announcement
-	async sendAnnouncement(subject, announcement) {
-		await this.refresh_token();
-		return await authClient().post("/announcement", { subject, announcement });
-	},
+  async setAdmin(email) {
+    await this.refresh_token();
+    return await authClient().put("/set_admin", { email });
+  },
 
   // notifications
   async getNotifications() {

@@ -190,7 +190,8 @@
 									<v-row>
 										<v-tooltip block text="View user" left>
 											<template v-slot:activator="{ props }">
-												<v-icon v-bind="props" color="primary" dark class="ml-3 text-primary cursor-pointer"
+												<v-icon v-bind="props" color="primary" dark
+													:class="item.raw.admin ? 'ml-6' : 'ml-3' + 'text-primary cursor-pointer'"
 													@click="openUserInfo(item.raw)">
 													mdi-information
 												</v-icon>
@@ -200,7 +201,7 @@
 										<v-tooltip block text="Set admin" left>
 											<template v-slot:activator="{ props }">
 												<v-icon v-bind="props" color="primary" dark class="ml-1 text-primary cursor-pointer"
-													@click="setAdmin(item.raw)">
+													@click="setAdmin(item.raw)" v-if="!item.raw.admin">
 													mdi-account-key
 												</v-icon>
 											</template>

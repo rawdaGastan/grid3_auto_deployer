@@ -70,12 +70,12 @@
 											Send an announcement
 										</h5>
 										<v-text-field label="Subject" v-model="subject" :rules="requiredRules"
-											oninput="validity.valid||(value='')" bg-color="accent" variant="outlined"
-											density="compact" class="my-3"></v-text-field>
+											oninput="validity.valid||(value='')" bg-color="accent" variant="outlined" density="compact"
+											class="my-3"></v-text-field>
 
-										<v-textarea clearable label="Announcement" v-model="announcement" :rules="requiredRules" 
-											oninput="validity.valid||(value='')" bg-color="accent" variant="outlined"
-											density="compact" class="my-3"></v-textarea>
+										<v-textarea clearable label="Announcement" v-model="announcement" :rules="requiredRules"
+											oninput="validity.valid||(value='')" bg-color="accent" variant="outlined" density="compact"
+											class="my-3"></v-textarea>
 									</v-card-text>
 									<v-card-actions class="justify-center">
 										<BaseButton class="bg-primary mr-5" text="Cancel" @click="announcementDialog = false" />
@@ -186,8 +186,23 @@
 									<span class="text-red">{{ item.raw.used_public_ips }}</span>/<span>{{ item.columns.public_ips }}</span>
 								</td>
 								<td>
-									<font-awesome-icon class="ml-5 text-primary cursor-pointer" icon="fa-solid fa-info-circle"
-										@click="openUserInfo(item.raw)" />
+									<v-tooltip block text="View user" left>
+										<template v-slot:activator="{ props }">
+											<v-icon v-bind="props" color="primary" dark class="ml-1 text-primary cursor-pointer"
+												@click="openUserInfo(item.raw)">
+												mdi-information
+											</v-icon>
+										</template>
+									</v-tooltip>
+
+									<v-tooltip block text="Set admin" left>
+										<template v-slot:activator="{ props }">
+											<v-icon v-bind="props" color="primary" dark class="ml-1 text-primary cursor-pointer"
+												@click="setAdmin(item.raw)">
+												mdi-account-key
+											</v-icon>
+										</template>
+									</v-tooltip>
 								</td>
 							</tr>
 						</template>
@@ -268,6 +283,18 @@ export default {
 				return true;
 			},
 		]);
+
+		const setAdmin = (user) => {
+			userService
+				.setAdmin(user.email)
+				.then((response) => {
+					toast.value.toast(response.data.msg, "#388E3C");
+				})
+				.catch((response) => {
+					const { err } = response.response.data;
+					toast.value.toast(err, "#FF5252");
+				});
+		}
 
 		const openUserInfo = (user) => {
 			showUserInfo.value = true;
@@ -501,6 +528,7 @@ export default {
 			resetVoucher,
 			getDeploymentsCount,
 			openUserInfo,
+			setAdmin,
 			sendAnnouncement,
 		};
 	},

@@ -26,6 +26,11 @@ type UpdateMaintenanceInput struct {
 	ON bool `json:"on" binding:"required"`
 }
 
+// SetAdminInput struct for setting users as admins
+type SetAdminInput struct {
+	Email string `json:"email" binding:"required"`
+}
+
 // GetAllUsersHandler returns all users
 func (a *App) GetAllUsersHandler(req *http.Request) (interface{}, Response) {
 	users, err := a.db.ListAllUsers()
@@ -122,6 +127,53 @@ func (a *App) GetMaintenanceHandler(req *http.Request) (interface{}, Response) {
 	return ResponseMsg{
 		Message: fmt.Sprintf("Maintenance is set with %v", maintenance.Active),
 		Data:    maintenance,
+	}, Ok()
+}
+
+// SetAdmin sets a user as an admin
+func (a *App) SetAdmin(req *http.Request) (interface{}, Response) {
+	input := SetAdminInput{}
+	err := json.NewDecoder(req.Body).Decode(&input)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("failed to read data"))
+	}
+
+	user, err := a.db.GetUserByEmail(input.Email)
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("user is not found"))
+	}
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	if user.Admin {
+		return ResponseMsg{
+			Message: "User is already an admin",
+		}, Ok()
+	}
+
+	err = a.db.UpdateUserByID(
+		models.User{
+			Email:     input.Email,
+			Admin:     true,
+			UpdatedAt: time.Now(),
+		},
+	)
+
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("user is not found"))
+	}
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	return ResponseMsg{
+		Message: "User is updated successfully",
 	}, Ok()
 }
 

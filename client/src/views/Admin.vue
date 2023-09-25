@@ -186,23 +186,25 @@
 									<span class="text-red">{{ item.raw.used_public_ips }}</span>/<span>{{ item.columns.public_ips }}</span>
 								</td>
 								<td>
-									<v-tooltip block text="View user" left>
-										<template v-slot:activator="{ props }">
-											<v-icon v-bind="props" color="primary" dark class="ml-1 text-primary cursor-pointer"
-												@click="openUserInfo(item.raw)">
-												mdi-information
-											</v-icon>
-										</template>
-									</v-tooltip>
+									<v-row>
+										<v-tooltip block text="View user" left>
+											<template v-slot:activator="{ props }">
+												<v-icon v-bind="props" color="primary" dark class="ml-1 text-primary cursor-pointer"
+													@click="openUserInfo(item.raw)">
+													mdi-information
+												</v-icon>
+											</template>
+										</v-tooltip>
 
-									<v-tooltip block text="Set admin" left>
-										<template v-slot:activator="{ props }">
-											<v-icon v-bind="props" color="primary" dark class="ml-1 text-primary cursor-pointer"
-												@click="setAdmin(item.raw)">
-												mdi-account-key
-											</v-icon>
-										</template>
-									</v-tooltip>
+										<v-tooltip block text="Set admin" left>
+											<template v-slot:activator="{ props }">
+												<v-icon v-bind="props" color="primary" dark class="ml-1 text-primary cursor-pointer"
+													@click="setAdmin(item.raw)">
+													mdi-account-key
+												</v-icon>
+											</template>
+										</v-tooltip>
+									</v-row>
 								</td>
 							</tr>
 						</template>

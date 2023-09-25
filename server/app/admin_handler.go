@@ -157,6 +157,7 @@ func (a *App) SetAdmin(req *http.Request) (interface{}, Response) {
 
 	err = a.db.UpdateUserByID(
 		models.User{
+			ID:        user.ID,
 			Email:     input.Email,
 			Admin:     true,
 			UpdatedAt: time.Now(),

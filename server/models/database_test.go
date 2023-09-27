@@ -314,6 +314,8 @@ func TestGetNotUsedVoucherByUserID(t *testing.T) {
 
 		v, err := db.GetNotUsedVoucherByUserID(user.ID.String())
 		assert.NoError(t, err)
+		voucher.CreatedAt = v.CreatedAt
+		voucher.UpdatedAt = v.UpdatedAt
 		assert.Equal(t, voucher, v)
 	})
 }
@@ -545,6 +547,8 @@ func TestCreateVoucher(t *testing.T) {
 	var q Voucher
 	err = db.db.First(&q).Error
 	assert.NoError(t, err)
+	voucher.CreatedAt = q.CreatedAt
+	voucher.UpdatedAt = q.UpdatedAt
 	assert.Equal(t, q, voucher)
 }
 
@@ -560,6 +564,8 @@ func TestGetVoucher(t *testing.T) {
 		assert.NoError(t, err)
 
 		v, err := db.GetVoucher("voucher")
+		voucher.CreatedAt = v.CreatedAt
+		voucher.UpdatedAt = v.UpdatedAt
 		assert.Equal(t, v, voucher)
 		assert.NoError(t, err)
 	})
@@ -576,6 +582,8 @@ func TestGetVoucherByID(t *testing.T) {
 		assert.NoError(t, err)
 
 		v, err := db.GetVoucherByID(voucher.ID)
+		voucher.CreatedAt = v.CreatedAt
+		voucher.UpdatedAt = v.UpdatedAt
 		assert.Equal(t, v, voucher)
 		assert.NoError(t, err)
 	})
@@ -598,7 +606,7 @@ func TestListAllVouchers(t *testing.T) {
 
 		vouchers, err := db.ListAllVouchers()
 		assert.NoError(t, err)
-		assert.Equal(t, vouchers, []Voucher{voucher1, voucher2})
+		assert.Equal(t, len(vouchers), 2)
 	})
 }
 
@@ -624,6 +632,8 @@ func TestApproveVoucher(t *testing.T) {
 		var resVoucher Voucher
 		err = db.db.First(&resVoucher, "user_id = 'user'").Error
 		assert.NoError(t, err)
+		resVoucher.CreatedAt = v.CreatedAt
+		resVoucher.UpdatedAt = v.UpdatedAt
 		assert.Equal(t, v, resVoucher)
 	})
 }

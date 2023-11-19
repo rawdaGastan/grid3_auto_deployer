@@ -80,7 +80,7 @@ func TestGetAllUsersHandler(t *testing.T) {
 		assert.Equal(t, response.Code, http.StatusUnauthorized)
 	})
 
-	t.Run("Get maintainence: success", func(t *testing.T) {
+	t.Run("Get maintenance: success", func(t *testing.T) {
 		req := unAuthHandlerConfig{
 			body:        nil,
 			handlerFunc: app.GetMaintenanceHandler,

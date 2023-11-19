@@ -179,8 +179,8 @@ func (d *Deployer) getK8sAvailableNode(ctx context.Context, k models.K8sDeployIn
 		rootfs = append(rootfs, *convertGBToBytes(uint64(2)))
 	}
 
-	freeMRU := uint64(mru)
-	freeSRU := uint64(sru)
+	freeMRU := mru
+	freeSRU := sru
 	filter := types.NodeFilter{
 		Status:  &statusUp,
 		FreeMRU: &freeMRU,

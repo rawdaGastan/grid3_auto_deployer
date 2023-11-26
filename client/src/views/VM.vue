@@ -63,27 +63,27 @@
             >
               <template v-slot:item="{ item }">
                 <tr>
-                  <td>{{ item.raw.id }}</td>
-                  <td>{{ item.raw.name }}</td>
-                  <td>{{ item.raw.sru }}GB</td>
-                  <td>{{ item.raw.mru }}GB</td>
-                  <td>{{ item.raw.cru }}</td>
-                  <td class="cursor-pointer" @click="copyIP(item.raw.ygg_ip)">
-                    {{ item.raw.ygg_ip }}
+                  <td>{{ item.id }}</td>
+                  <td>{{ item.name }}</td>
+                  <td>{{ item.sru }}GB</td>
+                  <td>{{ item.mru }}GB</td>
+                  <td>{{ item.cru }}</td>
+                  <td class="cursor-pointer" @click="copyIP(item.ygg_ip)">
+                    {{ item.ygg_ip }}
                   </td>
                   <td
-                    v-if="item.raw.public_ip"
+                    v-if="item.public_ip"
                     class="cursor-pointer"
-                    @click="copyIP(item.raw.public_ip)"
+                    @click="copyIP(item.public_ip)"
                   >
-                    {{ item.raw.public_ip }}
+                    {{ item.public_ip }}
                   </td>
                   <td v-else>-</td>
                   <td>
                     <font-awesome-icon
-                      v-if="!item.raw.deleting"
+                      v-if="!item.deleting"
                       class="text-red-accent-2 cursor-pointer"
-                      @click="deleteVm(item.raw)"
+                      @click="deleteVm(item)"
                       icon="fa-solid fa-trash"
                     />
                     <v-progress-circular

@@ -161,30 +161,30 @@
         <v-data-table :headers="headers" :items="results" class="elevation-1">
           <template v-slot:item="{ item }">
             <tr>
-              <td>{{ item.raw.master.clusterID }}</td>
-              <td>{{ item.raw.master.name }}</td>
-              <td>{{ item.raw.master.sru }}GB</td>
-              <td>{{ item.raw.master.mru }}GB</td>
-              <td>{{ item.raw.master.cru }}</td>
+              <td>{{ item.master.clusterID }}</td>
+              <td>{{ item.master.name }}</td>
+              <td>{{ item.master.sru }}GB</td>
+              <td>{{ item.master.mru }}GB</td>
+              <td>{{ item.master.cru }}</td>
               <td
                 class="cursor-pointer"
-                @click="copyIP(item.raw.master.ygg_ip)"
+                @click="copyIP(item.master.ygg_ip)"
               >
-                {{ item.raw.master.ygg_ip }}
+                {{ item.master.ygg_ip }}
               </td>
               <td
-                v-if="item.raw.master.public_ip"
+                v-if="item.master.public_ip"
                 class="cursor-pointer"
-                @click="copyIP(item.raw.master.public_ip)"
+                @click="copyIP(item.master.public_ip)"
               >
-                {{ item.raw.master.public_ip }}
+                {{ item.master.public_ip }}
               </td>
               <td v-else>-</td>
               <td>
                 <font-awesome-icon
-                  v-if="!item.raw.deleting"
+                  v-if="!item.deleting"
                   class="text-red-accent-2 mr-5 cursor-pointer"
-                  @click="deleteK8s(item.raw)"
+                  @click="deleteK8s(item)"
                   icon="fa-solid fa-trash"
                 />
                 <v-progress-circular
@@ -195,10 +195,10 @@
                   style="margin-right: 5px;"
                 ></v-progress-circular>
                 <font-awesome-icon
-                  v-if="item.raw.workers.length > 0"
+                  v-if="item.workers.length > 0"
                   class="text-primary cursor-pointer"
                   icon="fa-solid fa-eye"
-                  @click="displayWorkers(item.raw.workers)"
+                  @click="displayWorkers(item.workers)"
                 />
               </td>
             </tr>

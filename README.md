@@ -30,7 +30,7 @@ docker-compose up
 
 ### Configuration
 
-Before building or running backend image create `config.json` in `server` dir.
+Before building or running docker compose, create `config.json` in the current directory.
 
 example `config.json`:
 

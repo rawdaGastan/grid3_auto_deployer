@@ -46,7 +46,7 @@ example `config.json`:
     "mailSender": {
         "email": "your sendgrid account sender, required",
         "sendgrid_key": "<sendgrid-key>, required",
-        "timeout": "<the timeout for app mail verification codes in seconds, required> 
+        "timeout": "<the timeout for app mail verification codes in seconds, required>"
     },
     "database": {
         "file": "<the path of the database file you have or you want to create, required>"

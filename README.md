@@ -10,7 +10,9 @@ cloud4students aims to help students deploy their projects on Threefold Grid.
 
 ## Build
 
-First create `config.json` check [configuration](#configuration)
+- First create `config.json` check [configuration](#configuration)
+
+- Change `VITE_API_ENDPOINT` in docker-compose.yml to server api url for example `http://localhost:3000/v1`
 
 To build backend and frontend images
 
@@ -28,6 +30,26 @@ To run backend and frontend:
 docker-compose up
 ```
 
+- your backend will run at `http://localhost:3000/v1`
+- your frontend will run at `http://localhost:8080`
+
+If your machine has a public ip or a domain you can route your backend and frontend urls using caddy.
+
+- example Caddyfile for a domain `example.com`
+
+```Caddy
+example.com {
+  route /* {
+    uri strip_prefix /*
+    reverse_proxy localhost:8080
+  }
+  route /v1/* {
+    uri strip_prefix /*
+    reverse_proxy localhost:3000
+  }
+}
+```
+
 ### Configuration
 
 Before building or running docker compose, create `config.json` in the current directory.
@@ -39,9 +61,9 @@ example `config.json`:
     "server": {
         "host": "localhost, required",
         "port": ":3000, required",
-        "redisHost": "redis host like `localhost`, required",
-        "redisPort": "redis port like `6379`, required",
-        "redisPass": "<redis password, required>"  
+        "redisHost": "redis-db, make sure to change it in docker compose if you have other redis configurations, required",
+        "redisPort": "6379, make sure to change it in docker compose if you have other redis configurations, required",
+        "redisPass": "pass, make sure to change it in docker compose if you have other redis configurations, required" 
     },
     "mailSender": {
         "email": "your sendgrid account sender, required",

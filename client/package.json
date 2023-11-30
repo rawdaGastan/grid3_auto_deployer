@@ -23,7 +23,6 @@
     "vite-plugin-eslint": "^1.8.1",
     "vue": "^3.3.8",
     "vue-router": "^4.2.5",
-    "vue3-otp-input": "^0.4.1",
     "vuetify": "^3.4.2",
     "webfontloader": "^1.0.0"
   },

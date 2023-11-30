@@ -71,7 +71,7 @@ example `config.json`:
         "timeout": "<the timeout for app mail verification codes in seconds, required>"
     },
     "database": {
-        "file": "<the path of the database file you have or you want to create, required>"
+        "file": "<the path of the database file you have or you want to create, dedault is `database.sql`>"
     },
     "token": {
         "secret": "<your secret for the jwt tokens, required>",

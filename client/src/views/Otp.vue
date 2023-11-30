@@ -6,7 +6,7 @@
 		</h5>
 		<v-row justify="center">
 			<v-col cols="12" sm="6">
-				<v-form v-model="verify" @submit.prevent="onSubmit">
+				<v-form @submit.prevent="onSubmit">
 					<v-hover v-slot="{ isHovering, props }" open-delay="200">
 						<v-img :style="isHovering
 							? 'transform:scale(1.1);transition: transform .5s;'
@@ -16,10 +16,7 @@
 					</v-hover>
 
 					<div>
-						<v-otp-input ref="otpInput" class="justify-center my-5" input-classes="otp-input" separator="-"
-							:num-inputs="4" style="grid-area: unset;" :should-auto-focus="true" :is-input-num="true"
-							:conditionalClass="['one', 'two', 'three', 'four']" :placeholder="['', '', '', '']"
-							@on-change="handleOnChange" @on-complete="handleOnComplete" />
+						<v-otp-input v-model="otp" length="4"></v-otp-input>
 						<div class="w-50 mx-auto text-center my-5">
 							<v-btn block class="my-5" style="
                   background-color: transparent;
@@ -31,7 +28,7 @@
 						</div>
 					</div>
 
-					<v-btn type="submit" block :disabled="!verify" :loading="loading" variant="flat" color="primary"
+					<v-btn type="submit" block :disabled="otp.length != 4" :loading="loading" variant="flat" color="primary"
 						class="text-capitalize mx-auto bg-primary">
 						Confirm Code
 					</v-btn>
@@ -44,38 +41,21 @@
 <script>
 import { ref, watchEffect } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import VOtpInput from "vue3-otp-input";
 import axios from "axios";
 import Toast from "@/components/Toast.vue";
 
 export default {
 	components: {
-		VOtpInput,
 		Toast,
 	},
 
 	setup() {
 		const route = useRoute();
 		const router = useRouter();
-		const verify = ref(false);
 		const countDown = ref(route.query.timeout)
-		const otpInput = ref(null);
 		const loading = ref(false);
-		const otp = ref(null);
+		const otp = ref("");
 		const toast = ref(null);
-
-		const handleOnComplete = (value) => {
-			verify.value = true;
-			otp.value = value;
-		};
-
-		const handleOnChange = (value) => {
-			console.log("OTP changed: ", value);
-		};
-
-		const clearInput = () => {
-			otpInput.value.clearInput();
-		};
 
 		watchEffect(() => {
 			if (countDown.value > 0) {
@@ -97,6 +77,9 @@ export default {
 					})
 					.catch((error) => {
 						toast.value.toast(error.response.data.err, "#FF5252");
+					})
+					.finally(() => {
+						otp.value = "";
 					});
 			} else {
 				await axios
@@ -116,12 +99,14 @@ export default {
 					})
 					.catch((error) => {
 						toast.value.toast(error.response.data.err, "#FF5252");
+					})
+					.finally(() => {
+						otp.value = "";
 					});
 			}
 		};
 
 		const onSubmit = async () => {
-			if (!verify.value) return;
 			loading.value = true;
 
 			if (route.query.isSignup) {
@@ -162,6 +147,9 @@ export default {
 					.catch((error) => {
 						toast.value.toast(error.response.data.err, "#FF5252");
 						loading.value = false;
+					})
+					.finally(() => {
+						otp.value = "";
 					});
 			} else {
 				await axios
@@ -187,21 +175,19 @@ export default {
 					})
 					.catch((error) => {
 						toast.value.toast(error.response.data.err, "#FF5252");
-
 						loading.value = false;
+					})
+					.finally(() => {
+						otp.value = "";
 					});
 			}
 		};
 
 		return {
 			onSubmit,
-			handleOnComplete,
-			handleOnChange,
-			clearInput,
+			otp,
 			resetHandler,
-			otpInput,
 			countDown,
-			verify,
 			loading,
 			toast,
 		};

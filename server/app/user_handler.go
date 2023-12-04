@@ -66,9 +66,10 @@ type EmailInput struct {
 
 // ApplyForVoucherInput struct for user to apply for voucher
 type ApplyForVoucherInput struct {
-	VMs       int    `json:"vms" binding:"required" validate:"min=0"`
-	PublicIPs int    `json:"public_ips" binding:"required" validate:"min=0"`
-	Reason    string `json:"reason" binding:"required" validate:"nonzero"`
+	VMs             int    `json:"vms" binding:"required" validate:"min=0"`
+	PublicIPs       int    `json:"public_ips" binding:"required" validate:"min=0"`
+	Reason          string `json:"reason" binding:"required" validate:"nonzero"`
+	VoucherDuration int    `json:"voucher_duration" binding:"required"`
 }
 
 // AddVoucherInput struct for voucher applied by user
@@ -80,7 +81,6 @@ type AddVoucherInput struct {
 func (a *App) SignUpHandler(req *http.Request) (interface{}, Response) {
 	var signUp SignUpInput
 	err := json.NewDecoder(req.Body).Decode(&signUp)
-
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, BadRequest(errors.New("failed to read sign up data"))
@@ -573,14 +573,19 @@ func (a *App) ApplyForVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, BadRequest(errors.New("invalid voucher data"))
 	}
 
+	if input.VoucherDuration > a.config.VouchersMaxDuration {
+		return nil, BadRequest(fmt.Errorf("invalid voucher duration, max duration is %d", a.config.VouchersMaxDuration))
+	}
+
 	// generate voucher for user but can't use it until admin approves it
 	v := internal.GenerateRandomVoucher(5)
 	voucher := models.Voucher{
-		Voucher:   v,
-		UserID:    userID,
-		VMs:       input.VMs,
-		Reason:    input.Reason,
-		PublicIPs: input.PublicIPs,
+		Voucher:         v,
+		UserID:          userID,
+		VMs:             input.VMs,
+		Reason:          input.Reason,
+		PublicIPs:       input.PublicIPs,
+		VoucherDuration: input.VoucherDuration,
 	}
 
 	err = a.db.CreateVoucher(&voucher)

@@ -217,7 +217,7 @@ func (d *DB) CreateQuota(q *Quota) error {
 }
 
 // UpdateUserQuota updates quota
-func (d *DB) UpdateUserQuota(userID string, vms int, publicIPs int) error {
+func (d *DB) UpdateUserQuota(userID string, vms map[time.Time]int, publicIPs int) error {
 	return d.db.Model(&Quota{}).Where("user_id = ?", userID).Updates(map[string]interface{}{"vms": vms, "public_ips": publicIPs}).Error
 }
 

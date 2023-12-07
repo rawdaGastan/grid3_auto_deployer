@@ -74,7 +74,8 @@ type ApplyForVoucherInput struct {
 
 // AddVoucherInput struct for voucher applied by user
 type AddVoucherInput struct {
-	Voucher string `json:"voucher" binding:"required"`
+	Voucher           string `json:"voucher" binding:"required"`
+	RequestedDuration int    `json:"requestedDuration" binding:"required"`
 }
 
 // SignUpHandler creates account for user
@@ -163,7 +164,7 @@ func (a *App) SignUpHandler(req *http.Request) (interface{}, Response) {
 		// create empty quota
 		quota := models.Quota{
 			UserID: u.ID.String(),
-			Vms:    0,
+			Vms:    make(map[time.Time]int),
 		}
 		err = a.db.CreateQuota(&quota)
 		if err != nil {
@@ -612,7 +613,7 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, BadRequest(errors.New("failed to read voucher data"))
 	}
 
-	oldQuota, err := a.db.GetUserQuota(userID)
+	userQuota, err := a.db.GetUserQuota(userID)
 	if err == gorm.ErrRecordNotFound {
 		return nil, NotFound(errors.New("user quota is not found"))
 	}
@@ -648,7 +649,10 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	err = a.db.UpdateUserQuota(userID, oldQuota.Vms+voucherQuota.VMs, oldQuota.PublicIPs+voucherQuota.PublicIPs)
+	expirationDate := time.Now().Add(time.Duration(voucherQuota.VoucherDuration) * 30 * 24 * time.Hour)
+	userQuota.Vms[expirationDate] += voucherQuota.VMs
+
+	err = a.db.UpdateUserQuota(userID, userQuota.Vms, userQuota.PublicIPs+voucherQuota.PublicIPs)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))

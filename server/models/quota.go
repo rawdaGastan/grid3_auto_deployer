@@ -1,11 +1,11 @@
 // Package models for database models
 package models
 
-import "time"
+import "github.com/google/uuid"
 
 // Quota struct holds available vms for each user
 type Quota struct {
-	UserID    string            `json:"user_id"`
-	Vms       map[time.Time]int `json:"vms"`
-	PublicIPs int               `json:"public_ips"`
+	ID        uuid.UUID `gorm:"primary_key; unique; type:uuid; column:id"`
+	UserID    string    `json:"user_id"`
+	PublicIPs int       `json:"public_ips"`
 }

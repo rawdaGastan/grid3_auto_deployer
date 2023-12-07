@@ -5,6 +5,7 @@ package models
 type DeployVMInput struct {
 	Name      string `json:"name" binding:"required" validate:"min=3,max=20"`
 	Resources string `json:"resources" binding:"required"`
+	Duration  int    `json:"duration" binding:"required"`
 	Public    bool   `json:"public"`
 }
 
@@ -14,6 +15,7 @@ type K8sDeployInput struct {
 	Resources  string   `json:"resources"`
 	Public     bool     `json:"public"`
 	Workers    []Worker `json:"workers"`
+	Duration   int      `json:"duration" binding:"required"`
 }
 
 // WorkerInput deploy k8s worker input

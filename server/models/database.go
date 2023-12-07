@@ -162,7 +162,6 @@ func (d *DB) GetNotUsedVoucherByUserID(id string) (Voucher, error) {
 func (d *DB) CreateVM(vm *VM) error {
 	result := d.db.Create(&vm)
 	return result.Error
-
 }
 
 // GetVMByID return vm by its id
@@ -216,15 +215,43 @@ func (d *DB) CreateQuota(q *Quota) error {
 	return result.Error
 }
 
-// UpdateUserQuota updates quota
-func (d *DB) UpdateUserQuota(userID string, vms map[time.Time]int, publicIPs int) error {
-	return d.db.Model(&Quota{}).Where("user_id = ?", userID).Updates(map[string]interface{}{"vms": vms, "public_ips": publicIPs}).Error
+// CreateQuota creates a new quota vm
+func (d *DB) CreateQuotaVM(q *QuotaVM) error {
+	result := d.db.Create(&q)
+	return result.Error
 }
 
-// GetUserQuota gets user quota available vms (vms will be used for both vms and k8s clusters)
+// UpdateUserQuota updates quota
+func (d *DB) UpdateUserQuota(userID string, publicIPs int) error {
+	return d.db.Model(&Quota{}).Where("user_id = ?", userID).Update("public_ips", publicIPs).Error
+}
+
+// UpdateUserQuotaVMs updates quota vms
+func (d *DB) UpdateUserQuotaVMs(QuotaID string, expirationDate time.Time, vms int) error {
+	return d.db.Model(&QuotaVM{}).
+		Where(&QuotaVM{QoutaID: QuotaID, ExpirationDate: expirationDate}).
+		Update("vms", vms).Error
+}
+
+// GetUserQuota gets user quota available publicIPs
 func (d *DB) GetUserQuota(userID string) (Quota, error) {
 	var res Quota
 	query := d.db.First(&res, "user_id = ?", userID)
+	return res, query.Error
+}
+
+// GetUserQuotaVMs gets user quota available vms (vms will be used for both vms and k8s clusters)
+func (d *DB) GetUserQuotaVMs(quotaID string, expirationDate time.Time) (QuotaVM, error) {
+	var res QuotaVM
+	query := d.db.Select("expiration_date", "vms").
+		FirstOrCreate(&res, &QuotaVM{QoutaID: quotaID, ExpirationDate: expirationDate})
+	return res, query.Error
+}
+
+// ListUserQuotaVMs gets user quota available vms (vms will be used for both vms and k8s clusters)
+func (d *DB) ListUserQuotaVMs(quotaID string) ([]QuotaVM, error) {
+	var res []QuotaVM
+	query := d.db.Find(&res, "quota_id = ?", quotaID)
 	return res, query.Error
 }
 

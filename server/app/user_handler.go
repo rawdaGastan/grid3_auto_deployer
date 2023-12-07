@@ -164,7 +164,6 @@ func (a *App) SignUpHandler(req *http.Request) (interface{}, Response) {
 		// create empty quota
 		quota := models.Quota{
 			UserID: u.ID.String(),
-			Vms:    make(map[time.Time]int),
 		}
 		err = a.db.CreateQuota(&quota)
 		if err != nil {
@@ -613,7 +612,7 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, BadRequest(errors.New("failed to read voucher data"))
 	}
 
-	userQuota, err := a.db.GetUserQuota(userID)
+	quota, err := a.db.GetUserQuota(userID)
 	if err == gorm.ErrRecordNotFound {
 		return nil, NotFound(errors.New("user quota is not found"))
 	}
@@ -625,6 +624,17 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 	voucherQuota, err := a.db.GetVoucher(input.Voucher)
 	if err == gorm.ErrRecordNotFound {
 		return nil, NotFound(errors.New("user voucher is not found"))
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	expirationDate := time.Now().Add(time.Duration(voucherQuota.VoucherDuration) * 30 * 24 * time.Hour)
+
+	userQuotaVMs, err := a.db.GetUserQuotaVMs(quota.ID.String(), expirationDate)
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("user quota vms is not found"))
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -649,14 +659,18 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	expirationDate := time.Now().Add(time.Duration(voucherQuota.VoucherDuration) * 30 * 24 * time.Hour)
-	userQuota.Vms[expirationDate] += voucherQuota.VMs
-
-	err = a.db.UpdateUserQuota(userID, userQuota.Vms, userQuota.PublicIPs+voucherQuota.PublicIPs)
+	err = a.db.UpdateUserQuota(userID, quota.PublicIPs+voucherQuota.PublicIPs)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
+
+	err = a.db.UpdateUserQuotaVMs(quota.ID.String(), expirationDate, userQuotaVMs.Vms+voucherQuota.VMs)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
 	middlewares.VoucherActivated.WithLabelValues(userID, voucherQuota.Voucher, fmt.Sprint(voucherQuota.VMs), fmt.Sprint(voucherQuota.PublicIPs)).Inc()
 
 	return ResponseMsg{

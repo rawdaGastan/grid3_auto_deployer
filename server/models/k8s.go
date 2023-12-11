@@ -1,14 +1,17 @@
 // Package models for database models
 package models
 
+import "time"
+
 // K8sCluster holds all cluster data
 type K8sCluster struct {
-	ID              int      `json:"id" gorm:"primaryKey"`
-	UserID          string   `json:"userID"`
-	NetworkContract int      `json:"network_contract_id"`
-	ClusterContract int      `json:"contract_id"`
-	Master          Master   `json:"master" gorm:"foreignKey:ClusterID"`
-	Workers         []Worker `json:"workers" gorm:"foreignKey:ClusterID"`
+	ID              int       `json:"id" gorm:"primaryKey"`
+	UserID          string    `json:"userID"`
+	NetworkContract int       `json:"network_contract_id"`
+	ClusterContract int       `json:"contract_id"`
+	Master          Master    `json:"master" gorm:"foreignKey:ClusterID"`
+	Workers         []Worker  `json:"workers" gorm:"foreignKey:ClusterID"`
+	ExpirationDate  time.Time `json:"expiration_date"`
 }
 
 // Master struct for kubernetes master data

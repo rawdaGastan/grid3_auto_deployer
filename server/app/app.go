@@ -88,6 +88,8 @@ func (a *App) startBackgroundWorkers(ctx context.Context) {
 	go a.deployer.PeriodicDeploy(ctx, substrateBlockDiffInSeconds)
 
 	// remove expired vms and k8s
+	go a.deployer.CleanExpiredVMs(ctx)
+	go a.deployer.CleanExpiredK8S(ctx)
 
 	// check pending deployments
 	a.deployer.ConsumeVMRequest(ctx, true)

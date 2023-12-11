@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
@@ -154,6 +155,7 @@ func (d *Deployer) loadK8s(k8sDeployInput models.K8sDeployInput, userID string, 
 		ClusterContract: int(k8sContractID),
 		Master:          master,
 		Workers:         workers,
+		ExpirationDate:  time.Now().Add(time.Duration(k8sDeployInput.Duration) * 30 * 24 * time.Hour).Truncate(24 * time.Hour),
 	}
 
 	return k8sCluster, nil

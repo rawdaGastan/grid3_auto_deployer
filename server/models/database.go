@@ -73,7 +73,7 @@ func (d *DB) ListAllUsers() ([]UserUsedQuota, error) {
 		Joins("left join quota_vms on quota.id = quota_vms.quota_id").
 		Joins("left join vouchers on vouchers.used = true and vouchers.user_id = users.id").
 		Where("verified = true").
-		Group("users.id, quota.id").
+		Group("users.id").
 		Scan(&res)
 	return res, query.Error
 }

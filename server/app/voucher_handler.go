@@ -50,11 +50,11 @@ func (a *App) GenerateVoucherHandler(req *http.Request) (interface{}, Response) 
 	}
 
 	v := models.Voucher{
-		Voucher:         voucher,
-		VMs:             input.VMs,
-		PublicIPs:       input.PublicIPs,
-		VoucherDuration: input.VoucherDuration,
-		Approved:        true,
+		Voucher:   voucher,
+		VMs:       input.VMs,
+		PublicIPs: input.PublicIPs,
+		Approved:  true,
+		Duration:  input.VoucherDuration,
 	}
 
 	err = a.db.CreateVoucher(&v)

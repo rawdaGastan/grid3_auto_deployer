@@ -54,7 +54,16 @@ func (a *App) K8sDeployHandler(req *http.Request) (interface{}, Response) {
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	_, err = deployer.ValidateK8sQuota(k8sDeployInput, quota.Vms, quota.PublicIPs)
+	allQuotaVMs, err := a.db.ListUserQuotaVMs(quota.ID.String())
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("user quota vms are not found"))
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	_, _, err = deployer.ValidateK8sQuota(k8sDeployInput, allQuotaVMs, quota.PublicIPs)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, BadRequest(errors.New(err.Error()))

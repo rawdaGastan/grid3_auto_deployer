@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/codescalers/cloud4students/internal"
 	"github.com/codescalers/cloud4students/models"
@@ -45,7 +44,6 @@ func TestQuotaRouter(t *testing.T) {
 		err = app.db.CreateQuota(
 			&models.Quota{
 				UserID:    user.ID.String(),
-				Vms:       map[time.Time]int{time.Now().Add(time.Hour): 10},
 				PublicIPs: 1,
 			},
 		)

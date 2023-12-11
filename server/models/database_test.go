@@ -3,7 +3,6 @@ package models
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -482,7 +481,7 @@ func TestCreateQuota(t *testing.T) {
 func TestUpdateUserQuota(t *testing.T) {
 	db := setupDB(t)
 	t.Run("quota not found so no updates", func(t *testing.T) {
-		err := db.UpdateUserQuota("user", map[time.Time]int{time.Now(): 5}, 0)
+		err := db.UpdateUserQuota("user", 0)
 		assert.NoError(t, err)
 	})
 	t.Run("quota found", func(t *testing.T) {
@@ -494,24 +493,33 @@ func TestUpdateUserQuota(t *testing.T) {
 		err = db.CreateQuota(&quota2)
 		assert.NoError(t, err)
 
-		err = db.UpdateUserQuota("user", map[time.Time]int{time.Now().Add(time.Hour): 5}, 10)
+		err = db.UpdateUserQuota("user", 10)
 		assert.NoError(t, err)
 
 		var q Quota
 		err = db.db.First(&q, "user_id = 'user'").Error
 		assert.NoError(t, err)
-		assert.Equal(t, q.Vms, 5)
+		assert.Equal(t, q.PublicIPs, 10)
 
+		err = db.UpdateUserQuotaVMs(q.ID.String(), 1, 5)
+		assert.NoError(t, err)
+
+		var qvm QuotaVM
+		err = db.db.First(&qvm, "quota_id = ? AND duration = ?", q.ID.String(), 1).Error
+		assert.NoError(t, err)
+		assert.Equal(t, qvm.Vms, 5)
+
+		q = Quota{}
 		err = db.db.First(&q, "user_id = 'new-user'").Error
 		assert.NoError(t, err)
-		assert.Equal(t, q.Vms, 0)
+		assert.Equal(t, q.PublicIPs, 0)
 	})
 
 	t.Run("quota found with zero values", func(t *testing.T) {
 		quota := Quota{UserID: "1"}
 		err := db.CreateQuota(&quota)
 		assert.NoError(t, err)
-		err = db.UpdateUserQuota("1", map[time.Time]int{time.Now(): 0}, 0)
+		err = db.UpdateUserQuota("1", 0)
 		assert.NoError(t, err)
 	})
 }

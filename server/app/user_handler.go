@@ -573,6 +573,7 @@ func (a *App) ApplyForVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, BadRequest(errors.New("invalid voucher data"))
 	}
 
+	// make sure the requested duration is less that the maximum allowed duration
 	if input.VoucherDuration > a.config.VouchersMaxDuration {
 		return nil, BadRequest(fmt.Errorf("invalid voucher duration, max duration is %d", a.config.VouchersMaxDuration))
 	}
@@ -580,12 +581,12 @@ func (a *App) ApplyForVoucherHandler(req *http.Request) (interface{}, Response) 
 	// generate voucher for user but can't use it until admin approves it
 	v := internal.GenerateRandomVoucher(5)
 	voucher := models.Voucher{
-		Voucher:         v,
-		UserID:          userID,
-		VMs:             input.VMs,
-		Reason:          input.Reason,
-		PublicIPs:       input.PublicIPs,
-		VoucherDuration: input.VoucherDuration,
+		Voucher:   v,
+		UserID:    userID,
+		VMs:       input.VMs,
+		Reason:    input.Reason,
+		PublicIPs: input.PublicIPs,
+		Duration:  input.VoucherDuration,
 	}
 
 	err = a.db.CreateVoucher(&voucher)
@@ -630,9 +631,7 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	expirationDate := time.Now().Add(time.Duration(voucherQuota.VoucherDuration) * 30 * 24 * time.Hour)
-
-	userQuotaVMs, err := a.db.GetUserQuotaVMs(quota.ID.String(), expirationDate)
+	userQuotaVMs, err := a.db.GetUserQuotaVMs(quota.ID.String(), voucherQuota.Duration)
 	if err == gorm.ErrRecordNotFound {
 		return nil, NotFound(errors.New("user quota vms is not found"))
 	}
@@ -665,7 +664,7 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	err = a.db.UpdateUserQuotaVMs(quota.ID.String(), expirationDate, userQuotaVMs.Vms+voucherQuota.VMs)
+	err = a.db.UpdateUserQuotaVMs(quota.ID.String(), voucherQuota.Duration, userQuotaVMs.Vms+voucherQuota.VMs)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))

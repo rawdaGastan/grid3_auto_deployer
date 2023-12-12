@@ -8,10 +8,10 @@ import (
 
 // Quota struct holds available vms for each user
 type Quota struct {
-	ID        uuid.UUID `gorm:"primary_key; unique; type:uuid; column:id"`
+	ID        string    `gorm:"primary_key; unique; column:id"`
 	UserID    string    `json:"user_id"`
 	PublicIPs int       `json:"public_ips"`
-	VMs       []QuotaVM `json:"vms"`
+	QuotaVMs  []QuotaVM `json:"vms" gorm:"foreignKey:quota_id"`
 }
 
 // BeforeCreate generates a new uuid
@@ -21,6 +21,6 @@ func (quota *Quota) BeforeCreate(tx *gorm.DB) (err error) {
 		return err
 	}
 
-	quota.ID = id
+	quota.ID = id.String()
 	return
 }

@@ -501,13 +501,13 @@ func TestUpdateUserQuota(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, q.PublicIPs, 10)
 
-		err = db.UpdateUserQuotaVMs(q.ID.String(), 1, 5)
+		err = db.UpdateUserQuotaVMs(q.ID, 1, 5)
 		assert.NoError(t, err)
 
-		var qvm QuotaVM
-		err = db.db.First(&qvm, "quota_id = ? AND duration = ?", q.ID.String(), 1).Error
+		err = db.db.Preload("QuotaVMs").First(&q, "user_id = 'user'").Error
 		assert.NoError(t, err)
-		assert.Equal(t, qvm.Vms, 5)
+		assert.Equal(t, q.PublicIPs, 10)
+		assert.Equal(t, q.QuotaVMs[0].VMs, 5)
 
 		q = Quota{}
 		err = db.db.First(&q, "user_id = 'new-user'").Error
@@ -531,7 +531,7 @@ func TestGetUserQuota(t *testing.T) {
 		assert.Equal(t, err, gorm.ErrRecordNotFound)
 	})
 	t.Run("quota found", func(t *testing.T) {
-		quota1 := Quota{UserID: "user"}
+		quota1 := Quota{UserID: "user", QuotaVMs: []QuotaVM{}}
 		quota2 := Quota{UserID: "new-user"}
 
 		err := db.CreateQuota(&quota1)

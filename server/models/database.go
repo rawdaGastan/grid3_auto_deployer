@@ -216,25 +216,19 @@ func (d *DB) CreateQuota(q *Quota) error {
 	return result.Error
 }
 
-// CreateQuota creates a new quota vm
-func (d *DB) CreateQuotaVM(q *QuotaVM) error {
-	result := d.db.Create(&q)
-	return result.Error
-}
-
 // UpdateUserQuota updates quota
 func (d *DB) UpdateUserQuota(userID string, publicIPs int) error {
 	return d.db.Model(&Quota{}).Where("user_id = ?", userID).Update("public_ips", publicIPs).Error
 }
 
 // UpdateUserQuotaVMs updates quota vms
-func (d *DB) UpdateUserQuotaVMs(QuotaID string, duration int, vms int) error {
+func (d *DB) UpdateUserQuotaVMs(quotaID string, duration int, vms int) error {
 	query := d.db.Model(&QuotaVM{}).
-		Where(&QuotaVM{QuotaID: QuotaID, Duration: duration}).
+		Where(&QuotaVM{QuotaID: quotaID, Duration: duration}).
 		Update("vms", vms)
 
 	if query.RowsAffected == 0 {
-		return d.CreateQuotaVM(&QuotaVM{QuotaID: QuotaID, Duration: duration, Vms: vms})
+		return d.db.Create(&QuotaVM{QuotaID: quotaID, Duration: duration, VMs: vms}).Error
 	}
 	return query.Error
 }
@@ -242,21 +236,7 @@ func (d *DB) UpdateUserQuotaVMs(QuotaID string, duration int, vms int) error {
 // GetUserQuota gets user quota available publicIPs
 func (d *DB) GetUserQuota(userID string) (Quota, error) {
 	var res Quota
-	query := d.db.First(&res, "user_id = ?", userID)
-	return res, query.Error
-}
-
-// GetUserQuotaVMs gets user quota available vms (vms will be used for both vms and k8s clusters)
-func (d *DB) GetUserQuotaVMs(quotaID string, duration int) (QuotaVM, error) {
-	var res QuotaVM
-	query := d.db.FirstOrCreate(&res, &QuotaVM{QuotaID: quotaID, Duration: duration})
-	return res, query.Error
-}
-
-// ListUserQuotaVMs gets user quota available vms (vms will be used for both vms and k8s clusters)
-func (d *DB) ListUserQuotaVMs(quotaID string) ([]QuotaVM, error) {
-	var res []QuotaVM
-	query := d.db.Find(&res, "quota_id = ?", quotaID)
+	query := d.db.Preload("QuotaVMs").First(&res, "user_id = ?", userID)
 	return res, query.Error
 }
 

@@ -220,7 +220,7 @@ func ValidateK8sQuota(k models.K8sDeployInput, availableResourcesQuota []models.
 	}
 
 	for _, quotaVMs := range availableResourcesQuota {
-		if quotaVMs.Duration >= k.Duration && quotaVMs.Vms >= neededQuota {
+		if quotaVMs.Duration >= k.Duration && quotaVMs.VMs >= neededQuota {
 			return quotaVMs.Duration, neededQuota, nil
 		}
 	}
@@ -240,28 +240,10 @@ func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDe
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
-	allQuotaVMs, err := d.db.ListUserQuotaVMs(quota.ID.String())
-	if err == gorm.ErrRecordNotFound {
-		return http.StatusNotFound, errors.New("user quota vms are not found")
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
-	}
-
-	neededQuotaDuration, neededQuota, err := ValidateK8sQuota(k8sDeployInput, allQuotaVMs, quota.PublicIPs)
+	neededQuotaDuration, neededQuota, err := ValidateK8sQuota(k8sDeployInput, quota.QuotaVMs, quota.PublicIPs)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return http.StatusBadRequest, err
-	}
-
-	quotaVMs, err := d.db.GetUserQuotaVMs(quota.ID.String(), neededQuotaDuration)
-	if err == gorm.ErrRecordNotFound {
-		return http.StatusNotFound, errors.New("user quota vm is not found")
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
 	// deploy network and cluster
@@ -292,9 +274,10 @@ func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDe
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
-	err = d.db.UpdateUserQuotaVMs(quota.ID.String(), neededQuotaDuration, quotaVMs.Vms-neededQuota)
+	vms := getDurationVMs(quota, neededQuotaDuration)
+	err = d.db.UpdateUserQuotaVMs(quota.ID, neededQuotaDuration, vms-neededQuota)
 	if err == gorm.ErrRecordNotFound {
-		return http.StatusNotFound, errors.New("User quota vms is not found")
+		return http.StatusNotFound, errors.New("user quota vms are not found")
 	}
 	if err != nil {
 		log.Error().Err(err).Send()

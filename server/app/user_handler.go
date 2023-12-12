@@ -631,15 +631,6 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	userQuotaVMs, err := a.db.GetUserQuotaVMs(quota.ID.String(), voucherQuota.VoucherDurationInMonth)
-	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("user quota vms is not found"))
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
-	}
-
 	if voucherQuota.Rejected {
 		return nil, BadRequest(errors.New("voucher is rejected"))
 	}
@@ -664,7 +655,8 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	err = a.db.UpdateUserQuotaVMs(quota.ID.String(), voucherQuota.VoucherDurationInMonth, userQuotaVMs.Vms+voucherQuota.VMs)
+	vms := getDurationVMs(quota, voucherQuota.VoucherDurationInMonth)
+	err = a.db.UpdateUserQuotaVMs(quota.ID, voucherQuota.VoucherDurationInMonth, vms+voucherQuota.VMs)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -676,4 +668,13 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		Message: "Voucher is applied successfully",
 		Data:    nil,
 	}, Ok()
+}
+
+func getDurationVMs(quota models.Quota, duration int) int {
+	for _, q := range quota.QuotaVMs {
+		if duration == q.Duration {
+			return q.VMs
+		}
+	}
+	return 0
 }

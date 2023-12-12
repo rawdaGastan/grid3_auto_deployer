@@ -54,16 +54,7 @@ func (a *App) DeployVMHandler(req *http.Request) (interface{}, Response) {
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	quotaVMs, err := a.db.ListUserQuotaVMs(quota.ID.String())
-	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("user quota vms is not found"))
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
-	}
-
-	_, _, err = deployer.ValidateVMQuota(input, quotaVMs, quota.PublicIPs)
+	_, _, err = deployer.ValidateVMQuota(input, quota.QuotaVMs, quota.PublicIPs)
 	if err != nil {
 		return nil, BadRequest(errors.New(err.Error()))
 	}

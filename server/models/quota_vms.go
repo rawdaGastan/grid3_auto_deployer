@@ -4,6 +4,6 @@ package models
 // QuotaVM struct holds available vms and their expiration date for each user
 type QuotaVM struct {
 	QuotaID  string `json:"qouta_id"`
-	Vms      int    `json:"vms"`
-	Duration int    `json:"duration"`
+	VMs      int    `json:"vms"`
+	Duration int    `json:"duration" gorm:"unique"`
 }

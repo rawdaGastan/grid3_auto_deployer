@@ -99,7 +99,7 @@ func ValidateVMQuota(vm models.DeployVMInput, availableResourcesQuota []models.Q
 	}
 
 	for _, quotaVMs := range availableResourcesQuota {
-		if quotaVMs.Duration >= vm.Duration && quotaVMs.Vms >= neededQuota {
+		if quotaVMs.Duration >= vm.Duration && quotaVMs.VMs >= neededQuota {
 			return quotaVMs.Duration, neededQuota, nil
 		}
 	}
@@ -118,27 +118,9 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
-	allQuotaVMs, err := d.db.ListUserQuotaVMs(quota.ID.String())
-	if err == gorm.ErrRecordNotFound {
-		return http.StatusNotFound, errors.New("user quota vm is not found")
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
-	}
-
-	neededQuotaDuration, neededQuota, err := ValidateVMQuota(input, allQuotaVMs, quota.PublicIPs)
+	neededQuotaDuration, neededQuota, err := ValidateVMQuota(input, quota.QuotaVMs, quota.PublicIPs)
 	if err != nil {
 		return http.StatusBadRequest, err
-	}
-
-	quotaVMs, err := d.db.GetUserQuotaVMs(quota.ID.String(), neededQuotaDuration)
-	if err == gorm.ErrRecordNotFound {
-		return http.StatusNotFound, errors.New("user quota vm is not found")
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
 	// deploy network and vm
@@ -147,7 +129,6 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 		log.Error().Err(err).Send()
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
-
 	userVM := models.VM{
 		UserID:            user.ID.String(),
 		Name:              vm.Name,
@@ -160,7 +141,7 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 		MRU:               uint64(vm.Memory),
 		ContractID:        contractID,
 		NetworkContractID: networkContractID,
-		ExpiresAt:    time.Now().Add(time.Duration(quotaVMs.Duration) * 30 * 24 * time.Hour).Truncate(24 * time.Hour),
+		ExpiresAt:         time.Now().Add(time.Duration(neededQuotaDuration) * 30 * 24 * time.Hour).Truncate(24 * time.Hour),
 	}
 
 	err = d.db.CreateVM(&userVM)
@@ -173,6 +154,7 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 	if input.Public {
 		publicIPsQuota -= publicQuota
 	}
+
 	// update quota of user
 	err = d.db.UpdateUserQuota(user.ID.String(), publicIPsQuota)
 	if err == gorm.ErrRecordNotFound {
@@ -183,9 +165,10 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
-	err = d.db.UpdateUserQuotaVMs(quota.ID.String(), neededQuotaDuration, quotaVMs.Vms-neededQuota)
+	vms := getDurationVMs(quota, neededQuotaDuration)
+	err = d.db.UpdateUserQuotaVMs(quota.ID, neededQuotaDuration, vms-neededQuota)
 	if err == gorm.ErrRecordNotFound {
-		return http.StatusNotFound, errors.New("User quota vms is not found")
+		return http.StatusNotFound, errors.New("User quota is not found")
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -194,4 +177,13 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 
 	middlewares.Deployments.WithLabelValues(user.ID.String(), input.Resources, "vm").Inc()
 	return 0, nil
+}
+
+func getDurationVMs(quota models.Quota, duration int) int {
+	for _, q := range quota.QuotaVMs {
+		if duration == q.Duration {
+			return q.VMs
+		}
+	}
+	return 0
 }

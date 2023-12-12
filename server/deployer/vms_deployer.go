@@ -160,7 +160,7 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 		MRU:               uint64(vm.Memory),
 		ContractID:        contractID,
 		NetworkContractID: networkContractID,
-		ExpirationDate:    time.Now().Add(time.Duration(quotaVMs.Duration) * 30 * 24 * time.Hour).Truncate(24 * time.Hour),
+		ExpiresAt:    time.Now().Add(time.Duration(quotaVMs.Duration) * 30 * 24 * time.Hour).Truncate(24 * time.Hour),
 	}
 
 	err = d.db.CreateVM(&userVM)

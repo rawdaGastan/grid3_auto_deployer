@@ -166,6 +166,74 @@ func (d *Deployer) CancelDeployment(contractID uint64, netContractID uint64, dlT
 	return nil
 }
 
+func (d *Deployer) WarnUsersWithExpiredVMs(ctx context.Context) {
+	ticker := time.NewTicker(24 * time.Hour)
+	for range ticker.C {
+		users, err := d.db.ListAllUsers()
+		if err != nil {
+			log.Error().Err(err).Msg("failed to get all users")
+			return
+		}
+
+		for _, user := range users {
+			vms, err := d.db.GetAllVms(user.UserID)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to get all user vms")
+				continue
+			}
+
+			for _, vm := range vms {
+				if time.Now().Before(vm.ExpiresAt) && time.Until(vm.ExpiresAt) < time.Hour*24 {
+					notification := models.Notification{
+						UserID: user.UserID,
+						Msg:    fmt.Sprintf("Warning: vm with id %d expires in one day", vm.ID),
+						Type:   models.VMsType,
+					}
+
+					err = d.db.CreateNotification(&notification)
+					if err != nil {
+						log.Error().Err(err).Msgf("failed to create notification: %+v", notification)
+					}
+				}
+			}
+		}
+	}
+}
+
+func (d *Deployer) WarnUsersWithExpiredK8s(ctx context.Context) {
+	ticker := time.NewTicker(24 * time.Hour)
+	for range ticker.C {
+		users, err := d.db.ListAllUsers()
+		if err != nil {
+			log.Error().Err(err).Msg("failed to get all users")
+			return
+		}
+
+		for _, user := range users {
+			k8s, err := d.db.GetAllK8s(user.UserID)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to get all user k8s clusters")
+				continue
+			}
+
+			for _, k := range k8s {
+				if time.Now().Before(k.ExpiresAt) && time.Until(k.ExpiresAt) < time.Hour*24 {
+					notification := models.Notification{
+						UserID: user.UserID,
+						Msg:    fmt.Sprintf("Warning: k8s cluster with id %d expires in one day", k.ID),
+						Type:   models.K8sType,
+					}
+
+					err = d.db.CreateNotification(&notification)
+					if err != nil {
+						log.Error().Err(err).Msgf("failed to create notification: %+v", notification)
+					}
+				}
+			}
+		}
+	}
+}
+
 func (d *Deployer) CleanExpiredVMs(ctx context.Context) {
 	ticker := time.NewTicker(24 * time.Hour)
 	for range ticker.C {
@@ -183,7 +251,7 @@ func (d *Deployer) CleanExpiredVMs(ctx context.Context) {
 			}
 
 			for _, vm := range vms {
-				if vm.ExpirationDate.Before(time.Now()) {
+				if vm.ExpiresAt.Before(time.Now()) {
 					err = d.CancelDeployment(vm.ContractID, vm.NetworkContractID, "vm", vm.Name)
 					if err != nil {
 						log.Error().Err(err).Msg("failed to cancel contract of expired vm")
@@ -215,7 +283,7 @@ func (d *Deployer) CleanExpiredK8S(ctx context.Context) {
 			}
 
 			for _, k := range k8s {
-				if k.ExpirationDate.Before(time.Now()) {
+				if k.ExpiresAt.Before(time.Now()) {
 					err = d.CancelDeployment(uint64(k.ClusterContract), uint64(k.NetworkContract), "k8s", k.Master.Name)
 					if err != nil {
 						log.Error().Err(err).Msg("failed to cancel contract of expired k8s cluster")

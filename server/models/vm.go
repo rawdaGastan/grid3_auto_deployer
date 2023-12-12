@@ -17,7 +17,7 @@ type VM struct {
 	MRU               uint64    `json:"mru"`
 	ContractID        uint64    `json:"contractID"`
 	NetworkContractID uint64    `json:"networkContractID"`
-	ExpirationDate    time.Time `json:"expirationDate" binding:"required"`
+	ExpiresAt         time.Time `json:"expires_at" binding:"required"`
 }
 
 // DeploymentsCount has the vms and ips reserved in the grid

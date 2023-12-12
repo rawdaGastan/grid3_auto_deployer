@@ -66,16 +66,16 @@ type EmailInput struct {
 
 // ApplyForVoucherInput struct for user to apply for voucher
 type ApplyForVoucherInput struct {
-	VMs             int    `json:"vms" binding:"required" validate:"min=0"`
-	PublicIPs       int    `json:"public_ips" binding:"required" validate:"min=0"`
-	Reason          string `json:"reason" binding:"required" validate:"nonzero"`
-	VoucherDuration int    `json:"voucher_duration" binding:"required"`
+	VMs                    int    `json:"vms" binding:"required" validate:"min=0"`
+	PublicIPs              int    `json:"public_ips" binding:"required" validate:"min=0"`
+	Reason                 string `json:"reason" binding:"required" validate:"nonzero"`
+	VoucherDurationInMonth int    `json:"voucher_duration_in_month" binding:"required"`
 }
 
 // AddVoucherInput struct for voucher applied by user
 type AddVoucherInput struct {
-	Voucher           string `json:"voucher" binding:"required"`
-	RequestedDuration int    `json:"requestedDuration" binding:"required"`
+	Voucher                string `json:"voucher" binding:"required"`
+	VoucherDurationInMonth int    `json:"voucher_duration_in_month" binding:"required"`
 }
 
 // SignUpHandler creates account for user
@@ -574,19 +574,19 @@ func (a *App) ApplyForVoucherHandler(req *http.Request) (interface{}, Response) 
 	}
 
 	// make sure the requested duration is less that the maximum allowed duration
-	if input.VoucherDuration > a.config.VouchersMaxDuration {
+	if input.VoucherDurationInMonth > a.config.VouchersMaxDuration {
 		return nil, BadRequest(fmt.Errorf("invalid voucher duration, max duration is %d", a.config.VouchersMaxDuration))
 	}
 
 	// generate voucher for user but can't use it until admin approves it
 	v := internal.GenerateRandomVoucher(5)
 	voucher := models.Voucher{
-		Voucher:   v,
-		UserID:    userID,
-		VMs:       input.VMs,
-		Reason:    input.Reason,
-		PublicIPs: input.PublicIPs,
-		Duration:  input.VoucherDuration,
+		Voucher:                v,
+		UserID:                 userID,
+		VMs:                    input.VMs,
+		Reason:                 input.Reason,
+		PublicIPs:              input.PublicIPs,
+		VoucherDurationInMonth: input.VoucherDurationInMonth,
 	}
 
 	err = a.db.CreateVoucher(&voucher)
@@ -631,7 +631,7 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	userQuotaVMs, err := a.db.GetUserQuotaVMs(quota.ID.String(), voucherQuota.Duration)
+	userQuotaVMs, err := a.db.GetUserQuotaVMs(quota.ID.String(), voucherQuota.VoucherDurationInMonth)
 	if err == gorm.ErrRecordNotFound {
 		return nil, NotFound(errors.New("user quota vms is not found"))
 	}
@@ -664,7 +664,7 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	err = a.db.UpdateUserQuotaVMs(quota.ID.String(), voucherQuota.Duration, userQuotaVMs.Vms+voucherQuota.VMs)
+	err = a.db.UpdateUserQuotaVMs(quota.ID.String(), voucherQuota.VoucherDurationInMonth, userQuotaVMs.Vms+voucherQuota.VMs)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))

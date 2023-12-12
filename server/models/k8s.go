@@ -11,7 +11,7 @@ type K8sCluster struct {
 	ClusterContract int       `json:"contract_id"`
 	Master          Master    `json:"master" gorm:"foreignKey:ClusterID"`
 	Workers         []Worker  `json:"workers" gorm:"foreignKey:ClusterID"`
-	ExpirationDate  time.Time `json:"expiration_date"`
+	ExpiresAt       time.Time `json:"expires_at"`
 }
 
 // Master struct for kubernetes master data

@@ -226,7 +226,7 @@ func (a *App) ListDeployments(req *http.Request) (interface{}, Response) {
 	}
 
 	return ResponseMsg{
-		Message: "Deployments are deleted successfully",
+		Message: "Deployments are listed successfully",
 		Data:    map[string]interface{}{"vms": allVMs, "k8s": allClusters},
 	}, Ok()
 }

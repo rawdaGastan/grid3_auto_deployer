@@ -27,9 +27,7 @@ clean:
 	rm ./bin -rf
 	
 lint:
-	@echo "Running $@"
-	golangci-lint run -c .golangci.yml --timeout 10m
-
-getverifiers:
-	@echo "Installing golangci-lint" && go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.50.1
+	@echo "Installing golangci-lint" && go get github.com/golangci/golangci-lint/cmd/golangci-lint && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	go mod tidy
+	@echo "Running $@"
+	${GOPATH}/bin/golangci-lint run -c .golangci.yml --timeout 10m

@@ -44,7 +44,6 @@ func TestQuotaRouter(t *testing.T) {
 		err = app.db.CreateQuota(
 			&models.Quota{
 				UserID:    user.ID.String(),
-				Vms:       10,
 				PublicIPs: 1,
 			},
 		)

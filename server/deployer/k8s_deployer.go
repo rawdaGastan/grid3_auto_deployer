@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
@@ -154,6 +155,7 @@ func (d *Deployer) loadK8s(k8sDeployInput models.K8sDeployInput, userID string, 
 		ClusterContract: int(k8sContractID),
 		Master:          master,
 		Workers:         workers,
+		ExpiresAt:       time.Now().Add(time.Duration(k8sDeployInput.Duration) * 30 * 24 * time.Hour).Truncate(24 * time.Hour),
 	}
 
 	return k8sCluster, nil
@@ -199,28 +201,31 @@ func (d *Deployer) getK8sAvailableNode(ctx context.Context, k models.K8sDeployIn
 }
 
 // ValidateK8sQuota validates the quota a k8s deployment need
-func ValidateK8sQuota(k models.K8sDeployInput, availableResourcesQuota, availablePublicIPsQuota int) (int, error) {
+func ValidateK8sQuota(k models.K8sDeployInput, availableResourcesQuota []models.QuotaVM, availablePublicIPsQuota int) (int, int, error) {
 	neededQuota, err := calcNeededQuota(k.Resources)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
+	}
+
+	if k.Public && availablePublicIPsQuota < publicQuota {
+		return 0, 0, fmt.Errorf("no available quota %d for public ips", availablePublicIPsQuota)
 	}
 
 	for _, worker := range k.Workers {
 		workerQuota, err := calcNeededQuota(worker.Resources)
 		if err != nil {
-			return 0, err
+			return 0, 0, err
 		}
 		neededQuota += workerQuota
 	}
 
-	if availableResourcesQuota < neededQuota {
-		return 0, fmt.Errorf("no available quota %d for kubernetes deployment, you can request a new voucher", availableResourcesQuota)
-	}
-	if k.Public && availablePublicIPsQuota < publicQuota {
-		return 0, fmt.Errorf("no available quota %d for public ips", availablePublicIPsQuota)
+	for _, quotaVMs := range availableResourcesQuota {
+		if quotaVMs.Duration >= k.Duration && quotaVMs.VMs >= neededQuota {
+			return quotaVMs.Duration, neededQuota, nil
+		}
 	}
 
-	return neededQuota, nil
+	return 0, 0, fmt.Errorf("no available quota %v for kubernetes deployment, you can request a new voucher", availableResourcesQuota)
 }
 
 func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDeployInput models.K8sDeployInput, adminSSHKey string) (int, error) {
@@ -235,7 +240,7 @@ func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDe
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
-	neededQuota, err := ValidateK8sQuota(k8sDeployInput, quota.Vms, quota.PublicIPs)
+	neededQuotaDuration, neededQuota, err := ValidateK8sQuota(k8sDeployInput, quota.QuotaVMs, quota.PublicIPs)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return http.StatusBadRequest, err
@@ -253,14 +258,26 @@ func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDe
 		log.Error().Err(err).Send()
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
+
 	publicIPsQuota := quota.PublicIPs
 	if k8sDeployInput.Public {
 		publicIPsQuota -= publicQuota
 	}
+
 	// update quota
-	err = d.db.UpdateUserQuota(user.ID.String(), quota.Vms-neededQuota, publicIPsQuota)
+	err = d.db.UpdateUserQuota(user.ID.String(), publicIPsQuota)
 	if err == gorm.ErrRecordNotFound {
 		return http.StatusNotFound, errors.New("user quota is not found")
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
+	}
+
+	vms := getDurationVMs(quota, neededQuotaDuration)
+	err = d.db.UpdateUserQuotaVMs(quota.ID, neededQuotaDuration, vms-neededQuota)
+	if err == gorm.ErrRecordNotFound {
+		return http.StatusNotFound, errors.New("user quota vms are not found")
 	}
 	if err != nil {
 		log.Error().Err(err).Send()

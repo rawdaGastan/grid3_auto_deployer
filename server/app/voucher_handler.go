@@ -4,6 +4,7 @@ package app
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -17,9 +18,10 @@ import (
 
 // GenerateVoucherInput struct for data needed when user generate vouchers
 type GenerateVoucherInput struct {
-	Length    int `json:"length" binding:"required" validate:"min=3,max=20"`
-	VMs       int `json:"vms" binding:"required"`
-	PublicIPs int `json:"public_ips" binding:"required"`
+	Length                 int `json:"length" binding:"required" validate:"min=3,max=20"`
+	VMs                    int `json:"vms" binding:"required"`
+	PublicIPs              int `json:"public_ips" binding:"required"`
+	VoucherDurationInMonth int `json:"voucher_duration_in_month" binding:"required"`
 }
 
 // UpdateVoucherInput struct for data needed when user update voucher
@@ -43,11 +45,16 @@ func (a *App) GenerateVoucherHandler(req *http.Request) (interface{}, Response) 
 	}
 	voucher := internal.GenerateRandomVoucher(input.Length)
 
+	if input.VoucherDurationInMonth > a.config.VouchersMaxDuration {
+		return nil, BadRequest(fmt.Errorf("invalid voucher duration, max duration is %d", a.config.VouchersMaxDuration))
+	}
+
 	v := models.Voucher{
-		Voucher:   voucher,
-		VMs:       input.VMs,
-		PublicIPs: input.PublicIPs,
-		Approved:  true,
+		Voucher:                voucher,
+		VMs:                    input.VMs,
+		PublicIPs:              input.PublicIPs,
+		Approved:               true,
+		VoucherDurationInMonth: input.VoucherDurationInMonth,
 	}
 
 	err = a.db.CreateVoucher(&v)

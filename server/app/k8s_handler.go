@@ -54,7 +54,7 @@ func (a *App) K8sDeployHandler(req *http.Request) (interface{}, Response) {
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	_, err = deployer.ValidateK8sQuota(k8sDeployInput, quota.Vms, quota.PublicIPs)
+	_, _, err = deployer.ValidateK8sQuota(k8sDeployInput, quota.QuotaVMs, quota.PublicIPs)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, BadRequest(errors.New(err.Error()))

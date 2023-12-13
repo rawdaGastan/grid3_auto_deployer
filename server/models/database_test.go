@@ -116,7 +116,6 @@ func TestListAllUsers(t *testing.T) {
 		assert.Equal(t, users[0].Name, user1.Name)
 		assert.Equal(t, users[0].Email, user1.Email)
 		assert.Equal(t, users[0].HashedPassword, user1.HashedPassword)
-
 	})
 }
 
@@ -142,7 +141,6 @@ func TestGetCodeByEmail(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, code, user.Code)
 	})
-
 }
 
 func TestUpdatePassword(t *testing.T) {
@@ -232,6 +230,7 @@ func TestUpdateVerification(t *testing.T) {
 		assert.Equal(t, u.Verified, true)
 	})
 }
+
 func TestAddUserVoucher(t *testing.T) {
 	db := setupDB(t)
 	t.Run("user and voucher not found so nothing updated", func(t *testing.T) {
@@ -347,6 +346,7 @@ func TestGetVMByID(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
 func TestGetAllVMs(t *testing.T) {
 	db := setupDB(t)
 	t.Run("no vms with user", func(t *testing.T) {
@@ -374,7 +374,6 @@ func TestGetAllVMs(t *testing.T) {
 		assert.Equal(t, vms, []VM{vm3})
 		assert.NoError(t, err)
 	})
-
 }
 
 func TestAvailableVMName(t *testing.T) {
@@ -393,7 +392,6 @@ func TestAvailableVMName(t *testing.T) {
 		valid, err := db.AvailableVMName("vm1")
 		assert.NoError(t, err)
 		assert.Equal(t, false, valid)
-
 	})
 
 	t.Run("test with new name", func(t *testing.T) {
@@ -404,10 +402,9 @@ func TestAvailableVMName(t *testing.T) {
 		valid, err := db.AvailableVMName("vm")
 		assert.NoError(t, err)
 		assert.Equal(t, true, valid)
-
 	})
-
 }
+
 func TestDeleteVMByID(t *testing.T) {
 	db := setupDB(t)
 	t.Run("delete non existing vm", func(t *testing.T) {
@@ -484,7 +481,7 @@ func TestCreateQuota(t *testing.T) {
 func TestUpdateUserQuota(t *testing.T) {
 	db := setupDB(t)
 	t.Run("quota not found so no updates", func(t *testing.T) {
-		err := db.UpdateUserQuota("user", 5, 0)
+		err := db.UpdateUserQuota("user", 0)
 		assert.NoError(t, err)
 	})
 	t.Run("quota found", func(t *testing.T) {
@@ -496,28 +493,37 @@ func TestUpdateUserQuota(t *testing.T) {
 		err = db.CreateQuota(&quota2)
 		assert.NoError(t, err)
 
-		err = db.UpdateUserQuota("user", 5, 10)
+		err = db.UpdateUserQuota("user", 10)
 		assert.NoError(t, err)
 
 		var q Quota
 		err = db.db.First(&q, "user_id = 'user'").Error
 		assert.NoError(t, err)
-		assert.Equal(t, q.Vms, 5)
+		assert.Equal(t, q.PublicIPs, 10)
 
+		err = db.UpdateUserQuotaVMs(q.ID, 1, 5)
+		assert.NoError(t, err)
+
+		err = db.db.Preload("QuotaVMs").First(&q, "user_id = 'user'").Error
+		assert.NoError(t, err)
+		assert.Equal(t, q.PublicIPs, 10)
+		assert.Equal(t, q.QuotaVMs[0].VMs, 5)
+
+		q = Quota{}
 		err = db.db.First(&q, "user_id = 'new-user'").Error
 		assert.NoError(t, err)
-		assert.Equal(t, q.Vms, 0)
-
+		assert.Equal(t, q.PublicIPs, 0)
 	})
 
 	t.Run("quota found with zero values", func(t *testing.T) {
 		quota := Quota{UserID: "1"}
 		err := db.CreateQuota(&quota)
 		assert.NoError(t, err)
-		err = db.UpdateUserQuota("1", 0, 0)
+		err = db.UpdateUserQuota("1", 0)
 		assert.NoError(t, err)
 	})
 }
+
 func TestGetUserQuota(t *testing.T) {
 	db := setupDB(t)
 	t.Run("quota not found", func(t *testing.T) {
@@ -525,7 +531,7 @@ func TestGetUserQuota(t *testing.T) {
 		assert.Equal(t, err, gorm.ErrRecordNotFound)
 	})
 	t.Run("quota found", func(t *testing.T) {
-		quota1 := Quota{UserID: "user"}
+		quota1 := Quota{UserID: "user", QuotaVMs: []QuotaVM{}}
 		quota2 := Quota{UserID: "new-user"}
 
 		err := db.CreateQuota(&quota1)
@@ -570,6 +576,7 @@ func TestGetVoucher(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
 func TestGetVoucherByID(t *testing.T) {
 	db := setupDB(t)
 	t.Run("voucher not found", func(t *testing.T) {
@@ -693,6 +700,7 @@ func TestCreateK8s(t *testing.T) {
 	assert.Equal(t, w[1].Name, "worker2")
 	assert.Equal(t, w[1].ClusterID, 1)
 }
+
 func TestGetK8s(t *testing.T) {
 	db := setupDB(t)
 	t.Run("K8s not found", func(t *testing.T) {
@@ -726,6 +734,7 @@ func TestGetK8s(t *testing.T) {
 		assert.NotEqual(t, k, k8s2)
 	})
 }
+
 func TestGetAllK8s(t *testing.T) {
 	db := setupDB(t)
 	t.Run("K8s not found", func(t *testing.T) {
@@ -771,8 +780,8 @@ func TestGetAllK8s(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, k, []K8sCluster{k8s3})
 	})
-
 }
+
 func TestDeleteK8s(t *testing.T) {
 	db := setupDB(t)
 	t.Run("K8s not found", func(t *testing.T) {
@@ -813,6 +822,7 @@ func TestDeleteK8s(t *testing.T) {
 		assert.Equal(t, k, k8s2)
 	})
 }
+
 func TestDeleteAllK8s(t *testing.T) {
 	db := setupDB(t)
 	t.Run("K8s not found", func(t *testing.T) {
@@ -891,7 +901,6 @@ func TestAvailableK8sName(t *testing.T) {
 		valid, err := db.AvailableK8sName("master")
 		assert.NoError(t, err)
 		assert.Equal(t, false, valid)
-
 	})
 
 	t.Run("test with new name", func(t *testing.T) {
@@ -908,16 +917,13 @@ func TestAvailableK8sName(t *testing.T) {
 		valid, err := db.AvailableK8sName("new-master")
 		assert.NoError(t, err)
 		assert.Equal(t, true, valid)
-
 	})
-
 }
 
 func TestUpdateMaintenance(t *testing.T) {
 	db := setupDB(t)
 	err := db.UpdateMaintenance(true)
 	assert.NoError(t, err)
-
 }
 
 func TestGetMaintenance(t *testing.T) {

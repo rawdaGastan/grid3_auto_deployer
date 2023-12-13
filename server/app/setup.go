@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-
 	"testing"
 
 	c4sDeployer "github.com/codescalers/cloud4students/deployer"
@@ -73,23 +72,35 @@ func SetUp(t testing.TB) *App {
 	`, dbPath)
 
 	err := os.WriteFile(configPath, []byte(config), 0644)
-	assert.NoError(t, err)
+	if !assert.NoError(t, err) {
+		return &App{}
+	}
 
 	configuration, err := internal.ReadConfFile(configPath)
-	assert.NoError(t, err)
+	if !assert.NoError(t, err) {
+		return &App{}
+	}
 
 	db := models.NewDB()
 	err = db.Connect(configuration.Database.File)
-	assert.NoError(t, err)
+	if !assert.NoError(t, err) {
+		return &App{}
+	}
 
 	err = db.Migrate()
-	assert.NoError(t, err)
+	if !assert.NoError(t, err) {
+		return &App{}
+	}
 
 	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, false)
-	assert.NoError(t, err)
+	if !assert.NoError(t, err) {
+		return &App{}
+	}
 
 	newDeployer, err := c4sDeployer.NewDeployer(db, streams.RedisClient{}, tfPluginClient)
-	assert.NoError(t, err)
+	if !assert.NoError(t, err) {
+		return &App{}
+	}
 
 	app := &App{
 		config:   configuration,

@@ -66,21 +66,22 @@ type EmailInput struct {
 
 // ApplyForVoucherInput struct for user to apply for voucher
 type ApplyForVoucherInput struct {
-	VMs       int    `json:"vms" binding:"required" validate:"min=0"`
-	PublicIPs int    `json:"public_ips" binding:"required" validate:"min=0"`
-	Reason    string `json:"reason" binding:"required" validate:"nonzero"`
+	VMs                    int    `json:"vms" binding:"required" validate:"min=0"`
+	PublicIPs              int    `json:"public_ips" binding:"required" validate:"min=0"`
+	Reason                 string `json:"reason" binding:"required" validate:"nonzero"`
+	VoucherDurationInMonth int    `json:"voucher_duration_in_month" binding:"required"`
 }
 
 // AddVoucherInput struct for voucher applied by user
 type AddVoucherInput struct {
-	Voucher string `json:"voucher" binding:"required"`
+	Voucher                string `json:"voucher" binding:"required"`
+	VoucherDurationInMonth int    `json:"voucher_duration_in_month" binding:"required"`
 }
 
 // SignUpHandler creates account for user
 func (a *App) SignUpHandler(req *http.Request) (interface{}, Response) {
 	var signUp SignUpInput
 	err := json.NewDecoder(req.Body).Decode(&signUp)
-
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, BadRequest(errors.New("failed to read sign up data"))
@@ -163,7 +164,6 @@ func (a *App) SignUpHandler(req *http.Request) (interface{}, Response) {
 		// create empty quota
 		quota := models.Quota{
 			UserID: u.ID.String(),
-			Vms:    0,
 		}
 		err = a.db.CreateQuota(&quota)
 		if err != nil {
@@ -573,14 +573,20 @@ func (a *App) ApplyForVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, BadRequest(errors.New("invalid voucher data"))
 	}
 
+	// make sure the requested duration is less that the maximum allowed duration
+	if input.VoucherDurationInMonth > a.config.VouchersMaxDuration {
+		return nil, BadRequest(fmt.Errorf("invalid voucher duration, max duration is %d", a.config.VouchersMaxDuration))
+	}
+
 	// generate voucher for user but can't use it until admin approves it
 	v := internal.GenerateRandomVoucher(5)
 	voucher := models.Voucher{
-		Voucher:   v,
-		UserID:    userID,
-		VMs:       input.VMs,
-		Reason:    input.Reason,
-		PublicIPs: input.PublicIPs,
+		Voucher:                v,
+		UserID:                 userID,
+		VMs:                    input.VMs,
+		Reason:                 input.Reason,
+		PublicIPs:              input.PublicIPs,
+		VoucherDurationInMonth: input.VoucherDurationInMonth,
 	}
 
 	err = a.db.CreateVoucher(&voucher)
@@ -607,7 +613,7 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, BadRequest(errors.New("failed to read voucher data"))
 	}
 
-	oldQuota, err := a.db.GetUserQuota(userID)
+	quota, err := a.db.GetUserQuota(userID)
 	if err == gorm.ErrRecordNotFound {
 		return nil, NotFound(errors.New("user quota is not found"))
 	}
@@ -643,15 +649,32 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	err = a.db.UpdateUserQuota(userID, oldQuota.Vms+voucherQuota.VMs, oldQuota.PublicIPs+voucherQuota.PublicIPs)
+	err = a.db.UpdateUserQuota(userID, quota.PublicIPs+voucherQuota.PublicIPs)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
+
+	vms := getDurationVMs(quota, voucherQuota.VoucherDurationInMonth)
+	err = a.db.UpdateUserQuotaVMs(quota.ID, voucherQuota.VoucherDurationInMonth, vms+voucherQuota.VMs)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
 	middlewares.VoucherActivated.WithLabelValues(userID, voucherQuota.Voucher, fmt.Sprint(voucherQuota.VMs), fmt.Sprint(voucherQuota.PublicIPs)).Inc()
 
 	return ResponseMsg{
 		Message: "Voucher is applied successfully",
 		Data:    nil,
 	}, Ok()
+}
+
+func getDurationVMs(quota models.Quota, duration int) int {
+	for _, q := range quota.QuotaVMs {
+		if duration == q.Duration {
+			return q.VMs
+		}
+	}
+	return 0
 }

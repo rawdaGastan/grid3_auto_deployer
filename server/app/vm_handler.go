@@ -54,7 +54,7 @@ func (a *App) DeployVMHandler(req *http.Request) (interface{}, Response) {
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	_, err = deployer.ValidateVMQuota(input, quota.Vms, quota.PublicIPs)
+	_, _, err = deployer.ValidateVMQuota(input, quota.QuotaVMs, quota.PublicIPs)
 	if err != nil {
 		return nil, BadRequest(errors.New(err.Error()))
 	}

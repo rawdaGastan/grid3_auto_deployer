@@ -21,6 +21,7 @@ type Configuration struct {
 	NotifyAdminsIntervalHours int         `json:"notifyAdminsIntervalHours"`
 	AdminSSHKey               string      `json:"adminSSHKey"`
 	BalanceThreshold          int         `json:"balanceThreshold"`
+	VouchersMaxDuration       int         `json:"voucherMaxDuration"`
 }
 
 // Server struct to hold server's information

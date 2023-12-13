@@ -32,7 +32,7 @@ func (d *DB) Connect(file string) error {
 
 // Migrate migrates db schema
 func (d *DB) Migrate() error {
-	err := d.db.AutoMigrate(&User{}, &Quota{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{}, &Maintenance{}, &Notification{})
+	err := d.db.AutoMigrate(&User{}, &Quota{}, &QuotaVM{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{}, &Maintenance{}, &Notification{})
 	if err != nil {
 		return err
 	}
@@ -68,8 +68,9 @@ func (d *DB) GetUserByID(id string) (User, error) {
 func (d *DB) ListAllUsers() ([]UserUsedQuota, error) {
 	var res []UserUsedQuota
 	query := d.db.Table("users").
-		Select("*, users.id as user_id, sum(vouchers.vms) as vms, sum(vouchers.public_ips) as public_ips, sum(vouchers.vms) - quota.vms as used_vms, sum(vouchers.public_ips) - quota.public_ips as used_public_ips").
+		Select("*, users.id as user_id, sum(vouchers.vms) as vms, sum(vouchers.public_ips) as public_ips, sum(vouchers.vms) - sum(quota_vms.vms) as used_vms, sum(vouchers.public_ips) - quota.public_ips as used_public_ips").
 		Joins("left join quota on quota.user_id = users.id").
+		Joins("left join quota_vms on quota.id = quota_vms.quota_id").
 		Joins("left join vouchers on vouchers.used = true and vouchers.user_id = users.id").
 		Where("verified = true").
 		Group("users.id").
@@ -162,7 +163,6 @@ func (d *DB) GetNotUsedVoucherByUserID(id string) (Voucher, error) {
 func (d *DB) CreateVM(vm *VM) error {
 	result := d.db.Create(&vm)
 	return result.Error
-
 }
 
 // GetVMByID return vm by its id
@@ -217,14 +217,26 @@ func (d *DB) CreateQuota(q *Quota) error {
 }
 
 // UpdateUserQuota updates quota
-func (d *DB) UpdateUserQuota(userID string, vms int, publicIPs int) error {
-	return d.db.Model(&Quota{}).Where("user_id = ?", userID).Updates(map[string]interface{}{"vms": vms, "public_ips": publicIPs}).Error
+func (d *DB) UpdateUserQuota(userID string, publicIPs int) error {
+	return d.db.Model(&Quota{}).Where("user_id = ?", userID).Update("public_ips", publicIPs).Error
 }
 
-// GetUserQuota gets user quota available vms (vms will be used for both vms and k8s clusters)
+// UpdateUserQuotaVMs updates quota vms
+func (d *DB) UpdateUserQuotaVMs(quotaID string, duration int, vms int) error {
+	query := d.db.Model(&QuotaVM{}).
+		Where(&QuotaVM{QuotaID: quotaID, Duration: duration}).
+		Update("vms", vms)
+
+	if query.RowsAffected == 0 {
+		return d.db.Create(&QuotaVM{QuotaID: quotaID, Duration: duration, VMs: vms}).Error
+	}
+	return query.Error
+}
+
+// GetUserQuota gets user quota available publicIPs
 func (d *DB) GetUserQuota(userID string) (Quota, error) {
 	var res Quota
-	query := d.db.First(&res, "user_id = ?", userID)
+	query := d.db.Preload("QuotaVMs").First(&res, "user_id = ?", userID)
 	return res, query.Error
 }
 

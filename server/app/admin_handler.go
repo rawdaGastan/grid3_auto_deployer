@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/codescalers/cloud4students/internal"
@@ -84,6 +85,149 @@ func (a *App) GetBalanceHandler(req *http.Request) (interface{}, Response) {
 	return ResponseMsg{
 		Message: "Balance is found",
 		Data:    balance,
+	}, Ok()
+}
+
+func (a *App) ResetUsersQuota(req *http.Request) (interface{}, Response) {
+	users, err := a.db.ListAllUsers()
+	if err == gorm.ErrRecordNotFound || len(users) == 0 {
+		return ResponseMsg{
+			Message: "Users are not found",
+		}, Ok()
+	}
+
+	for _, user := range users {
+		err = a.db.UpdateUserQuota(user.UserID, 0, 0)
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+	}
+
+	return ResponseMsg{
+		Message: "Quota is reset successfully",
+	}, Ok()
+}
+
+// DeleteAllDeployments deletes all deployments
+func (a *App) DeleteAllDeployments(req *http.Request) (interface{}, Response) {
+	users, err := a.db.ListAllUsers()
+	if err == gorm.ErrRecordNotFound || len(users) == 0 {
+		return ResponseMsg{
+			Message: "Users are not found",
+		}, Ok()
+	}
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	for _, user := range users {
+		// vms
+		vms, err := a.db.GetAllVms(user.UserID)
+		if err == gorm.ErrRecordNotFound || len(vms) == 0 {
+			log.Error().Err(err).Str("userID", user.UserID).Msg("Virtual machines are not found")
+			continue
+		}
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+
+		for _, vm := range vms {
+			err = a.deployer.CancelDeployment(vm.ContractID, vm.NetworkContractID, "vm", vm.Name)
+			if err != nil && !strings.Contains(err.Error(), "ContractNotExists") {
+				log.Error().Err(err).Send()
+				return nil, InternalServerError(errors.New(internalServerErrorMsg))
+			}
+		}
+
+		err = a.db.DeleteAllVms(user.UserID)
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+
+		// k8s clusters
+		clusters, err := a.db.GetAllK8s(user.UserID)
+		if err == gorm.ErrRecordNotFound || len(clusters) == 0 {
+			log.Error().Err(err).Str("userID", user.UserID).Msg("Kubernetes clusters are not found")
+			continue
+		}
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+
+		for _, cluster := range clusters {
+			err = a.deployer.CancelDeployment(uint64(cluster.ClusterContract), uint64(cluster.NetworkContract), "k8s", cluster.Master.Name)
+			if err != nil && !strings.Contains(err.Error(), "ContractNotExists") {
+				log.Error().Err(err).Send()
+				return nil, InternalServerError(errors.New(internalServerErrorMsg))
+			}
+		}
+
+		err = a.db.DeleteAllK8s(user.UserID)
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+	}
+
+	return ResponseMsg{
+		Message: "Deployments are deleted successfully",
+	}, Ok()
+}
+
+// ListDeployments lists all deployments
+func (a *App) ListDeployments(req *http.Request) (interface{}, Response) {
+	users, err := a.db.ListAllUsers()
+	if err == gorm.ErrRecordNotFound || len(users) == 0 {
+		return ResponseMsg{
+			Message: "Users are not found",
+		}, Ok()
+	}
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	var allVMs []models.VM
+	var allClusters []models.K8sCluster
+
+	for _, user := range users {
+		// vms
+		vms, err := a.db.GetAllVms(user.UserID)
+		if err == gorm.ErrRecordNotFound || len(vms) == 0 {
+			log.Error().Err(err).Str("userID", user.UserID).Msg("Virtual machines are not found")
+			continue
+		}
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+
+		allVMs = append(allVMs, vms...)
+
+		// k8s clusters
+		clusters, err := a.db.GetAllK8s(user.UserID)
+		if err == gorm.ErrRecordNotFound || len(clusters) == 0 {
+			log.Error().Err(err).Str("userID", user.UserID).Msg("Kubernetes clusters are not found")
+			continue
+		}
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+
+		allClusters = append(allClusters, clusters...)
+	}
+
+	return ResponseMsg{
+		Message: "Deployments are deleted successfully",
+		Data:    map[string]interface{}{"vms": allVMs, "k8s": allClusters},
 	}, Ok()
 }
 

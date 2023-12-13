@@ -115,6 +115,7 @@ func (a *App) registerHandlers() {
 	voucherRouter := adminRouter.PathPrefix("/voucher").Subrouter()
 	maintenanceRouter := adminRouter.PathPrefix("/maintenance").Subrouter()
 	balanceRouter := adminRouter.PathPrefix("/balance").Subrouter()
+	deploymentsRouter := adminRouter.PathPrefix("/deployments").Subrouter()
 
 	unAuthUserRouter.HandleFunc("/signup", WrapFunc(a.SignUpHandler)).Methods("POST", "OPTIONS")
 	unAuthUserRouter.HandleFunc("/signup/verify_email", WrapFunc(a.VerifySignUpCodeHandler)).Methods("POST", "OPTIONS")
@@ -152,11 +153,14 @@ func (a *App) registerHandlers() {
 
 	// ADMIN ACCESS
 	adminRouter.HandleFunc("/user/all", WrapFunc(a.GetAllUsersHandler)).Methods("GET", "OPTIONS")
+	adminRouter.HandleFunc("/quota/reset", WrapFunc(a.ResetUsersQuota)).Methods("PUT", "OPTIONS")
 	adminRouter.HandleFunc("/deployment/count", WrapFunc(a.GetDlsCountHandler)).Methods("GET", "OPTIONS")
 	adminRouter.HandleFunc("/announcement", WrapFunc(a.CreateNewAnnouncement)).Methods("POST", "OPTIONS")
 	adminRouter.HandleFunc("/set_admin", WrapFunc(a.SetAdmin)).Methods("PUT", "OPTIONS")
 	balanceRouter.HandleFunc("", WrapFunc(a.GetBalanceHandler)).Methods("GET", "OPTIONS")
 	maintenanceRouter.HandleFunc("", WrapFunc(a.UpdateMaintenanceHandler)).Methods("PUT", "OPTIONS")
+	deploymentsRouter.HandleFunc("", WrapFunc(a.DeleteAllDeployments)).Methods("DELETE", "OPTIONS")
+	deploymentsRouter.HandleFunc("", WrapFunc(a.ListDeployments)).Methods("GET", "OPTIONS")
 
 	voucherRouter.HandleFunc("", WrapFunc(a.GenerateVoucherHandler)).Methods("POST", "OPTIONS")
 	voucherRouter.HandleFunc("", WrapFunc(a.ListVouchersHandler)).Methods("GET", "OPTIONS")

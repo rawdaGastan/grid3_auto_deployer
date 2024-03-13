@@ -97,12 +97,12 @@ func (d *Deployer) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInp
 	}
 
 	// checks that network and k8s are deployed successfully
-	loadedNet, err := d.tfPluginClient.State.LoadNetworkFromGrid(cluster.NetworkName)
+	loadedNet, err := d.tfPluginClient.State.LoadNetworkFromGrid(ctx, cluster.NetworkName)
 	if err != nil {
 		return 0, 0, 0, errors.Wrapf(err, "failed to load network '%s' on nodes %v", cluster.NetworkName, network.Nodes)
 	}
 
-	loadedCluster, err := d.tfPluginClient.State.LoadK8sFromGrid([]uint32{node}, cluster.Master.Name)
+	loadedCluster, err := d.tfPluginClient.State.LoadK8sFromGrid(ctx, []uint32{node}, cluster.Master.Name)
 	if err != nil {
 		return 0, 0, 0, errors.Wrapf(err, "failed to load kubernetes cluster '%s' on nodes %v", cluster.Master.Name, network.Nodes)
 	}
@@ -110,9 +110,9 @@ func (d *Deployer) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInp
 	return node, loadedNet.NodeDeploymentID[node], loadedCluster.NodeDeploymentID[node], nil
 }
 
-func (d *Deployer) loadK8s(k8sDeployInput models.K8sDeployInput, userID string, node uint32, networkContractID uint64, k8sContractID uint64) (models.K8sCluster, error) {
+func (d *Deployer) loadK8s(ctx context.Context, k8sDeployInput models.K8sDeployInput, userID string, node uint32, networkContractID uint64, k8sContractID uint64) (models.K8sCluster, error) {
 	// load cluster
-	resCluster, err := d.tfPluginClient.State.LoadK8sFromGrid([]uint32{node}, k8sDeployInput.MasterName)
+	resCluster, err := d.tfPluginClient.State.LoadK8sFromGrid(ctx, []uint32{node}, k8sDeployInput.MasterName)
 	if err != nil {
 		return models.K8sCluster{}, err
 	}
@@ -129,7 +129,7 @@ func (d *Deployer) loadK8s(k8sDeployInput models.K8sDeployInput, userID string, 
 		Public:    k8sDeployInput.Public,
 		PublicIP:  resCluster.Master.ComputedIP,
 		Name:      k8sDeployInput.MasterName,
-		YggIP:     resCluster.Master.YggIP,
+		YggIP:     resCluster.Master.PlanetaryIP,
 		Resources: k8sDeployInput.Resources,
 	}
 	workers := []models.Worker{}
@@ -179,18 +179,17 @@ func (d *Deployer) getK8sAvailableNode(ctx context.Context, k models.K8sDeployIn
 		rootfs = append(rootfs, *convertGBToBytes(uint64(2)))
 	}
 
-	freeMRU := mru
-	freeSRU := sru
+	freeSRU := convertGBToBytes(sru)
 	filter := types.NodeFilter{
 		Status:  &statusUp,
-		FreeMRU: &freeMRU,
-		FreeSRU: &freeSRU,
+		FreeMRU: convertGBToBytes(mru),
+		FreeSRU: freeSRU,
 		FreeIPs: &ips,
 		FarmIDs: []uint64{1},
 		IPv6:    &trueVal,
 	}
 
-	nodes, err := deployer.FilterNodes(ctx, d.tfPluginClient, filter, nil, nil, rootfs)
+	nodes, err := deployer.FilterNodes(ctx, d.tfPluginClient, filter, []uint64{*freeSRU}, nil, rootfs, 1)
 	if err != nil {
 		return 0, err
 	}
@@ -248,7 +247,7 @@ func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDe
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
 	}
 
-	k8sCluster, err := d.loadK8s(k8sDeployInput, user.ID.String(), node, networkContractID, k8sContractID)
+	k8sCluster, err := d.loadK8s(ctx, k8sDeployInput, user.ID.String(), node, networkContractID, k8sContractID)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)

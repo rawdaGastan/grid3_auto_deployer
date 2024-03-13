@@ -53,7 +53,7 @@ func Execute() {
 
 	err := rootCmd.Execute()
 	if err != nil {
-		log.Err(err).Send()
+		log.Error().Err(err).Send()
 		os.Exit(1)
 	}
 }

@@ -14,10 +14,10 @@ require (
 	github.com/sendgrid/sendgrid-go v3.13.0+incompatible
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
-	github.com/threefoldtech/tfgrid-sdk-go/grid-client v0.14.12
-	github.com/threefoldtech/tfgrid-sdk-go/grid-proxy v0.14.12
+	github.com/threefoldtech/tfgrid-sdk-go/grid-client v0.14.13
+	github.com/threefoldtech/tfgrid-sdk-go/grid-proxy v0.14.13
 	github.com/threefoldtech/zos v0.5.6-0.20240226114056-364e04acbed3
-	golang.org/x/crypto v0.20.0
+	golang.org/x/crypto v0.21.0
 	golang.org/x/text v0.14.0
 	gopkg.in/validator.v2 v2.0.1
 	gorm.io/driver/sqlite v1.4.4
@@ -77,7 +77,7 @@ require (
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20200609130330-bd2cb7843e1b // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect

@@ -47,7 +47,10 @@ func NewApp(ctx context.Context, configFile string) (app *App, err error) {
 		return
 	}
 
-	tfPluginClient, err := deployer.NewTFPluginClient(config.Account.Mnemonics, "sr25519", config.Account.Network, "", "", "", 0, false)
+	tfPluginClient, err := deployer.NewTFPluginClient(
+		config.Account.Mnemonics,
+		deployer.WithNetwork(config.Account.Network),
+	)
 	if err != nil {
 		return
 	}
@@ -58,9 +61,6 @@ func NewApp(ctx context.Context, configFile string) (app *App, err error) {
 	}
 
 	server := newServer(config.Server.Host, config.Server.Port)
-	if err != nil {
-		return
-	}
 
 	return &App{
 		config:   config,

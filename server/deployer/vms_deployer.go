@@ -13,17 +13,30 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/workloads"
+	"github.com/threefoldtech/tfgrid-sdk-go/grid-proxy/pkg/types"
 	"gorm.io/gorm"
 )
 
 func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, sshKey string, adminSSHKey string) (*workloads.VM, uint64, uint64, uint64, error) {
 	// filter nodes
-	filter, err := filterNode(vmInput.Resources, vmInput.Public)
+	cru, mru, sru, ips, err := calcNodeResources(vmInput.Resources, vmInput.Public)
 	if err != nil {
 		return nil, 0, 0, 0, err
 	}
 
-	nodeIDs, err := deployer.FilterNodes(ctx, d.tfPluginClient, filter, nil, nil, nil)
+	freeSRU := convertGBToBytes(sru)
+	filter := types.NodeFilter{
+		FarmIDs:  []uint64{1},
+		TotalCRU: &cru,
+		FreeSRU:  freeSRU,
+		FreeMRU:  convertGBToBytes(mru),
+		FreeIPs:  &ips,
+		IPv4:     &trueVal,
+		Status:   &statusUp,
+		IPv6:     &trueVal,
+	}
+
+	nodeIDs, err := deployer.FilterNodes(ctx, d.tfPluginClient, filter, []uint64{*freeSRU}, nil, nil, 1)
 	if err != nil {
 		return nil, 0, 0, 0, err
 	}
@@ -35,7 +48,7 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, s
 	// create disk
 	disk := workloads.Disk{
 		Name:   "disk",
-		SizeGB: int(*filter.FreeSRU),
+		SizeGB: int(sru),
 	}
 
 	// create vm workload
@@ -45,7 +58,7 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, s
 		CPU:       int(*filter.TotalCRU),
 		PublicIP:  vmInput.Public,
 		Planetary: true,
-		Memory:    int(*filter.FreeMRU) * 1024,
+		Memory:    int(mru) * 1024,
 		Mounts: []workloads.Mount{
 			{DiskName: disk.Name, MountPoint: "/disk"},
 		},
@@ -73,12 +86,12 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, s
 	}
 
 	// checks that network and vm are deployed successfully
-	loadedNet, err := d.tfPluginClient.State.LoadNetworkFromGrid(dl.NetworkName)
+	loadedNet, err := d.tfPluginClient.State.LoadNetworkFromGrid(ctx, dl.NetworkName)
 	if err != nil {
 		return nil, 0, 0, 0, errors.Wrapf(err, "failed to load network '%s' on node %v", dl.NetworkName, dl.NodeID)
 	}
 
-	loadedDl, err := d.tfPluginClient.State.LoadDeploymentFromGrid(nodeID, dl.Name)
+	loadedDl, err := d.tfPluginClient.State.LoadDeploymentFromGrid(ctx, nodeID, dl.Name)
 	if err != nil {
 		return nil, 0, 0, 0, errors.Wrapf(err, "failed to load vm '%s' on node %v", dl.Name, dl.NodeID)
 	}
@@ -128,7 +141,7 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 	userVM := models.VM{
 		UserID:            user.ID.String(),
 		Name:              vm.Name,
-		YggIP:             vm.YggIP,
+		YggIP:             vm.PlanetaryIP,
 		Resources:         input.Resources,
 		Public:            input.Public,
 		PublicIP:          vm.ComputedIP,

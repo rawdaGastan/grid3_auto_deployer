@@ -1,12 +1,18 @@
 // Package middlewares for middleware between api and backend
 package middlewares
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // EnableCors enables cors middleware
 func EnableCors(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		setupCorsResponse(w, r)
+		if r.Method == "OPTIONS" {
+			return
+		}
+
 		h.ServeHTTP(w, r)
 	})
 }

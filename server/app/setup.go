@@ -85,7 +85,7 @@ func SetUp(t testing.TB) *App {
 	err = db.Migrate()
 	assert.NoError(t, err)
 
-	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, "sr25519", configuration.Account.Network, "", "", "", 0, false)
+	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, deployer.WithNetwork(configuration.Account.Network))
 	assert.NoError(t, err)
 
 	newDeployer, err := c4sDeployer.NewDeployer(db, streams.RedisClient{}, tfPluginClient)

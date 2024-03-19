@@ -13,13 +13,19 @@ import (
 func init() {
 	// validations
 	err := validator.SetValidationFunc("ssh", validators.ValidateSSHKey)
-	log.Err(err).Send()
+	if err != nil {
+		log.Error().Err(err).Send()
+	}
 
 	err = validator.SetValidationFunc("password", validators.ValidatePassword)
-	log.Err(err).Send()
+	if err != nil {
+		log.Error().Err(err).Send()
+	}
 
 	err = validator.SetValidationFunc("mail", validators.ValidateMail)
-	log.Err(err).Send()
+	if err != nil {
+		log.Error().Err(err).Send()
+	}
 }
 
 func main() {

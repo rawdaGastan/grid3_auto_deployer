@@ -13,7 +13,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/workloads"
-	"github.com/threefoldtech/tfgrid-sdk-go/grid-proxy/pkg/types"
 	"github.com/threefoldtech/zos/pkg/gridtypes"
 	"gopkg.in/validator.v2"
 )
@@ -96,12 +95,12 @@ func (d *Deployer) PeriodicDeploy(ctx context.Context, sec int) {
 	ticker := time.NewTicker(time.Second * time.Duration(sec))
 
 	for range ticker.C {
-		vmNets, vms, err := d.consumeVMs(ctx)
+		vmNets, vms, err := d.consumeVMs()
 		if err != nil {
 			log.Error().Err(err).Msg("failed to consume vms")
 		}
 
-		k8sNets, clusters, err := d.consumeK8s(ctx)
+		k8sNets, clusters, err := d.consumeK8s()
 		if err != nil {
 			log.Error().Err(err).Msg("failed to consume clusters")
 		}
@@ -203,25 +202,6 @@ func calcNodeResources(resources string, public bool) (uint64, uint64, uint64, u
 		ips = 1
 	}
 	return cru, mru, sru, ips, nil
-}
-
-// choose suitable nodes based on needed resources
-func filterNode(resource string, public bool) (types.NodeFilter, error) {
-	cru, mru, sru, ips, err := calcNodeResources(resource, public)
-	if err != nil {
-		return types.NodeFilter{}, err
-	}
-
-	return types.NodeFilter{
-		FarmIDs:  []uint64{1},
-		TotalCRU: &cru,
-		FreeSRU:  &sru,
-		FreeMRU:  &mru,
-		FreeIPs:  &ips,
-		IPv4:     &trueVal,
-		Status:   &statusUp,
-		IPv6:     &trueVal,
-	}, nil
 }
 
 func calcNeededQuota(resources string) (int, error) {

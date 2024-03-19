@@ -258,7 +258,12 @@ func (d *DB) ListAllVouchers() ([]Voucher, error) {
 // UpdateVoucher approves voucher by voucher id
 func (d *DB) UpdateVoucher(id int, approved bool) (Voucher, error) {
 	var voucher Voucher
-	query := d.db.First(&voucher, id).Updates(map[string]interface{}{"approved": approved, "rejected": !approved})
+	query := d.db.First(&voucher, id)
+	if query.Error != nil {
+		return voucher, query.Error
+	}
+
+	query = d.db.Model(&voucher).Clauses(clause.Returning{}).Updates(map[string]interface{}{"approved": approved, "rejected": !approved})
 	return voucher, query.Error
 }
 

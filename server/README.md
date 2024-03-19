@@ -4,7 +4,7 @@ Go backend server using sqlite3 db.
 
 ## Requirements
 
-- Go >= 1.18
+- Go >= 1.21
 - make
 - docker
 

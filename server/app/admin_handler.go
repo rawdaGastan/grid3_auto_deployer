@@ -306,15 +306,7 @@ func (a *App) SetAdmin(req *http.Request) (interface{}, Response) {
 		}, Ok()
 	}
 
-	err = a.db.UpdateUserByID(
-		models.User{
-			ID:        user.ID,
-			Email:     input.Email,
-			Admin:     input.Admin,
-			UpdatedAt: time.Now(),
-		},
-	)
-
+	err = a.db.UpdateAdminUserByID(user.ID.String(), input.Admin)
 	if err == gorm.ErrRecordNotFound {
 		return nil, NotFound(errors.New("user is not found"))
 	}

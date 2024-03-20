@@ -144,6 +144,11 @@ func (d *DB) UpdateUserByID(user User) error {
 	return result.Error
 }
 
+// UpdateAdminUserByID updates admin information of user.
+func (d *DB) UpdateAdminUserByID(id string, admin bool) error {
+	return d.db.Model(&User{}).Where("id = ?", id).Updates(map[string]interface{}{"admin": admin, "updated_at": time.Now()}).Error
+}
+
 // UpdateVerification updates if user is verified or not
 func (d *DB) UpdateVerification(id string, verified bool) error {
 	var res User

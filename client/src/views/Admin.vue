@@ -367,6 +367,8 @@ export default {
 								});
 							}
 						});
+
+					getUsers();
 				})
 				.catch((response) => {
 					const { err } = response.response.data;

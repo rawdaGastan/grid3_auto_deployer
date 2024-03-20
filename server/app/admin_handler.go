@@ -30,6 +30,7 @@ type UpdateMaintenanceInput struct {
 // SetAdminInput struct for setting users as admins
 type SetAdminInput struct {
 	Email string `json:"email" binding:"required"`
+	Admin bool   `json:"admin" binding:"required"`
 }
 
 // GetAllUsersHandler returns all users
@@ -293,9 +294,15 @@ func (a *App) SetAdmin(req *http.Request) (interface{}, Response) {
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	if user.Admin {
+	if user.Admin && input.Admin {
 		return ResponseMsg{
 			Message: "User is already an admin",
+		}, Ok()
+	}
+
+	if !user.Admin && !input.Admin {
+		return ResponseMsg{
+			Message: "User is not already an admin",
 		}, Ok()
 	}
 
@@ -303,7 +310,7 @@ func (a *App) SetAdmin(req *http.Request) (interface{}, Response) {
 		models.User{
 			ID:        user.ID,
 			Email:     input.Email,
-			Admin:     true,
+			Admin:     input.Admin,
 			UpdatedAt: time.Now(),
 		},
 	)

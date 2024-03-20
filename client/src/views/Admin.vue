@@ -342,7 +342,7 @@ export default {
 
 		const setAdmin = (user) => {
 			userService
-				.setAdmin(user.email)
+				.setAdmin(user.email, true)
 				.then((response) => {
 					toast.value.toast(response.data.msg, "#388E3C");
 				})

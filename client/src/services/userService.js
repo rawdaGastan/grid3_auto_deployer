@@ -170,9 +170,9 @@ export default {
     return await authClient().post("/announcement", { subject, announcement });
   },
 
-  async setAdmin(email) {
+  async setAdmin(email, admin) {
     await this.refresh_token();
-    return await authClient().put("/set_admin", { email });
+    return await authClient().put("/set_admin", { email, admin });
   },
 
   // notifications

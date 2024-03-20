@@ -238,11 +238,20 @@
 											</template>
 										</v-tooltip>
 
-										<v-tooltip block text="Set admin" left>
+										<v-tooltip v-if="!item.admin" block text="Set admin" left>
 											<template v-slot:activator="{ props }">
 												<v-icon v-bind="props" color="primary" dark class="ml-1 text-primary cursor-pointer"
-													@click="setAdmin(item)">
+													@click="setAdmin(item, true)">
 													mdi-account-key
+												</v-icon>
+											</template>
+										</v-tooltip>
+
+										<v-tooltip v-if="item.admin" block text="Remove admin" left>
+											<template v-slot:activator="{ props }">
+												<v-icon v-bind="props" color="primary" dark class="ml-1 text-primary cursor-pointer"
+													@click="setAdmin(item, false)">
+													mdi-account-lock
 												</v-icon>
 											</template>
 										</v-tooltip>
@@ -269,6 +278,7 @@ import userService from "@/services/userService.js";
 import Toast from "@/components/Toast.vue";
 import Voucher from "@/components/Voucher.vue";
 import UserInfo from "@/components/UserInfo.vue";
+import { useRouter } from "vue-router";
 
 export default {
 	components: {
@@ -278,6 +288,7 @@ export default {
 		UserInfo,
 	},
 	setup() {
+		const router = useRouter();
 		const confirm = ref(null);
 		const vouchersHeaders = ref([
 			{ title: "No", key: "id" },
@@ -340,11 +351,22 @@ export default {
 			},
 		]);
 
-		const setAdmin = (user) => {
+		const setAdmin = (user, admin) => {
 			userService
-				.setAdmin(user.email, true)
+				.setAdmin(user.email, admin)
 				.then((response) => {
 					toast.value.toast(response.data.msg, "#388E3C");
+
+					userService
+						.getUser()
+						.then((response) => {
+							const current_user = response.data.data.user;
+							if (!current_user.admin) {
+								router.push({
+									name: "Home",
+								});
+							}
+						});
 				})
 				.catch((response) => {
 					const { err } = response.response.data;

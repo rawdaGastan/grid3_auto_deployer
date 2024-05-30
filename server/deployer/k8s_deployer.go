@@ -181,7 +181,7 @@ func (d *Deployer) getK8sAvailableNode(ctx context.Context, k models.K8sDeployIn
 
 	freeSRU := convertGBToBytes(sru)
 	filter := types.NodeFilter{
-		Status:  &statusUp,
+		Status:  []string{statusUp},
 		FreeMRU: convertGBToBytes(mru),
 		FreeSRU: freeSRU,
 		FreeIPs: &ips,

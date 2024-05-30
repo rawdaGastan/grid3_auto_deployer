@@ -32,7 +32,7 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, s
 		FreeMRU:  convertGBToBytes(mru),
 		FreeIPs:  &ips,
 		IPv4:     &trueVal,
-		Status:   &statusUp,
+		Status:   []string{statusUp},
 		IPv6:     &trueVal,
 	}
 

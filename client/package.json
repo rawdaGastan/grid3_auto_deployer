@@ -17,7 +17,7 @@
     "@mdi/font": "7.3.67",
     "axios": "^1.5.1",
     "core-js": "^3.33.2",
-    "mitt": "^3.0.0",
+    "mitt": "^3.0.1",
     "mosha-vue-toastify": "^1.0.23",
     "roboto-fontface": "*",
     "vite-plugin-eslint": "^1.8.1",

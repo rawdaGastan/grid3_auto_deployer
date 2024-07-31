@@ -15,8 +15,8 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.9.0
 	github.com/threefoldtech/tfgrid-sdk-go/grid-client v0.15.5
-	github.com/threefoldtech/tfgrid-sdk-go/grid-proxy v0.15.5
-	github.com/threefoldtech/zos v0.5.6-0.20240226114056-364e04acbed3
+	github.com/threefoldtech/tfgrid-sdk-go/grid-proxy v0.15.11
+	github.com/threefoldtech/zos v0.5.6-0.20240611092312-66184cdeb953
 	golang.org/x/crypto v0.24.0
 	golang.org/x/text v0.16.0
 	gopkg.in/validator.v2 v2.0.1
@@ -42,7 +42,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
 	github.com/gorilla/schema v1.3.0 // indirect
-	github.com/gorilla/websocket v1.5.1 // indirect
+	github.com/gorilla/websocket v1.5.2 // indirect
 	github.com/gtank/merlin v0.1.1 // indirect
 	github.com/gtank/ristretto255 v0.1.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -66,8 +66,8 @@ require (
 	github.com/rs/cors v1.10.1 // indirect
 	github.com/sendgrid/rest v2.6.9+incompatible // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/threefoldtech/tfchain/clients/tfchain-client-go v0.0.0-20240227171040-f2a20ee3e965 // indirect
-	github.com/threefoldtech/tfgrid-sdk-go/rmb-sdk-go v0.15.5 // indirect
+	github.com/threefoldtech/tfchain/clients/tfchain-client-go v0.0.0-20240416134707-eb36aa90df2d // indirect
+	github.com/threefoldtech/tfgrid-sdk-go/rmb-sdk-go v0.15.10 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/vedhavyas/go-subkey v1.0.3 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect

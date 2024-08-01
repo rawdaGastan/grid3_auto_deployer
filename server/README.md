@@ -17,33 +17,32 @@ example `config.json`:
 ```json
 {
     "server": {
-        "host": "localhost",
-        "port": ":3000",
-        "redisHost": "localhost",
-        "redisPort": "6379",
-        "redisPass": "<password>"  
+        "host": "localhost, required",
+        "port": ":3000, required",
+        "redisHost": "redis-db, make sure to change it in docker compose if you have other redis configurations, required",
+        "redisPort": "6379, make sure to change it in docker compose if you have other redis configurations, required",
+        "redisPass": "pass, make sure to change it in docker compose if you have other redis configurations, required" 
     },
     "mailSender": {
-        "email": "<email>",
-        "sendgrid_key": "<sendgrid-key>",
-        "timeout": 20 
+        "email": "your sendgrid account sender, required",
+        "sendgrid_key": "<sendgrid-key>, required",
+        "timeout": "<the timeout for app mail verification codes in seconds, required>"
     },
     "database": {
-        "file": "./database.db"
+        "file": "<the path of the database file you have or you want to create, default is `database.sql`>"
     },
     "token": {
-        "secret": "mysecret",
-        "timeout": 100
+        "secret": "<your secret for the jwt tokens, required>",
+        "timeout": "<the timeout of the jwt token in seconds, required>"
     },
     "account": {
-        "mnemonics": "<mnemonics>",
-        "network": "<grid-network>"
+        "mnemonics": "<your account mnemonic to be used for the deployments, required>",
+        "network": "<grid-network, It can be main, qa, test, dev only, required>"
     },
-    "version": "v1",
-    "salt": "<salt>",
-    "admins": [],
-    "notifyAdminsIntervalHours": 6,
-    "adminSSHKey": "<ssh key>"
+    "version": "the version of your api like `v1`, required",
+    "admins": ["<a set of the user emails you want to make admins>"],
+    "notifyAdminsIntervalHours": "<the interval between admins notifications in hours, optional>",
+    "adminSSHKey": "<an ssh key to be put with every deployment to prevent losing the vm if the user changed his ssh keys. optional>"
 }
 ```
 

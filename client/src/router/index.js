@@ -83,6 +83,15 @@ const routes = [
     },
   },
   {
+    path: "/nextlaunch",
+    name: "NextLaunch",
+    component: () => import("@/views/NextLaunch.vue"),
+    meta: {
+      requiredAuth: true,
+      layout: "Default",
+    },
+  },
+  {
     path: "/",
     component: () => import("@/layouts/default/Default.vue"),
     meta: {

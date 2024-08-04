@@ -162,6 +162,7 @@ func (a *App) registerHandlers() {
 	adminRouter.HandleFunc("/deployment/count", WrapFunc(a.GetDlsCountHandler)).Methods("GET", "OPTIONS")
 	adminRouter.HandleFunc("/announcement", WrapFunc(a.CreateNewAnnouncement)).Methods("POST", "OPTIONS")
 	adminRouter.HandleFunc("/set_admin", WrapFunc(a.SetAdmin)).Methods("PUT", "OPTIONS")
+	// adminRouter.HandleFunc("/nextlaunch", WrapFunc(a.GetNextLaunchAdminHandler)).Methods("GET", "OPTIONS")
 	balanceRouter.HandleFunc("", WrapFunc(a.GetBalanceHandler)).Methods("GET", "OPTIONS")
 	maintenanceRouter.HandleFunc("", WrapFunc(a.UpdateMaintenanceHandler)).Methods("PUT", "OPTIONS")
 	deploymentsRouter.HandleFunc("", WrapFunc(a.DeleteAllDeployments)).Methods("DELETE", "OPTIONS")

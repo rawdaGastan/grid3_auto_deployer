@@ -655,3 +655,20 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 		Data:    nil,
 	}, Ok()
 }
+
+// func (a *App) GetMaintenanceHandler(req *http.Request) (interface{}, Response) {
+// 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
+// 	user, err := a.db.GetUserByID(userID)
+// 	if err == gorm.ErrRecordNotFound {
+// 		return nil, NotFound(errors.New("user is not found"))
+// 	}
+// 	if err != nil {
+// 		log.Error().Err(err).Send()
+// 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+// 	}
+
+// 	return ResponseMsg{
+// 		Message: "User exists",
+// 		Data:    map[string]interface{}{"user": user},
+// 	}, Ok()
+// }

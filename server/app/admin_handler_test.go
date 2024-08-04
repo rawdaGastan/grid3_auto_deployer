@@ -147,6 +147,63 @@ func TestGetAllUsersHandler(t *testing.T) {
 		response := adminHandler(req)
 		assert.Equal(t, response.Code, http.StatusOK)
 	})
+
+	t.Run("Get next launch: success", func(t *testing.T) {
+		req := authHandlerConfig{
+			unAuthHandlerConfig: unAuthHandlerConfig{
+				body:        nil,
+				handlerFunc: app.GetNextLaunchHandler,
+				api:         fmt.Sprintf("/%s/nextlaunch", app.config.Version),
+			},
+			userID: user.ID.String(),
+			token:  token,
+			config: app.config,
+			db:     app.db,
+		}
+
+		response := authorizedHandler(req)
+		assert.Equal(t, response.Code, http.StatusOK)
+	})
+
+	t.Run("Update Next Launch: success", func(t *testing.T) {
+		body := []byte(`{
+		"on": true
+		}`)
+
+		req := authHandlerConfig{
+			unAuthHandlerConfig: unAuthHandlerConfig{
+				body:        bytes.NewBuffer(body),
+				handlerFunc: app.UpdateNextLaunchHandler,
+				api:         fmt.Sprintf("/%s/nextlaunch", app.config.Version),
+			},
+			userID: user.ID.String(),
+			token:  token,
+			config: app.config,
+			db:     app.db,
+		}
+
+		response := adminHandler(req)
+		assert.Equal(t, response.Code, http.StatusOK)
+	})
+
+	t.Run("Update next launch: send empty body", func(t *testing.T) {
+		req := authHandlerConfig{
+			unAuthHandlerConfig: unAuthHandlerConfig{
+				body:        nil,
+				handlerFunc: app.UpdateNextLaunchHandler,
+				api:         fmt.Sprintf("/%s/nextlaunch", app.config.Version),
+			},
+			userID: user.ID.String(),
+			token:  token,
+			config: app.config,
+			db:     app.db,
+		}
+
+		response := adminHandler(req)
+		want := `{"err":"failed to read NextLaunch update data"}` + "\n"
+		assert.Equal(t, response.Body.String(), want)
+		assert.Equal(t, response.Code, http.StatusBadRequest)
+	})
 }
 
 func TestCreateNewAnnouncement(t *testing.T) {

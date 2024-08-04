@@ -99,6 +99,7 @@ import { ref } from "vue";
 import axios from "axios";
 import Toast from "@/components/Toast.vue";
 import { useRouter } from "vue-router";
+import userService from "@/services/userService";
 
 export default {
   components: {
@@ -141,6 +142,7 @@ export default {
           router.push({
             name: "Home",
           });
+          userService.nextlaunch();
         })
         .catch((error) => {
           toast.value.toast(error.response.data.err, "#FF5252");

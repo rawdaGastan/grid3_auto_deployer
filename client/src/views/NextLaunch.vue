@@ -18,18 +18,24 @@
   </template>
   
   <script>
-//   import { ref } from "vue";
+  import userService from "@/services/userService";
+  import { ref } from "vue";
   import { useRouter } from "vue-router";
   
   export default {
     setup() {
       const router = useRouter();
-    //   const maintenance = ref(localStorage.getItem("maintenance") == "true");
-    //   if (!maintenance.value) {
-    //     router.push({ name: "Home" })
+      userService.nextlaunch();
+      const nextlaunch = ref(localStorage.getItem("nextlaunch") == "true");
+      console.log(nextlaunch.value);
+      if (nextlaunch.value) {
+        router.push({ name: "Home" })
+      }
+    //   else{
+    //     router.push({name: "NextLaunch"})
     //   }
-    //   return { maintenance };
-    router.push({name: "NextLaunch"})
+      return { nextlaunch };
+    // router.push({name: "NextLaunch"})
     },
   };
   </script>

@@ -199,4 +199,27 @@ export default {
         console.log(err);
       });
   },
+
+  // next launch
+  async nextlaunch() {
+    // await baseClient()
+    //   .get("/nextlaunch")
+    //   .then((response) => {
+    //     const { data } = response.data;
+    //     localStorage.setItem("nextlaunch", data.Launched);
+    //   })
+    //   .catch((response) => {
+    //     const { err } = response.response.data;
+    //     console.log(err);
+    //   });
+      await this.refresh_token();
+      return await authClient().get("/nextlaunch").then((response) => {
+        const { data } = response.data;
+        localStorage.setItem("nextlaunch", data.active);
+      })
+      .catch((response) => {
+        const { err } = response.response.data;
+        console.log(err);
+      });
+  },
 };

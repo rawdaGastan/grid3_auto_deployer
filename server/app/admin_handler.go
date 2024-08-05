@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/codescalers/cloud4students/internal"
-	"github.com/codescalers/cloud4students/middlewares"
+	// "github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
 	"github.com/rs/zerolog/log"
 	"gopkg.in/validator.v2"
@@ -447,15 +447,6 @@ func (a *App) UpdateNextLaunchHandler(req *http.Request) (interface{}, Response)
 
 // GetNextLaunchHandler returns next launch state
 func (a *App) GetNextLaunchHandler(req *http.Request) (interface{}, Response) {
-	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
-	user, err := a.db.GetUserByID(userID)
-	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("user is not found"))
-	}
-	if err != nil {
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
-	}
-
 	nextlaunch, err := a.db.GetNextLaunch()
 
 	if err == gorm.ErrRecordNotFound {
@@ -466,27 +457,9 @@ func (a *App) GetNextLaunchHandler(req *http.Request) (interface{}, Response) {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
-	if user.Admin {
-		nextlaunch.Launched = true
-		fmt.Println("helloooo")
-	}
 
 	return ResponseMsg{
 		Message: fmt.Sprintf("Next Launch is Launched with state: %v", nextlaunch.Launched),
 		Data:    nextlaunch,
 	}, Ok()
 }
-
-// GetNextLaunchAdminHandler returns true
-// func (a *App) GetNextLaunchAdminHandler(req *http.Request) (interface{}, Response) {
-// 	// nextlaunch, err := a.db.GetNextLaunch()
-// 	nextlaunch := models.NextLaunch{
-// 		ID: 1,
-// 		Launched: true,
-// 	}
-
-// 	return ResponseMsg{
-// 		Message: fmt.Sprintf("Next Launch for admin is: %v", nextlaunch.Launched),
-// 		Data:    nextlaunch,
-// 	}, Ok()
-// }

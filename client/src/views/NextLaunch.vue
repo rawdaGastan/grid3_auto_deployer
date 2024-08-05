@@ -18,24 +18,35 @@
   </template>
   
   <script>
-  import userService from "@/services/userService";
-  import { ref } from "vue";
-  import { useRouter } from "vue-router";
+  // import userService from "@/services/userService";
+  // import { ref } from "vue";
+  // import { useRouter } from "vue-router";
   
   export default {
     setup() {
-      const router = useRouter();
-      userService.nextlaunch();
-      const nextlaunch = ref(localStorage.getItem("nextlaunch") == "true");
-      console.log(nextlaunch.value);
-      if (nextlaunch.value) {
-        router.push({ name: "Home" })
-      }
-    //   else{
-    //     router.push({name: "NextLaunch"})
-    //   }
-      return { nextlaunch };
-    // router.push({name: "NextLaunch"})
+      // const router = useRouter();
+      // const nextlaunch = ref(true);
+      // userService.getUser()
+      //   .then((response) => {
+      //     const { user } = response.data.data;
+      //     const isAdmin = user.admin;
+      //     if (isAdmin) {
+      //       // console.log("hello")
+      //       localStorage.setItem("nextlaunch", "true");
+      //       // return true
+      //     } else {
+      //       userService.nextlaunch();
+      //       // const nextlaunch = ref(localStorage.getItem("nextlaunch") == "true");
+      //     }
+      //   })
+      // nextlaunch.value = ref(localStorage.getItem("nextlaunch") == "true");
+      // if (nextlaunch.value) {
+      //   router.push({ name: "Home" })
+      // }
+      // else{
+      //   router.push({name: "NextLaunch"})
+      // }
+      // return { nextlaunch };
     },
   };
   </script>

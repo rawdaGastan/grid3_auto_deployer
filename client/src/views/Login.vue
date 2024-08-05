@@ -100,6 +100,7 @@ import axios from "axios";
 import Toast from "@/components/Toast.vue";
 import { useRouter } from "vue-router";
 import userService from "@/services/userService";
+// import NextLaunch from "./NextLaunch.vue";
 
 export default {
   components: {
@@ -114,6 +115,7 @@ export default {
     const email = ref(null);
     const password = ref(null);
     const loading = ref(false);
+    const nextlaunch = ref(true);
     const emailRules = ref([
       (value) => {
         if (!value) return "Field is required";
@@ -139,10 +141,32 @@ export default {
         .then((response) => {
           localStorage.setItem("token", response.data.data.access_token);
           toast.value.toast(response.data.msg);
-          router.push({
+          // userService.nextlaunch();
+          userService.getUser()
+          .then((response) => {
+            const { user } = response.data.data;
+            const isAdmin = user.admin;
+            if (isAdmin) {
+              console.log("hello")
+              localStorage.setItem("nextlaunch", "true");
+              // return true
+            } else {
+              userService.nextlaunch();
+            }
+          })
+          nextlaunch.value = ref(localStorage.getItem("nextlaunch") == "true");
+          if(nextlaunch.value) {
+            router.push({
             name: "Home",
           });
-          userService.nextlaunch();
+          } else{
+            router.push({
+              name: "NextLaunch",
+            })
+          }
+          
+          
+          // const nextlaunch.value = ref(localStorage.getItem("nextlaunch") == "true");
         })
         .catch((error) => {
           toast.value.toast(error.response.data.err, "#FF5252");

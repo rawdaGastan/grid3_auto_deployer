@@ -202,17 +202,17 @@ export default {
 
   // next launch
   async nextlaunch() {
-    // await baseClient()
-    //   .get("/nextlaunch")
-    //   .then((response) => {
-    //     const { data } = response.data;
-    //     localStorage.setItem("nextlaunch", data.Launched);
-    //   })
-    //   .catch((response) => {
-    //     const { err } = response.response.data;
-    //     console.log(err);
-    //   });
       await this.refresh_token();
+      // await this.getUser()
+			// .then((response) => {
+			// 	const { user } = response.data.data;
+			// 	const isAdmin = user.admin;
+			// 	if (isAdmin) {
+      //     console.log("hello")
+      //     localStorage.setItem("nextlaunch", "true");
+			// 		return true
+			// 	} 
+			// })
       return await authClient().get("/nextlaunch").then((response) => {
         const { data } = response.data;
         localStorage.setItem("nextlaunch", data.active);

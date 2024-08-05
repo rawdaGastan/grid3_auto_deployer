@@ -28,7 +28,8 @@ export default {
     const route = useRoute();
     const router = useRouter();
     const maintenance = ref(false);
-    const nextlaunch = ref(false);
+    const nextlaunch = ref(true);
+    const nextlaunchflag = ref(true);
     const noQuota = ref(false);
     const excludedRoutes = ref([
       "/",
@@ -43,7 +44,7 @@ export default {
     userService.maintenance();
     maintenance.value = localStorage.getItem("maintenance") == "true";
 
-    userService.nextlaunch();
+    // userService.nextlaunch();
     nextlaunch.value = localStorage.getItem("nextlaunch") == "true";
 
     const isAdmin = computed(() => {
@@ -52,10 +53,6 @@ export default {
       }
       return true;
     });
-
-    // if (isAdmin.value) {
-    //   nextlaunch.value = true;
-    // }
 
     if (excludedRoutes.value.includes(route.path)) {
       noQuota.value = true;
@@ -66,10 +63,13 @@ export default {
     }
 
     if (!nextlaunch.value) {
+      nextlaunchflag.value = false;
       router.push({ name: "NextLaunch" });
+    } else {
+      nextlaunchflag.value = true;
     }
     // console.log(nextlaunch.value);
-    return { isAdmin, maintenance, noQuota };
+    return { isAdmin, maintenance, noQuota};
   },
 };
 </script>

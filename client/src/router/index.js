@@ -189,6 +189,26 @@ router.beforeEach(async (to, from, next) => {
     next("/home");
   } else if (to.meta.requiredAuth) {
     await userService.refresh_token();
+    await userService.getUser()
+      .then((response) => {
+        const { user } = response.data.data;
+        const isAdmin = user.admin;
+        if (isAdmin) {
+          localStorage.setItem("nextlaunch", "true");
+        } else {
+          userService.nextlaunch();
+        }
+      })
+      // nextlaunch.value = ref(localStorage.getItem("nextlaunch") == "true");
+      // if(nextlaunch.value) {
+      //   router.push({
+      //   name: "Home",
+      // });
+      // } else{
+      //   router.push({
+      //     name: "NextLaunch",
+      //   })
+      // }
     next();
   } else {
     next();

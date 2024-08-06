@@ -1,7 +1,7 @@
 <template>
   <v-app class="overflow-hidden">
-    <default-bar :key="$route.fullPath" v-if="!maintenance" />
-    <Quota class="quota" v-if="!isAdmin && !maintenance && !noQuota" />
+    <default-bar :key="$route.fullPath" v-if="!maintenance && nextlaunch" />
+    <Quota class="quota" v-if="!isAdmin && !maintenance && !noQuota && nextlaunch" />
     <default-view />
     <FooterComponent />
   </v-app>
@@ -29,7 +29,7 @@ export default {
     const router = useRouter();
     const maintenance = ref(false);
     const nextlaunch = ref(true);
-    const nextlaunchflag = ref(true);
+    // const nextlaunchflag = ref(true);
     const noQuota = ref(false);
     const excludedRoutes = ref([
       "/",
@@ -63,13 +63,9 @@ export default {
     }
 
     if (!nextlaunch.value) {
-      nextlaunchflag.value = false;
       router.push({ name: "NextLaunch" });
-    } else {
-      nextlaunchflag.value = true;
     }
-    // console.log(nextlaunch.value);
-    return { isAdmin, maintenance, noQuota};
+    return { isAdmin, maintenance, noQuota, nextlaunch};
   },
 };
 </script>

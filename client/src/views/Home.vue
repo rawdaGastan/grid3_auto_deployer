@@ -109,12 +109,14 @@
 import { ref, onMounted } from "vue";
 import userService from "@/services/userService";
 import Toast from "@/components/Toast.vue";
+import { useRouter } from "vue-router";
 
 export default {
   components: {
     Toast,
   },
   setup() {
+    const router = useRouter();
     const items = ref([
       { name: "Virtual Machine", linkName: "VM" },
       { name: "Kubernetes", linkName: "K8s" },
@@ -133,7 +135,9 @@ export default {
           toast.value.toast(err, "#FF5252");
         });
     };
-
+    if (!localStorage.getItem("nextlaunch") == "true") {
+        router.push({ name: "NextLaunch" })
+      }
     onMounted(() => {
       let token = localStorage.getItem("token");
       if (token) checkVoucher();

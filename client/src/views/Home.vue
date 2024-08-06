@@ -137,7 +137,7 @@ export default {
     };
     if (!localStorage.getItem("nextlaunch") == "true") {
         router.push({ name: "NextLaunch" })
-      }
+    }
     onMounted(() => {
       let token = localStorage.getItem("token");
       if (token) checkVoucher();

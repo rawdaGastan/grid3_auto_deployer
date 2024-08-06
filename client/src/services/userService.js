@@ -202,15 +202,17 @@ export default {
 
   // next launch
   async nextlaunch() {
-      await this.refresh_token();
-      return await authClient().get("/nextlaunch").then((response) => {
-        const { data } = response.data;
-        localStorage.setItem("nextlaunch", data.active);
-      })
-      .catch((response) => {
-        const { err } = response.response.data;
-        console.log(err);
-      });
+      // await this.refresh_token();
+      return await baseClient()
+        .get("/nextlaunch")
+        .then((response) => {
+          const { data } = response.data;
+          localStorage.setItem("nextlaunch", data.active);
+        })
+        .catch((response) => {
+          const { err } = response.response.data;
+          console.log(err);
+        });
   },
   // handler function of nextlaunch
   async handleNextLaunch(){
@@ -220,9 +222,10 @@ export default {
         const isAdmin = user.admin;
         if (isAdmin) {
           localStorage.setItem("nextlaunch", "true");
-        } else {
-          this.nextlaunch();
         }
+        //  else {
+        //   this.nextlaunch();
+        // }
       })
   },
 };

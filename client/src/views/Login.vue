@@ -131,7 +131,7 @@ export default {
     ]);
     const onSubmit = () => {
       if (!verify.value) return;
-
+      userService.nextlaunch();
       loading.value = true;
       axios
         .post(window.configs.vite_app_endpoint + "/user/signin", {
@@ -141,23 +141,35 @@ export default {
         .then((response) => {
           localStorage.setItem("token", response.data.data.access_token);
           toast.value.toast(response.data.msg);
-          userService.handleNextLaunch();
-          if(localStorage.getItem("nextlaunch") == "true") {
+          adminCheck();
+          // userService.handleNextLaunch();
+          // userService.getUser()
+          // .then((response) => {
+          //   const { user } = response.data.data;
+          //   const isAdmin = user.admin;
+          //   if (isAdmin) {
+          //     localStorage.setItem("nextlaunch", "true");
+          //   }
+          // })
+          // if(localStorage.getItem("nextlaunch") == "true") {
             router.push({
             name: "Home",
           });
-          } else{
-            router.push({
-              name: "NextLaunch",
-            })
-          }
-
+          // } else{
+          //   router.push({
+          //     name: "NextLaunch",
+          //   })
+          // }
         })
         .catch((error) => {
           toast.value.toast(error.response.data.err, "#FF5252");
           loading.value = false;
         });
     };
+
+    async function adminCheck(){
+      await userService.handleNextLaunch();
+    }
 
     return {
       verify,

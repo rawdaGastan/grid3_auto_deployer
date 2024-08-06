@@ -106,11 +106,12 @@ func (a *App) registerHandlers() {
 	notificationRouter := authRouter.PathPrefix("/notification").Subrouter()
 	vmRouter := authRouter.PathPrefix("/vm").Subrouter()
 	k8sRouter := authRouter.PathPrefix("/k8s").Subrouter()
-	authNextLaunchRouter := authRouter.PathPrefix("/nextlaunch").Subrouter()
+	// authNextLaunchRouter := authRouter.PathPrefix("/nextlaunch").Subrouter()
 
 	// sub routes with no authorization
 	unAuthUserRouter := versionRouter.PathPrefix("/user").Subrouter()
 	unAuthMaintenanceRouter := versionRouter.PathPrefix("/maintenance").Subrouter() //no middlewares --> GET
+	unauthNextLaunchRouter := versionRouter.PathPrefix("/nextlaunch").Subrouter()
 
 	// sub routes with admin access
 	voucherRouter := adminRouter.PathPrefix("/voucher").Subrouter()
@@ -154,7 +155,7 @@ func (a *App) registerHandlers() {
 	k8sRouter.HandleFunc("", WrapFunc(a.K8sDeleteAllHandler)).Methods("DELETE", "OPTIONS")
 
 	unAuthMaintenanceRouter.HandleFunc("", WrapFunc(a.GetMaintenanceHandler)).Methods("GET", "OPTIONS")
-	authNextLaunchRouter.HandleFunc("", WrapFunc(a.GetNextLaunchHandler)).Methods("GET", "OPTIONS")
+	unauthNextLaunchRouter.HandleFunc("", WrapFunc(a.GetNextLaunchHandler)).Methods("GET", "OPTIONS")
 
 	// ADMIN ACCESS
 	adminRouter.HandleFunc("/user/all", WrapFunc(a.GetAllUsersHandler)).Methods("GET", "OPTIONS")
@@ -181,7 +182,6 @@ func (a *App) registerHandlers() {
 	authRouter.Use(middlewares.Authorization(a.db, a.config.Token.Secret, a.config.Token.Timeout))
 	adminRouter.Use(middlewares.AdminAccess(a.db))
 
-	// authRouter.Use(middlewares.MaintenanceCheckMW(a.db))
 	// prometheus registration
 	prometheus.MustRegister(middlewares.Requests, middlewares.UserCreations, middlewares.VoucherActivated, middlewares.VoucherApplied, middlewares.Deployments, middlewares.Deletions)
 	http.Handle("/metrics", promhttp.Handler())

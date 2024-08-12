@@ -41,12 +41,10 @@ func (d *DB) Migrate() error {
 	if err := d.db.Delete(&Maintenance{}, "1 = 1").Error; err != nil {
 		return err
 	}
+	// add next launch
 	if err := d.db.Delete(&NextLaunch{}, "1 = 1").Error; err != nil {
 		return err
 	}
-	// if err := d.db.Find(&NextLaunch{}).Error; err != nil {
-
-	// }
 	if err := d.db.Create(&NextLaunch{}).Error; err != nil {
 		return err
 	}

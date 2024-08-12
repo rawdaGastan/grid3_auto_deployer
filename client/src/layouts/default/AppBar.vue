@@ -162,8 +162,6 @@ export default {
 			if (title == "Logout") {
 				localStorage.removeItem("token");
 				localStorage.removeItem("username");
-				// localStorage.removeItem("nextlaunch");
-				// localStorage.setItem("nextlaunch", "true");
 				items.value = [
 					{
 						path: "about",

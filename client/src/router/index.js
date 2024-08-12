@@ -180,10 +180,8 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   let token = localStorage.getItem("token");
   userService.maintenance();
-  // userService.nextlaunch();
 
   if (to.meta.requiredAuth && !token) {
-    // userService.nextlaunch();
     next("/login");
   } else if (to.path == "/" && token) {
     await userService.refresh_token();

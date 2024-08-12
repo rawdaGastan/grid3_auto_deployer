@@ -100,8 +100,6 @@ import axios from "axios";
 import Toast from "@/components/Toast.vue";
 import { useRouter } from "vue-router";
 import userService from "@/services/userService";
-// import userService from "@/services/userService";
-// import NextLaunch from "./NextLaunch.vue";
 
 export default {
   components: {
@@ -142,24 +140,9 @@ export default {
           localStorage.setItem("token", response.data.data.access_token);
           toast.value.toast(response.data.msg);
           adminCheck();
-          // userService.handleNextLaunch();
-          // userService.getUser()
-          // .then((response) => {
-          //   const { user } = response.data.data;
-          //   const isAdmin = user.admin;
-          //   if (isAdmin) {
-          //     localStorage.setItem("nextlaunch", "true");
-          //   }
-          // })
-          // if(localStorage.getItem("nextlaunch") == "true") {
             router.push({
             name: "Home",
           });
-          // } else{
-          //   router.push({
-          //     name: "NextLaunch",
-          //   })
-          // }
         })
         .catch((error) => {
           toast.value.toast(error.response.data.err, "#FF5252");

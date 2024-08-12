@@ -29,7 +29,6 @@ export default {
     const router = useRouter();
     const maintenance = ref(false);
     const nextlaunch = ref(true);
-    // const nextlaunchflag = ref(true);
     const noQuota = ref(false);
     const excludedRoutes = ref([
       "/",
@@ -44,7 +43,6 @@ export default {
     userService.maintenance();
     maintenance.value = localStorage.getItem("maintenance") == "true";
 
-    // userService.nextlaunch();
     nextlaunch.value = localStorage.getItem("nextlaunch") == "true";
 
     const isAdmin = computed(() => {

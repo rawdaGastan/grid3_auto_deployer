@@ -202,12 +202,11 @@ export default {
 
   // next launch
   async nextlaunch() {
-      // await this.refresh_token();
       return await baseClient()
         .get("/nextlaunch")
         .then((response) => {
           const { data } = response.data;
-          localStorage.setItem("nextlaunch", data.active);
+          localStorage.setItem("nextlaunch", data.launched);
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -223,9 +222,6 @@ export default {
         if (isAdmin) {
           localStorage.setItem("nextlaunch", "true");
         }
-        //  else {
-        //   this.nextlaunch();
-        // }
       })
   },
 };

@@ -106,7 +106,6 @@ func (a *App) registerHandlers() {
 	notificationRouter := authRouter.PathPrefix("/notification").Subrouter()
 	vmRouter := authRouter.PathPrefix("/vm").Subrouter()
 	k8sRouter := authRouter.PathPrefix("/k8s").Subrouter()
-	// authNextLaunchRouter := authRouter.PathPrefix("/nextlaunch").Subrouter()
 
 	// sub routes with no authorization
 	unAuthUserRouter := versionRouter.PathPrefix("/user").Subrouter()
@@ -126,8 +125,6 @@ func (a *App) registerHandlers() {
 	unAuthUserRouter.HandleFunc("/refresh_token", WrapFunc(a.RefreshJWTHandler)).Methods("POST", "OPTIONS")
 	unAuthUserRouter.HandleFunc("/forgot_password", WrapFunc(a.ForgotPasswordHandler)).Methods("POST", "OPTIONS")
 	unAuthUserRouter.HandleFunc("/forget_password/verify_email", WrapFunc(a.VerifyForgetPasswordCodeHandler)).Methods("POST", "OPTIONS")
-
-	// authMaintenanceRouter.HandleFunc("/maintenance", WrapFunc(a.GetMaintenanceHandler)).Methods("GET", "OPTIONS")
 
 	userRouter.HandleFunc("/change_password", WrapFunc(a.ChangePasswordHandler)).Methods("PUT", "OPTIONS")
 	userRouter.HandleFunc("", WrapFunc(a.UpdateUserHandler)).Methods("PUT", "OPTIONS")
@@ -163,7 +160,6 @@ func (a *App) registerHandlers() {
 	adminRouter.HandleFunc("/deployment/count", WrapFunc(a.GetDlsCountHandler)).Methods("GET", "OPTIONS")
 	adminRouter.HandleFunc("/announcement", WrapFunc(a.CreateNewAnnouncement)).Methods("POST", "OPTIONS")
 	adminRouter.HandleFunc("/set_admin", WrapFunc(a.SetAdmin)).Methods("PUT", "OPTIONS")
-	// adminRouter.HandleFunc("/nextlaunch", WrapFunc(a.GetNextLaunchAdminHandler)).Methods("GET", "OPTIONS")
 	balanceRouter.HandleFunc("", WrapFunc(a.GetBalanceHandler)).Methods("GET", "OPTIONS")
 	maintenanceRouter.HandleFunc("", WrapFunc(a.UpdateMaintenanceHandler)).Methods("PUT", "OPTIONS")
 	deploymentsRouter.HandleFunc("", WrapFunc(a.DeleteAllDeployments)).Methods("DELETE", "OPTIONS")

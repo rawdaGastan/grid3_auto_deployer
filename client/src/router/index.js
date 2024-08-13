@@ -185,9 +185,13 @@ router.beforeEach(async (to, from, next) => {
     next("/login");
   } else if (to.path == "/" && token) {
     await userService.refresh_token();
-    next("/home")
+    await userService.nextlaunch();
+    await userService.handleNextLaunch();
+    next("/home");
   } else if (to.meta.requiredAuth) {
     await userService.refresh_token();
+    await userService.nextlaunch();
+    await userService.handleNextLaunch();
     next();
   } else {
     next();

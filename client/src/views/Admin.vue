@@ -189,7 +189,7 @@
             <template v-if="nextLaunchDialog">
               <BaseButton
                 color="green"
-                text="Set Next Launch"
+                text="Disable Next Launch"
                 class="text-capitalize mr-2"
                 @click="setNextLaunch"
               />
@@ -197,7 +197,7 @@
             <template v-else>
               <BaseButton
                 color="red"
-                text="Set Next Launch"
+                text="Enable Next Launch"
                 class="text-capitalize mr-2"
                 v-bind="props"
                 @click="setNextLaunch"

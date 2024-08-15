@@ -154,89 +154,153 @@
 											</v-col>
 										</v-row>
 
-										<v-text-field label="Length" v-model="length" :rules="requiredRules" min="3" max="20"
-											oninput="validity.valid||(value='')" type="number" bg-color="accent" variant="outlined"
-											density="compact" class="my-3"></v-text-field>
-									</v-card-text>
-									<v-card-actions class="justify-center">
-										<BaseButton class="bg-primary mr-5" text="Cancel" @click="dialog = false" />
-										<BaseButton type="submit" class="bg-primary" text="Generate" />
-									</v-card-actions>
-								</v-form>
-							</v-card>
-						</v-dialog>
-					</div>
-					<BaseButton :disabled="approveAllCount <= 0" color="success" text="Approve All" class="approve text-capitalize"
-						@click="approveAllVouchers" />
-				</div>
-			</v-col>
-			<v-col cols="12" md="4">
-				<v-col class="pa-0">
-					<div class="balance text-primary pa-3 my-2 text-center rounded-lg bg-white shadow">
-						<p class="mx-lg-auto font-weight-medium">Balance</p>
-						<strong style="font-size: 2rem;">{{ balance }} TFT</strong>
-					</div>
-				</v-col>
-				<v-row>
-					<v-col>
-						<div class="resources text-white text-center rounded-lg bg-primary py-5 shadow">
-							<p class="mx-lg-auto font-weight-medium">
-								Used VMs: {{ usedResources }}
-							</p>
-							<p class="mx-lg-auto font-weight-medium">
-								Deployed VMs: {{ deployedResources }}
-							</p>
-						</div>
-					</v-col>
-					<v-col>
-						<div class="resources text-white text-center rounded-lg bg-primary py-5 shadow">
-							<p class="mx-lg-auto font-weight-medium">
-								Used IPs: {{ usedIPs }}
-							</p>
-							<p class="mx-lg-auto font-weight-medium">
-								Reserved IPs: {{ reservedIPs }}
-							</p>
-						</div>
-					</v-col>
-				</v-row>
-				<section class="my-5">
-					<v-data-table v-model:items-per-page="itemsPerPage" :headers="usersHeaders" :items="users" class="elevation-1">
-						<template v-slot:item="{ item, index }">
-							<tr>
-								<td>
-									{{ ++index }}
-								</td>
-								<td v-if="item.name" class="d-flex align-center">
-									<v-avatar color="primary" size="30" class="mr-2">
-										<v-icon v-if="item.admin" icon="mdi-account-key" size="17"></v-icon>
-										<span v-else class="text-uppercase">
-											{{ addAvatar(item.name) }}
-										</span>
-									</v-avatar>
-									<div>
-										<p>{{ item.name }}</p>
-										<p>
-											{{ item.email }}
-										</p>
-									</div>
-								</td>
-								<td>
-									<span class="text-red">{{ item.used_vms }}</span>
-									/<span>{{ item.vms }}</span>
-								</td>
-								<td>
-									<span class="text-red">{{ item.used_public_ips }}</span>/<span>{{ item.public_ips }}</span>
-								</td>
-								<td>
-									<v-row>
-										<v-tooltip block text="View user" left>
-											<template v-slot:activator="{ props }">
-												<v-icon v-bind="props" color="primary" dark class="ml-3 text-primary cursor-pointer"
-													@click="openUserInfo(item)">
-													mdi-information
-												</v-icon>
-											</template>
-										</v-tooltip>
+                    <v-text-field
+                      label="Length"
+                      v-model="length"
+                      :rules="requiredRules"
+                      min="3"
+                      max="20"
+                      oninput="validity.valid||(value='')"
+                      type="number"
+                      bg-color="accent"
+                      variant="outlined"
+                      density="compact"
+                      class="my-3"
+                    ></v-text-field>
+                  </v-card-text>
+                  <v-card-actions class="justify-center">
+                    <BaseButton
+                      class="bg-primary mr-5"
+                      text="Cancel"
+                      @click="dialog = false"
+                    />
+                    <BaseButton
+                      type="submit"
+                      class="bg-primary"
+                      text="Generate"
+                    />
+                  </v-card-actions>
+                </v-form>
+              </v-card>
+            </v-dialog>
+          </div>
+          <div class="text-center">
+            <!-- <v-dialog  width="auto"> -->
+            <template v-if="nextLaunchDialog">
+              <BaseButton
+                color="green"
+                text="Disable Next Launch"
+                class="text-capitalize mr-2"
+                @click="setNextLaunch"
+              />
+            </template>
+            <template v-else>
+              <BaseButton
+                color="red"
+                text="Enable Next Launch"
+                class="text-capitalize mr-2"
+                v-bind="props"
+                @click="setNextLaunch"
+              />
+            </template>
+          </div>
+          <BaseButton
+            :disabled="approveAllCount <= 0"
+            color="success"
+            text="Approve All"
+            class="approve text-capitalize"
+            @click="approveAllVouchers"
+          />
+        </div>
+      </v-col>
+      <v-col cols="12" md="4">
+        <v-col class="pa-0">
+          <div
+            class="balance text-primary pa-3 my-2 text-center rounded-lg bg-white shadow"
+          >
+            <p class="mx-lg-auto font-weight-medium">Balance</p>
+            <strong style="font-size: 2rem">{{ balance }} TFT</strong>
+          </div>
+        </v-col>
+        <v-row>
+          <v-col>
+            <div
+              class="resources text-white text-center rounded-lg bg-primary py-5 shadow"
+            >
+              <p class="mx-lg-auto font-weight-medium">
+                Used VMs: {{ usedResources }}
+              </p>
+              <p class="mx-lg-auto font-weight-medium">
+                Deployed VMs: {{ deployedResources }}
+              </p>
+            </div>
+          </v-col>
+          <v-col>
+            <div
+              class="resources text-white text-center rounded-lg bg-primary py-5 shadow"
+            >
+              <p class="mx-lg-auto font-weight-medium">
+                Used IPs: {{ usedIPs }}
+              </p>
+              <p class="mx-lg-auto font-weight-medium">
+                Reserved IPs: {{ reservedIPs }}
+              </p>
+            </div>
+          </v-col>
+        </v-row>
+        <section class="my-5">
+          <v-data-table
+            v-model:items-per-page="itemsPerPage"
+            :headers="usersHeaders"
+            :items="users"
+            class="elevation-1"
+          >
+            <template v-slot:item="{ item, index }">
+              <tr>
+                <td>
+                  {{ ++index }}
+                </td>
+                <td v-if="item.name" class="d-flex align-center">
+                  <v-avatar color="primary" size="30" class="mr-2">
+                    <v-icon
+                      v-if="item.admin"
+                      icon="mdi-account-key"
+                      size="17"
+                    ></v-icon>
+                    <span v-else class="text-uppercase">
+                      {{ addAvatar(item.name) }}
+                    </span>
+                  </v-avatar>
+                  <div>
+                    <p>{{ item.name }}</p>
+                    <p>
+                      {{ item.email }}
+                    </p>
+                  </div>
+                </td>
+                <td>
+                  <span class="text-red">{{ item.used_vms }}</span>
+                  /<span>{{ item.vms }}</span>
+                </td>
+                <td>
+                  <span class="text-red">{{ item.used_public_ips }}</span
+                  >/<span>{{ item.public_ips }}</span>
+                </td>
+                <td>
+                  <v-row>
+                    <v-tooltip block text="View user" left>
+                      <template v-slot:activator="{ props }">
+                        <v-icon
+                          v-bind="props"
+                          color="primary"
+                          dark
+                          class="ml-3 text-primary cursor-pointer"
+                          @click="openUserInfo(item)"
+                        >
+                          mdi-information
+                        </v-icon>
+                      </template>
+                    </v-tooltip>
 
 										<v-tooltip v-if="!item.admin" block text="Set admin" left>
 											<template v-slot:activator="{ props }">
@@ -319,30 +383,33 @@ export default {
 			{ title: "Actions", key: "actions", sortable: false },
 		]);
 
-		const form = ref(null);
-		const vouchers = ref([]);
-		const pendingVouchers = ref([]);
-		const users = ref([]);
-		const toast = ref(null);
-		const loading = ref(false);
-		const usedResources = ref(0);
-		const deployedResources = ref(0);
-		const balance = ref(0);
-		const usedIPs = ref(0);
-		const reservedIPs = ref(0);
-		const approveAllCount = ref(null);
-		const userInfo = ref(null);
-		const itemsPerPage = ref(5);
-		const dialog = ref(false);
-		const announcementDialog = ref(false);
-		const showUserInfo = ref(false);
-		const vms = ref(1);
-		const ips = ref(0);
-		const length = ref(3);
-		const message = ref(null);
-		const voucher = ref(null);
-		const subject = ref(null);
-		const announcement = ref(null);
+    const form = ref(null);
+    const vouchers = ref([]);
+    const pendingVouchers = ref([]);
+    const users = ref([]);
+    const toast = ref(null);
+    const loading = ref(false);
+    const usedResources = ref(0);
+    const deployedResources = ref(0);
+    const balance = ref(0);
+    const usedIPs = ref(0);
+    const reservedIPs = ref(0);
+    const approveAllCount = ref(null);
+    const userInfo = ref(null);
+    const itemsPerPage = ref(5);
+    const dialog = ref(false);
+    const announcementDialog = ref(false);
+    const showUserInfo = ref(false);
+    const vms = ref(1);
+    const ips = ref(0);
+    const length = ref(3);
+    const message = ref(null);
+    const voucher = ref(null);
+    const subject = ref(null);
+    const announcement = ref(null);
+    const nextLaunchDialog = ref(false);
+
+    nextLaunchDialog.value = localStorage.getItem("nextlaunchadmin") == "true";
 
 		const requiredRules = ref([
 			(value) => {
@@ -555,6 +622,16 @@ export default {
 					announcementDialog.value = false;
 				});
 		};
+    const setNextLaunch = async () => {
+      await userService.nextlaunch();
+      await userService
+        .setNextLaunch(!(localStorage.getItem("nextlaunchadmin") == "true"))
+        .then((response) => {
+          if (response.status == 200) {
+            nextLaunchDialog.value = !nextLaunchDialog.value;
+          }
+        });
+    };
 
 		const resetVoucher = () => {
 			message.value = null;
@@ -623,6 +700,7 @@ export default {
 			sendAnnouncement,
 			dateIsNull,
 			stringDate,
+			setNextLaunch,
 		};
 	},
 	beforeRouteEnter(to, from, next) {

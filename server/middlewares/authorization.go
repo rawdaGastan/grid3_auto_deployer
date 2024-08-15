@@ -3,6 +3,7 @@ package middlewares
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -40,7 +41,7 @@ func Authorization(db models.DB, secret string, timeout int) func(http.Handler) 
 
 			user, err := db.GetUserByID(claims.UserID)
 			if err == gorm.ErrRecordNotFound {
-				writeErrResponse(r, w, http.StatusNotFound, "user: "+ user.Email +", is not found")
+				writeErrResponse(r, w, http.StatusNotFound, "user is not found")
 				return
 			}
 			if err != nil {
@@ -48,7 +49,7 @@ func Authorization(db models.DB, secret string, timeout int) func(http.Handler) 
 				return
 			}
 			if !user.Verified {
-				writeErrResponse(r, w, http.StatusBadRequest, "email: "+ user.Email +" is not verified yet, please check the verification email in your inbox")
+				writeErrResponse(r, w, http.StatusBadRequest, fmt.Sprintf("email: %s is not verified yet, please check the verification email in your inbox", user.Email))
 				return
 			}
 

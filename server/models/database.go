@@ -48,6 +48,9 @@ func (d *DB) Migrate() error {
 	if err := d.db.Create(&NextLaunch{}).Error; err != nil {
 		return err
 	}
+	if err := d.UpdateNextLaunch(false); err != nil {
+		return err
+	}
 	return d.db.Create(&Maintenance{}).Error
 }
 

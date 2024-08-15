@@ -929,3 +929,20 @@ func TestGetMaintenance(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, true, m.Active)
 }
+
+func TestUpdateNextLaunch(t *testing.T) {
+	db := setupDB(t)
+	err := db.UpdateNextLaunch(true)
+	require.NoError(t, err)
+
+}
+
+func TestGetNextLaunch(t *testing.T) {
+	db := setupDB(t)
+	err := db.UpdateNextLaunch(true)
+	require.NoError(t, err)
+
+	m, err := db.GetNextLaunch()
+	require.NoError(t, err)
+	require.Equal(t, true, m.Launched)
+}

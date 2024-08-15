@@ -140,7 +140,7 @@ export default {
           localStorage.setItem("token", response.data.data.access_token);
           toast.value.toast(response.data.msg);
           adminCheck();
-            router.push({
+          router.push({
             name: "Home",
           });
         })

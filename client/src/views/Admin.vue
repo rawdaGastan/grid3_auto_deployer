@@ -701,6 +701,7 @@ export default {
 			dateIsNull,
 			stringDate,
 			setNextLaunch,
+			nextLaunchDialog,
 		};
 	},
 	beforeRouteEnter(to, from, next) {

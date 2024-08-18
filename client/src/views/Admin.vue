@@ -176,7 +176,7 @@
 						</template>
 					</div>
 					<BaseButton :disabled="approveAllCount <= 0" color="success" text="Approve All" class="approve text-capitalize"
-						@click="approveAllVouchers" />		
+						@click="approveAllVouchers" />	
 				</div>
 			</v-col>
 			<v-col cols="12" md="4">

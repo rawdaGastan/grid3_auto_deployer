@@ -54,6 +54,7 @@ export default {
 
     if (excludedRoutes.value.includes(route.path)) {
       noQuota.value = true;
+      nextlaunch.value = true;
     }
 
     if (maintenance.value) {

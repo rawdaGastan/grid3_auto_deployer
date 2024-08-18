@@ -230,7 +230,7 @@ export default {
   async setNextLaunch(value) {
     await this.refresh_token();
     return await authClient().put("/nextlaunch", {
-      on: value,
+      launched: value,
     });
   },
 };

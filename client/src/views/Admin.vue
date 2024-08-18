@@ -167,7 +167,6 @@
 						</v-dialog>
 					</div>
 					<div class="text-center">
-						<!-- <v-dialog  width="auto"> -->
 						<template v-if="nextLaunchDialog">
 							<BaseButton color="green" text="Disable Next Launch" class="text-capitalize mr-2" @click="setNextLaunch"/>
 						</template>

@@ -167,7 +167,7 @@ func TestGetAllUsersHandler(t *testing.T) {
 
 	t.Run("Update Next Launch: success", func(t *testing.T) {
 		body := []byte(`{
-		"on": true
+		"launched": true
 		}`)
 
 		req := authHandlerConfig{

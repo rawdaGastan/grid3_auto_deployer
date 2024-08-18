@@ -35,7 +35,7 @@ type SetAdminInput struct {
 
 // UpdateNextLaunchInput struct for data needed when updating next launch state
 type UpdateNextLaunchInput struct {
-	ON bool `json:"on" binding:"required"`
+	Launched bool `json:"launched" binding:"required"`
 }
 
 // GetAllUsersHandler returns all users
@@ -428,7 +428,7 @@ func (a *App) UpdateNextLaunchHandler(req *http.Request) (interface{}, Response)
 		return nil, BadRequest(errors.New("failed to read NextLaunch update data"))
 	}
 
-	err = a.db.UpdateNextLaunch(input.ON)
+	err = a.db.UpdateNextLaunch(input.Launched)
 	if err == gorm.ErrRecordNotFound {
 		return nil, NotFound(errors.New("next launch is not found"))
 	}

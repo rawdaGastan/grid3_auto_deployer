@@ -109,7 +109,7 @@ func (a *App) registerHandlers() {
 
 	// sub routes with no authorization
 	unAuthUserRouter := versionRouter.PathPrefix("/user").Subrouter()
-	unAuthMaintenanceRouter := versionRouter.PathPrefix("/maintenance").Subrouter() //no middlewares --> GET
+	unAuthMaintenanceRouter := versionRouter.PathPrefix("/maintenance").Subrouter()
 	unauthNextLaunchRouter := versionRouter.PathPrefix("/nextlaunch").Subrouter()
 
 	// sub routes with admin access

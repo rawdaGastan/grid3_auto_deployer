@@ -133,6 +133,7 @@ export default {
           toast.value.toast(err, "#FF5252");
         });
     };
+
     onMounted(() => {
       let token = localStorage.getItem("token");
       if (token) checkVoucher();

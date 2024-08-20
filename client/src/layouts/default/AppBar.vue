@@ -95,15 +95,18 @@
 <script>
 import { ref, onMounted } from "vue";
 import userService from "@/services/userService";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 export default {
 	setup() {
 		const route = useRoute();
+		const router = useRouter();
 		const drawer = ref(false);
 		const username = ref("");
 		const isActive = ref(0);
 		const token = ref(localStorage.getItem("token"));
+		const nextlaunch = ref(localStorage.getItem("nextlaunch"));
+		const maintenance = ref(localStorage.getItem("maintenance"));
 		const notifications = ref([]);
 		const excludedRoutes = ref([
 			"/",
@@ -212,6 +215,23 @@ export default {
 			}
 		};
 
+		const checkNextLaunch = () => {
+			userService.nextlaunch();
+			userService.handleNextLaunch();
+			nextlaunch.value = localStorage.getItem("nextlaunch") == "true";
+			if (!nextlaunch.value) {
+				router.push({ name: "NextLaunch" });
+			}
+		};
+
+		const checkMaintenance = () => {
+			userService.maintenance();
+			maintenance.value = localStorage.getItem("maintenance") == "false";
+			if (!maintenance.value) {
+				router.push({ name: "Maintenance" });
+			}
+		};
+
 		const getNotifications = () => {
 			userService
 				.getNotifications()
@@ -242,6 +262,8 @@ export default {
 		}
 
 		onMounted(() => {
+			checkNextLaunch();
+			checkMaintenance();
 			if (route.redirectedFrom) checkTitle(route.redirectedFrom.name);
 			checkExcludedFromNavBar(route.path);
 

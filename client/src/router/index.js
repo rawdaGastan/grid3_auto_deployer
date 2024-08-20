@@ -195,6 +195,7 @@ router.beforeEach(async (to, from, next) => {
     next();
   } else {
     await userService.nextlaunch();
+    await userService.handleNextLaunch();
     next();
   }
 });

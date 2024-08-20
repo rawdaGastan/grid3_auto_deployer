@@ -116,7 +116,7 @@ export default {
 			"/otp",
 			"/newPassword",
 			"/maintenance",
-			// "/nextlaunch",
+			"/nextlaunch",
 			"/about"
 		]);
 		const items = ref([

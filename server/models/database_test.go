@@ -927,7 +927,7 @@ func TestGetMaintenance(t *testing.T) {
 
 	m, err := db.GetMaintenance()
 	require.NoError(t, err)
-	require.Equal(t, true, m.Active)
+	require.True(t, m.Active)
 }
 
 func TestUpdateNextLaunch(t *testing.T) {
@@ -944,5 +944,5 @@ func TestGetNextLaunch(t *testing.T) {
 
 	m, err := db.GetNextLaunch()
 	require.NoError(t, err)
-	require.Equal(t, true, m.Launched)
+	require.True(t, m.Launched)
 }

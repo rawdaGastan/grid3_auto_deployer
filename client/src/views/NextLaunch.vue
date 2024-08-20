@@ -10,7 +10,7 @@
               isHovering
                 ? 'transform:scale(1.1);transition: transform .5s;'
                 : 'transition: transform .5s;'
-            " transition="transform .2s" src="@/assets/welcome.png" :class="{ 'on-hover': isHovering }" v-bind="props" />
+            " transition="transform .2s" src="@/assets/about_us.png" :class="{ 'on-hover': isHovering }" v-bind="props" />
           </v-hover>
         </v-col>
       </v-row>

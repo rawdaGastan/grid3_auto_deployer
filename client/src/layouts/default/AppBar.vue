@@ -116,7 +116,7 @@ export default {
 			"/otp",
 			"/newPassword",
 			"/maintenance",
-			"/nextlaunch",
+			// "/nextlaunch",
 			"/about"
 		]);
 		const items = ref([
@@ -216,8 +216,6 @@ export default {
 		};
 
 		const checkNextLaunch = () => {
-			userService.nextlaunch();
-			userService.handleNextLaunch();
 			nextlaunch.value = localStorage.getItem("nextlaunch") == "true";
 			if (!nextlaunch.value) {
 				router.push({ name: "NextLaunch" });
@@ -225,7 +223,6 @@ export default {
 		};
 
 		const checkMaintenance = () => {
-			userService.maintenance();
 			maintenance.value = localStorage.getItem("maintenance") == "false";
 			if (!maintenance.value) {
 				router.push({ name: "Maintenance" });

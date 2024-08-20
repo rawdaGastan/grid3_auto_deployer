@@ -168,10 +168,10 @@
 					</div>
 					<div class="text-center">
 						<template v-if="nextLaunchDialog">
-							<BaseButton color="green" text="Disable Next Launch" class="text-capitalize mr-2" @click="setNextLaunch"/>
+							<BaseButton color="green" text="Disable Launch" class="text-capitalize mr-2" @click="setNextLaunch"/>
 						</template>
 						<template v-else>
-							<BaseButton color="red" text="Enable Next Launch" class="text-capitalize mr-2" @click="setNextLaunch"/>
+							<BaseButton color="red" text="Enable Launch" class="text-capitalize mr-2" @click="setNextLaunch"/>
 						</template>
 					</div>
 					<BaseButton :disabled="approveAllCount <= 0" color="success" text="Approve All" class="approve text-capitalize"

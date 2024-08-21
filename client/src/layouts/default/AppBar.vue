@@ -223,8 +223,8 @@ export default {
 		};
 
 		const checkMaintenance = () => {
-			maintenance.value = localStorage.getItem("maintenance") == "false";
-			if (!maintenance.value) {
+			maintenance.value = localStorage.getItem("maintenance") == "true";
+			if (maintenance.value) {
 				router.push({ name: "Maintenance" });
 			}
 		};

@@ -110,12 +110,14 @@ func (a *App) registerHandlers() {
 	// sub routes with no authorization
 	unAuthUserRouter := versionRouter.PathPrefix("/user").Subrouter()
 	unAuthMaintenanceRouter := versionRouter.PathPrefix("/maintenance").Subrouter()
+	unauthNextLaunchRouter := versionRouter.PathPrefix("/nextlaunch").Subrouter()
 
 	// sub routes with admin access
 	voucherRouter := adminRouter.PathPrefix("/voucher").Subrouter()
 	maintenanceRouter := adminRouter.PathPrefix("/maintenance").Subrouter()
 	balanceRouter := adminRouter.PathPrefix("/balance").Subrouter()
 	deploymentsRouter := adminRouter.PathPrefix("/deployments").Subrouter()
+	nextLaunchRouter := adminRouter.PathPrefix("/nextlaunch").Subrouter()
 
 	unAuthUserRouter.HandleFunc("/signup", WrapFunc(a.SignUpHandler)).Methods("POST", "OPTIONS")
 	unAuthUserRouter.HandleFunc("/signup/verify_email", WrapFunc(a.VerifySignUpCodeHandler)).Methods("POST", "OPTIONS")
@@ -150,6 +152,7 @@ func (a *App) registerHandlers() {
 	k8sRouter.HandleFunc("", WrapFunc(a.K8sDeleteAllHandler)).Methods("DELETE", "OPTIONS")
 
 	unAuthMaintenanceRouter.HandleFunc("", WrapFunc(a.GetMaintenanceHandler)).Methods("GET", "OPTIONS")
+	unauthNextLaunchRouter.HandleFunc("", WrapFunc(a.GetNextLaunchHandler)).Methods("GET", "OPTIONS")
 
 	// ADMIN ACCESS
 	adminRouter.HandleFunc("/user/all", WrapFunc(a.GetAllUsersHandler)).Methods("GET", "OPTIONS")
@@ -161,6 +164,7 @@ func (a *App) registerHandlers() {
 	maintenanceRouter.HandleFunc("", WrapFunc(a.UpdateMaintenanceHandler)).Methods("PUT", "OPTIONS")
 	deploymentsRouter.HandleFunc("", WrapFunc(a.DeleteAllDeployments)).Methods("DELETE", "OPTIONS")
 	deploymentsRouter.HandleFunc("", WrapFunc(a.ListDeployments)).Methods("GET", "OPTIONS")
+	nextLaunchRouter.HandleFunc("", WrapFunc(a.UpdateNextLaunchHandler)).Methods("PUT", "OPTIONS")
 
 	voucherRouter.HandleFunc("", WrapFunc(a.GenerateVoucherHandler)).Methods("POST", "OPTIONS")
 	voucherRouter.HandleFunc("", WrapFunc(a.ListVouchersHandler)).Methods("GET", "OPTIONS")

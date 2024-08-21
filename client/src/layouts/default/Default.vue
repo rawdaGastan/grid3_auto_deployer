@@ -1,7 +1,7 @@
 <template>
   <v-app class="overflow-hidden">
-    <default-bar :key="$route.fullPath" v-if="!maintenance" />
-    <Quota class="quota" v-if="!isAdmin && !maintenance && !noQuota" />
+    <default-bar :key="$route.fullPath" v-if="!maintenance && nextlaunch" />
+    <Quota class="quota" v-if="!isAdmin && !maintenance && !noQuota && nextlaunch" />
     <default-view />
     <FooterComponent />
   </v-app>
@@ -28,6 +28,7 @@ export default {
     const route = useRoute();
     const router = useRouter();
     const maintenance = ref(false);
+    const nextlaunch = ref(true);
     const noQuota = ref(false);
     const excludedRoutes = ref([
       "/",
@@ -42,6 +43,8 @@ export default {
     userService.maintenance();
     maintenance.value = localStorage.getItem("maintenance") == "true";
 
+    nextlaunch.value = localStorage.getItem("nextlaunch") == "true";
+
     const isAdmin = computed(() => {
       if (route.path !== "/admin") {
         return false;
@@ -51,13 +54,17 @@ export default {
 
     if (excludedRoutes.value.includes(route.path)) {
       noQuota.value = true;
+      nextlaunch.value = true;
     }
 
     if (maintenance.value) {
       router.push({ name: "Maintenance" });
     }
 
-    return { isAdmin, maintenance, noQuota };
+    if (!nextlaunch.value) {
+      router.push({ name: "NextLaunch" });
+    }
+    return { isAdmin, maintenance, noQuota, nextlaunch};
   },
 };
 </script>

@@ -83,6 +83,15 @@ const routes = [
     },
   },
   {
+    path: "/nextlaunch",
+    name: "NextLaunch",
+    component: () => import("@/views/NextLaunch.vue"),
+    meta: {
+      requiredAuth: true,
+      layout: "Default",
+    },
+  },
+  {
     path: "/",
     component: () => import("@/layouts/default/Default.vue"),
     meta: {
@@ -176,11 +185,17 @@ router.beforeEach(async (to, from, next) => {
     next("/login");
   } else if (to.path == "/" && token) {
     await userService.refresh_token();
+    await userService.nextlaunch();
+    await userService.handleNextLaunch();
     next("/home");
   } else if (to.meta.requiredAuth) {
     await userService.refresh_token();
+    await userService.nextlaunch();
+    await userService.handleNextLaunch();
     next();
   } else {
+    await userService.nextlaunch();
+    await userService.handleNextLaunch();
     next();
   }
 });

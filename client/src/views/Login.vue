@@ -99,6 +99,7 @@ import { ref } from "vue";
 import axios from "axios";
 import Toast from "@/components/Toast.vue";
 import { useRouter } from "vue-router";
+import userService from "@/services/userService";
 
 export default {
   components: {
@@ -128,7 +129,7 @@ export default {
     ]);
     const onSubmit = () => {
       if (!verify.value) return;
-
+      userService.nextlaunch();
       loading.value = true;
       axios
         .post(window.configs.vite_app_endpoint + "/user/signin", {
@@ -138,6 +139,7 @@ export default {
         .then((response) => {
           localStorage.setItem("token", response.data.data.access_token);
           toast.value.toast(response.data.msg);
+          adminCheck();
           router.push({
             name: "Home",
           });
@@ -147,6 +149,10 @@ export default {
           loading.value = false;
         });
     };
+
+    async function adminCheck(){
+      await userService.handleNextLaunch();
+    }
 
     return {
       verify,

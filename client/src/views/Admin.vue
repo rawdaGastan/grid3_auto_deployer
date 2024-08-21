@@ -166,6 +166,14 @@
 							</v-card>
 						</v-dialog>
 					</div>
+					<div class="text-center">
+						<template v-if="nextLaunchDialog">
+							<BaseButton color="green" text="Disable Launch" class="text-capitalize mr-2" @click="setNextLaunch"/>
+						</template>
+						<template v-else>
+							<BaseButton color="red" text="Enable Launch" class="text-capitalize mr-2" @click="setNextLaunch"/>
+						</template>
+					</div>
 					<BaseButton :disabled="approveAllCount <= 0" color="success" text="Approve All" class="approve text-capitalize"
 						@click="approveAllVouchers" />
 				</div>
@@ -319,30 +327,33 @@ export default {
 			{ title: "Actions", key: "actions", sortable: false },
 		]);
 
-		const form = ref(null);
-		const vouchers = ref([]);
-		const pendingVouchers = ref([]);
-		const users = ref([]);
-		const toast = ref(null);
-		const loading = ref(false);
-		const usedResources = ref(0);
-		const deployedResources = ref(0);
-		const balance = ref(0);
-		const usedIPs = ref(0);
-		const reservedIPs = ref(0);
-		const approveAllCount = ref(null);
-		const userInfo = ref(null);
-		const itemsPerPage = ref(5);
-		const dialog = ref(false);
-		const announcementDialog = ref(false);
-		const showUserInfo = ref(false);
-		const vms = ref(1);
-		const ips = ref(0);
-		const length = ref(3);
-		const message = ref(null);
-		const voucher = ref(null);
-		const subject = ref(null);
-		const announcement = ref(null);
+    const form = ref(null);
+    const vouchers = ref([]);
+    const pendingVouchers = ref([]);
+    const users = ref([]);
+    const toast = ref(null);
+    const loading = ref(false);
+    const usedResources = ref(0);
+    const deployedResources = ref(0);
+    const balance = ref(0);
+    const usedIPs = ref(0);
+    const reservedIPs = ref(0);
+    const approveAllCount = ref(null);
+    const userInfo = ref(null);
+    const itemsPerPage = ref(5);
+    const dialog = ref(false);
+    const announcementDialog = ref(false);
+    const showUserInfo = ref(false);
+    const vms = ref(1);
+    const ips = ref(0);
+    const length = ref(3);
+    const message = ref(null);
+    const voucher = ref(null);
+    const subject = ref(null);
+    const announcement = ref(null);
+    const nextLaunchDialog = ref(false);
+
+    nextLaunchDialog.value = localStorage.getItem("nextlaunchadmin") == "true";
 
 		const requiredRules = ref([
 			(value) => {
@@ -555,6 +566,16 @@ export default {
 					announcementDialog.value = false;
 				});
 		};
+    const setNextLaunch = async () => {
+      await userService.nextlaunch();
+      await userService
+        .setNextLaunch(!(localStorage.getItem("nextlaunchadmin") == "true"))
+        .then((response) => {
+          if (response.status == 200) {
+            nextLaunchDialog.value = !nextLaunchDialog.value;
+          }
+        });
+    };
 
 		const resetVoucher = () => {
 			message.value = null;
@@ -623,6 +644,8 @@ export default {
 			sendAnnouncement,
 			dateIsNull,
 			stringDate,
+			setNextLaunch,
+			nextLaunchDialog,
 		};
 	},
 	beforeRouteEnter(to, from, next) {

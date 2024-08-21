@@ -32,13 +32,20 @@ func (d *DB) Connect(file string) error {
 
 // Migrate migrates db schema
 func (d *DB) Migrate() error {
-	err := d.db.AutoMigrate(&User{}, &Quota{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{}, &Maintenance{}, &Notification{})
+	err := d.db.AutoMigrate(&User{}, &Quota{}, &VM{}, &K8sCluster{}, &Master{}, &Worker{}, &Voucher{}, &Maintenance{}, &Notification{}, &NextLaunch{})
 	if err != nil {
 		return err
 	}
 
 	// add maintenance
 	if err := d.db.Delete(&Maintenance{}, "1 = 1").Error; err != nil {
+		return err
+	}
+	// add next launch
+	if err := d.db.Delete(&NextLaunch{}, "1 = 1").Error; err != nil {
+		return err
+	}
+	if err := d.db.Create(&NextLaunch{Launched: true}).Error; err != nil {
 		return err
 	}
 	return d.db.Create(&Maintenance{}).Error
@@ -391,4 +398,16 @@ func (d *DB) UpdateNotification(id int, seen bool) error {
 // CreateNotification adds a new notification for a user
 func (d *DB) CreateNotification(n *Notification) error {
 	return d.db.Create(&n).Error
+}
+
+// UpdateNextLaunch updates the launched state of NextLaunch
+func (d *DB) UpdateNextLaunch(on bool) error {
+	return d.db.Model(&NextLaunch{}).Where("launched = ?", !on).Updates(map[string]interface{}{"launched": on, "updated_at": time.Now()}).Error
+}
+
+// GetNextLaunch queries on NextLaunch in db
+func (d *DB) GetNextLaunch() (NextLaunch, error) {
+	var res NextLaunch
+	query := d.db.First(&res)
+	return res, query.Error
 }

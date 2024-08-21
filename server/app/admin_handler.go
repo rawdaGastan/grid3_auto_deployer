@@ -33,6 +33,11 @@ type SetAdminInput struct {
 	Admin bool   `json:"admin" binding:"required"`
 }
 
+// UpdateNextLaunchInput struct for data needed when updating next launch state
+type UpdateNextLaunchInput struct {
+	Launched bool `json:"launched" binding:"required"`
+}
+
 // GetAllUsersHandler returns all users
 func (a *App) GetAllUsersHandler(req *http.Request) (interface{}, Response) {
 	users, err := a.db.ListAllUsers()
@@ -412,4 +417,48 @@ func (a *App) CreateNewAnnouncement(req *http.Request) (interface{}, Response) {
 	return ResponseMsg{
 		Message: "new announcement is sent successfully",
 	}, Created()
+}
+
+// UpdateNextLaunchHandler updates next launch flag
+func (a *App) UpdateNextLaunchHandler(req *http.Request) (interface{}, Response) {
+	var input UpdateNextLaunchInput
+	err := json.NewDecoder(req.Body).Decode(&input)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("failed to read NextLaunch update data"))
+	}
+
+	err = a.db.UpdateNextLaunch(input.Launched)
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("next launch is not found"))
+	}
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	return ResponseMsg{
+		Message: "Next Launch is updated successfully",
+		Data:    nil,
+	}, Ok()
+}
+
+// GetNextLaunchHandler returns next launch state
+func (a *App) GetNextLaunchHandler(req *http.Request) (interface{}, Response) {
+	nextlaunch, err := a.db.GetNextLaunch()
+
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("next launch is not found"))
+	}
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	return ResponseMsg{
+		Message: fmt.Sprintf("Next Launch is Launched with state: %v", nextlaunch.Launched),
+		Data:    nextlaunch,
+	}, Ok()
 }

@@ -199,4 +199,38 @@ export default {
         console.log(err);
       });
   },
+
+  // getting nextlaunch value
+  async nextlaunch() {
+    return await baseClient()
+      .get("/nextlaunch")
+      .then((response) => {
+        const { data } = response.data;
+        localStorage.setItem("nextlaunch", data.launched);
+        localStorage.setItem("nextlaunchadmin", data.launched);
+      })
+      .catch((response) => {
+        const { err } = response.response.data;
+        console.log(err);
+      });
+  },
+  // handler function of nextlaunch
+  async handleNextLaunch(){
+    await this.getUser()
+      .then((response) => {
+        const { user } = response.data.data;
+        const isAdmin = user.admin;
+        if (isAdmin) {
+          localStorage.setItem("nextlaunch", "true");
+        }
+      })
+  },
+
+  // setting next launch value
+  async setNextLaunch(value) {
+    await this.refresh_token();
+    return await authClient().put("/nextlaunch", {
+      launched: value,
+    });
+  },
 };

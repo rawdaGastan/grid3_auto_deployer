@@ -21,7 +21,7 @@
     "mosha-vue-toastify": "^1.0.23",
     "roboto-fontface": "*",
     "vite-plugin-eslint": "^1.8.1",
-    "vue": "^3.3.8",
+    "vue": "^3.5.10",
     "vue-router": "^4.2.5",
     "vuetify": "^3.4.2",
     "webfontloader": "^1.0.0"

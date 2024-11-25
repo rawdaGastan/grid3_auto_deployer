@@ -19,18 +19,21 @@ import (
 
 func buildK8sCluster(node uint32, sshKey, network string, k models.K8sDeployInput) (workloads.K8sCluster, error) {
 	master := workloads.K8sNode{
-		Name:      k.MasterName,
-		Flist:     k8sFlist,
-		Planetary: true,
-		Node:      node,
+		VM: &workloads.VM{
+			Name:        k.MasterName,
+			Flist:       k8sFlist,
+			Planetary:   true,
+			NodeID:      node,
+			NetworkName: network,
+		},
 	}
 	cru, mru, sru, ips, err := calcNodeResources(k.Resources, k.Public)
 	if err != nil {
 		return workloads.K8sCluster{}, err
 	}
-	master.CPU = int(cru)
-	master.Memory = int(mru * 1024)
-	master.DiskSize = int(sru)
+	master.CPU = uint8(cru)
+	master.MemoryMB = mru * 1024
+	master.DiskSizeGB = sru
 	if ips == 1 {
 		master.PublicIP = true
 	}
@@ -38,17 +41,20 @@ func buildK8sCluster(node uint32, sshKey, network string, k models.K8sDeployInpu
 	workers := []workloads.K8sNode{}
 	for _, worker := range k.Workers {
 		w := workloads.K8sNode{
-			Name:  worker.Name,
-			Flist: k8sFlist,
-			Node:  node,
+			VM: &workloads.VM{
+				Name:        worker.Name,
+				Flist:       k8sFlist,
+				NodeID:      node,
+				NetworkName: network,
+			},
 		}
 		cru, mru, sru, _, err := calcNodeResources(k.Resources, false)
 		if err != nil {
 			return workloads.K8sCluster{}, err
 		}
-		w.CPU = int(cru)
-		w.Memory = int(mru * 1024)
-		w.DiskSize = int(sru)
+		w.CPU = uint8(cru)
+		w.MemoryMB = mru * 1024
+		w.DiskSizeGB = sru
 		workers = append(workers, w)
 	}
 	k8sCluster := workloads.K8sCluster{

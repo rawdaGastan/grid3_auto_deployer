@@ -13,7 +13,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/workloads"
-	"github.com/threefoldtech/zos/pkg/gridtypes"
 	"gopkg.in/validator.v2"
 )
 
@@ -169,7 +168,7 @@ func buildNetwork(node uint32, name string) workloads.ZNet {
 	return workloads.ZNet{
 		Name:  name,
 		Nodes: []uint32{node},
-		IPRange: gridtypes.NewIPNet(net.IPNet{
+		IPRange: workloads.NewIPRange(net.IPNet{
 			IP:   net.IPv4(10, 20, 0, 0),
 			Mask: net.CIDRMask(16, 32),
 		}),

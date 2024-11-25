@@ -262,7 +262,7 @@ export default {
     const showInputs = ref(true);
     const nameValidation = ref([
       (value) => {
-        if (value.length < 3 || value.length > 20)
+        if (value && (value.length < 3 || value.length > 20))
           return "Name needs to be more than 2 characters and less than 20";
         if (!/^[a-z]+$/.test(value))
           return "Name can only include lowercase alphabetic characters";

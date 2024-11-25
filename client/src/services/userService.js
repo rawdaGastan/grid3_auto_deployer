@@ -214,6 +214,7 @@ export default {
         console.log(err);
       });
   },
+
   // handler function of nextlaunch
   async handleNextLaunch(){
     await this.getUser()
@@ -224,6 +225,10 @@ export default {
           localStorage.setItem("nextlaunch", "true");
         }
       })
+			.catch((response) => {
+        const { err } = response.response.data;
+        console.log(err);
+      });
   },
 
   // setting next launch value

@@ -145,7 +145,7 @@ func (d *Deployer) ConsumeK8sRequest(ctx context.Context, pending bool) {
 	}
 }
 
-func (d *Deployer) consumeVMs() (nets []*workloads.ZNet, vms []*workloads.Deployment, err error) {
+func (d *Deployer) consumeVMs() (nets []workloads.Network, vms []*workloads.Deployment, err error) {
 	result, err := d.Redis.Read(streams.DeployVMStreamName, streams.DeployVMConsumerGroupName, 5, false)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -179,7 +179,7 @@ func (d *Deployer) consumeVMs() (nets []*workloads.ZNet, vms []*workloads.Deploy
 	return
 }
 
-func (d *Deployer) consumeK8s() (nets []*workloads.ZNet, clusters []*workloads.K8sCluster, err error) {
+func (d *Deployer) consumeK8s() (nets []workloads.Network, clusters []*workloads.K8sCluster, err error) {
 	result, err := d.Redis.Read(streams.DeployK8sStreamName, streams.DeployK8sConsumerGroupName, 5, false)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {

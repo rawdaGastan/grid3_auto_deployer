@@ -48,28 +48,29 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, s
 	// create disk
 	disk := workloads.Disk{
 		Name:   "disk",
-		SizeGB: int(sru),
+		SizeGB: sru,
 	}
 
 	// create vm workload
 	vm := workloads.VM{
 		Name:      vmInput.Name,
 		Flist:     vmFlist,
-		CPU:       int(*filter.TotalCRU),
+		CPU:       uint8(*filter.TotalCRU),
 		PublicIP:  vmInput.Public,
 		Planetary: true,
-		Memory:    int(mru) * 1024,
+		MemoryMB:  mru * 1024,
 		Mounts: []workloads.Mount{
-			{DiskName: disk.Name, MountPoint: "/disk"},
+			{Name: disk.Name, MountPoint: "/disk"},
 		},
 		Entrypoint: vmEntryPoint,
 		EnvVars: map[string]string{
 			"SSH_KEY": sshKey + "\n" + adminSSHKey,
 		},
 		NetworkName: network.Name,
+		NodeID:      nodeID,
 	}
 
-	dl := workloads.NewDeployment(vmInput.Name, nodeID, "", nil, network.Name, []workloads.Disk{disk}, nil, []workloads.VM{vm}, nil)
+	dl := workloads.NewDeployment(vmInput.Name, nodeID, "", nil, network.Name, []workloads.Disk{disk}, nil, []workloads.VM{vm}, nil, nil, nil)
 	dl.SolutionType = vmInput.Name
 
 	// add network and deployment to be deployed
@@ -96,7 +97,7 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, s
 		return nil, 0, 0, 0, errors.Wrapf(err, "failed to load vm '%s' on node %v", dl.Name, dl.NodeID)
 	}
 
-	return &loadedDl.Vms[0], loadedDl.ContractID, loadedNet.NodeDeploymentID[nodeID], uint64(disk.SizeGB), nil
+	return &loadedDl.Vms[0], loadedDl.ContractID, loadedNet.NodeDeploymentID[nodeID], disk.SizeGB, nil
 }
 
 // ValidateVMQuota validates the quota a vm deployment need
@@ -147,7 +148,7 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 		PublicIP:          vm.ComputedIP,
 		SRU:               diskSize,
 		CRU:               uint64(vm.CPU),
-		MRU:               uint64(vm.Memory),
+		MRU:               vm.MemoryMB,
 		ContractID:        contractID,
 		NetworkContractID: networkContractID,
 	}

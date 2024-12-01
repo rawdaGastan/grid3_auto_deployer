@@ -22,6 +22,13 @@ type AdminAnnouncement struct {
 	Body    string `json:"announcement" binding:"required"`
 }
 
+// EmailUser struct for data needed when admin sends new email to a user
+type EmailUser struct {
+	Subject string `json:"subject"  binding:"required"`
+	Body    string `json:"body" binding:"required"`
+	Email   string `json:"email" binding:"required" validate:"mail"`
+}
+
 // UpdateMaintenanceInput struct for data needed when user update maintenance
 type UpdateMaintenanceInput struct {
 	ON bool `json:"on" binding:"required"`
@@ -416,6 +423,53 @@ func (a *App) CreateNewAnnouncement(req *http.Request) (interface{}, Response) {
 
 	return ResponseMsg{
 		Message: "new announcement is sent successfully",
+	}, Created()
+}
+
+// SendEmail creates a new administrator email and sends it to a specific user as an email and notification
+func (a *App) SendEmail(req *http.Request) (interface{}, Response) {
+	var emailUser EmailUser
+	err := json.NewDecoder(req.Body).Decode(&emailUser)
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("failed to read email data"))
+	}
+
+	err = validator.Validate(emailUser)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("invalid email data"))
+	}
+
+	user, err := a.db.GetUserByEmail(emailUser.Email)
+	if err == gorm.ErrRecordNotFound {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("user is not found"))
+	}
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("failed to get user"))
+	}
+
+	subject, body := internal.AdminMailContent(emailUser.Subject, emailUser.Body, a.config.Server.Host, user.Name)
+
+	err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	notification := models.Notification{UserID: user.ID.String(), Msg: fmt.Sprintf("Email: %s", emailUser.Body)}
+	err = a.db.CreateNotification(&notification)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	return ResponseMsg{
+		Message: "new email is sent successfully",
 	}, Created()
 }
 

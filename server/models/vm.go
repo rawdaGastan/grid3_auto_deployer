@@ -7,6 +7,7 @@ type VM struct {
 	UserID            string `json:"user_id"`
 	Name              string `json:"name" gorm:"unique" binding:"required"`
 	YggIP             string `json:"ygg_ip"`
+	MyceliumIP        string `json:"mycelium_ip"`
 	Public            bool   `json:"public"`
 	PublicIP          string `json:"public_ip"`
 	Resources         string `json:"resources"`

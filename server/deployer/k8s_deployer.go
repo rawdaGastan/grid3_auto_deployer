@@ -18,19 +18,27 @@ import (
 )
 
 func buildK8sCluster(node uint32, sshKey, network string, k models.K8sDeployInput) (workloads.K8sCluster, error) {
+	myceliumIPSeed, err := workloads.RandomMyceliumIPSeed()
+	if err != nil {
+		return workloads.K8sCluster{}, err
+	}
+
 	master := workloads.K8sNode{
 		VM: &workloads.VM{
-			Name:        k.MasterName,
-			Flist:       k8sFlist,
-			Planetary:   true,
-			NodeID:      node,
-			NetworkName: network,
+			Name:           k.MasterName,
+			Flist:          k8sFlist,
+			Planetary:      true,
+			MyceliumIPSeed: myceliumIPSeed,
+			NodeID:         node,
+			NetworkName:    network,
 		},
 	}
+
 	cru, mru, sru, ips, err := calcNodeResources(k.Resources, k.Public)
 	if err != nil {
 		return workloads.K8sCluster{}, err
 	}
+
 	master.CPU = uint8(cru)
 	master.MemoryMB = mru * 1024
 	master.DiskSizeGB = sru
@@ -40,23 +48,33 @@ func buildK8sCluster(node uint32, sshKey, network string, k models.K8sDeployInpu
 
 	workers := []workloads.K8sNode{}
 	for _, worker := range k.Workers {
+		myceliumIPSeed, err := workloads.RandomMyceliumIPSeed()
+		if err != nil {
+			return workloads.K8sCluster{}, err
+		}
+
 		w := workloads.K8sNode{
 			VM: &workloads.VM{
-				Name:        worker.Name,
-				Flist:       k8sFlist,
-				NodeID:      node,
-				NetworkName: network,
+				Name:           worker.Name,
+				Flist:          k8sFlist,
+				NodeID:         node,
+				NetworkName:    network,
+				Planetary:      true,
+				MyceliumIPSeed: myceliumIPSeed,
 			},
 		}
+
 		cru, mru, sru, _, err := calcNodeResources(k.Resources, false)
 		if err != nil {
 			return workloads.K8sCluster{}, err
 		}
+
 		w.CPU = uint8(cru)
 		w.MemoryMB = mru * 1024
 		w.DiskSizeGB = sru
 		workers = append(workers, w)
 	}
+
 	k8sCluster := workloads.K8sCluster{
 		Master:       &master,
 		Workers:      workers,
@@ -77,7 +95,10 @@ func (d *Deployer) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInp
 	}
 
 	// build network
-	network := buildNetwork(node, fmt.Sprintf("%sk8sNet", k8sDeployInput.MasterName))
+	network, err := buildNetwork(node, fmt.Sprintf("%sk8sNet", k8sDeployInput.MasterName))
+	if err != nil {
+		return 0, 0, 0, err
+	}
 
 	// build cluster
 	cluster, err := buildK8sCluster(node,
@@ -128,29 +149,36 @@ func (d *Deployer) loadK8s(ctx context.Context, k8sDeployInput models.K8sDeployI
 	if err != nil {
 		return models.K8sCluster{}, err
 	}
-	master := models.Master{
-		CRU:       cru,
-		MRU:       mru,
-		SRU:       sru,
-		Public:    k8sDeployInput.Public,
-		PublicIP:  resCluster.Master.ComputedIP,
-		Name:      k8sDeployInput.MasterName,
-		YggIP:     resCluster.Master.PlanetaryIP,
-		Resources: k8sDeployInput.Resources,
-	}
-	workers := []models.Worker{}
-	for _, worker := range k8sDeployInput.Workers {
 
+	master := models.Master{
+		CRU:        cru,
+		MRU:        mru,
+		SRU:        sru,
+		Public:     k8sDeployInput.Public,
+		PublicIP:   resCluster.Master.ComputedIP,
+		Name:       k8sDeployInput.MasterName,
+		YggIP:      resCluster.Master.PlanetaryIP,
+		MyceliumIP: resCluster.Master.MyceliumIP,
+		Resources:  k8sDeployInput.Resources,
+	}
+
+	workers := []models.Worker{}
+	for i, worker := range k8sDeployInput.Workers {
 		cru, mru, sru, _, err := calcNodeResources(worker.Resources, false)
 		if err != nil {
 			return models.K8sCluster{}, err
 		}
+
 		workerModel := models.Worker{
-			Name:      worker.Name,
-			CRU:       cru,
-			MRU:       mru,
-			SRU:       sru,
-			Resources: worker.Resources,
+			Name:       worker.Name,
+			CRU:        cru,
+			MRU:        mru,
+			SRU:        sru,
+			Public:     k8sDeployInput.Public,
+			PublicIP:   resCluster.Workers[i].ComputedIP,
+			YggIP:      resCluster.Workers[i].PlanetaryIP,
+			MyceliumIP: resCluster.Workers[i].MyceliumIP,
+			Resources:  worker.Resources,
 		}
 		workers = append(workers, workerModel)
 	}

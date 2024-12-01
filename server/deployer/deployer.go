@@ -164,7 +164,12 @@ func (d *Deployer) CancelDeployment(contractID uint64, netContractID uint64, dlT
 	return nil
 }
 
-func buildNetwork(node uint32, name string) workloads.ZNet {
+func buildNetwork(node uint32, name string) (workloads.ZNet, error) {
+	myceliumKey, err := workloads.RandomMyceliumKey()
+	if err != nil {
+		return workloads.ZNet{}, err
+	}
+
 	return workloads.ZNet{
 		Name:  name,
 		Nodes: []uint32{node},
@@ -172,8 +177,9 @@ func buildNetwork(node uint32, name string) workloads.ZNet {
 			IP:   net.IPv4(10, 20, 0, 0),
 			Mask: net.CIDRMask(16, 32),
 		}),
-		AddWGAccess: false,
-	}
+		AddWGAccess:  false,
+		MyceliumKeys: map[uint32][]byte{node: myceliumKey},
+	}, nil
 }
 
 func calcNodeResources(resources string, public bool) (uint64, uint64, uint64, uint64, error) {

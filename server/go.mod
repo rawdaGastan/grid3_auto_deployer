@@ -13,7 +13,7 @@ require (
 	github.com/rs/zerolog v1.33.0
 	github.com/sendgrid/sendgrid-go v3.16.0+incompatible
 	github.com/spf13/cobra v1.8.1
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/threefoldtech/tfgrid-sdk-go/grid-client v0.16.0
 	github.com/threefoldtech/tfgrid-sdk-go/grid-proxy v0.16.0
 	golang.org/x/crypto v0.29.0

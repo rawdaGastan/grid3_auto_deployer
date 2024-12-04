@@ -35,7 +35,7 @@
     </v-row>
 
     <v-container>
-      <v-row justify="center" py-5>
+      <v-row justify="center" class="py-5">
         <v-col cols="12" md="4">
           <v-card class="text-center" flat>
             <v-card-title>
@@ -87,6 +87,7 @@
           </v-card>
         </v-col>
       </v-row>
+      <v-divider />
     </v-container>
   </v-container>
 </template>

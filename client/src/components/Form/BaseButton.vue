@@ -3,7 +3,8 @@
     :variant="variant"
     :color="color"
     :rounded="rounded"
-    min-width="150"
+    width="150"
+    :block="block"
     v-bind="$attrs"
   >
     <font-awesome-icon v-if="icon" :icon="icon" class="mr-2" />
@@ -30,6 +31,10 @@ export default {
     variant: {
       type: String,
       default: "flat",
+    },
+    block: {
+      type: Boolean,
+      default: false,
     },
   },
 };

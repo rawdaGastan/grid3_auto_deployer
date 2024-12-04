@@ -34,7 +34,7 @@ const routes = [
     component: () => import("@/views/Signup.vue"),
     meta: {
       requiredAuth: false,
-      layout: "Default",
+      layout: "NoNavbar",
     },
   },
   {

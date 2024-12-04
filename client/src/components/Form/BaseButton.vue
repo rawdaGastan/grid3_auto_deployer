@@ -1,5 +1,11 @@
 <template>
-  <v-btn :color="color" v-bind="$attrs">
+  <v-btn
+    :variant="variant"
+    :color="color"
+    :rounded="rounded"
+    min-width="150"
+    v-bind="$attrs"
+  >
     <font-awesome-icon v-if="icon" :icon="icon" class="mr-2" />
     {{ text }}</v-btn
   >
@@ -10,15 +16,20 @@ export default {
   props: {
     color: {
       type: String,
-      default: "",
     },
     icon: {
       type: String,
-      default: "",
     },
     text: {
       type: [String, Number],
-      default: "",
+    },
+    rounded: {
+      type: String,
+      default: "xl",
+    },
+    variant: {
+      type: String,
+      default: "flat",
     },
   },
 };

@@ -14,6 +14,7 @@ import { VDataTable } from "vuetify/components/VDataTable";
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
 export default createVuetify({
   theme: {
+    defaultTheme: "dark",
     themes: {
       light: {
         colors: {
@@ -25,9 +26,9 @@ export default createVuetify({
       },
       dark: {
         colors: {
-          primary: "#217dbb",
-          secondary: "#5CBBF6",
-          background: "#333",
+          primary: "#474747",
+          secondary: "#19647E",
+          background: "#212121",
         },
       },
     },

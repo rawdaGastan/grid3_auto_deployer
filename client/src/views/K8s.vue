@@ -172,6 +172,12 @@
               >
                 {{ item.master.ygg_ip }}
               </td>
+							<td
+                class="cursor-pointer"
+                @click="copyIP(item.master.mycelium_ip)"
+              >
+                {{ item.master.mycelium_ip }}
+              </td>
               <td
                 v-if="item.master.public_ip"
                 class="cursor-pointer"
@@ -205,7 +211,7 @@
           </template>
         </v-data-table>
         <v-dialog transition="dialog-top-transition" v-model="dialog">
-          <v-card width="50%" class="mx-auto">
+          <v-card width="60%" class="mx-auto">
             <v-toolbar color="transparent">
               <v-spacer></v-spacer>
               <v-toolbar-items>
@@ -303,6 +309,11 @@ export default {
         sortable: false,
       },
       {
+        title: "Mycelium IP",
+        key: "mycelium_ip",
+        sortable: false,
+      },
+      {
         title: "Public IP",
         key: "public_ip",
         sortable: false,
@@ -337,10 +348,15 @@ export default {
         sortable: false,
       },
       {
-        title: "Resources",
-        key: "resources",
+        title: "Yggdrasil IP",
+        key: "ygg_ip",
         sortable: false,
       },
+      {
+        title: "Mycelium IP",
+        key: "mycelium_ip",
+        sortable: false,
+      }
     ]);
     const resources = ref([
       { title: "Small K8s (1 CPU, 2GB, 25GB)", value: "small" },

@@ -43,7 +43,10 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, s
 	nodeID := uint32(nodeIDs[0].NodeID)
 
 	// create network workload
-	network := buildNetwork(nodeID, fmt.Sprintf("%svmNet", vmInput.Name))
+	network, err := buildNetwork(nodeID, fmt.Sprintf("%svmNet", vmInput.Name))
+	if err != nil {
+		return nil, 0, 0, 0, err
+	}
 
 	// create disk
 	disk := workloads.Disk{
@@ -51,14 +54,20 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.DeployVMInput, s
 		SizeGB: sru,
 	}
 
+	myceliumIPSeed, err := workloads.RandomMyceliumIPSeed()
+	if err != nil {
+		return nil, 0, 0, 0, err
+	}
+
 	// create vm workload
 	vm := workloads.VM{
-		Name:      vmInput.Name,
-		Flist:     vmFlist,
-		CPU:       uint8(*filter.TotalCRU),
-		PublicIP:  vmInput.Public,
-		Planetary: true,
-		MemoryMB:  mru * 1024,
+		Name:           vmInput.Name,
+		Flist:          vmFlist,
+		CPU:            uint8(*filter.TotalCRU),
+		PublicIP:       vmInput.Public,
+		Planetary:      true,
+		MyceliumIPSeed: myceliumIPSeed,
+		MemoryMB:       mru * 1024,
 		Mounts: []workloads.Mount{
 			{Name: disk.Name, MountPoint: "/disk"},
 		},
@@ -143,6 +152,7 @@ func (d *Deployer) deployVMRequest(ctx context.Context, user models.User, input 
 		UserID:            user.ID.String(),
 		Name:              vm.Name,
 		YggIP:             vm.PlanetaryIP,
+		MyceliumIP:        vm.MyceliumIP,
 		Resources:         input.Resources,
 		Public:            input.Public,
 		PublicIP:          vm.ComputedIP,

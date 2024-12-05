@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-0">
+  <v-container fluid class="pa-0 overflow-hidden">
     <v-row>
       <v-col cols="12" md="6" class="d-none d-md-block">
         <v-card height="100vh">
@@ -14,11 +14,11 @@
             cloud computing system
           </p>
 
-          <h5 class="text-h5 font-weight-bold pt-5 text-capitalize">
+          <h5 class="text-h5 font-weight-bold my-5 text-capitalize">
             create account
           </h5>
 
-          <v-form class="py-5" v-model="verify" @submit.prevent="onSubmit">
+          <v-form v-model="verify" @submit.prevent="onSubmit">
             <v-container class="px-0">
               <v-row>
                 <v-col cols="12" md="6">
@@ -209,7 +209,7 @@ export default {
 
     const register = () => {
       router.push({
-        name: "Signup",
+        name: "OTP",
       });
     };
 

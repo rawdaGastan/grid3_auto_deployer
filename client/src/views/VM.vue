@@ -71,6 +71,9 @@
                   <td class="cursor-pointer" @click="copyIP(item.ygg_ip)">
                     {{ item.ygg_ip }}
                   </td>
+                  <td class="cursor-pointer" @click="copyIP(item.mycelium_ip)">
+                    {{ item.mycelium_ip }}
+                  </td>
                   <td
                     v-if="item.public_ip"
                     class="cursor-pointer"
@@ -170,6 +173,11 @@ export default {
       {
         title: "Yggdrasil IP",
         key: "ygg_ip",
+        sortable: false,
+      },
+      {
+        title: "Mycelium IP",
+        key: "mycelium_ip",
         sortable: false,
       },
       {

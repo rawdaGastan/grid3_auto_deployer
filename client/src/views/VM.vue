@@ -14,16 +14,17 @@
         rounded="md"
         width="120"
         class="mr-3"
-        :disabled="results.length > 0"
+        :disabled="results.length == 0"
         text="Delete All"
       />
 
       <BaseButton
         color="secondary"
         :loading="deLoading"
-        @click="deleteVms"
+        @click="createVM"
         rounded="md"
         text="+ Create new VM"
+        width="auto"
       />
     </v-row>
     <v-row
@@ -87,6 +88,7 @@ import userService from "@/services/userService";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import Confirm from "@/components/Confirm.vue";
 import Toast from "@/components/Toast.vue";
+import { useRouter } from "vue-router";
 
 export default {
   components: {
@@ -100,6 +102,7 @@ export default {
     const itemsPerPage = ref(null);
     const confirm = ref(null);
     const selectedResource = ref("");
+    const router = useRouter();
     const headers = ref([
       {
         title: "ID",
@@ -235,6 +238,12 @@ export default {
       }, 30 * 1000);
     }
 
+    const createVM = () => {
+      router.push({
+        name: "Deploy",
+      });
+    };
+
     onMounted(() => {
       let token = localStorage.getItem("token");
       if (token) getVMS();
@@ -255,6 +264,7 @@ export default {
       deleteVm,
       emitQuota,
       copyIP,
+      createVM,
     };
   },
 };

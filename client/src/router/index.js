@@ -1,13 +1,12 @@
 // Composables
 import { createRouter, createWebHistory } from "vue-router";
 import Home from "@/views/Home.vue";
-import About from "@/views/About.vue";
 import VM from "@/views/VM.vue";
-import K8s from "@/views/K8s.vue";
 import Profile from "@/views/Profile.vue";
 import Admin from "@/views/Admin.vue";
 import NewPassword from "@/views/Newpassword.vue";
 import userService from "@/services/userService.js";
+import Deploy from "@/views/Deploy.vue";
 
 const routes = [
   {
@@ -59,15 +58,6 @@ const routes = [
     path: "/newPassword",
     name: "NewPassword",
     component: () => import("@/views/Newpassword.vue"),
-    meta: {
-      requiredAuth: false,
-      layout: "Default",
-    },
-  },
-  {
-    path: "/about",
-    name: "About",
-    component: About,
     meta: {
       requiredAuth: false,
       layout: "Default",
@@ -131,19 +121,11 @@ const routes = [
         },
       },
       {
-        path: "/k8s",
-        name: "K8s",
-        component: K8s,
+        path: "/deploy",
+        name: "Deploy",
+        component: Deploy,
         meta: {
           requiredAuth: true,
-        },
-      },
-      {
-        path: "/about",
-        name: "About",
-        component: About,
-        meta: {
-          requiredAuth: false,
         },
       },
       {

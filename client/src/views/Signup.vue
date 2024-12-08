@@ -1,9 +1,5 @@
 <template>
-<<<<<<< Updated upstream
   <v-container fluid class="pa-0 overflow-hidden">
-=======
-  <v-container fluid class="overflow-hidden pa-0">
->>>>>>> Stashed changes
     <v-row>
       <v-col cols="12" md="6" class="d-none d-md-block">
         <v-card height="100vh">

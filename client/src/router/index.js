@@ -8,6 +8,7 @@ import Profile from "@/views/Profile.vue";
 import Admin from "@/views/Admin.vue";
 import NewPassword from "@/views/Newpassword.vue";
 import userService from "@/services/userService.js";
+import Deploy from "@/views/Deploy.vue";
 
 const routes = [
   {
@@ -139,11 +140,11 @@ const routes = [
         },
       },
       {
-        path: "/about",
-        name: "About",
-        component: About,
+        path: "/deploy",
+        name: "Deploy",
+        component: Deploy,
         meta: {
-          requiredAuth: false,
+          requiredAuth: true,
         },
       },
       {

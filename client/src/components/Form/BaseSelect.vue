@@ -8,7 +8,7 @@
     }"
     :items="items"
     :value="modelValue"
-    bg-color="accent"
+    bg-color="primary"
     variant="outlined"
     density="compact"
   >

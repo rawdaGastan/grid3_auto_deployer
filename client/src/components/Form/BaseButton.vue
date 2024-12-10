@@ -3,9 +3,10 @@
     :variant="variant"
     :color="color"
     :rounded="rounded"
-    width="150"
+    :width="width"
     :block="block"
     v-bind="$attrs"
+    class="text-capitalize"
   >
     <font-awesome-icon v-if="icon" :icon="icon" class="mr-2" />
     {{ text }}</v-btn
@@ -26,7 +27,7 @@ export default {
     },
     rounded: {
       type: String,
-      default: "xl",
+      default: "lg",
     },
     variant: {
       type: String,
@@ -35,6 +36,10 @@ export default {
     block: {
       type: Boolean,
       default: false,
+    },
+    width: {
+      type: String,
+      default: "auto",
     },
   },
 };

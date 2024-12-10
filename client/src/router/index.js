@@ -1,13 +1,14 @@
 // Composables
 import { createRouter, createWebHistory } from "vue-router";
-import Home from "@/views/Home.vue";
-import About from "@/views/About.vue";
+import Account from "@/views/Account.vue";
 import VM from "@/views/VM.vue";
-import K8s from "@/views/K8s.vue";
-import Profile from "@/views/Profile.vue";
 import Admin from "@/views/Admin.vue";
 import NewPassword from "@/views/Newpassword.vue";
 import userService from "@/services/userService.js";
+import AccountTab from "@/views/tabs/Account.vue";
+import PaymentsTab from "@/views/tabs/Payments.vue";
+import Invoices from "@/views/tabs/Invoices.vue";
+import AuditLogs from "@/views/tabs/AuditLogs.vue";
 
 const routes = [
   {
@@ -65,15 +66,6 @@ const routes = [
     },
   },
   {
-    path: "/about",
-    name: "About",
-    component: About,
-    meta: {
-      requiredAuth: false,
-      layout: "Default",
-    },
-  },
-  {
     path: "/maintenance",
     name: "Maintenance",
     component: () => import("@/views/Maintenance.vue"),
@@ -99,22 +91,6 @@ const routes = [
     },
     children: [
       {
-        path: "/home",
-        name: "Home",
-        component: Home,
-        meta: {
-          requiredAuth: true,
-        },
-      },
-      {
-        path: "/profile",
-        name: "Profile",
-        component: Profile,
-        meta: {
-          requiredAuth: true,
-        },
-      },
-      {
         path: "/changePassword",
         name: "ChangePassword",
         component: NewPassword,
@@ -131,20 +107,29 @@ const routes = [
         },
       },
       {
-        path: "/k8s",
-        name: "K8s",
-        component: K8s,
+        path: "/account",
+        component: Account,
         meta: {
           requiredAuth: true,
         },
-      },
-      {
-        path: "/about",
-        name: "About",
-        component: About,
-        meta: {
-          requiredAuth: false,
-        },
+        children: [
+          {
+            path: "",
+            component: AccountTab,
+          },
+          {
+            path: "/account/payments",
+            component: PaymentsTab,
+          },
+          {
+            path: "/account/invoices",
+            component: Invoices,
+          },
+          {
+            path: "/account/audit-logs",
+            component: AuditLogs,
+          },
+        ],
       },
       {
         path: "admin",
@@ -187,7 +172,7 @@ router.beforeEach(async (to, from, next) => {
     await userService.refresh_token();
     await userService.nextlaunch();
     await userService.handleNextLaunch();
-    next("/home");
+    next("/vm");
   } else if (to.meta.requiredAuth) {
     await userService.refresh_token();
     await userService.nextlaunch();

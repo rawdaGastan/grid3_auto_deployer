@@ -26,7 +26,7 @@ const routes = [
     component: () => import("@/views/Login.vue"),
     meta: {
       requiredAuth: false,
-      layout: "Default",
+      layout: "NoNavbar",
     },
   },
   {

@@ -6,6 +6,7 @@
     width="150"
     :block="block"
     v-bind="$attrs"
+    class="text-capitalize"
   >
     <font-awesome-icon v-if="icon" :icon="icon" class="mr-2" />
     {{ text }}</v-btn
@@ -26,7 +27,7 @@ export default {
     },
     rounded: {
       type: String,
-      default: "xl",
+      default: "lg",
     },
     variant: {
       type: String,

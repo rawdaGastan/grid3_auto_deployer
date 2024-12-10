@@ -26,3 +26,11 @@ const headers = ref([
 ]);
 const logs = ref([]);
 </script>
+<style>
+thead th {
+  background-color: #19647e !important;
+}
+tbody tr {
+  background-color: #474747;
+}
+</style>

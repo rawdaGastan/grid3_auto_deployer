@@ -50,3 +50,11 @@ const data = ref([]);
 
 function downloadAll() {}
 </script>
+<style>
+thead th {
+  background-color: #19647e !important;
+}
+tbody tr {
+  background-color: #474747;
+}
+</style>

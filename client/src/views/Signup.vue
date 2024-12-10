@@ -106,7 +106,7 @@
               :loading="loading"
             />
 
-            <p class="my-5 text-center secondary">
+            <p class="my-5 text-center secondary text-medium-emphasis">
               Back to
               <router-link class="text-decoration-none text-white" to="/login">
                 Sign In</router-link

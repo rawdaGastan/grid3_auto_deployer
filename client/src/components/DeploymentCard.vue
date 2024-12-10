@@ -62,6 +62,7 @@
           text="Deploy"
           block
           type="submit"
+          :disabled="!verify"
           @click="$emit('selectedVM', resource)"
         ></BaseButton>
       </v-card-actions>
@@ -72,7 +73,7 @@
 <script setup>
 import { ref } from "vue";
 import BaseButton from "./Form/BaseButton.vue";
-const { resources } = defineProps(["resources"]);
+const { resources } = defineProps(["resources", "verify"]);
 
 const loading = ref(false);
 const selection = ref(1);

@@ -25,7 +25,11 @@
       <h6 class="text-h6">Choose Package</h6>
 
       <v-row>
-        <DeploymentCard :resources="resources" @selectedVM="getSelectedVM" />
+        <DeploymentCard
+          :resources="resources"
+          @selectedVM="getSelectedVM"
+          :verify="verify"
+        />
       </v-row>
     </v-form>
     <Toast ref="toast" />
@@ -38,14 +42,14 @@ import BaseSelect from "@/components/Form/BaseSelect.vue";
 import DeploymentCard from "@/components/DeploymentCard.vue";
 import userService from "@/services/userService";
 import Toast from "@/components/Toast.vue";
-import { useRoute } from "vue-router";
+import { useRouter } from "vue-router";
 
 const verify = ref(false);
-const vmName = ref();
+const vmName = ref("");
 const toast = ref(null);
 const selectedVM = ref();
 const loading = ref(false);
-const router = useRoute();
+const router = useRouter();
 
 const resources = ref([
   {
@@ -82,6 +86,7 @@ const resources = ref([
 
 const nameValidation = ref([
   (value) => {
+    if (!value) return "Name is required";
     if (value && (value.length < 3 || value.length > 20))
       return "Name needs to be more than 2 characters and less than 20";
     if (!/^[a-z]+$/.test(value))
@@ -113,7 +118,7 @@ function deployVm() {
   userService
     .deployVm(vmName.value, selectedVM.value.capacity)
     .then((response) => {
-      toast.value.toast(response.data.msg, "secondary");
+      toast.value.toast(response.data.msg, "#4caf50");
       router.push({ name: "VM" });
     })
     .catch((response) => {

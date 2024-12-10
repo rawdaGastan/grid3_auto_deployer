@@ -3,7 +3,7 @@
     :variant="variant"
     :color="color"
     :rounded="rounded"
-    width="150"
+    :width="width"
     :block="block"
     v-bind="$attrs"
     class="text-capitalize"
@@ -36,6 +36,10 @@ export default {
     block: {
       type: Boolean,
       default: false,
+    },
+    width: {
+      type: String,
+      default: "auto",
     },
   },
 };

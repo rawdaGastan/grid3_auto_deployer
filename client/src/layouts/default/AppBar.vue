@@ -43,7 +43,7 @@
             >
               <v-badge
                 v-if="notifications.length > 0"
-                color="#5CBBF6"
+                color="secondary"
                 :content="notifications.length"
               >
                 <font-awesome-icon icon="fa-bell" class="fa-xl" />
@@ -95,9 +95,7 @@
                     setActive(item.type == 'vms' ? 2 : 3, item.type);
                   "
                 >
-                  <span style="color: rgb(53, 52, 52)" @click="seen(item.id)">{{
-                    item.msg
-                  }}</span>
+                  <span @click="seen(item.id)">{{ item.msg }}</span>
                 </router-link>
               </v-list-item-title>
             </v-list-item>
@@ -106,9 +104,7 @@
           <v-list v-if="notifications.length == 0">
             <v-list-item>
               <v-list-item-title>
-                <span style="color: rgb(53, 52, 52)"
-                  >You don't have any notifications yet</span
-                >
+                <span>You don't have any notifications yet</span>
               </v-list-item-title>
             </v-list-item>
           </v-list>
@@ -167,27 +163,15 @@ export default {
     ]);
     const items = ref([
       {
-        path: "/home",
-        title: "Home",
-      },
-      {
-        path: "about",
-        title: "About",
-      },
-      {
         path: "vm",
         title: "Virtual Machines",
-      },
-      {
-        path: "k8s",
-        title: "Kubernetes",
       },
     ]);
 
     const user = ref([
       {
-        title: "Profile",
-        path: "profile",
+        title: "Account Management",
+        path: "/account",
       },
       {
         title: "Change password",

@@ -9,6 +9,7 @@ import AccountTab from "@/views/tabs/Account.vue";
 import PaymentsTab from "@/views/tabs/Payments.vue";
 import Invoices from "@/views/tabs/Invoices.vue";
 import AuditLogs from "@/views/tabs/AuditLogs.vue";
+import Deploy from "@/views/Deploy.vue";
 
 const routes = [
   {
@@ -130,6 +131,14 @@ const routes = [
             component: AuditLogs,
           },
         ],
+      },
+      {
+        path: "/deploy",
+        name: "Deploy",
+        component: Deploy,
+        meta: {
+          requiredAuth: true,
+        },
       },
       {
         path: "admin",

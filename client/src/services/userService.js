@@ -79,9 +79,9 @@ export default {
     return await authClient().get(`/vm/validate/${name}`);
   },
 
-  async deployVm(name, resources, checked) {
+  async deployVm(name, resources) {
     await this.refresh_token();
-    return await authClient().post("/vm", { name, resources, public: checked });
+    return await authClient().post("/vm", { name, resources });
   },
 
   async deleteVm(id) {
@@ -222,7 +222,7 @@ export default {
   },
 
   // handler function of nextlaunch
-  async handleNextLaunch(){
+  async handleNextLaunch() {
     await this.getUser()
       .then((response) => {
         const { user } = response.data.data;
@@ -231,7 +231,7 @@ export default {
           localStorage.setItem("nextlaunch", "true");
         }
       })
-			.catch((response) => {
+      .catch((response) => {
         const { err } = response.response.data;
         console.log(err);
       });

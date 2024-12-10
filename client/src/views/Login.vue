@@ -36,7 +36,7 @@
 
             <div class="text-body-2 text-end">
               <router-link
-                class="text-body-2 text-decoration-none secondary"
+                class="text-body-2 text-decoration-none text-white"
                 to="/forgetPassword"
                 >Forget password?</router-link
               >
@@ -48,9 +48,8 @@
               class="my-5"
               variant="outlined"
               text="Sign in"
-              @click="register"
+              @click="login"
               :disabled="!verify"
-              :loading="loading"
             />
 
             <v-divider />
@@ -64,7 +63,6 @@
               color="secondary"
               text="Create Your Account"
               @click="register"
-              :loading="loading"
             />
           </v-form>
         </div>
@@ -76,12 +74,13 @@
         </v-card>
       </v-col>
     </v-row>
+    <Toast ref="toast" />
   </v-container>
 </template>
 <script>
 import { ref } from "vue";
 import axios from "axios";
-// import Toast from "@/components/Toast.vue";
+import Toast from "@/components/Toast.vue";
 import { useRouter } from "vue-router";
 import userService from "@/services/userService";
 import logo from "@/assets/logo_c4all.png";
@@ -91,7 +90,7 @@ import BaseButton from "@/components/Form/BaseButton.vue";
 
 export default {
   components: {
-    // Toast,
+    Toast,
     BaseInput,
     BaseButton,
   },
@@ -103,11 +102,16 @@ export default {
     const visible = ref(false);
     const email = ref(null);
     const password = ref(null);
-    const loading = ref(false);
 
     const register = () => {
       router.push({
         name: "Signup",
+      });
+    };
+
+    const login = () => {
+      router.push({
+        name: "Login",
       });
     };
 
@@ -128,7 +132,6 @@ export default {
     const onSubmit = () => {
       if (!verify.value) return;
       userService.nextlaunch();
-      loading.value = true;
       axios
         .post(window.configs.vite_app_endpoint + "/user/signin", {
           email: email.value,
@@ -139,12 +142,11 @@ export default {
           toast.value.toast(response.data.msg);
           adminCheck();
           router.push({
-            name: "Home",
+            name: "VM",
           });
         })
         .catch((error) => {
           toast.value.toast(error.response.data.err, "#FF5252");
-          loading.value = false;
         });
     };
 
@@ -157,7 +159,6 @@ export default {
       password,
       visible,
       email,
-      loading,
       passwordRules,
       emailRules,
       toast,
@@ -165,6 +166,7 @@ export default {
       logo,
       signin,
       register,
+      login,
     };
   },
 };

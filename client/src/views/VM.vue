@@ -7,7 +7,7 @@
     <h5 class="text-h5 text-md-h4 font-weight-bold my-5">Virtual Machines</h5>
     <v-divider />
     <v-row class="d-flex justify-end my-5">
-      <v-dialog max-width="500">
+      <v-dialog v-model="dialog" max-width="500">
         <template v-slot:activator="{ props: activatorProps }">
           <BaseButton
             v-bind="activatorProps"
@@ -21,9 +21,11 @@
 
         <template v-slot:default="{ isActive }">
           <v-card class="pa-2">
-            <v-card-title>Delete</v-card-title>
+            <v-card-title>Delete All VMs</v-card-title>
             <v-divider />
-            <v-card-text> Are you sure you need to delete card? </v-card-text>
+            <v-card-text>
+              Are you sure you need to delete all VMs?
+            </v-card-text>
 
             <v-card-actions>
               <v-spacer></v-spacer>
@@ -38,8 +40,8 @@
                 type="submit"
                 text="Yes Delete"
                 color="error"
-                rounded="lg"
                 @click="deleteVms"
+                :loading="deLoading"
               />
             </v-card-actions>
           </v-card>
@@ -48,7 +50,6 @@
 
       <BaseButton
         color="secondary"
-        :loading="deLoading"
         @click="createVM"
         text="+ Create a new VM"
       />
@@ -92,11 +93,12 @@
               v-else
               indeterminate
               color="red"
-              size="20"
+              size="25"
             ></v-progress-circular>
           </template>
           <template #no-data>
             <p class="text-capitalize text-h6 pa-16 text-disabled">
+              <v-icon>mdi-vector-arrange-below</v-icon>
               Create new virtual machine
             </p>
           </template>
@@ -122,7 +124,6 @@ export default {
     const emitter = inject("emitter");
     const alert = ref(false);
     const itemsPerPage = ref(null);
-    const confirm = ref(null);
     const selectedResource = ref("");
     const dialog = ref(null);
     const router = useRouter();
@@ -190,49 +191,38 @@ export default {
     };
 
     const deleteVms = () => {
-      confirm.value
-        .open("Delete All VMs", "Are you sure?", { color: "red-accent-2" })
-        .then((confirm) => {
-          if (confirm) {
-            deLoading.value = true;
-            toast.value.toast(`Delete VMs..`, "#FF5252");
-            userService
-              .deleteAllVms()
-              .then((response) => {
-                toast.value.toast(response.data.msg, "#388E3C");
-                getVMS();
-              })
-              .catch((response) => {
-                const { err } = response.response.data;
-                toast.value.toast(err, "#FF5252");
-              })
-              .finally(() => {
-                deLoading.value = false;
-              });
-          }
+      dialog.value = false;
+      deLoading.value = true;
+      toast.value.toast(`Delete VMs..`, "#FF5252");
+      userService
+        .deleteAllVms()
+        .then((response) => {
+          toast.value.toast(response.data.msg, "#388E3C");
+          getVMS();
+        })
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
+        })
+        .finally(() => {
+          deLoading.value = false;
         });
     };
 
     const deleteVm = (item) => {
-      confirm.value
-        .open(`Delete ${item.name}`, "Are you sure?", { color: "red-accent-2" })
-        .then((confirm) => {
-          if (confirm) {
-            item.deleting = true;
-            toast.value.toast(`Deleting ${item.name}..`, "#FF5252");
-            userService
-              .deleteVm(item.id)
-              .then((response) => {
-                toast.value.toast(response.data.msg, "#388E3C");
-                getVMS();
-              })
-              .catch((response) => {
-                const { err } = response.response.data;
-                toast.value.toast(err, "#FF5252");
-              })
-              .finally(() => (item.deleting = false));
-          }
-        });
+      item.deleting = true;
+      toast.value.toast(`Deleting ${item.name}..`, "#388E3C");
+      userService
+        .deleteVm(item.id)
+        .then((response) => {
+          toast.value.toast(response.data.msg, "#388E3C");
+          getVMS();
+        })
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
+        })
+        .finally(() => (item.deleting = false));
     };
 
     userService

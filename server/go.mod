@@ -19,7 +19,7 @@ require (
 	golang.org/x/crypto v0.29.0
 	golang.org/x/text v0.20.0
 	gopkg.in/validator.v2 v2.0.1
-	gorm.io/driver/sqlite v1.5.6
+	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.25.11
 )
 

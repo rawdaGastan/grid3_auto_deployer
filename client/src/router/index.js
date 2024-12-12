@@ -176,7 +176,7 @@ router.beforeEach(async (to, from, next) => {
   userService.maintenance();
 
   if (to.meta.requiredAuth && !token) {
-    next("/login");
+    next("/");
   } else if (to.path == "/" && token) {
     await userService.refresh_token();
     await userService.nextlaunch();

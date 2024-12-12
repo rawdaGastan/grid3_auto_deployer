@@ -1,137 +1,131 @@
 <template>
-  <div>
-    <v-app-bar>
-      <v-container class="d-flex align-center">
-        <v-app-bar-title>
-          <router-link to="/" @click="setActive(0, '/')">
-            <v-img src="@/assets/logo_c4all.png" width="70" />
-          </router-link>
-        </v-app-bar-title>
+  <v-app-bar>
+    <v-container class="d-flex align-center">
+      <v-app-bar-title>
+        <router-link to="/" @click="setActive(0, '/')">
+          <v-img src="@/assets/logo_c4all.png" width="70" />
+        </router-link>
+      </v-app-bar-title>
 
-        <v-menu v-if="user.length != 0">
-          <template v-slot:activator="{ props }">
-            <v-btn
-              class="primary ml-1 mt-2 pt-0 mt-md-3 text-capitalize"
-              v-bind="props"
-              @click="setActive(index, props.title)"
-            >
-              <font-awesome-icon icon="fa-user" class="mr-3 fa-l" />
-              {{ username }}
-            </v-btn>
-          </template>
-          <v-list>
-            <v-list-item>
-              <v-list-item-title>
-                <router-link
-                  v-for="item in user"
-                  :key="item.title"
-                  :to="item.path"
-                  class="d-flex my-3 text-white text-decoration-none"
-                >
-                  <span @click="isActive == null">{{ item.title }}</span>
-                </router-link>
-              </v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
-
-        <v-menu id="notifications" v-if="user.length != 0">
-          <template v-slot:activator="{ props }">
-            <v-btn
-              class="primary ml-1 mt-2 pt-0 mt-md-3 text-capitalize"
-              v-bind="props"
-            >
-              <v-badge
-                v-if="notifications.length > 0"
-                color="secondary"
-                :content="notifications.length"
+      <v-menu v-if="user.length != 0">
+        <template v-slot:activator="{ props }">
+          <v-btn
+            class="primary ml-1 mt-2 pt-0 mt-md-3 text-capitalize"
+            v-bind="props"
+            @click="setActive(index, props.title)"
+          >
+            <font-awesome-icon icon="fa-user" class="mr-3 fa-l" />
+            {{ username }}
+          </v-btn>
+        </template>
+        <v-list>
+          <v-list-item>
+            <v-list-item-title>
+              <router-link
+                v-for="item in user"
+                :key="item.title"
+                :to="item.path"
+                class="d-flex my-3 text-white text-decoration-none"
               >
-                <font-awesome-icon icon="fa-bell" class="fa-xl" />
-              </v-badge>
-              <font-awesome-icon
-                v-if="notifications.length == 0"
-                icon="fa-bell"
-                class="fa-xl"
-              />
-            </v-btn>
-          </template>
+                <span @click="checkTitle(item.title)">{{ item.title }}</span>
+              </router-link>
+            </v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
 
-          <v-list
-            max-height="400px"
-            v-if="notifications.length > 0"
-            density="compact"
+      <v-menu id="notifications" v-if="user.length != 0">
+        <template v-slot:activator="{ props }">
+          <v-btn
+            class="primary ml-1 mt-2 pt-0 mt-md-3 text-capitalize"
+            v-bind="props"
           >
-            <v-list-subheader>Unseen</v-list-subheader>
-            <v-list-item
-              v-for="item in notifications"
-              :key="item.id"
-              class="tile text-white"
+            <v-badge
+              v-if="notifications.length > 0"
+              color="secondary"
+              :content="notifications.length"
             >
-              <template v-slot:prepend>
-                <font-awesome-icon
-                  :icon="
-                    item.type == 'vms'
-                      ? ['fas', 'cube']
-                      : item.type == 'k8s'
-                      ? ['fasr', 'dharmachakra']
-                      : ['fasr', 'bullhorn']
-                  "
-                />
-              </template>
+              <font-awesome-icon icon="fa-bell" class="fa-xl" />
+            </v-badge>
+            <font-awesome-icon
+              v-if="notifications.length == 0"
+              icon="fa-bell"
+              class="fa-xl"
+            />
+          </v-btn>
+        </template>
 
-              <v-list-item-title>
-                <router-link
-                  style="padding: 15px"
-                  :to="
-                    item.type == 'vms'
-                      ? '/vm'
-                      : item.type == 'k8s'
-                      ? '/k8s'
-                      : '/'
-                  "
-                  class="d-flex text-white text-decoration-none"
-                  @click="
-                    seen(item.id);
-                    setActive(item.type == 'vms' ? 2 : 3, item.type);
-                  "
-                >
-                  <span @click="seen(item.id)">{{ item.msg }}</span>
-                </router-link>
-              </v-list-item-title>
-            </v-list-item>
-          </v-list>
-
-          <v-list v-if="notifications.length == 0">
-            <v-list-item>
-              <v-list-item-title>
-                <span>You don't have any notifications yet</span>
-              </v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
-
-        <v-app-bar-nav-icon
-          class="primary hidden-md-and-up"
-          @click.stop="drawer = !drawer"
-        ></v-app-bar-nav-icon>
-      </v-container>
-    </v-app-bar>
-
-    <v-navigation-drawer v-model="drawer" location="top" temporary>
-      <v-list>
-        <v-list-item>
-          <router-link
-            v-for="item in items"
-            :key="item.title"
-            :to="item.path"
-            class="d-flex my-5 text-white text-uppercase text-decoration-none text-body-1"
+        <v-list
+          max-height="400px"
+          v-if="notifications.length > 0"
+          density="compact"
+        >
+          <v-list-subheader>Unseen</v-list-subheader>
+          <v-list-item
+            v-for="item in notifications"
+            :key="item.id"
+            class="tile text-white"
           >
-            {{ item.title }}
-          </router-link>
-        </v-list-item>
-      </v-list>
-    </v-navigation-drawer>
-  </div>
+            <template v-slot:prepend>
+              <font-awesome-icon
+                :icon="
+                  item.type == 'vms'
+                    ? ['fas', 'cube']
+                    : item.type == 'k8s'
+                    ? ['fasr', 'dharmachakra']
+                    : ['fasr', 'bullhorn']
+                "
+              />
+            </template>
+
+            <v-list-item-title>
+              <router-link
+                style="padding: 15px"
+                :to="
+                  item.type == 'vms' ? '/vm' : item.type == 'k8s' ? '/k8s' : '/'
+                "
+                class="d-flex text-white text-decoration-none"
+                @click="
+                  seen(item.id);
+                  setActive(item.type == 'vms' ? 2 : 3, item.type);
+                "
+              >
+                <span @click="seen(item.id)">{{ item.msg }}</span>
+              </router-link>
+            </v-list-item-title>
+          </v-list-item>
+        </v-list>
+
+        <v-list v-if="notifications.length == 0">
+          <v-list-item>
+            <v-list-item-title>
+              <span>You don't have any notifications yet</span>
+            </v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+
+      <v-app-bar-nav-icon
+        class="primary hidden-md-and-up"
+        @click.stop="drawer = !drawer"
+      ></v-app-bar-nav-icon>
+    </v-container>
+  </v-app-bar>
+
+  <v-navigation-drawer v-model="drawer" location="top" temporary>
+    <v-list>
+      <v-list-item>
+        <router-link
+          v-for="item in items"
+          :key="item.title"
+          :to="item.path"
+          class="d-flex my-5 text-white text-uppercase text-decoration-none text-body-1"
+        >
+          {{ item.title }}
+        </router-link>
+      </v-list-item>
+    </v-list>
+  </v-navigation-drawer>
 </template>
 
 <script>
@@ -195,12 +189,6 @@ export default {
       if (title == "Logout") {
         localStorage.removeItem("token");
         localStorage.removeItem("username");
-        items.value = [
-          {
-            path: "about",
-            title: "About",
-          },
-        ];
         user.value = [];
       }
     };
@@ -226,13 +214,6 @@ export default {
 
     const checkExcludedFromNavBar = (path) => {
       if (excludedRoutes.value.includes(path) && !token.value) {
-        items.value = [
-          {
-            path: "about",
-            title: "About",
-          },
-        ];
-
         if (path != "/login") {
           items.value.push({
             path: "login",

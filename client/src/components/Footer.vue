@@ -1,6 +1,7 @@
 <template>
   <v-footer class="d-flex bg-grey-darken-4 pa-0" absolute app height="75">
     <v-row class="text-center">
+      <v-divider />
       <v-col cols="12">
         All rights reserved &copy; {{ new Date().getFullYear() }} —
         <a

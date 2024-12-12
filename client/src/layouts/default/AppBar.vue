@@ -26,7 +26,7 @@
                   v-for="item in user"
                   :key="item.title"
                   :to="item.path"
-                  class="d-flex my-3 primary text-decoration-none"
+                  class="d-flex my-3 text-white text-decoration-none"
                 >
                   <span @click="isActive == null">{{ item.title }}</span>
                 </router-link>
@@ -65,7 +65,7 @@
             <v-list-item
               v-for="item in notifications"
               :key="item.id"
-              class="tile"
+              class="tile text-white"
             >
               <template v-slot:prepend>
                 <font-awesome-icon
@@ -89,7 +89,7 @@
                       ? '/k8s'
                       : '/'
                   "
-                  class="d-flex primary text-decoration-none"
+                  class="d-flex text-white text-decoration-none"
                   @click="
                     seen(item.id);
                     setActive(item.type == 'vms' ? 2 : 3, item.type);
@@ -124,7 +124,7 @@
             v-for="item in items"
             :key="item.title"
             :to="item.path"
-            class="d-flex my-5 primary text-uppercase text-decoration-none text-body-1"
+            class="d-flex my-5 text-white text-uppercase text-decoration-none text-body-1"
           >
             {{ item.title }}
           </router-link>
@@ -327,20 +327,8 @@ export default {
 </script>
 
 <style>
-.active {
-  background-color: #217dbb0a;
-}
-
 .tile {
   padding: 15px;
   border-bottom: 1px solid rgb(53, 52, 52) !important;
-}
-
-.tile:hover {
-  background: #d8f2fa;
-}
-
-.tile:active {
-  background: #5cbbf6;
 }
 </style>

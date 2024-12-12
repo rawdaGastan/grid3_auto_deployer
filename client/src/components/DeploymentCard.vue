@@ -4,7 +4,7 @@
       v-model="selection"
       :disabled="loading"
       :loading="loading"
-      class="mx-auto my-5 pa-5"
+      class="mx-auto my-5 pa-5 bg-primary"
       border="opacity-50 sm"
       variant="outlined"
     >

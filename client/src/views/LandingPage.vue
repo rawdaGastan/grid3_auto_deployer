@@ -15,7 +15,7 @@
         <v-card class="text-center py-5" flat>
           <v-card-title
             class="text-h6 text-md-h4 text-capitalize font-weight-bold py-5"
-            >the cloud that grows with you</v-card-title
+            >The Cloud That Grows With You</v-card-title
           >
           <v-card-text>
             <p class="text-medium-emphasis">
@@ -27,8 +27,18 @@
           </v-card-text>
 
           <v-card-actions class="d-flex align-center justify-center">
-            <BaseButton color="secondary" text="Sign Up" @click="register" />
-            <BaseButton variant="outlined" text="Sign In" @click="login" />
+            <BaseButton
+              color="secondary"
+              text="Sign Up"
+              width="150"
+              @click="register"
+            />
+            <BaseButton
+              variant="outlined"
+              text="Sign In"
+              width="150"
+              @click="login"
+            />
           </v-card-actions>
         </v-card>
       </v-col>

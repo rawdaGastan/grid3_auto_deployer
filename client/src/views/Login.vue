@@ -139,7 +139,7 @@ export default {
         })
         .then((response) => {
           localStorage.setItem("token", response.data.data.access_token);
-          toast.value.toast(response.data.msg);
+          toast.value.toast(response.data.msg, "#388E3C");
           adminCheck();
           router.push({
             name: "VM",

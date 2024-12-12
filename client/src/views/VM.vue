@@ -193,7 +193,7 @@ export default {
     const deleteVms = () => {
       dialog.value = false;
       deLoading.value = true;
-      toast.value.toast(`Delete VMs..`, "#FF5252");
+      toast.value.toast(`Delete VMs..`, "#388E3C");
       userService
         .deleteAllVms()
         .then((response) => {

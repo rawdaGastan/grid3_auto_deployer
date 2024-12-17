@@ -21,6 +21,9 @@ type Configuration struct {
 	NotifyAdminsIntervalHours int         `json:"notifyAdminsIntervalHours"`
 	AdminSSHKey               string      `json:"adminSSHKey"`
 	BalanceThreshold          int         `json:"balanceThreshold"`
+	PricesPerMonth            Prices      `json:"prices"`
+	Currency                  string      `json:"currency" validate:"nonzero"`
+	StripeSecret              string      `json:"stripe_secret" validate:"nonzero"`
 }
 
 // Server struct to hold server's information
@@ -55,6 +58,14 @@ type JwtToken struct {
 type GridAccount struct {
 	Mnemonics string `json:"mnemonics" validate:"nonzero"`
 	Network   string `json:"network" validate:"nonzero"`
+}
+
+// Prices struct to hold vm types prices
+type Prices struct {
+	SmallVM  float64 `json:"small_vm" validate:"nonzero"`
+	MediumVM float64 `json:"medium_vm" validate:"nonzero"`
+	LargeVM  float64 `json:"large_vm" validate:"nonzero"`
+	PublicIP float64 `json:"public_ip" validate:"nonzero"`
 }
 
 // ReadConfFile read configurations of json file

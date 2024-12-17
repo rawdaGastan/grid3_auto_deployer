@@ -31,14 +31,14 @@ const (
 // VMDeployRequest type for redis vm deployment request
 type VMDeployRequest struct {
 	User        models.User
-	Input       models.DeployVMInput
+	VM          models.VM
 	AdminSSHKey string
 }
 
 // K8sDeployRequest type for redis k8s deployment request
 type K8sDeployRequest struct {
 	User        models.User
-	Input       models.K8sDeployInput
+	Cluster     models.K8sCluster
 	AdminSSHKey string
 }
 

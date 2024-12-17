@@ -27,7 +27,7 @@ func AdminAccess(db models.DB) func(http.Handler) http.Handler {
 			}
 
 			if !user.Admin {
-				writeErrResponse(r, w, http.StatusUnauthorized, fmt.Sprintf("user '%s' doesn't have an admin access", user.Name))
+				writeErrResponse(r, w, http.StatusUnauthorized, fmt.Sprintf("user '%s %s' doesn't have an admin access", user.FirstName, user.LastName))
 				return
 			}
 			h.ServeHTTP(w, r)

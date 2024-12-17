@@ -28,6 +28,14 @@ func init() {
 	}
 }
 
+// @title C4All API
+// @version 1.0
+// @description This is C4All API documentation using Swagger in Golang
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+// @license.name Apache
+// @license.url https://www.apache.org/licenses/LICENSE-2.0
 func main() {
 	cmd.Execute()
 }

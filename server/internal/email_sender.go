@@ -144,18 +144,17 @@ func AdminAnnouncementMailContent(adminSubject, announcement, host, username str
 	subject := "New Announcement! 📢 " + adminSubject
 	body := string(adminAnnouncement)
 	body = strings.ReplaceAll(body, "-subject-", adminSubject)
-	body = strings.ReplaceAll(body, "-announcement-", strings.ReplaceAll(announcement, "\n", "<br>"))
+	body = strings.ReplaceAll(body, "-body-", strings.ReplaceAll(announcement, "\n", "<br>"))
 	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(username))
 	body = strings.ReplaceAll(body, "-host-", host)
 	return subject, body
 }
 
 // AdminMailContent gets the email content for administrator emails
-func AdminMailContent(adminSubject, email, host, username string) (string, string) {
-	subject := "Hey! 📢 " + adminSubject
+func AdminMailContent(subject, email, host, username string) (string, string) {
 	body := string(adminAnnouncement)
-	body = strings.ReplaceAll(body, "-subject-", adminSubject)
-	body = strings.ReplaceAll(body, "-announcement-", strings.ReplaceAll(email, "\n", "<br>"))
+	body = strings.ReplaceAll(body, "-subject-", subject)
+	body = strings.ReplaceAll(body, "-body-", strings.ReplaceAll(email, "\n", "<br>"))
 	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(username))
 	body = strings.ReplaceAll(body, "-host-", host)
 	return subject, body

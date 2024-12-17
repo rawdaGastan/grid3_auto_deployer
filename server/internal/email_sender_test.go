@@ -98,7 +98,7 @@ func TestAdminAnnouncementMailContent(t *testing.T) {
 	assert.Equal(t, subject, "New Announcement! 📢 subject!")
 	want := string(adminAnnouncement)
 	want = strings.ReplaceAll(want, "-subject-", "subject!")
-	want = strings.ReplaceAll(want, "-announcement-", "announcement!")
+	want = strings.ReplaceAll(want, "-body-", "announcement!")
 	want = strings.ReplaceAll(want, "-host-", "")
 	want = strings.ReplaceAll(want, "-name-", "")
 	assert.Equal(t, body, want)

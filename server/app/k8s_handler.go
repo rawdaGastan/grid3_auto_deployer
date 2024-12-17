@@ -18,7 +18,36 @@ import (
 	"gorm.io/gorm"
 )
 
+// K8sDeployInput deploy k8s cluster input
+type K8sDeployInput struct {
+	MasterName      string        `json:"master_name" validate:"min=3,max=20"`
+	MasterResources string        `json:"resources"`
+	MasterPublic    bool          `json:"public"`
+	MasterRegion    string        `json:"region"`
+	Workers         []WorkerInput `json:"workers"`
+}
+
+// WorkerInput deploy k8s worker input
+type WorkerInput struct {
+	Name      string `json:"name" validate:"min=3,max=20"`
+	Resources string `json:"resources"`
+}
+
 // K8sDeployHandler deploy k8s handler
+// Example endpoint: Deploy kubernetes
+// @Summary Deploy kubernetes
+// @Description Deploy kubernetes
+// @Tags Kubernetes
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param kubernetes body K8sDeployInput true "Kubernetes deployment input"
+// @Success 201 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /k8s [post]
 func (a *App) K8sDeployHandler(req *http.Request) (interface{}, Response) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	user, err := a.db.GetUserByID(userID)
@@ -30,42 +59,79 @@ func (a *App) K8sDeployHandler(req *http.Request) (interface{}, Response) {
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	var k8sDeployInput models.K8sDeployInput
-	err = json.NewDecoder(req.Body).Decode(&k8sDeployInput)
+	var input K8sDeployInput
+	err = json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, BadRequest(errors.New("failed to read k8s data"))
 	}
 
-	err = validator.Validate(k8sDeployInput)
+	err = validator.Validate(input)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, BadRequest(errors.New("invalid kubernetes data"))
 	}
 
-	// quota verification
-	quota, err := a.db.GetUserQuota(user.ID.String())
-	if err == gorm.ErrRecordNotFound {
+	cru, mru, sru, _, err := deployer.CalcNodeResources(input.MasterResources, input.MasterPublic)
+	if err != nil {
 		log.Error().Err(err).Send()
-		return nil, NotFound(errors.New("user quota is not found"))
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	master := models.Master{
+		CRU:       cru,
+		MRU:       mru,
+		SRU:       sru,
+		Public:    input.MasterPublic,
+		Name:      input.MasterName,
+		Resources: input.MasterResources,
+		Region:    input.MasterRegion,
+	}
+
+	workers := []models.Worker{}
+	for _, worker := range input.Workers {
+		cru, mru, sru, _, err := deployer.CalcNodeResources(worker.Resources, false)
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+
+		workerModel := models.Worker{
+			Name:      worker.Name,
+			CRU:       cru,
+			MRU:       mru,
+			SRU:       sru,
+			Public:    input.MasterPublic,
+			Resources: worker.Resources,
+			Region:    input.MasterRegion,
+		}
+		workers = append(workers, workerModel)
+	}
+
+	k8sCluster := models.K8sCluster{
+		UserID:  userID,
+		Master:  master,
+		Workers: workers,
+	}
+
+	// check if user can deploy? cards verification or voucher balance exists
+	k8sPrice, err := a.deployer.CanDeployK8s(user.ID.String(), k8sCluster)
+	if errors.Is(err, deployer.ErrCannotDeploy) {
+		return nil, BadRequest(err)
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	_, err = deployer.ValidateK8sQuota(k8sDeployInput, quota.Vms, quota.PublicIPs)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, BadRequest(errors.New(err.Error()))
-	}
+	k8sCluster.PricePerMonth = k8sPrice
 
 	if len(strings.TrimSpace(user.SSHKey)) == 0 {
 		return nil, BadRequest(errors.New("ssh key is required"))
 	}
 
 	// unique names
-	available, err := a.db.AvailableK8sName(k8sDeployInput.MasterName)
+	available, err := a.db.AvailableK8sName(input.MasterName)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -75,7 +141,14 @@ func (a *App) K8sDeployHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("kubernetes master name is not available, please choose a different name"))
 	}
 
-	err = a.deployer.Redis.PushK8sRequest(streams.K8sDeployRequest{User: user, Input: k8sDeployInput, AdminSSHKey: a.config.AdminSSHKey})
+	k8sCluster.State = models.StateInProgress
+	err = a.db.CreateK8s(&k8sCluster)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	err = a.deployer.Redis.PushK8sRequest(streams.K8sDeployRequest{User: user, Cluster: k8sCluster, AdminSSHKey: a.config.AdminSSHKey})
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -88,6 +161,19 @@ func (a *App) K8sDeployHandler(req *http.Request) (interface{}, Response) {
 }
 
 // ValidateK8sNameHandler validates a cluster name
+// Example endpoint: Validate kubernetes name
+// @Summary Validate kubernetes name
+// @Description Validate kubernetes name
+// @Tags Kubernetes
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param name path string true "Kubernetes name"
+// @Success 200 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 500 {object} Response
+// @Router /k8s/validate/{name} [get]
 func (a *App) ValidateK8sNameHandler(req *http.Request) (interface{}, Response) {
 	name := mux.Vars(req)["name"]
 
@@ -115,6 +201,20 @@ func (a *App) ValidateK8sNameHandler(req *http.Request) (interface{}, Response) 
 }
 
 // K8sGetHandler gets a cluster for a user
+// Example endpoint: Get kubernetes deployment using ID
+// @Summary Get kubernetes deployment using ID
+// @Description Get kubernetes deployment using ID
+// @Tags Kubernetes
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param id path string true "Kubernetes cluster ID"
+// @Success 200 {object} models.K8sCluster
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /k8s/{id} [get]
 func (a *App) K8sGetHandler(req *http.Request) (interface{}, Response) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	id, err := strconv.Atoi(mux.Vars(req)["id"])
@@ -132,6 +232,10 @@ func (a *App) K8sGetHandler(req *http.Request) (interface{}, Response) {
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
+	if userID != cluster.UserID {
+		return nil, NotFound(errors.New("cluster is not found"))
+	}
+
 	return ResponseMsg{
 		Message: "Kubernetes cluster is found",
 		Data:    cluster,
@@ -139,6 +243,19 @@ func (a *App) K8sGetHandler(req *http.Request) (interface{}, Response) {
 }
 
 // K8sGetAllHandler gets all clusters for a user
+// Example endpoint: Get user's kubernetes deployments
+// @Summary Get user's kubernetes deployments
+// @Description Get user's kubernetes deployments
+// @Tags Kubernetes
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} []models.K8sCluster
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /k8s [get]
 func (a *App) K8sGetAllHandler(req *http.Request) (interface{}, Response) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 
@@ -161,6 +278,20 @@ func (a *App) K8sGetAllHandler(req *http.Request) (interface{}, Response) {
 }
 
 // K8sDeleteHandler deletes a cluster for a user
+// Example endpoint: Delete kubernetes deployment using ID
+// @Summary Delete kubernetes deployment using ID
+// @Description Delete kubernetes deployment using ID
+// @Tags Kubernetes
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param id path string true "Kubernetes cluster ID"
+// @Success 200 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /k8s/{id} [delete]
 func (a *App) K8sDeleteHandler(req *http.Request) (interface{}, Response) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	id, err := strconv.Atoi(mux.Vars(req)["id"])
@@ -175,6 +306,10 @@ func (a *App) K8sDeleteHandler(req *http.Request) (interface{}, Response) {
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	if userID != cluster.UserID {
+		return nil, NotFound(errors.New("cluster is not found"))
 	}
 
 	err = a.deployer.CancelDeployment(uint64(cluster.ClusterContract), uint64(cluster.NetworkContract), "k8s", cluster.Master.Name)
@@ -199,6 +334,19 @@ func (a *App) K8sDeleteHandler(req *http.Request) (interface{}, Response) {
 }
 
 // K8sDeleteAllHandler deletes all clusters for a user
+// Example endpoint: Delete all user's kubernetes deployments
+// @Summary Delete all user's kubernetes deployments
+// @Description Delete all user's kubernetes deployments
+// @Tags Kubernetes
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /k8s [delete]
 func (a *App) K8sDeleteAllHandler(req *http.Request) (interface{}, Response) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 

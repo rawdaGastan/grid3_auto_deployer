@@ -13,6 +13,7 @@ cloud4students aims to help students deploy their projects on Threefold Grid.
 - First create `config.json` check [configuration](#configuration)
 
 - Change `VITE_API_ENDPOINT` in docker-compose.yml to server api url for example `http://localhost:3000/v1`
+- Change `STRIPE_PUBLISHER_KEY` in docker-compose.yml to your stripe publisher key (can get it from stripe dashboard)
 
 To build backend and frontend images
 

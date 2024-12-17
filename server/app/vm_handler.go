@@ -18,7 +18,29 @@ import (
 	"gorm.io/gorm"
 )
 
+// DeployVMInput struct takes input of vm from user
+type DeployVMInput struct {
+	Name      string `json:"name" binding:"required" validate:"min=3,max=20"`
+	Resources string `json:"resources" binding:"required"`
+	Public    bool   `json:"public"`
+	Region    string `json:"region"`
+}
+
 // DeployVMHandler creates vm for user and deploy it
+// Example endpoint: Deploy virtual machine
+// @Summary Deploy virtual machine
+// @Description Deploy virtual machine
+// @Tags VM
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param vm body DeployVMInput true "virtual machine deployment input"
+// @Success 201 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /vm [post]
 func (a *App) DeployVMHandler(req *http.Request) (interface{}, Response) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	user, err := a.db.GetUserByID(userID)
@@ -31,7 +53,7 @@ func (a *App) DeployVMHandler(req *http.Request) (interface{}, Response) {
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	var input models.DeployVMInput
+	var input DeployVMInput
 	err = json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -44,20 +66,33 @@ func (a *App) DeployVMHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("invalid vm data"))
 	}
 
-	// check quota of user
-	quota, err := a.db.GetUserQuota(user.ID.String())
-	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("user quota is not found"))
+	cru, mru, sru, _, err := deployer.CalcNodeResources(input.Resources, input.Public)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	vm := models.VM{
+		UserID:    userID,
+		Name:      input.Name,
+		Resources: input.Resources,
+		Public:    input.Public,
+		SRU:       sru,
+		CRU:       cru,
+		MRU:       mru * 1024,
+		Region:    input.Region,
+	}
+
+	vmPrice, err := a.deployer.CanDeployVM(user.ID.String(), vm)
+	if errors.Is(err, deployer.ErrCannotDeploy) {
+		return nil, BadRequest(err)
 	}
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	_, err = deployer.ValidateVMQuota(input, quota.Vms, quota.PublicIPs)
-	if err != nil {
-		return nil, BadRequest(errors.New(err.Error()))
-	}
+	vm.PricePerMonth = vmPrice
 
 	if len(strings.TrimSpace(user.SSHKey)) == 0 {
 		return nil, BadRequest(errors.New("ssh key is required"))
@@ -74,7 +109,14 @@ func (a *App) DeployVMHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("virtual machine name is not available, please choose a different name"))
 	}
 
-	err = a.deployer.Redis.PushVMRequest(streams.VMDeployRequest{User: user, Input: input, AdminSSHKey: a.config.AdminSSHKey})
+	vm.State = models.StateInProgress
+	err = a.db.CreateVM(&vm)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	err = a.deployer.Redis.PushVMRequest(streams.VMDeployRequest{User: user, VM: vm, AdminSSHKey: a.config.AdminSSHKey})
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -87,6 +129,19 @@ func (a *App) DeployVMHandler(req *http.Request) (interface{}, Response) {
 }
 
 // ValidateVMNameHandler validates a vm name
+// Example endpoint: Validate virtual machine name
+// @Summary Validate virtual machine name
+// @Description Validate virtual machine name
+// @Tags VM
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param name path string true "Virtual machine name"
+// @Success 200 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 500 {object} Response
+// @Router /vm/validate/{name} [get]
 func (a *App) ValidateVMNameHandler(req *http.Request) (interface{}, Response) {
 	name := mux.Vars(req)["name"]
 
@@ -114,6 +169,20 @@ func (a *App) ValidateVMNameHandler(req *http.Request) (interface{}, Response) {
 }
 
 // GetVMHandler returns vm by its id
+// Example endpoint: Get virtual machine deployment using ID
+// @Summary Get virtual machine deployment using ID
+// @Description Get virtual machine deployment using ID
+// @Tags VM
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param id path string true "Virtual machine ID"
+// @Success 200 {object} models.VM
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /vm/{id} [get]
 func (a *App) GetVMHandler(req *http.Request) (interface{}, Response) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	id, err := strconv.Atoi(mux.Vars(req)["id"])
@@ -141,6 +210,19 @@ func (a *App) GetVMHandler(req *http.Request) (interface{}, Response) {
 }
 
 // ListVMsHandler returns all vms of user
+// Example endpoint: Get user's virtual machine deployments
+// @Summary Get user's virtual machine deployments
+// @Description Get user's virtual machine deployments
+// @Tags VM
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} []models.VM
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /vm [get]
 func (a *App) ListVMsHandler(req *http.Request) (interface{}, Response) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 
@@ -163,6 +245,20 @@ func (a *App) ListVMsHandler(req *http.Request) (interface{}, Response) {
 }
 
 // DeleteVMHandler deletes vm by its id
+// Example endpoint: Delete virtual machine deployment using ID
+// @Summary Delete virtual machine deployment using ID
+// @Description Delete virtual machine deployment using ID
+// @Tags VM
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param id path string true "Virtual machine ID"
+// @Success 200 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /vm/{id} [delete]
 func (a *App) DeleteVMHandler(req *http.Request) (interface{}, Response) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	id, err := strconv.Atoi(mux.Vars(req)["id"])
@@ -178,6 +274,10 @@ func (a *App) DeleteVMHandler(req *http.Request) (interface{}, Response) {
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	if vm.UserID != userID {
+		return nil, NotFound(errors.New("virtual machine is not found"))
 	}
 
 	err = a.deployer.CancelDeployment(vm.ContractID, vm.NetworkContractID, "vm", vm.Name)
@@ -200,6 +300,19 @@ func (a *App) DeleteVMHandler(req *http.Request) (interface{}, Response) {
 }
 
 // DeleteAllVMsHandler deletes all vms of user
+// Example endpoint: Delete all user's virtual machine deployments
+// @Summary Delete all user's virtual machine deployments
+// @Description Delete all user's virtual machine deployments
+// @Tags VM
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /vm [delete]
 func (a *App) DeleteAllVMsHandler(req *http.Request) (interface{}, Response) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 	vms, err := a.db.GetAllVms(userID)

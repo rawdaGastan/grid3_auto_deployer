@@ -37,12 +37,12 @@ func TestConnect(t *testing.T) {
 func TestCreateUser(t *testing.T) {
 	db := setupDB(t)
 	err := db.CreateUser(&User{
-		Name: "test",
+		FirstName: "test",
 	})
 	require.NoError(t, err)
 	var user User
 	err = db.db.First(&user).Error
-	require.Equal(t, user.Name, "test")
+	require.Equal(t, user.FirstName, "test")
 	require.NoError(t, err)
 }
 
@@ -50,7 +50,7 @@ func TestGetUserByEmail(t *testing.T) {
 	db := setupDB(t)
 	t.Run("user not found", func(t *testing.T) {
 		err := db.CreateUser(&User{
-			Name: "test",
+			FirstName: "test",
 		})
 		require.NoError(t, err)
 		_, err = db.GetUserByEmail("email")
@@ -58,12 +58,12 @@ func TestGetUserByEmail(t *testing.T) {
 	})
 	t.Run("user found", func(t *testing.T) {
 		err := db.CreateUser(&User{
-			Name:  "test",
-			Email: "email",
+			FirstName: "test",
+			Email:     "email",
 		})
 		require.NoError(t, err)
 		u, err := db.GetUserByEmail("email")
-		require.Equal(t, u.Name, "test")
+		require.Equal(t, u.FirstName, "test")
 		require.Equal(t, u.Email, "email")
 		require.NoError(t, err)
 	})
@@ -73,7 +73,7 @@ func TestGetUserByID(t *testing.T) {
 	db := setupDB(t)
 	t.Run("user not found", func(t *testing.T) {
 		err := db.CreateUser(&User{
-			Name: "test",
+			FirstName: "test",
 		})
 		require.NoError(t, err)
 		_, err = db.GetUserByID("not-uuid")
@@ -81,13 +81,13 @@ func TestGetUserByID(t *testing.T) {
 	})
 	t.Run("user found", func(t *testing.T) {
 		user := User{
-			Name:  "test",
-			Email: "email",
+			FirstName: "test",
+			Email:     "email",
 		}
 		err := db.CreateUser(&user)
 		require.NoError(t, err)
 		u, err := db.GetUserByID(user.ID.String())
-		require.Equal(t, u.Name, "test")
+		require.Equal(t, u.FirstName, "test")
 		require.Equal(t, u.Email, "email")
 		require.NoError(t, err)
 	})
@@ -103,7 +103,7 @@ func TestListAllUsers(t *testing.T) {
 
 	t.Run("list all users for admin", func(t *testing.T) {
 		user1 := User{
-			Name:           "user1",
+			FirstName:      "user1",
 			Email:          "user1@gmail.com",
 			HashedPassword: []byte{},
 			Verified:       true,
@@ -113,7 +113,7 @@ func TestListAllUsers(t *testing.T) {
 		require.NoError(t, err)
 		users, err := db.ListAllUsers()
 		require.NoError(t, err)
-		require.Equal(t, users[0].Name, user1.Name)
+		require.Equal(t, users[0].FirstName, user1.FirstName)
 		require.Equal(t, users[0].Email, user1.Email)
 		require.Equal(t, users[0].HashedPassword, user1.HashedPassword)
 
@@ -129,7 +129,7 @@ func TestGetCodeByEmail(t *testing.T) {
 
 	t.Run("get code of user", func(t *testing.T) {
 		user := User{
-			Name:           "user",
+			FirstName:      "user",
 			Email:          "user@gmail.com",
 			HashedPassword: []byte{},
 			Verified:       true,
@@ -148,7 +148,7 @@ func TestGetCodeByEmail(t *testing.T) {
 func TestUpdatePassword(t *testing.T) {
 	db := setupDB(t)
 	t.Run("user not found so nothing updated", func(t *testing.T) {
-		err := db.UpdatePassword("email", []byte("new-pass"))
+		err := db.UpdateUserPassword("email", []byte("new-pass"))
 		require.Error(t, err)
 		var user User
 		err = db.db.First(&user).Error
@@ -162,7 +162,7 @@ func TestUpdatePassword(t *testing.T) {
 		}
 		err := db.CreateUser(&user)
 		require.NoError(t, err)
-		err = db.UpdatePassword("email", []byte("new-pass"))
+		err = db.UpdateUserPassword("email", []byte("new-pass"))
 		require.NoError(t, err)
 		u, err := db.GetUserByEmail("email")
 		require.Equal(t, u.Email, "email")
@@ -192,7 +192,7 @@ func TestUpdateUserByID(t *testing.T) {
 			ID:             user.ID,
 			Email:          "",
 			HashedPassword: []byte("new-pass"),
-			Name:           "name",
+			FirstName:      "name",
 		})
 		require.NoError(t, err)
 		var u User
@@ -201,7 +201,7 @@ func TestUpdateUserByID(t *testing.T) {
 		require.Equal(t, u.Email, user.Email)
 		// should change
 		require.Equal(t, u.HashedPassword, []byte("new-pass"))
-		require.Equal(t, u.Name, "name")
+		require.Equal(t, u.FirstName, "name")
 
 		require.NoError(t, err)
 	})
@@ -210,7 +210,7 @@ func TestUpdateUserByID(t *testing.T) {
 func TestUpdateVerification(t *testing.T) {
 	db := setupDB(t)
 	t.Run("user not found so nothing updated", func(t *testing.T) {
-		err := db.UpdateVerification("id", true)
+		err := db.UpdateUserVerification("id", true)
 		require.NoError(t, err)
 		var user User
 		err = db.db.First(&user).Error
@@ -224,7 +224,7 @@ func TestUpdateVerification(t *testing.T) {
 		err := db.CreateUser(&user)
 		require.Equal(t, user.Verified, false)
 		require.NoError(t, err)
-		err = db.UpdateVerification(user.ID.String(), true)
+		err = db.UpdateUserVerification(user.ID.String(), true)
 		require.NoError(t, err)
 		var u User
 		err = db.db.First(&u).Error
@@ -467,75 +467,6 @@ func TestDeleteAllVMs(t *testing.T) {
 		vms, err = db.GetAllVms("new-user")
 		require.Equal(t, vms, []VM{vm3})
 		require.NoError(t, err)
-	})
-}
-
-func TestCreateQuota(t *testing.T) {
-	db := setupDB(t)
-	quota := Quota{UserID: "user"}
-	err := db.CreateQuota(&quota)
-	require.NoError(t, err)
-	var q Quota
-	err = db.db.First(&q).Error
-	require.NoError(t, err)
-	require.Equal(t, q, quota)
-}
-
-func TestUpdateUserQuota(t *testing.T) {
-	db := setupDB(t)
-	t.Run("quota not found so no updates", func(t *testing.T) {
-		err := db.UpdateUserQuota("user", 5, 0)
-		require.NoError(t, err)
-	})
-	t.Run("quota found", func(t *testing.T) {
-		quota1 := Quota{UserID: "user"}
-		quota2 := Quota{UserID: "new-user"}
-
-		err := db.CreateQuota(&quota1)
-		require.NoError(t, err)
-		err = db.CreateQuota(&quota2)
-		require.NoError(t, err)
-
-		err = db.UpdateUserQuota("user", 5, 10)
-		require.NoError(t, err)
-
-		var q Quota
-		err = db.db.First(&q, "user_id = 'user'").Error
-		require.NoError(t, err)
-		require.Equal(t, q.Vms, 5)
-
-		err = db.db.First(&q, "user_id = 'new-user'").Error
-		require.NoError(t, err)
-		require.Equal(t, q.Vms, 0)
-
-	})
-
-	t.Run("quota found with zero values", func(t *testing.T) {
-		quota := Quota{UserID: "1"}
-		err := db.CreateQuota(&quota)
-		require.NoError(t, err)
-		err = db.UpdateUserQuota("1", 0, 0)
-		require.NoError(t, err)
-	})
-}
-func TestGetUserQuota(t *testing.T) {
-	db := setupDB(t)
-	t.Run("quota not found", func(t *testing.T) {
-		_, err := db.GetUserQuota("user")
-		require.Equal(t, err, gorm.ErrRecordNotFound)
-	})
-	t.Run("quota found", func(t *testing.T) {
-		quota1 := Quota{UserID: "user"}
-		quota2 := Quota{UserID: "new-user"}
-
-		err := db.CreateQuota(&quota1)
-		require.NoError(t, err)
-		err = db.CreateQuota(&quota2)
-		require.NoError(t, err)
-
-		quota, err := db.GetUserQuota("user")
-		require.NoError(t, err)
-		require.Equal(t, quota, quota1)
 	})
 }
 

@@ -68,7 +68,15 @@ func SetUp(t testing.TB) *App {
 	"database": {
       "file": "%s"
     },
-	"version": "v1"
+	"version": "v1",
+	"currency": "eur",
+	"prices": {
+		"public_ip": 2,
+		"small_vm": 10,
+		"medium_vm": 20,
+		"large_vm": 30
+	},
+	"stripe_secret": "sk_test"
 }
 	`, dbPath)
 
@@ -88,7 +96,7 @@ func SetUp(t testing.TB) *App {
 	tfPluginClient, err := deployer.NewTFPluginClient(configuration.Account.Mnemonics, deployer.WithNetwork(configuration.Account.Network))
 	assert.NoError(t, err)
 
-	newDeployer, err := c4sDeployer.NewDeployer(db, streams.RedisClient{}, tfPluginClient)
+	newDeployer, err := c4sDeployer.NewDeployer(db, streams.RedisClient{}, tfPluginClient, configuration.PricesPerMonth)
 	assert.NoError(t, err)
 
 	app := &App{

@@ -97,7 +97,6 @@
           </v-card>
         </v-col>
       </v-row>
-      <v-divider />
     </v-container>
   </v-container>
 </template>

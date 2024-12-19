@@ -3,7 +3,7 @@ package models
 type state string
 
 const (
-	StateCreated    = "CREATED" // TODO:
+	StateCreated    = "CREATED"
 	StateFailed     = "FAILED"
 	StateInProgress = "INPROGRESS"
 )

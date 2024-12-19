@@ -70,15 +70,15 @@ func (d *DB) GetK8s(id int) (K8sCluster, error) {
 	}
 
 	var master Master
-	err = d.db.Model(&k8s).Association("Master").Find(&master)
-	if err != nil {
+	if err = d.db.Model(&k8s).Association("Master").Find(&master); err != nil {
 		return K8sCluster{}, err
 	}
+
 	var workers []Worker
-	err = d.db.Model(&k8s).Association("Workers").Find(&workers)
-	if err != nil {
-		return K8sCluster{}, err
+	if err = d.db.Model(&k8s).Association("Workers").Find(&workers); err != nil {
+		return K8sCluster{}, nil
 	}
+
 	k8s.Master = master
 	k8s.Workers = workers
 

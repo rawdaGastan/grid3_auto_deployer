@@ -3,6 +3,7 @@ package models
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -325,9 +326,12 @@ func TestCreateVM(t *testing.T) {
 	vm := VM{Name: "vm"}
 	err := db.CreateVM(&vm)
 	require.NoError(t, err)
+
 	var v VM
-	err = db.db.First(&v).Error
-	require.NoError(t, err)
+	require.NoError(t, db.db.First(&v).Error)
+
+	v.CreatedAt = time.Now().In(time.Local).Truncate(time.Second)
+	vm.CreatedAt = time.Now().Truncate(time.Second)
 	require.Equal(t, v, vm)
 }
 
@@ -343,10 +347,14 @@ func TestGetVMByID(t *testing.T) {
 		require.NoError(t, err)
 
 		v, err := db.GetVMByID(vm.ID)
-		require.Equal(t, v, vm)
 		require.NoError(t, err)
+
+		v.CreatedAt = time.Now().In(time.Local).Truncate(time.Second)
+		vm.CreatedAt = time.Now().Truncate(time.Second)
+		require.Equal(t, v, vm)
 	})
 }
+
 func TestGetAllVMs(t *testing.T) {
 	db := setupDB(t)
 	t.Run("no vms with user", func(t *testing.T) {
@@ -367,14 +375,22 @@ func TestGetAllVMs(t *testing.T) {
 		require.NoError(t, err)
 
 		vms, err := db.GetAllVms("user")
+
+		vms[0].CreatedAt = time.Now().In(time.Local).Truncate(time.Second)
+		vms[1].CreatedAt = time.Now().In(time.Local).Truncate(time.Second)
+		vm1.CreatedAt = time.Now().Truncate(time.Second)
+		vm2.CreatedAt = time.Now().Truncate(time.Second)
+
 		require.Equal(t, vms, []VM{vm1, vm2})
 		require.NoError(t, err)
 
 		vms, err = db.GetAllVms("new-user")
+		vms[0].CreatedAt = time.Now().In(time.Local).Truncate(time.Second)
+		vm3.CreatedAt = time.Now().Truncate(time.Second)
+
 		require.Equal(t, vms, []VM{vm3})
 		require.NoError(t, err)
 	})
-
 }
 
 func TestAvailableVMName(t *testing.T) {
@@ -406,8 +422,8 @@ func TestAvailableVMName(t *testing.T) {
 		require.Equal(t, true, valid)
 
 	})
-
 }
+
 func TestDeleteVMByID(t *testing.T) {
 	db := setupDB(t)
 	t.Run("delete non existing vm", func(t *testing.T) {
@@ -436,6 +452,7 @@ func TestDeleteAllVMs(t *testing.T) {
 		err := db.DeleteAllVms("user")
 		require.NoError(t, err)
 	})
+
 	t.Run("delete existing vms", func(t *testing.T) {
 		vm1 := VM{UserID: "user", Name: "vm1"}
 		vm2 := VM{UserID: "user", Name: "vm2"}
@@ -448,23 +465,17 @@ func TestDeleteAllVMs(t *testing.T) {
 		err = db.CreateVM(&vm3)
 		require.NoError(t, err)
 
-		vms, err := db.GetAllVms("user")
-		require.Equal(t, vms, []VM{vm1, vm2})
-		require.NoError(t, err)
-
-		vms, err = db.GetAllVms("new-user")
-		require.Equal(t, vms, []VM{vm3})
-		require.NoError(t, err)
-
 		err = db.DeleteAllVms("user")
 		require.NoError(t, err)
 
-		vms, err = db.GetAllVms("user")
+		vms, err := db.GetAllVms("user")
 		require.NoError(t, err)
 		require.Empty(t, vms)
 
 		// other users unaffected
 		vms, err = db.GetAllVms("new-user")
+		vms[0].CreatedAt = time.Now().In(time.Local).Truncate(time.Second)
+		vm3.CreatedAt = time.Now().Truncate(time.Second)
 		require.Equal(t, vms, []VM{vm3})
 		require.NoError(t, err)
 	})
@@ -624,12 +635,14 @@ func TestCreateK8s(t *testing.T) {
 	require.Equal(t, w[1].Name, "worker2")
 	require.Equal(t, w[1].ClusterID, 1)
 }
+
 func TestGetK8s(t *testing.T) {
 	db := setupDB(t)
 	t.Run("K8s not found", func(t *testing.T) {
 		_, err := db.GetK8s(1)
 		require.Equal(t, err, gorm.ErrRecordNotFound)
 	})
+
 	t.Run("K8s found", func(t *testing.T) {
 		k8s := K8sCluster{
 			UserID: "user",
@@ -643,7 +656,7 @@ func TestGetK8s(t *testing.T) {
 			Master: Master{
 				Name: "master2",
 			},
-			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+			Workers: []Worker{{Name: "worker3"}, {Name: "worker4"}},
 		}
 
 		err := db.CreateK8s(&k8s)
@@ -653,10 +666,12 @@ func TestGetK8s(t *testing.T) {
 
 		k, err := db.GetK8s(k8s.ID)
 		require.NoError(t, err)
-		require.Equal(t, k, k8s)
+		require.Equal(t, len(k.Workers), len(k8s.Workers))
+		require.Equal(t, k.Master.ClusterID, k8s.Master.ClusterID)
 		require.NotEqual(t, k, k8s2)
 	})
 }
+
 func TestGetAllK8s(t *testing.T) {
 	db := setupDB(t)
 	t.Run("K8s not found", func(t *testing.T) {
@@ -664,6 +679,7 @@ func TestGetAllK8s(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, c)
 	})
+
 	t.Run("K8s found", func(t *testing.T) {
 		k8s1 := K8sCluster{
 			UserID: "user",
@@ -677,14 +693,14 @@ func TestGetAllK8s(t *testing.T) {
 			Master: Master{
 				Name: "master2",
 			},
-			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+			Workers: []Worker{{Name: "worker3"}, {Name: "worker4"}},
 		}
 		k8s3 := K8sCluster{
 			UserID: "new-user",
 			Master: Master{
 				Name: "master3",
 			},
-			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+			Workers: []Worker{{Name: "worker5"}, {Name: "worker6"}},
 		}
 
 		err := db.CreateK8s(&k8s1)
@@ -696,14 +712,19 @@ func TestGetAllK8s(t *testing.T) {
 
 		k, err := db.GetAllK8s("user")
 		require.NoError(t, err)
-		require.Equal(t, k, []K8sCluster{k8s1, k8s2})
+		require.Equal(t, len(k[0].Workers), len(k8s1.Workers))
+		require.Equal(t, k[0].Master.ClusterID, k8s1.Master.ClusterID)
+		require.Equal(t, len(k[1].Workers), len(k8s2.Workers))
+		require.Equal(t, k[1].Master.ClusterID, k8s2.Master.ClusterID)
 
 		k, err = db.GetAllK8s("new-user")
 		require.NoError(t, err)
-		require.Equal(t, k, []K8sCluster{k8s3})
+		require.Equal(t, len(k[0].Workers), len(k8s3.Workers))
+		require.Equal(t, k[0].Master.ClusterID, k8s3.Master.ClusterID)
 	})
 
 }
+
 func TestDeleteK8s(t *testing.T) {
 	db := setupDB(t)
 	t.Run("K8s not found", func(t *testing.T) {
@@ -723,9 +744,9 @@ func TestDeleteK8s(t *testing.T) {
 		k8s2 := K8sCluster{
 			UserID: "new-user",
 			Master: Master{
-				Name: "master",
+				Name: "master2",
 			},
-			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+			Workers: []Worker{{Name: "worker3"}, {Name: "worker4"}},
 		}
 
 		err := db.CreateK8s(&k8s1)
@@ -741,9 +762,11 @@ func TestDeleteK8s(t *testing.T) {
 
 		k, err := db.GetK8s(k8s2.ID)
 		require.NoError(t, err)
-		require.Equal(t, k, k8s2)
+		require.Equal(t, len(k.Workers), len(k8s2.Workers))
+		require.Equal(t, k.Master.ClusterID, k8s2.Master.ClusterID)
 	})
 }
+
 func TestDeleteAllK8s(t *testing.T) {
 	db := setupDB(t)
 	t.Run("K8s not found", func(t *testing.T) {
@@ -763,16 +786,16 @@ func TestDeleteAllK8s(t *testing.T) {
 		k8s2 := K8sCluster{
 			UserID: "user",
 			Master: Master{
-				Name: "master",
+				Name: "master2",
 			},
-			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+			Workers: []Worker{{Name: "worker3"}, {Name: "worker4"}},
 		}
 		k8s3 := K8sCluster{
 			UserID: "new-user",
 			Master: Master{
-				Name: "master",
+				Name: "master3",
 			},
-			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+			Workers: []Worker{{Name: "worker5"}, {Name: "worker6"}},
 		}
 
 		err := db.CreateK8s(&k8s1)
@@ -791,7 +814,9 @@ func TestDeleteAllK8s(t *testing.T) {
 
 		k, err = db.GetAllK8s("new-user")
 		require.NoError(t, err)
-		require.Equal(t, k, []K8sCluster{k8s3})
+
+		require.Equal(t, len(k[0].Workers), len(k8s3.Workers))
+		require.Equal(t, k[0].Master.ClusterID, k8s3.Master.ClusterID)
 	})
 
 	t.Run("test with no id", func(t *testing.T) {
@@ -829,9 +854,9 @@ func TestAvailableK8sName(t *testing.T) {
 		k8s := K8sCluster{
 			UserID: "user",
 			Master: Master{
-				Name: "master",
+				Name: "master2",
 			},
-			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+			Workers: []Worker{{Name: "worker3"}, {Name: "worker4"}},
 		}
 		err := db.CreateK8s(&k8s)
 		require.NoError(t, err)

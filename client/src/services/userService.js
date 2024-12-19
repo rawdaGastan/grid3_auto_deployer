@@ -42,6 +42,13 @@ export default {
     });
   },
 
+  async signIn(email, password) {
+    return await baseClient().post("/user/signin", {
+      email,
+      password,
+    });
+  },
+
   async forgotPassword(email) {
     return await baseClient().post("/user/forgot_password", { email });
   },

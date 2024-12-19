@@ -46,7 +46,6 @@
               class="my-5"
               variant="outlined"
               text="Sign in"
-              @click="login"
               :disabled="!verify"
             />
 
@@ -75,9 +74,8 @@
     <Toast ref="toast" />
   </v-container>
 </template>
-<script>
+<script setup>
 import { ref } from "vue";
-import axios from "axios";
 import Toast from "@/components/Toast.vue";
 import { useRouter } from "vue-router";
 import userService from "@/services/userService";
@@ -86,87 +84,55 @@ import signin from "@/assets/sign-in.png";
 import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 
-export default {
-  components: {
-    Toast,
-    BaseInput,
-    BaseButton,
-  },
-  setup() {
-    const router = useRouter();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const verify = ref(false);
-    const toast = ref(null);
-    const visible = ref(false);
-    const email = ref(null);
-    const password = ref(null);
+const router = useRouter();
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const verify = ref(false);
+const toast = ref(null);
+const visible = ref(false);
+const email = ref(null);
+const password = ref(null);
 
-    const register = () => {
-      router.push({
-        name: "Signup",
-      });
-    };
-
-    const login = () => {
-      router.push({
-        name: "Login",
-      });
-    };
-
-    const emailRules = ref([
-      (value) => {
-        if (!value) return "Email is required";
-        if (!value.match(emailRegex)) return "Invalid email address";
-        return true;
-      },
-    ]);
-
-    const passwordRules = ref([
-      (value) => {
-        if (value) return true;
-        return "Password is required";
-      },
-    ]);
-    
-    const onSubmit = () => {
-      if (!verify.value) return;
-      userService.nextlaunch();
-      axios
-        .post(window.configs.vite_app_endpoint + "/user/signin", {
-          email: email.value,
-          password: password.value,
-        })
-        .then((response) => {
-          localStorage.setItem("token", response.data.data.access_token);
-          toast.value.toast(response.data.msg, "#388E3C");
-          adminCheck();
-          router.push({
-            name: "VM",
-          });
-        })
-        .catch((error) => {
-          toast.value.toast(error.response.data.err, "#FF5252");
-        });
-    };
-
-    async function adminCheck() {
-      await userService.handleNextLaunch();
-    }
-
-    return {
-      verify,
-      password,
-      visible,
-      email,
-      passwordRules,
-      emailRules,
-      toast,
-      onSubmit,
-      logo,
-      signin,
-      register,
-      login,
-    };
-  },
+const register = () => {
+  router.push({
+    name: "Signup",
+  });
 };
+
+const emailRules = ref([
+  (value) => {
+    if (!value) return "Email is required";
+    if (!value.match(emailRegex)) return "Invalid email address";
+    return true;
+  },
+]);
+
+const passwordRules = ref([
+  (value) => {
+    if (value) return true;
+    return "Password is required";
+  },
+]);
+
+const onSubmit = () => {
+  if (!verify.value) return;
+  userService.nextlaunch();
+  userService
+    .signIn(email.value, password.value)
+    .then((response) => {
+      const { access_token } = response.data.data;
+      localStorage.setItem("token", access_token);
+      toast.value.toast(response.data.msg, "#4caf50");
+      adminCheck();
+      router.push({
+        name: "VM",
+      });
+    })
+    .catch((error) => {
+      toast.value.toast(error.response.data.err, "#FF5252");
+    });
+};
+
+async function adminCheck() {
+  await userService.handleNextLaunch();
+}
 </script>

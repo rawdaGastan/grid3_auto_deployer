@@ -13,7 +13,6 @@
       <v-col cols="12" md="6">
         <v-form class="my-5" v-model="verify" @submit.prevent="onSubmit">
           <BaseInput
-            prepend-inner-icon="mdi-email-outline"
             v-model="email"
             :rules="emailRules"
             type="email"
@@ -26,6 +25,7 @@
             block
             :loading="loading"
             text="send"
+            :disabled="!verify"
             color="secondary"
           />
           <div class="text-body-2 my-5 text-center">
@@ -44,11 +44,11 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import axios from "axios";
 import Toast from "@/components/Toast.vue";
 import resetPasswordImg from "@/assets/key.png";
 import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
+import userService from "@/services/userService";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const toast = ref(null);
@@ -68,15 +68,11 @@ const emailRules = ref([
 
 const onSubmit = () => {
   if (!verify.value) return;
-
   loading.value = true;
-
-  axios
-    .post(window.configs.vite_app_endpoint + "/user/forgot_password", {
-      email: email.value,
-    })
+  userService
+    .forgotPassword(email.value)
     .then((response) => {
-      toast.value.toast(response.data.msg);
+      toast.value.toast(response.data.msg, "#4caf50");
       router.push({
         name: "OTP",
         query: {

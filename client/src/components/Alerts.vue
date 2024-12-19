@@ -5,7 +5,8 @@
     :title="title"
     :type="type"
     class="my-5 font-weight-bold"
-    dark
+    :variant="variant"
+    v-bind="$attrs"
   ></v-alert>
 </template>
 
@@ -24,6 +25,10 @@ defineProps({
   },
   type: {
     type: String,
+  },
+  variant: {
+    type: String,
+    default: "flat",
   },
 });
 </script>

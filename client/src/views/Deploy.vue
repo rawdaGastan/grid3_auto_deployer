@@ -118,12 +118,13 @@ function deployVm() {
   userService
     .deployVm(vmName.value, selectedVM.value.capacity)
     .then((response) => {
+    console.log(response)
       toast.value.toast(response.data.msg, "#4caf50");
       router.push({ name: "VM" });
     })
     .catch((response) => {
-      const { err } = response.response.data;
-      toast.value.toast(err, "#FF5252");
+      const { message } = response;
+      toast.value.toast(message, "#FF5252");
     })
     .finally(() => {
       loading.value = false;

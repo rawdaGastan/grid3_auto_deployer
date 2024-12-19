@@ -81,7 +81,7 @@ export default {
 
   async deployVm(name, resources) {
     await this.refresh_token();
-    return await authClient().post("/vm", { name, resources });
+    return await authClient().post("/vm", { name, resources, public: true }); // FIXME
   },
 
   async deleteVm(id) {

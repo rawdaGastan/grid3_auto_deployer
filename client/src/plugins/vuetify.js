@@ -31,8 +31,8 @@ export default createVuetify({
       fixedHeader: true,
       noDataText: "Results not found",
     },
-    // VContainer: {
-    //   maxWidth: "1200px",
-    // },
+    VContainer: {
+      maxWidth: "1200px",
+    },
   },
 });

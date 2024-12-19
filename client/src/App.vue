@@ -19,3 +19,8 @@ export default {
   },
 };
 </script>
+<style>
+.v-container--fluid {
+  max-width: 100% !important;
+}
+</style>

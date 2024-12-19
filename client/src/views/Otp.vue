@@ -35,10 +35,10 @@
 <script setup>
 import { ref, watchEffect } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import axios from "axios";
 import Toast from "@/components/Toast.vue";
 import OTPImg from "@/assets/otp.png";
 import BaseButton from "@/components/Form/BaseButton.vue";
+import userService from "@/services/userService";
 
 const route = useRoute();
 const router = useRouter();
@@ -57,10 +57,8 @@ watchEffect(() => {
 
 const resetHandler = async () => {
   if (route.query.isForgetPassword) {
-    await axios
-      .post(window.configs.vite_app_endpoint + "/user/forgot_password", {
-        email: route.query.email,
-      })
+    userService
+      .forgotPassword(route.query.email)
       .then((response) => {
         toast.value.toast(response.data.msg);
         countDown.value = route.query.timeout;
@@ -72,19 +70,16 @@ const resetHandler = async () => {
         otp.value = "";
       });
   } else {
-    await axios
-      .post(window.configs.vite_app_endpoint + "/user/signup", {
-        name: localStorage.getItem("fullName"),
-        email: route.query.email,
-        password: localStorage.getItem("password"),
-        confirm_password: localStorage.getItem("confirm_password"),
-        team_size: Number(localStorage.getItem("teamSize")),
-        project_desc: localStorage.getItem("projectDescription"),
-        college: localStorage.getItem("faculty"),
-        ssh_key: localStorage.getItem("sshKey"),
-      })
+    userService
+      .signUp(
+        localStorage.getItem("firstName"),
+        localStorage.getItem("lastName"),
+        route.query.email,
+        localStorage.getItem("password"),
+        localStorage.getItem("confirm_password")
+      )
       .then((response) => {
-        toast.value.toast(response.data.msg);
+        toast.value.toast(response.data.msg, "#4caf50");
         countDown.value = route.query.timeout;
       })
       .catch((error) => {
@@ -100,37 +95,32 @@ const onSubmit = async () => {
   loading.value = true;
 
   if (route.query.isSignup) {
-    await axios
-      .post(window.configs.vite_app_endpoint + "/user/signup/verify_email", {
-        email: route.query.email,
-        code: Number(otp.value),
-      })
+    userService
+      .signUpVerifyEmail(route.query.email, Number(otp.value))
       .then(async (response) => {
-        await axios
-          .post(
-            window.configs.vite_app_endpoint + "/user/apply_voucher",
-            {
-              vms: Number(localStorage.getItem("vms")),
-              public_ips: Number(localStorage.getItem("ips")),
-              reason: localStorage.getItem("projectDescription"),
-            },
-            {
-              headers: {
-                Authorization: "Bearer " + response.data.data.access_token,
-              },
-            }
-          )
-          .catch((error) => {
-            toast.value.toast(error.response.data.err, "#FF5252");
-          });
-        toast.value.toast(response.data.msg);
-        localStorage.removeItem("fullName");
+        // TODO Voucher
+        // await axios
+        //   .post(
+        //     window.configs.vite_app_endpoint + "/user/apply_voucher",
+        //     {
+        //       vms: Number(localStorage.getItem("vms")),
+        //       public_ips: Number(localStorage.getItem("ips")),
+        //       reason: localStorage.getItem("projectDescription"),
+        //     },
+        //     {
+        //       headers: {
+        //         Authorization: "Bearer " + response.data.data.access_token,
+        //       },
+        //     }
+        //   )
+        //   .catch((error) => {
+        //     toast.value.toast(error.response.data.err, "#FF5252");
+        //   });
+        toast.value.toast(response.data.msg, "#4caf50");
+        localStorage.removeItem("firstName");
+        localStorage.removeItem("lastName");
         localStorage.removeItem("password");
         localStorage.removeItem("confirm_password");
-        localStorage.removeItem("teamSize");
-        localStorage.removeItem("projectDescription");
-        localStorage.removeItem("faculty");
-        localStorage.removeItem("sshKey");
         localStorage.removeItem("vms");
         localStorage.removeItem("ips");
         router.push({
@@ -145,18 +135,12 @@ const onSubmit = async () => {
         otp.value = "";
       });
   } else {
-    await axios
-      .post(
-        window.configs.vite_app_endpoint + "/user/forget_password/verify_email",
-        {
-          email: route.query.email,
-          code: Number(otp.value),
-        }
-      )
+    userService
+      .forgotPasswordVerifyEmail(route.query.email, Number(otp.value))
       .then((response) => {
-        toast.value.toast(response.data.msg);
-        localStorage.setItem("password_token", response.data.data.access_token);
-
+        const { access_token } = response.data.data;
+        localStorage.setItem("password_token", access_token);
+        toast.value.toast(response.data.msg, "#4caf50");
         router.push({
           name: "NewPassword",
           query: { email: route.query.email },

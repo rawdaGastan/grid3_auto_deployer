@@ -42,9 +42,32 @@ export default {
     });
   },
 
+  async forgotPassword(email) {
+    return await baseClient().post("/user/forgot_password", { email });
+  },
+
+  async signUpVerifyEmail(email, code) {
+    return await baseClient().post("/user/signup/verify_email", {
+      email,
+      code,
+    });
+  },
+
+  async applyVoucher(balance, reason) {
+    await this.refresh_token();
+    return await authClient().post("/user/apply_voucher", { balance, reason });
+  },
+
   async activateVoucher(voucher) {
     await this.refresh_token();
     return await authClient().put("/user/activate_voucher", { voucher });
+  },
+
+  async forgotPasswordVerifyEmail(email, code) {
+    return await baseClient().post("/user/forget_password/verify_email", {
+      email,
+      code,
+    });
   },
 
   async updateUser(name, ssh_key) {

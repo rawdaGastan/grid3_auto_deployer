@@ -8,28 +8,26 @@
       >
         <div class="d-flex flex-column align-center justify-center pa-8">
           <v-img :src="logo" width="100" />
-          <h5 class="text-h5 font-weight-bold pt-5">
+          <h5 class="text-h5 font-weight-bold my-3">
             Welcome Back to Cloud4All
           </h5>
-          <p class="text-capitalize pb-5">cloud computing system</p>
-          <span class="text-medium-emphasis"
+          <p class="text-capitalize">cloud computing system</p>
+          <span class="text-medium-emphasis my-5"
             >Sign in with your C4All account</span
           >
           <v-form v-model="verify" @submit.prevent="onSubmit" class="w-100">
             <BaseInput
-              prepend-inner-icon="mdi-email-outline"
               v-model="email"
               :rules="emailRules"
               type="email"
               label="Email"
-              class="my-2"
             />
             <BaseInput
-              prepend-inner-icon="mdi-lock-outline"
               :append-inner-icon="visible ? 'mdi-eye' : 'mdi-eye-off'"
               :type="visible ? 'text' : 'password'"
               v-model="password"
               label="Password"
+              class="mt-2"
               :rules="passwordRules"
               @click:append-inner="visible = !visible"
             />
@@ -126,9 +124,10 @@ export default {
     const passwordRules = ref([
       (value) => {
         if (value) return true;
-        return "Password is required.";
+        return "Password is required";
       },
     ]);
+    
     const onSubmit = () => {
       if (!verify.value) return;
       userService.nextlaunch();

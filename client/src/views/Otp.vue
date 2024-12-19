@@ -60,7 +60,7 @@ const resetHandler = async () => {
     userService
       .forgotPassword(route.query.email)
       .then((response) => {
-        toast.value.toast(response.data.msg);
+        toast.value.toast(response.data.msg, "#4caf50");
         countDown.value = route.query.timeout;
       })
       .catch((error) => {

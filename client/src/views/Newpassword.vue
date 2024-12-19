@@ -58,21 +58,9 @@ const showPassword = ref(false);
 const cshowPassword = ref(false);
 const toast = ref(null);
 const loading = ref(false);
-const passwordError = ref("");
 
 const route = useRoute();
 const router = useRouter();
-
-const validatePassword = () => {
-  if (newPassword.value !== cnewpassword.value) {
-    passwordError.value = "Passwords don't match";
-    verify.value = false;
-  } else {
-    passwordError.value = "";
-    verify.value = true;
-  }
-  return verify.value;
-};
 
 const cpasswordRules = ref([
   (value) => {
@@ -83,14 +71,14 @@ const cpasswordRules = ref([
 ]);
 
 const passwordRules = ref([
-  validatePassword,
-  (value) => !!value || "Field is required",
-  (value) =>
-    (value && value.length >= 7) || "Password must be at least 7 characters",
-  (value) =>
-    (value && value.length <= 12) || "Password must be at most 12 characters",
+  (value) => {
+    if (!value) return "Password is required";
+    if (value.length < 7) return "Password must be at least 7 characters";
+    if (value.length > 12) return "Password must be at most 12 characters";
+    return true;
+  },
 ]);
-
+//FIXME
 const onSubmit = () => {
   if (!verify.value) return;
 

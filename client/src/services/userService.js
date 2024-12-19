@@ -32,6 +32,16 @@ export default {
     return await authClient().get("/user");
   },
 
+  async signUp(first_name, last_name, email, password, confirm_password) {
+    return await baseClient().post("/user/signup", {
+      first_name,
+      last_name,
+      email,
+      password,
+      confirm_password,
+    });
+  },
+
   async activateVoucher(voucher) {
     await this.refresh_token();
     return await authClient().put("/user/activate_voucher", { voucher });

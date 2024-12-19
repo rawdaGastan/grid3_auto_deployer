@@ -3,7 +3,7 @@
     <v-row>
       <v-col cols="12" md="6" class="d-none d-md-block">
         <v-card height="100vh">
-          <v-img :src="signUp" height="100%" cover />
+          <v-img :src="signUpLogo" height="100%" cover />
         </v-card>
       </v-col>
       <v-col cols="12" md="6" class="d-flex flex-column justify-center">
@@ -18,7 +18,7 @@
             create account
           </h5>
 
-          <v-form v-model="verify" @submit.prevent="onSubmit">
+          <v-form v-model="verify" ref="form" @submit.prevent="signUp">
             <v-container class="px-0">
               <v-row>
                 <v-col cols="12" md="6">
@@ -66,29 +66,8 @@
                     :type="cShowPassword ? 'text' : 'password'"
                     v-model="cPassword"
                     label="Confirm Password"
-                    :rules="passwordRules"
+                    :rules="cPasswordRules"
                     @click:append-inner="cShowPassword = !cShowPassword"
-                  />
-                </v-col>
-
-                <v-col cols="12" md="6">
-                  <BaseInput
-                    type="text"
-                    v-model="company"
-                    :rules="companyValidation"
-                    label="Company"
-                    required
-                  />
-                </v-col>
-
-                <v-col cols="12" md="6">
-                  <BaseInput
-                    type="number"
-                    v-model="teamSize"
-                    :rules="teamSizeRules"
-                    label="Team Size"
-                    min="1"
-                    oninput="validity.valid||(value='')"
                   />
                 </v-col>
               </v-row>
@@ -100,10 +79,12 @@
 
             <BaseButton
               block
+              class="my-3"
+              type="submit"
               color="secondary"
               text="Create Your Account"
-              @click="register"
               :loading="loading"
+              :disabled="!verify"
             />
 
             <p class="my-5 text-center secondary text-medium-emphasis">
@@ -116,23 +97,26 @@
         </div>
       </v-col>
     </v-row>
+    <Toast ref="toast" />
   </v-container>
 </template>
 <script>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import axios from "axios";
 import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import TermsAndConditions from "@/components/TermsAndConditions.vue";
 import logo from "@/assets/logo_c4all.png";
-import signUp from "@/assets/sign-up.png";
+import signUpLogo from "@/assets/sign-up.png";
+import userService from "@/services/userService";
+import Toast from "@/components/Toast.vue";
 
 export default {
   components: {
     BaseInput,
     BaseButton,
     TermsAndConditions,
+    Toast,
   },
 
   setup() {
@@ -142,16 +126,16 @@ export default {
     const firstName = ref();
     const lastName = ref();
     const email = ref();
-    const company = ref();
-    const teamSize = ref(null);
     const password = ref(null);
     const cPassword = ref(null);
     const visible = ref(false);
+    const cShowPassword = ref(false);
     const isSignup = ref(true);
     const loading = ref(false);
     const toast = ref(null);
     const checked = ref(false);
     const nameRegex = /^(\w+\s){0,3}\w*$/;
+    const form = ref(null);
 
     const nameValidation = ref([
       (value) => {
@@ -159,23 +143,6 @@ export default {
         if (!value.match(nameRegex)) return "Must be at most four names";
         if (value.length < 3) return "Name should be at least 3 characters";
         if (value.length > 20) return "Name should be at most 20 characters";
-        return true;
-      },
-    ]);
-
-    const companyRules = ref([
-      (value) => {
-        if (!value) return "Company is required";
-        if (value.length < 3) return "Company should be at least 3 characters";
-        return true;
-      },
-    ]);
-
-    const teamSizeRules = ref([
-      (value) => {
-        if (!value) return "Team size is required";
-        if (value < 1) return "Team Size should at least be 1";
-        if (value > 20) return "Team Size should be max 20";
         return true;
       },
     ]);
@@ -200,40 +167,29 @@ export default {
     const cPasswordRules = ref([
       (value) => {
         if (!value) return "Confirm password is required";
-        if (value.length < 7) return "Password must be at least 7 characters";
-        if (value.length > 12) return "Password must be at most 12 characters";
         if (value !== password.value) return "Passwords don't match";
         return true;
       },
     ]);
 
-    const register = () => {
-      router.push({
-        name: "OTP",
-      });
-    };
-
-    const onSubmit = () => {
+    const signUp = () => {
       if (!checked.value) return;
       loading.value = true;
-      axios
-        .post(window.configs.vite_app_endpoint + "/user/signup", {
-          firstName: firstName.value,
-          lastName: lastName.value,
-          email: email.value,
-          password: password.value,
-          confirm_password: cPassword.value,
-          team_size: Number(teamSize.value),
-          company: company.value,
-        })
+      userService
+        .signUp(
+          firstName.value,
+          lastName.value,
+          email.value,
+          password.value,
+          cPassword.value
+        )
         .then((response) => {
+          const { msg } = response.data;
           localStorage.setItem("firstName", firstName.value);
           localStorage.setItem("lastName", lastName.value);
           localStorage.setItem("password", password.value);
           localStorage.setItem("confirm_password", cPassword.value);
-          localStorage.setItem("teamSize", Number(teamSize.value));
-          localStorage.setItem("company", company.value);
-          toast.value.toast(response.data.msg);
+          toast.value.toast(msg, "#4caf50");
           router.push({
             name: "OTP",
             query: {
@@ -243,13 +199,17 @@ export default {
             },
           });
         })
-        .catch((error) => {
-          toast.value.toast(error.response.data.err, "#FF5252", "top-right");
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
+        })
+        .finally(() => {
+          form.value.reset();
           loading.value = false;
         });
     };
     return {
-      onSubmit,
+      signUp,
       loading,
       verify,
       cPassword,
@@ -264,14 +224,11 @@ export default {
       passwordRules,
       cPasswordRules,
       isSignup,
-      company,
-      teamSize,
-      teamSizeRules,
-      companyRules,
       checked,
-      register,
       logo,
-      signUp,
+      signUpLogo,
+      cShowPassword,
+      form,
     };
   },
 };

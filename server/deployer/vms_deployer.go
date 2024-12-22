@@ -38,7 +38,7 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.VM, sshKey strin
 		filter.Region = &vmInput.Region
 	}
 
-	nodeIDs, err := deployer.FilterNodes(ctx, d.tfPluginClient, filter, []uint64{*freeSRU}, nil, nil, 1)
+	nodeIDs, err := deployer.FilterNodes(ctx, d.TFPluginClient, filter, []uint64{*freeSRU}, nil, nil, 1)
 	if err != nil {
 		return nil, 0, 0, err
 	}
@@ -97,12 +97,12 @@ func (d *Deployer) deployVM(ctx context.Context, vmInput models.VM, sshKey strin
 	}
 
 	// checks that network and vm are deployed successfully
-	loadedNet, err := d.tfPluginClient.State.LoadNetworkFromGrid(ctx, dl.NetworkName)
+	loadedNet, err := d.TFPluginClient.State.LoadNetworkFromGrid(ctx, dl.NetworkName)
 	if err != nil {
 		return nil, 0, 0, errors.Wrapf(err, "failed to load network '%s' on node %v", dl.NetworkName, dl.NodeID)
 	}
 
-	loadedDl, err := d.tfPluginClient.State.LoadDeploymentFromGrid(ctx, nodeID, dl.Name)
+	loadedDl, err := d.TFPluginClient.State.LoadDeploymentFromGrid(ctx, nodeID, dl.Name)
 	if err != nil {
 		return nil, 0, 0, errors.Wrapf(err, "failed to load vm '%s' on node %v", dl.Name, dl.NodeID)
 	}

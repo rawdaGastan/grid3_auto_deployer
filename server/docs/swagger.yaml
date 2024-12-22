@@ -1282,6 +1282,31 @@ paths:
       summary: Set user's notifications as seen
       tags:
       - Notification
+  /region:
+    get:
+      consumes:
+      - application/json
+      description: List all supported regions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+        "401":
+          description: Unauthorized
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - BearerAuth: []
+      summary: List all supported regions
+      tags:
+      - Region
   /set_admin:
     put:
       consumes:

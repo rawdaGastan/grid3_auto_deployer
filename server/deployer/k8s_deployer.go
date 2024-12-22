@@ -124,12 +124,12 @@ func (d *Deployer) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInp
 	}
 
 	// checks that network and k8s are deployed successfully
-	loadedNet, err := d.tfPluginClient.State.LoadNetworkFromGrid(ctx, cluster.NetworkName)
+	loadedNet, err := d.TFPluginClient.State.LoadNetworkFromGrid(ctx, cluster.NetworkName)
 	if err != nil {
 		return 0, 0, 0, errors.Wrapf(err, "failed to load network '%s' on nodes %v", cluster.NetworkName, network.Nodes)
 	}
 
-	loadedCluster, err := d.tfPluginClient.State.LoadK8sFromGrid(ctx, []uint32{node}, cluster.Master.Name)
+	loadedCluster, err := d.TFPluginClient.State.LoadK8sFromGrid(ctx, []uint32{node}, cluster.Master.Name)
 	if err != nil {
 		return 0, 0, 0, errors.Wrapf(err, "failed to load kubernetes cluster '%s' on nodes %v", cluster.Master.Name, network.Nodes)
 	}
@@ -144,7 +144,7 @@ func (d *Deployer) loadK8s(
 	networkContractID uint64, k8sContractID uint64,
 ) (models.K8sCluster, error) {
 	// load cluster
-	resCluster, err := d.tfPluginClient.State.LoadK8sFromGrid(ctx, []uint32{node}, k8s.Master.Name)
+	resCluster, err := d.TFPluginClient.State.LoadK8sFromGrid(ctx, []uint32{node}, k8s.Master.Name)
 	if err != nil {
 		return models.K8sCluster{}, err
 	}
@@ -207,7 +207,7 @@ func (d *Deployer) getK8sAvailableNode(ctx context.Context, k models.K8sCluster)
 		filter.Region = &k.Master.Region
 	}
 
-	nodes, err := deployer.FilterNodes(ctx, d.tfPluginClient, filter, []uint64{*freeSRU}, nil, rootfs, 1)
+	nodes, err := deployer.FilterNodes(ctx, d.TFPluginClient, filter, []uint64{*freeSRU}, nil, rootfs, 1)
 	if err != nil {
 		return 0, err
 	}

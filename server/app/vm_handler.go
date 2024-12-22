@@ -9,11 +9,13 @@ import (
 	"strings"
 
 	"github.com/codescalers/cloud4students/deployer"
+	"github.com/codescalers/cloud4students/internal"
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
 	"github.com/codescalers/cloud4students/streams"
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
+	"github.com/threefoldtech/tfgrid-sdk-go/grid-proxy/pkg/types"
 	"gopkg.in/validator.v2"
 	"gorm.io/gorm"
 )
@@ -350,5 +352,47 @@ func (a *App) DeleteAllVMsHandler(req *http.Request) (interface{}, Response) {
 	return ResponseMsg{
 		Message: "All virtual machines are deleted successfully",
 		Data:    nil,
+	}, Ok()
+}
+
+// ListRegionsHandler returns all supported regions
+// Example endpoint: List all supported regions
+// @Summary List all supported regions
+// @Description List all supported regions
+// @Tags Region
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} []string
+// @Failure 401 {object} Response
+// @Failure 500 {object} Response
+// @Router /region [get]
+func (a *App) ListRegionsHandler(req *http.Request) (interface{}, Response) {
+	stats, err := a.deployer.TFPluginClient.GridProxyClient.Stats(req.Context(), types.StatsFilter{})
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	graphql, err := internal.NewGraphQl(a.config.Account.Network)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	var countries []string
+	for country := range stats.NodesDistribution {
+		countries = append(countries, country)
+	}
+
+	regions, err := graphql.ListRegions(countries)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	return ResponseMsg{
+		Message: "Regions are found",
+		Data:    regions,
 	}, Ok()
 }

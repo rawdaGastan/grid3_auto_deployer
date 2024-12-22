@@ -139,7 +139,7 @@ const onSubmit = async () => {
       .forgotPasswordVerifyEmail(route.query.email, Number(otp.value))
       .then((response) => {
         const { access_token } = response.data.data;
-        localStorage.setItem("password_token", access_token);
+        localStorage.setItem("token", access_token);
         toast.value.toast(response.data.msg, "#4caf50");
         router.push({
           name: "NewPassword",

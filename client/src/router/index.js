@@ -8,7 +8,9 @@ import userService from "@/services/userService.js";
 import AccountTab from "@/views/tabs/Account.vue";
 import PaymentsTab from "@/views/tabs/Payments.vue";
 import Invoices from "@/views/tabs/Invoices.vue";
+import ChangePassword from "@/views/tabs/ChangePassword.vue";
 import AuditLogs from "@/views/tabs/AuditLogs.vue";
+import DeleteAccount from "@/views/tabs/DeleteAccount.vue";
 import Deploy from "@/views/Deploy.vue";
 
 const routes = [
@@ -121,6 +123,14 @@ const routes = [
           {
             path: "/account/payments",
             component: PaymentsTab,
+          },
+          {
+            path: "/account/change-password",
+            component: ChangePassword,
+          },
+          {
+            path: "/account/delete-account",
+            component: DeleteAccount,
           },
           {
             path: "/account/invoices",

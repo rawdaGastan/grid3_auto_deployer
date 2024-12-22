@@ -22,8 +22,10 @@ import { ref } from "vue";
 const tabs = ref([
   { name: "Account", route: `/account` },
   { name: "Payments", route: `/account/payments` },
+  { name: "Change Password", route: `/account/change-password` },
   { name: "Invoices", route: `/account/invoices` },
   { name: "Audit logs", route: `/account/audit-logs` },
+  { name: "Delete Account", route: `/account/Delete-account` },
 ]);
 const activeTab = ref(tabs.value[0]);
 </script>

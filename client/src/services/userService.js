@@ -77,10 +77,10 @@ export default {
     });
   },
 
-  async updateUser(name, ssh_key) {
+  async updateUser(first_name, ssh_key) {
     await this.refresh_token();
     return await authClient().put("/user", {
-      name,
+      first_name,
       ssh_key,
     });
   },

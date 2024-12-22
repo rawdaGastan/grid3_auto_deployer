@@ -1,15 +1,12 @@
 <template>
   <v-container>
-    <v-icon icon="mdi-account-circle-outline" size="40" class="mr-3" />
-    <span class="text-h6 my-5">{{ email }}</span>
-
     <v-form v-model="verify" class="account my-5" @submit.prevent="update">
       <v-row>
         <v-col cols="12" md="6">
           <label class="font-weight-bold">Username</label>
-          <BaseInput v-model="name" class="my-1" :rules="nameValidation" />
+          <BaseInput v-model="firstName" class="my-1" :rules="nameValidation" />
 
-          <label class="font-weight-bold">Email</label>
+          <label class="font-weight-bold">E-mail</label>
           <BaseInput
             v-model="email"
             class="my-1"
@@ -17,24 +14,6 @@
             disabled
             hint="*Sorry can't change Email here!"
             persistent-hint
-          />
-
-          <label class="font-weight-bold">Password</label>
-          <BaseInput
-            type="password"
-            v-model="password"
-            placeholder="*******"
-            class="my-1"
-            hint="*Change Password"
-            persistent-hint
-          />
-
-          <BaseButton
-            type="submit"
-            text="Update"
-            color="secondary"
-            class="my-5"
-            :disabled="!verify"
           />
         </v-col>
 
@@ -51,7 +30,6 @@
             </template>
           </v-tooltip>
           <v-textarea
-            clearable
             bg-color="primary"
             variant="outlined"
             density="compact"
@@ -59,9 +37,18 @@
             :rules="requiredRules"
             class="my-1"
             required
-            auto-grow
           ></v-textarea>
         </v-col>
+      </v-row>
+      <v-divider class="my-5" />
+      <v-row class="d-flex justify-end">
+        <BaseButton
+          type="submit"
+          text="Update"
+          color="secondary"
+          class="ma-2"
+          :disabled="!verify"
+        />
       </v-row>
     </v-form>
     <Toast ref="toast" />
@@ -76,8 +63,7 @@ import BaseButton from "@/components/Form/BaseButton.vue";
 import Toast from "@/components/Toast.vue";
 
 const email = ref("");
-const name = ref("");
-const password = ref("");
+const firstName = ref("");
 const sshKey = ref("");
 const toast = ref();
 const verified = ref(false);
@@ -104,8 +90,9 @@ function getUser() {
     .getUser()
     .then((response) => {
       const { user } = response.data.data;
+      console.log(user);
       email.value = user.email;
-      name.value = user.name;
+      firstName.value = user.first_name;
       verified.value = user.verified;
       sshKey.value = user.ssh_key;
     })
@@ -116,22 +103,23 @@ function getUser() {
 }
 
 function update() {
-  if (!verify.value) return;
-
   userService
-    .updateUser(name.value, sshKey.value)
+    .updateUser(firstName.value, sshKey.value)
     .then((response) => {
+      toast.value.toast(response.data.msg, "#4caf50");
       getUser();
-      toast.value.toast(response.data.msg, "#388E3C");
     })
     .catch((response) => {
       const { err } = response.response.data;
       toast.value.toast(err, "#FF5252");
+    })
+    .finally(() => {
+      verify.value = false;
     });
 }
 
 onMounted(() => {
-  let token = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
   if (token) getUser();
 });
 </script>

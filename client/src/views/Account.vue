@@ -20,7 +20,7 @@
 <script setup>
 import { ref } from "vue";
 const tabs = ref([
-  { name: "Account", route: `/account` },
+  { name: "Profile", route: `/profile` },
   { name: "Payments", route: `/account/payments` },
   { name: "Change Password", route: `/account/change-password` },
   { name: "Invoices", route: `/account/invoices` },

@@ -5,7 +5,7 @@ import VM from "@/views/VM.vue";
 import Admin from "@/views/Admin.vue";
 import NewPassword from "@/views/Newpassword.vue";
 import userService from "@/services/userService.js";
-import AccountTab from "@/views/tabs/Account.vue";
+import ProfileTab from "@/views/tabs/Profile.vue";
 import PaymentsTab from "@/views/tabs/Payments.vue";
 import Invoices from "@/views/tabs/Invoices.vue";
 import ChangePassword from "@/views/tabs/ChangePassword.vue";
@@ -118,7 +118,7 @@ const routes = [
         children: [
           {
             path: "",
-            component: AccountTab,
+            component: ProfileTab,
           },
           {
             path: "/account/payments",

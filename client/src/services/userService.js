@@ -108,6 +108,12 @@ export default {
     return await authClient().get("/quota");
   },
 
+  // Invoices
+  async getInvoices() {
+    await this.refresh_token();
+    return await authClient().get("/invoice");
+  },
+
   // VM
   async getVms() {
     await this.refresh_token();

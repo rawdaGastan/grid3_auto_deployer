@@ -6,6 +6,7 @@
           :headers="headers"
           :items="logs"
           class="d-flex justify-center elevation-1"
+          :hide-default-footer="logs == 0"
         >
         </v-data-table>
       </v-col>

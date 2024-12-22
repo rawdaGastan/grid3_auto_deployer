@@ -18,7 +18,12 @@
         </v-col>
         <v-col cols="12" md="4">
           <label for="region">Region</label>
-          <BaseSelect class="my-2" placeholder="Choose Region" />
+          <BaseSelect
+            class="my-2"
+            :items="regions"
+            placeholder="Choose Region"
+            :rules="selectRules"
+          />
         </v-col>
         <p class="text-capitalize px-4">
           Machine Name and Region are required to deploy the VM. Please fill in
@@ -41,7 +46,7 @@
   </v-container>
 </template>
 <script setup>
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import BaseInput from "@/components/Form/BaseInput.vue";
 import BaseSelect from "@/components/Form/BaseSelect.vue";
 import DeploymentCard from "@/components/DeploymentCard.vue";
@@ -53,8 +58,10 @@ const verify = ref(false);
 const vmName = ref("");
 const toast = ref(null);
 const selectedVM = ref();
+const selectedRegion = ref();
 const loading = ref(false);
 const router = useRouter();
+const regions = ref();
 
 const resources = ref([
   {
@@ -114,18 +121,30 @@ const validateVMName = async (name) => {
   return msg;
 };
 
+const selectRules = ref([
+  (value) => {
+    if (!value) return "Region is required";
+    return true;
+  },
+]);
+
 function getSelectedVM(vm) {
   selectedVM.value = vm;
 }
-// TODO region
+
+function getRegions() {
+  userService.getRegions().then((response) => {
+    const { data } = response.data;
+    regions.value = data;
+  });
+}
+// TODO public IP
 function deployVm() {
   loading.value = true;
   userService
-    .deployVm(vmName.value, selectedVM.value.capacity)
+    .deployVm(vmName.value, selectedRegion.value, selectedVM.value.capacity)
     .then((response) => {
-      console.log(response);
       toast.value.toast(response.data.msg, "#4caf50");
-      router.push({ name: "VM" });
     })
     .catch((response) => {
       const { message } = response;
@@ -133,6 +152,9 @@ function deployVm() {
     })
     .finally(() => {
       loading.value = false;
+      router.push({ name: "VM" });
     });
 }
+
+onMounted(() => getRegions());
 </script>

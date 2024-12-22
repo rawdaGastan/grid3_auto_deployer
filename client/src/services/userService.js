@@ -119,9 +119,19 @@ export default {
     return await authClient().get(`/vm/validate/${name}`);
   },
 
-  async deployVm(name, resources) {
+  async getRegions() {
     await this.refresh_token();
-    return await authClient().post("/vm", { name, resources, public: true }); // FIXME
+    return await authClient().get("/region");
+  },
+
+  async deployVm(name, region, resources) {
+    await this.refresh_token();
+    return await authClient().post("/vm", {
+      name,
+      region,
+      resources,
+      public: true,
+    }); // FIXME
   },
 
   async deleteVm(id) {

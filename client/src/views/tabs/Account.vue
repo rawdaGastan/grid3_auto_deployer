@@ -90,7 +90,6 @@ function getUser() {
     .getUser()
     .then((response) => {
       const { user } = response.data.data;
-      console.log(user);
       email.value = user.email;
       firstName.value = user.first_name;
       verified.value = user.verified;

@@ -2,10 +2,10 @@
   <v-container>
     <v-row class="d-flex justify-end my-5">
       <BaseButton
-        color="secondary"
         @click="downloadAll"
         text="Download All"
         prepend-icon="mdi-download"
+        :disabled="invoices == 0"
       />
     </v-row>
     <v-row>
@@ -75,10 +75,11 @@ function getInvoices() {
 onMounted(() => getInvoices());
 </script>
 <style>
-thead th {
-  background-color: #19647e !important;
-}
 tbody tr {
   background-color: #474747;
+}
+
+.v-btn--disabled.bg-default {
+  background-color: transparent !important;
 }
 </style>

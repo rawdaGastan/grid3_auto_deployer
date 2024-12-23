@@ -47,6 +47,12 @@ func (d *DB) GetAllVms(userID string) ([]VM, error) {
 	return vms, d.db.Where("user_id = ?", userID).Find(&vms).Error
 }
 
+// GetAllSuccessfulVms returns all vms of user that have a state succeeded
+func (d *DB) GetAllSuccessfulVms(userID string) ([]VM, error) {
+	var vms []VM
+	return vms, d.db.Where("user_id = ? and state = 'CREATED'", userID).Find(&vms).Error
+}
+
 // UpdateVM updates information of vm. empty and unchanged fields are not updated.
 func (d *DB) UpdateVM(vm VM) error {
 	return d.db.Model(&VM{}).Where("id = ?", vm.ID).Updates(vm).Error

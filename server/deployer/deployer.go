@@ -274,23 +274,44 @@ func (d *Deployer) canDeploy(userID string, costPerMonth float64) error {
 // from the start of current month
 func (d *Deployer) calculateUserDebtInMonth(userID string) (float64, error) {
 	var debt float64
-	usagePercentageInMonth := UsagePercentageInMonth(time.Now())
+	now := time.Now()
+	monthStart := time.Date(now.Year(), now.Month(), 0, 0, 0, 0, 0, time.Local)
 
-	vms, err := d.db.GetAllVms(userID)
+	vms, err := d.db.GetAllSuccessfulVms(userID)
 	if err != nil {
 		return 0, err
 	}
 
 	for _, vm := range vms {
+		usageStart := monthStart
+		if vm.CreatedAt.After(monthStart) {
+			usageStart = vm.CreatedAt
+		}
+
+		usagePercentageInMonth, err := UsagePercentageInMonth(usageStart, now)
+		if err != nil {
+			return 0, err
+		}
+
 		debt += float64(vm.PricePerMonth) * usagePercentageInMonth
 	}
 
-	clusters, err := d.db.GetAllK8s(userID)
+	clusters, err := d.db.GetAllSuccessfulK8s(userID)
 	if err != nil {
 		return 0, err
 	}
 
 	for _, c := range clusters {
+		usageStart := monthStart
+		if c.CreatedAt.After(monthStart) {
+			usageStart = c.CreatedAt
+		}
+
+		usagePercentageInMonth, err := UsagePercentageInMonth(usageStart, now)
+		if err != nil {
+			return 0, err
+		}
+
 		debt += float64(c.PricePerMonth) * usagePercentageInMonth
 	}
 
@@ -299,8 +320,16 @@ func (d *Deployer) calculateUserDebtInMonth(userID string) (float64, error) {
 
 // UsagePercentageInMonth calculates percentage of hours till specific time during the month
 // according to total hours of the same month
-func UsagePercentageInMonth(end time.Time) float64 {
-	start := time.Date(end.Year(), end.Month(), 0, 0, 0, 0, 0, time.UTC)
-	endMonth := time.Date(end.Year(), end.Month()+1, 0, 0, 0, 0, 0, time.UTC)
-	return end.Sub(start).Hours() / endMonth.Sub(start).Hours()
+func UsagePercentageInMonth(start time.Time, end time.Time) (float64, error) {
+	if start.Month() != end.Month() || start.Year() != end.Year() {
+		return 0, errors.New("start and end time should be the same month and year")
+	}
+
+	startMonth := time.Date(start.Year(), start.Month(), 0, 0, 0, 0, 0, time.UTC)
+	endMonth := time.Date(start.Year(), start.Month()+1, 0, 0, 0, 0, 0, time.UTC)
+
+	totalHoursInMonth := endMonth.Sub(startMonth).Hours()
+	usedHours := end.Sub(start).Hours()
+
+	return usedHours / totalHoursInMonth, nil
 }

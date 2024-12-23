@@ -8,12 +8,14 @@ import { createToast, clearToasts } from "mosha-vue-toastify";
 export default {
 	setup() {
 		const toast = (title, color = "#217dbb") => {
+			if (title.length > 0) {
 			createToast(title.charAt(0).toUpperCase() + title.slice(1), {
 				position: "bottom-right",
 				hideProgressBar: true,
 				toastBackgroundColor: color,
 				timeout: 8000,
 			});
+		}
 		};
 		const clear = () => {
 			clearToasts();

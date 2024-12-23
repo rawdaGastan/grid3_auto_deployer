@@ -1,20 +1,20 @@
 definitions:
-  app.AccessToken:
+  app.AccessTokenResponse:
     properties:
       access_token:
         type: string
-    required:
-    - access_token
+      timeout:
+        type: integer
     type: object
   app.AddCardInput:
     properties:
-      card_type:
+      token_id:
         type: string
-      payment_method_id:
+      token_type:
         type: string
     required:
-    - card_type
-    - payment_method_id
+    - token_id
+    - token_type
     type: object
   app.AddVoucherInput:
     properties:
@@ -90,6 +90,13 @@ definitions:
     - name
     - resources
     type: object
+  app.EmailInput:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
   app.EmailUser:
     properties:
       body:
@@ -152,15 +159,14 @@ definitions:
     required:
     - method
     type: object
-  app.RefreshToken:
+  app.RefreshTokenResponse:
     properties:
       access_token:
         type: string
       refresh_token:
         type: string
-    required:
-    - access_token
-    - refresh_token
+      timeout:
+        type: integer
     type: object
   app.SetAdminInput:
     properties:
@@ -474,6 +480,8 @@ definitions:
         type: number
       card:
         type: number
+      id:
+        type: integer
       invoice_id:
         type: integer
       voucher_balance:
@@ -504,7 +512,7 @@ definitions:
         type: string
       stripe_customer_id:
         type: string
-      stripe_payment_method_id:
+      stripe_default_payment_id:
         type: string
       updated_at:
         type: string
@@ -632,15 +640,15 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a new administrator email and sends it to a specific user
+      description: Creates a new administrator announcement and sends it to all users
         as an email and notification
       parameters:
-      - description: email to be sent
+      - description: announcement to be created
         in: body
-        name: email
+        name: announcement
         required: true
         schema:
-          $ref: '#/definitions/app.EmailUser'
+          $ref: '#/definitions/app.AdminAnnouncement'
       produces:
       - application/json
       responses:
@@ -661,8 +669,8 @@ paths:
           schema: {}
       security:
       - BearerAuth: []
-      summary: Creates a new administrator email and sends it to a specific user as
-        an email and notification
+      summary: Creates a new administrator announcement and sends it to all users
+        as an email and notification
       tags:
       - Admin
   /balance:
@@ -774,6 +782,43 @@ paths:
       security:
       - BearerAuth: []
       summary: Get users' deployments count
+      tags:
+      - Admin
+  /email:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new administrator email and sends it to a specific user
+        as an email and notification
+      parameters:
+      - description: email to be sent
+        in: body
+        name: email
+        required: true
+        schema:
+          $ref: '#/definitions/app.EmailUser'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema: {}
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - BearerAuth: []
+      summary: Creates a new administrator email and sends it to a specific user as
+        an email and notification
       tags:
       - Admin
   /invoice:
@@ -1372,6 +1417,30 @@ paths:
       tags:
       - Admin
   /user:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes account for user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - BearerAuth: []
+      summary: Deletes account for user
+      tags:
+      - User
     get:
       consumes:
       - application/json
@@ -1739,11 +1808,52 @@ paths:
       summary: Charge user balance
       tags:
       - User
+  /user/forget_password/verify_email:
+    post:
+      consumes:
+      - application/json
+      description: Verify user's email to reset password
+      parameters:
+      - description: User Verify forget password input
+        in: body
+        name: forgetPassword
+        required: true
+        schema:
+          $ref: '#/definitions/app.VerifyCodeInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/app.AccessTokenResponse'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Verify user's email to reset password
+      tags:
+      - User
   /user/forgot_password:
     post:
       consumes:
       - application/json
       description: Send code to forget password email for verification
+      parameters:
+      - description: User forget password input
+        in: body
+        name: forgetPassword
+        required: true
+        schema:
+          $ref: '#/definitions/app.EmailInput'
       produces:
       - application/json
       responses:
@@ -1766,33 +1876,6 @@ paths:
       summary: Send code to forget password email for verification
       tags:
       - User
-  /user/forgot_password/verify_email:
-    post:
-      consumes:
-      - application/json
-      description: Verify user's email to reset password
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/app.AccessToken'
-        "400":
-          description: Bad Request
-          schema: {}
-        "401":
-          description: Unauthorized
-          schema: {}
-        "404":
-          description: Not Found
-          schema: {}
-        "500":
-          description: Internal Server Error
-          schema: {}
-      summary: Verify user's email to reset password
-      tags:
-      - User
   /user/refresh_token:
     post:
       consumes:
@@ -1804,7 +1887,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/app.RefreshToken'
+            $ref: '#/definitions/app.RefreshTokenResponse'
         "400":
           description: Bad Request
           schema: {}
@@ -1840,7 +1923,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/app.AccessToken'
+            $ref: '#/definitions/app.AccessTokenResponse'
         "400":
           description: Bad Request
           schema: {}
@@ -2237,7 +2320,7 @@ paths:
       summary: Update (approve-reject) a voucher
       tags:
       - Voucher (only admins)
-  /voucher/reset:
+  /voucher/all/reset:
     put:
       consumes:
       - application/json

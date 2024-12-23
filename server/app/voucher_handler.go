@@ -18,12 +18,12 @@ import (
 // GenerateVoucherInput struct for data needed when user generate vouchers
 type GenerateVoucherInput struct {
 	Length  int    `json:"length" binding:"required" validate:"min=3,max=20"`
-	Balance uint64 `json:"balance" binding:"required"`
+	Balance uint64 `json:"balance" binding:"required" validate:"nonzero"`
 }
 
 // UpdateVoucherInput struct for data needed when user update voucher
 type UpdateVoucherInput struct {
-	Approved bool `json:"approved" binding:"required"`
+	Approved bool `json:"approved" binding:"required" validate:"nonzero"`
 }
 
 // GenerateVoucherHandler generates a voucher by admin
@@ -254,7 +254,7 @@ func (a *App) ApproveAllVouchersHandler(req *http.Request) (interface{}, Respons
 // @Failure 401 {object} Response
 // @Failure 404 {object} Response
 // @Failure 500 {object} Response
-// @Router /voucher/reset [put]
+// @Router /voucher/all/reset [put]
 func (a *App) ResetUsersVoucherBalanceHandler(req *http.Request) (interface{}, Response) {
 	users, err := a.db.ListAllUsers()
 	if err == gorm.ErrRecordNotFound || len(users) == 0 {
@@ -264,8 +264,7 @@ func (a *App) ResetUsersVoucherBalanceHandler(req *http.Request) (interface{}, R
 	}
 
 	for _, user := range users {
-		user.VoucherBalance = 0
-		err = a.db.UpdateUserByID(user)
+		err = a.db.UpdateUserVoucherBalance(user.ID.String(), 0)
 		if err != nil {
 			log.Error().Err(err).Send()
 			return nil, InternalServerError(errors.New(internalServerErrorMsg))

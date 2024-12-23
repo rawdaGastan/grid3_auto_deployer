@@ -32,6 +32,7 @@ type DeploymentItem struct {
 }
 
 type PaymentDetails struct {
+	ID             int     `json:"id" gorm:"primaryKey"`
 	InvoiceID      int     `json:"invoice_id"`
 	Card           float64 `json:"card"`
 	Balance        float64 `json:"balance"`
@@ -74,69 +75,19 @@ func (d *DB) UpdateInvoiceLastRemainderDate(id int) error {
 // PayInvoice updates paid with true and paid at field with current time in the invoice
 func (d *DB) PayInvoice(id int, payment PaymentDetails) error {
 	var invoice Invoice
+	if err := d.db.Model(&invoice).Association("PaymentDetails").Append(&payment); err != nil {
+		return err
+	}
+
 	result := d.db.Model(&invoice).
 		Where("id = ?", id).
 		Update("paid", true).
-		Update("payment_details", payment).
 		Update("paid_at", time.Now())
 
 	if result.RowsAffected == 0 {
 		return gorm.ErrRecordNotFound
 	}
 	return result.Error
-}
-
-// PayUserInvoices tries to pay invoices with a given balance
-func (d *DB) PayUserInvoices(userID string, balance, voucherBalance float64) (float64, float64, error) {
-	// get unpaid invoices
-	var invoices []Invoice
-	if err := d.db.
-		Order("total desc").
-		Where("user_id = ?", userID).
-		Where("paid = ?", false).
-		Find(&invoices).Error; err != nil && err != gorm.ErrRecordNotFound {
-		return 0, 0, err
-	}
-
-	for _, invoice := range invoices {
-		if balance == 0 && voucherBalance == 0 {
-			break
-		}
-
-		// 1. check voucher balance
-		if invoice.Total <= voucherBalance {
-			if err := d.PayInvoice(invoice.ID, PaymentDetails{VoucherBalance: invoice.Total}); err != nil {
-				return 0, 0, err
-			}
-			voucherBalance -= invoice.Total
-			continue
-		}
-
-		// 2. check balance
-		if invoice.Total <= balance {
-			if err := d.PayInvoice(invoice.ID, PaymentDetails{Balance: invoice.Total}); err != nil {
-				return 0, 0, err
-			}
-			balance -= invoice.Total
-			continue
-		}
-
-		// 3. check both (total is more than both balance and voucher balance)
-		if invoice.Total <= balance+voucherBalance {
-			if err := d.PayInvoice(
-				invoice.ID,
-				PaymentDetails{VoucherBalance: voucherBalance, Balance: (invoice.Total - voucherBalance)},
-			); err != nil {
-				return 0, 0, err
-			}
-
-			// use voucher first
-			balance -= (invoice.Total - voucherBalance)
-			voucherBalance = 0
-		}
-	}
-
-	return balance, voucherBalance, nil
 }
 
 // CalcUserDebt calculates the user debt according to invoices

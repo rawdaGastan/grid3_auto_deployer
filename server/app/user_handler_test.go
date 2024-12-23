@@ -622,6 +622,7 @@ func TestChangePasswordHandler(t *testing.T) {
 	t.Run("change password: user not found", func(t *testing.T) {
 		body := []byte(`{
 		"password":"1234567",
+		"email":"notfound@gmail.com",
 		"confirm_password":"1234567"
 		}`)
 

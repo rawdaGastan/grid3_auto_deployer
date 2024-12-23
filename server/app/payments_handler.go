@@ -17,17 +17,17 @@ import (
 )
 
 type AddCardInput struct {
-	PaymentMethodID string `json:"payment_method_id" binding:"required"`
-	CardType        string `json:"card_type" binding:"required"`
+	TokenID   string `json:"token_id" binding:"required" validate:"nonzero"`
+	TokenType string `json:"token_type" binding:"required" validate:"nonzero"`
 }
 
 type SetDefaultCardInput struct {
-	PaymentMethodID string `json:"payment_method_id" binding:"required"`
+	PaymentMethodID string `json:"payment_method_id" binding:"required" validate:"nonzero"`
 }
 
 type ChargeBalance struct {
-	PaymentMethodID string  `json:"payment_method_id" binding:"required"`
-	Amount          float64 `json:"amount" binding:"required"`
+	PaymentMethodID string  `json:"payment_method_id" binding:"required" validate:"nonzero"`
+	Amount          float64 `json:"amount" binding:"required" validate:"nonzero"`
 }
 
 // Example endpoint: Add a new card
@@ -88,7 +88,7 @@ func (a *App) AddCardHandler(req *http.Request) (interface{}, Response) {
 		}
 	}
 
-	paymentMethod, err := createPaymentMethod(input.CardType, input.PaymentMethodID)
+	paymentMethod, err := createPaymentMethod(input.TokenType, input.TokenID)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -101,7 +101,6 @@ func (a *App) AddCardHandler(req *http.Request) (interface{}, Response) {
 	}
 
 	if !unique {
-		log.Error().Err(err).Send()
 		return nil, BadRequest(errors.New("card is added before"))
 	}
 
@@ -117,7 +116,7 @@ func (a *App) AddCardHandler(req *http.Request) (interface{}, Response) {
 			UserID:          userID,
 			PaymentMethodID: paymentMethod.ID,
 			CustomerID:      user.StripeCustomerID,
-			CardType:        input.CardType,
+			CardType:        input.TokenType,
 			ExpMonth:        paymentMethod.Card.ExpMonth,
 			ExpYear:         paymentMethod.Card.ExpYear,
 			Last4:           paymentMethod.Card.Last4,
@@ -132,7 +131,7 @@ func (a *App) AddCardHandler(req *http.Request) (interface{}, Response) {
 	// if no payment is added before then we update the user payment ID with it as a default
 	if len(strings.TrimSpace(user.StripeDefaultPaymentID)) == 0 {
 		// Update the default payment method for future payments
-		err = updateDefaultPaymentMethod(user.StripeCustomerID, input.PaymentMethodID)
+		err = updateDefaultPaymentMethod(user.StripeCustomerID, paymentMethod.ID)
 		if err != nil {
 			log.Error().Err(err).Send()
 			return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -149,9 +148,18 @@ func (a *App) AddCardHandler(req *http.Request) (interface{}, Response) {
 		}
 	}
 
-	// settle old invoices using the card
-	if err = a.payUserInvoicesUsingCards(user.ID.String(), user.StripeCustomerID, paymentMethod.ID, false); err != nil {
+	// try to settle old invoices using the card
+	invoices, err := a.db.ListUnpaidInvoices(user.ID.String())
+	if err != nil {
 		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	for _, invoice := range invoices {
+		response := a.payInvoice(&user, paymentMethod.ID, voucherAndBalanceAndCard, invoice.Total, invoice.ID)
+		if response.Err() != nil {
+			log.Error().Err(response.Err()).Send()
+		}
 	}
 
 	return ResponseMsg{
@@ -278,6 +286,15 @@ func (a *App) ListCardHandler(req *http.Request) (interface{}, Response) {
 func (a *App) DeleteCardHandler(req *http.Request) (interface{}, Response) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 
+	user, err := a.db.GetUserByID(userID)
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("user is not found"))
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
 	id, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -315,13 +332,13 @@ func (a *App) DeleteCardHandler(req *http.Request) (interface{}, Response) {
 	var vms []models.VM
 	var k8s []models.K8sCluster
 	if len(cards) == 1 {
-		vms, err = a.db.GetAllVms(userID)
+		vms, err = a.db.GetAllSuccessfulVms(userID)
 		if err != nil && err != gorm.ErrRecordNotFound {
 			log.Error().Err(err).Send()
 			return nil, InternalServerError(errors.New(internalServerErrorMsg))
 		}
 
-		k8s, err = a.db.GetAllK8s(userID)
+		k8s, err = a.db.GetAllSuccessfulK8s(userID)
 		if err != nil && err != gorm.ErrRecordNotFound {
 			log.Error().Err(err).Send()
 			return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -330,6 +347,35 @@ func (a *App) DeleteCardHandler(req *http.Request) (interface{}, Response) {
 
 	if len(vms) > 0 && len(k8s) > 0 {
 		return nil, BadRequest(errors.New("you have active deployment and cannot delete the card"))
+	}
+
+	// Update the default payment method for future payments (if deleted card is the default)
+	if card.PaymentMethodID == user.StripeDefaultPaymentID {
+		var newPaymentMethod string
+		// no more cards
+		if len(cards) == 1 {
+			newPaymentMethod = ""
+		}
+
+		for _, c := range cards {
+			if c.PaymentMethodID != user.StripeDefaultPaymentID {
+				newPaymentMethod = c.PaymentMethodID
+				if err = updateDefaultPaymentMethod(card.CustomerID, c.PaymentMethodID); err != nil {
+					log.Error().Err(err).Send()
+					return nil, InternalServerError(errors.New(internalServerErrorMsg))
+				}
+				break
+			}
+		}
+
+		err = a.db.UpdateUserPaymentMethod(userID, newPaymentMethod)
+		if err == gorm.ErrRecordNotFound {
+			return nil, NotFound(errors.New("user is not found"))
+		}
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
 	}
 
 	// If user has another cards or no active deployments, so can delete

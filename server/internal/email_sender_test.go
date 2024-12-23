@@ -24,7 +24,7 @@ func TestSendMail(t *testing.T) {
 
 func TestSignUpMailContent(t *testing.T) {
 	subject, body := SignUpMailContent(1234, 60, "user", "")
-	assert.Equal(t, subject, "Welcome to Cloud4Students 🎉")
+	assert.Equal(t, subject, "Welcome to Cloud4All 🎉")
 
 	want := string(signUpMail)
 	want = strings.ReplaceAll(want, "-code-", fmt.Sprint(1234))

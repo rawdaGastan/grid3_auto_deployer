@@ -1,6 +1,9 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+)
 
 type Card struct {
 	ID              int    `json:"id" gorm:"primaryKey"`
@@ -54,4 +57,10 @@ func (d *DB) GetUserCards(userID string) ([]Card, error) {
 func (d *DB) DeleteCard(id int) error {
 	var card Card
 	return d.db.Delete(&card, id).Error
+}
+
+// DeleteAllCards deletes all cards of user
+func (d *DB) DeleteAllCards(userID string) error {
+	var cards []Card
+	return d.db.Clauses(clause.Returning{}).Where("user_id = ?", userID).Delete(&cards).Error
 }

@@ -18,31 +18,31 @@ import (
 
 // AdminAnnouncement struct for data needed when admin sends new announcement
 type AdminAnnouncement struct {
-	Subject string `json:"subject"  binding:"required"`
-	Body    string `json:"announcement" binding:"required"`
+	Subject string `json:"subject" validate:"nonzero" binding:"required"`
+	Body    string `json:"announcement" validate:"nonzero" binding:"required"`
 }
 
 // EmailUser struct for data needed when admin sends new email to a user
 type EmailUser struct {
-	Subject string `json:"subject"  binding:"required"`
-	Body    string `json:"body" binding:"required"`
+	Subject string `json:"subject" validate:"nonzero" binding:"required"`
+	Body    string `json:"body" validate:"nonzero" binding:"required"`
 	Email   string `json:"email" binding:"required" validate:"mail"`
 }
 
 // UpdateMaintenanceInput struct for data needed when user update maintenance
 type UpdateMaintenanceInput struct {
-	ON bool `json:"on" binding:"required"`
+	ON bool `json:"on" validate:"nonzero" binding:"required"`
 }
 
 // SetAdminInput struct for setting users as admins
 type SetAdminInput struct {
-	Email string `json:"email" binding:"required"`
-	Admin bool   `json:"admin" binding:"required"`
+	Email string `json:"email" binding:"required" validate:"mail"`
+	Admin bool   `json:"admin" validate:"nonzero" binding:"required"`
 }
 
 // UpdateNextLaunchInput struct for data needed when updating next launch state
 type UpdateNextLaunchInput struct {
-	Launched bool `json:"launched" binding:"required"`
+	Launched bool `json:"launched" validate:"nonzero" binding:"required"`
 }
 
 // SetPricesInput struct for setting prices as admins
@@ -556,7 +556,7 @@ func (a *App) CreateNewAnnouncementHandler(req *http.Request) (interface{}, Resp
 // @Failure 401 {object} Response
 // @Failure 404 {object} Response
 // @Failure 500 {object} Response
-// @Router /announcement [post]
+// @Router /email [post]
 func (a *App) SendEmailHandler(req *http.Request) (interface{}, Response) {
 	var emailUser EmailUser
 	err := json.NewDecoder(req.Body).Decode(&emailUser)

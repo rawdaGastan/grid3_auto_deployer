@@ -21,16 +21,16 @@ import (
 // K8sDeployInput deploy k8s cluster input
 type K8sDeployInput struct {
 	MasterName      string        `json:"master_name" validate:"min=3,max=20"`
-	MasterResources string        `json:"resources"`
-	MasterPublic    bool          `json:"public"`
-	MasterRegion    string        `json:"region"`
+	MasterResources string        `json:"resources" validate:"nonzero"`
+	MasterPublic    bool          `json:"public" validate:"nonzero"`
+	MasterRegion    string        `json:"region" validate:"nonzero"`
 	Workers         []WorkerInput `json:"workers"`
 }
 
 // WorkerInput deploy k8s worker input
 type WorkerInput struct {
 	Name      string `json:"name" validate:"min=3,max=20"`
-	Resources string `json:"resources"`
+	Resources string `json:"resources" validate:"nonzero"`
 }
 
 // K8sDeployHandler deploy k8s handler

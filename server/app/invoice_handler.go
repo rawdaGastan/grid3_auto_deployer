@@ -38,7 +38,7 @@ var methods = []method{
 }
 
 type PayInvoiceInput struct {
-	Method        method `json:"method" binding:"required"`
+	Method        method `json:"method" validate:"nonzero" binding:"required"`
 	CardPaymentID string `json:"card_payment_id"`
 }
 
@@ -179,144 +179,13 @@ func (a *App) PayInvoiceHandler(req *http.Request) (interface{}, Response) {
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	var paymentDetails models.PaymentDetails
-
-	switch input.Method {
-	case card:
-		_, err := createPaymentIntent(user.StripeCustomerID, input.CardPaymentID, a.config.Currency, invoice.Total)
-		if err != nil {
-			log.Error().Err(err).Send()
-			return nil, BadRequest(errors.New("payment failed, please try again later or report the problem"))
-		}
-
-		paymentDetails = models.PaymentDetails{Card: invoice.Total}
-
-	case balance:
-		if user.Balance < invoice.Total {
-			return nil, BadRequest(errors.New("balance is not enough to pay the invoice"))
-		}
-
-		paymentDetails = models.PaymentDetails{Balance: invoice.Total}
-
-		user.Balance -= invoice.Total
-		if err = a.db.UpdateUserByID(user); err != nil {
-			log.Error().Err(err).Send()
-			return nil, InternalServerError(errors.New(internalServerErrorMsg))
-		}
-
-	case voucher:
-		if user.VoucherBalance < invoice.Total {
-			return nil, BadRequest(errors.New("voucher balance is not enough to pay the invoice"))
-		}
-
-		paymentDetails = models.PaymentDetails{VoucherBalance: invoice.Total}
-
-		user.VoucherBalance -= invoice.Total
-		if err = a.db.UpdateUserByID(user); err != nil {
-			log.Error().Err(err).Send()
-			return nil, InternalServerError(errors.New(internalServerErrorMsg))
-		}
-
-	case voucherAndBalance:
-		if user.VoucherBalance+user.Balance < invoice.Total {
-			return nil, BadRequest(errors.New("voucher balance and balance are not enough to pay the invoice"))
-		}
-
-		if user.VoucherBalance > invoice.Total {
-			paymentDetails = models.PaymentDetails{VoucherBalance: invoice.Total}
-			user.VoucherBalance -= invoice.Total
-		} else {
-			paymentDetails = models.PaymentDetails{VoucherBalance: user.VoucherBalance, Balance: (invoice.Total - user.VoucherBalance)}
-			user.Balance = (invoice.Total - user.VoucherBalance)
-			user.VoucherBalance = 0
-		}
-
-		if err = a.db.UpdateUserByID(user); err != nil {
-			log.Error().Err(err).Send()
-			return nil, InternalServerError(errors.New(internalServerErrorMsg))
-		}
-
-	case voucherAndCard:
-		if user.VoucherBalance > invoice.Total {
-			paymentDetails = models.PaymentDetails{VoucherBalance: invoice.Total}
-			user.VoucherBalance -= invoice.Total
-		} else {
-			paymentDetails = models.PaymentDetails{VoucherBalance: user.VoucherBalance, Card: (invoice.Total - user.VoucherBalance)}
-			_, err := createPaymentIntent(user.StripeCustomerID, input.CardPaymentID, a.config.Currency, invoice.Total-user.VoucherBalance)
-			if err != nil {
-				log.Error().Err(err).Send()
-				return nil, BadRequest(errors.New("payment failed, please try again later or report the problem"))
-			}
-			user.VoucherBalance = 0
-		}
-
-		if err = a.db.UpdateUserByID(user); err != nil {
-			log.Error().Err(err).Send()
-			return nil, InternalServerError(errors.New(internalServerErrorMsg))
-		}
-
-	case balanceAndCard:
-		if user.Balance > invoice.Total {
-			paymentDetails = models.PaymentDetails{Balance: invoice.Total}
-			user.Balance -= invoice.Total
-		} else {
-			_, err := createPaymentIntent(user.StripeCustomerID, input.CardPaymentID, a.config.Currency, invoice.Total-user.Balance)
-			if err != nil {
-				log.Error().Err(err).Send()
-				return nil, BadRequest(errors.New("payment failed, please try again later or report the problem"))
-			}
-			paymentDetails = models.PaymentDetails{Balance: user.Balance, Card: (invoice.Total - user.Balance)}
-			user.Balance = 0
-		}
-
-		if err = a.db.UpdateUserByID(user); err != nil {
-			log.Error().Err(err).Send()
-			return nil, InternalServerError(errors.New(internalServerErrorMsg))
-		}
-
-	case voucherAndBalanceAndCard:
-		if user.VoucherBalance > invoice.Total {
-			paymentDetails = models.PaymentDetails{Balance: invoice.Total}
-			user.VoucherBalance -= invoice.Total
-		} else if user.Balance+user.VoucherBalance > invoice.Total {
-			paymentDetails = models.PaymentDetails{VoucherBalance: user.VoucherBalance, Balance: (invoice.Total - user.VoucherBalance)}
-			user.Balance = (invoice.Total - user.VoucherBalance)
-			user.VoucherBalance = 0
-		} else {
-			_, err := createPaymentIntent(user.StripeCustomerID, input.CardPaymentID, a.config.Currency, invoice.Total-user.VoucherBalance-user.Balance)
-			if err != nil {
-				log.Error().Err(err).Send()
-				return nil, BadRequest(errors.New("payment failed, please try again later or report the problem"))
-			}
-			paymentDetails = models.PaymentDetails{
-				Balance: user.Balance, VoucherBalance: user.VoucherBalance,
-				Card: (invoice.Total - user.Balance - user.VoucherBalance),
-			}
-			user.VoucherBalance = 0
-			user.Balance = 0
-		}
-
-		if err = a.db.UpdateUserByID(user); err != nil {
-			log.Error().Err(err).Send()
-			return nil, InternalServerError(errors.New(internalServerErrorMsg))
-		}
-
-	default:
-		return nil, BadRequest(fmt.Errorf("invalid payment method, only methods allowed %v", methods))
-	}
-
-	err = a.db.PayInvoice(id, paymentDetails)
-	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("invoice is not found"))
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	response := a.payInvoice(&user, input.CardPaymentID, input.Method, invoice.Total, id)
+	if response.Err() != nil {
+		return nil, response
 	}
 
 	return ResponseMsg{
 		Message: "Invoice is paid successfully",
-		Data:    nil,
 	}, Ok()
 }
 
@@ -348,19 +217,47 @@ func (a *App) monthlyInvoices() {
 				log.Error().Err(err).Send()
 			}
 
-			// 2. Use balance/voucher balance to pay invoices
-			user.Balance, user.VoucherBalance, err = a.db.PayUserInvoices(user.ID.String(), user.Balance, user.VoucherBalance)
+			// 2. Pay invoices
+			invoices, err := a.db.ListUnpaidInvoices(user.ID.String())
 			if err != nil {
 				log.Error().Err(err).Send()
-			} else {
-				if err = a.db.UpdateUserByID(user); err != nil {
-					log.Error().Err(err).Send()
-				}
 			}
 
-			// 3. Use cards to pay invoices
-			if err = a.payUserInvoicesUsingCards(user.ID.String(), user.StripeCustomerID, user.StripeDefaultPaymentID, true); err != nil {
-				log.Error().Err(err).Send()
+			for _, invoice := range invoices {
+				cards, err := a.db.GetUserCards(user.ID.String())
+				if err != nil {
+					log.Error().Err(err).Send()
+				}
+
+				// No cards option
+				if len(cards) == 0 {
+					response := a.payInvoice(&user, "", voucherAndBalance, invoice.Total, invoice.ID)
+					if response.Err() != nil {
+						log.Error().Err(response.Err()).Send()
+					}
+					continue
+				}
+
+				// Use default card
+				response := a.payInvoice(&user, user.StripeDefaultPaymentID, voucherAndBalanceAndCard, invoice.Total, invoice.ID)
+				if response.Err() != nil {
+					log.Error().Err(response.Err()).Send()
+				} else {
+					continue
+				}
+
+				for _, card := range cards {
+					if card.PaymentMethodID == user.StripeDefaultPaymentID {
+						continue
+					}
+
+					response := a.payInvoice(&user, card.PaymentMethodID, voucherAndBalanceAndCard, invoice.Total, invoice.ID)
+					if response.Err() != nil {
+						log.Error().Err(response.Err()).Send()
+						continue
+					}
+					break
+				}
 			}
 
 			// 4. Delete expired deployments with invoices not paid for more than 3 months
@@ -379,15 +276,14 @@ func (a *App) monthlyInvoices() {
 }
 
 func (a *App) createInvoice(userID string, now time.Time) error {
-	usagePercentageInMonth := deployer.UsagePercentageInMonth(now)
-	firstDayOfMonth := time.Date(now.Year(), now.Month(), 0, 0, 0, 0, 0, time.Local)
+	monthStart := time.Date(now.Year(), now.Month(), 0, 0, 0, 0, 0, time.Local)
 
-	vms, err := a.db.GetAllVms(userID)
+	vms, err := a.db.GetAllSuccessfulVms(userID)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
 
-	k8s, err := a.db.GetAllK8s(userID)
+	k8s, err := a.db.GetAllSuccessfulK8s(userID)
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -396,6 +292,16 @@ func (a *App) createInvoice(userID string, now time.Time) error {
 	var total float64
 
 	for _, vm := range vms {
+		usageStart := monthStart
+		if vm.CreatedAt.After(monthStart) {
+			usageStart = vm.CreatedAt
+		}
+
+		usagePercentageInMonth, err := deployer.UsagePercentageInMonth(usageStart, now)
+		if err != nil {
+			return err
+		}
+
 		cost := float64(vm.PricePerMonth) * usagePercentageInMonth
 
 		items = append(items, models.DeploymentItem{
@@ -403,7 +309,7 @@ func (a *App) createInvoice(userID string, now time.Time) error {
 			DeploymentType:      "vm",
 			DeploymentID:        vm.ID,
 			HasPublicIP:         vm.Public,
-			PeriodInHours:       time.Since(firstDayOfMonth).Hours(),
+			PeriodInHours:       time.Since(usageStart).Hours(),
 			Cost:                cost,
 		})
 
@@ -411,6 +317,16 @@ func (a *App) createInvoice(userID string, now time.Time) error {
 	}
 
 	for _, cluster := range k8s {
+		usageStart := monthStart
+		if cluster.CreatedAt.After(monthStart) {
+			usageStart = cluster.CreatedAt
+		}
+
+		usagePercentageInMonth, err := deployer.UsagePercentageInMonth(usageStart, now)
+		if err != nil {
+			return err
+		}
+
 		cost := float64(cluster.PricePerMonth) * usagePercentageInMonth
 
 		items = append(items, models.DeploymentItem{
@@ -418,68 +334,20 @@ func (a *App) createInvoice(userID string, now time.Time) error {
 			DeploymentType:      "k8s",
 			DeploymentID:        cluster.ID,
 			HasPublicIP:         cluster.Master.Public,
-			PeriodInHours:       time.Since(firstDayOfMonth).Hours(),
+			PeriodInHours:       time.Since(usageStart).Hours(),
 			Cost:                cost,
 		})
 
 		total += cost
 	}
 
-	if err = a.db.CreateInvoice(&models.Invoice{
-		UserID:      userID,
-		Total:       total,
-		Deployments: items,
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// payUserInvoicesUsingCards tries to pay invoices with user cards
-func (a *App) payUserInvoicesUsingCards(userID, customerID, defaultPaymentMethod string, useOtherCards bool) error {
-	// get unpaid invoices
-	invoices, err := a.db.ListUnpaidInvoices(userID)
-	if err != nil {
-		return err
-	}
-
-	cards, err := a.db.GetUserCards(userID)
-	if err != nil {
-		return err
-	}
-
-	for _, invoice := range invoices {
-		// 1. use default payment method
-		if len(defaultPaymentMethod) != 0 {
-			_, err := createPaymentIntent(customerID, defaultPaymentMethod, a.config.Currency, invoice.Total)
-			if err != nil {
-				log.Error().Err(err).Send()
-			} else {
-				if err := a.db.PayInvoice(invoice.ID, models.PaymentDetails{Card: invoice.Total}); err != nil {
-					log.Error().Err(err).Send()
-				}
-				continue
-			}
-		}
-
-		if !useOtherCards {
-			continue
-		}
-
-		// 2. check other user cards
-		for _, card := range cards {
-			if defaultPaymentMethod != card.PaymentMethodID {
-				_, err := createPaymentIntent(customerID, card.PaymentMethodID, a.config.Currency, invoice.Total)
-				if err != nil {
-					log.Error().Err(err).Send()
-				} else {
-					if err := a.db.PayInvoice(invoice.ID, models.PaymentDetails{Card: invoice.Total}); err != nil {
-						log.Error().Err(err).Send()
-					}
-					break
-				}
-			}
+	if len(items) > 0 {
+		if err = a.db.CreateInvoice(&models.Invoice{
+			UserID:      userID,
+			Total:       total,
+			Deployments: items,
+		}); err != nil {
+			return err
 		}
 	}
 
@@ -593,6 +461,144 @@ func (a *App) sendInvoiceReminderToUser(userID, userEmail, userName string, now 
 				log.Error().Err(err).Send()
 			}
 		}
+	}
+
+	return nil
+}
+
+func (a *App) pay(user *models.User, cardPaymentID string, method method, invoiceTotal float64) (models.PaymentDetails, error) {
+	var paymentDetails models.PaymentDetails
+
+	switch method {
+	case card:
+		_, err := createPaymentIntent(user.StripeCustomerID, cardPaymentID, a.config.Currency, invoiceTotal)
+		if err != nil {
+			log.Error().Err(err).Send()
+			return paymentDetails, errors.New("payment failed, please try again later or report the problem")
+		}
+
+		paymentDetails = models.PaymentDetails{Card: invoiceTotal}
+
+	case balance:
+		if user.Balance < invoiceTotal {
+			return paymentDetails, errors.New("balance is not enough to pay the invoice")
+		}
+
+		paymentDetails = models.PaymentDetails{Balance: invoiceTotal}
+		user.Balance -= invoiceTotal
+
+	case voucher:
+		if user.VoucherBalance < invoiceTotal {
+			return paymentDetails, errors.New("voucher balance is not enough to pay the invoice")
+		}
+
+		paymentDetails = models.PaymentDetails{VoucherBalance: invoiceTotal}
+		user.VoucherBalance -= invoiceTotal
+
+	case voucherAndBalance:
+		if user.VoucherBalance+user.Balance < invoiceTotal {
+			return paymentDetails, errors.New("voucher balance and balance are not enough to pay the invoice")
+		}
+
+		if user.VoucherBalance >= invoiceTotal {
+			paymentDetails = models.PaymentDetails{VoucherBalance: invoiceTotal}
+			user.VoucherBalance -= invoiceTotal
+		} else {
+			paymentDetails = models.PaymentDetails{VoucherBalance: user.VoucherBalance, Balance: (invoiceTotal - user.VoucherBalance)}
+			user.Balance = (invoiceTotal - user.VoucherBalance)
+			user.VoucherBalance = 0
+		}
+
+	case voucherAndCard:
+		if user.VoucherBalance >= invoiceTotal {
+			paymentDetails = models.PaymentDetails{VoucherBalance: invoiceTotal}
+			user.VoucherBalance -= invoiceTotal
+		} else {
+			paymentDetails = models.PaymentDetails{VoucherBalance: user.VoucherBalance, Card: (invoiceTotal - user.VoucherBalance)}
+			_, err := createPaymentIntent(user.StripeCustomerID, cardPaymentID, a.config.Currency, invoiceTotal-user.VoucherBalance)
+			if err != nil {
+				log.Error().Err(err).Send()
+				return paymentDetails, errors.New("payment failed, please try again later or report the problem")
+			}
+			user.VoucherBalance = 0
+		}
+
+	case balanceAndCard:
+		if user.Balance >= invoiceTotal {
+			paymentDetails = models.PaymentDetails{Balance: invoiceTotal}
+			user.Balance -= invoiceTotal
+		} else {
+			_, err := createPaymentIntent(user.StripeCustomerID, cardPaymentID, a.config.Currency, invoiceTotal-user.Balance)
+			if err != nil {
+				log.Error().Err(err).Send()
+				return paymentDetails, errors.New("payment failed, please try again later or report the problem")
+			}
+			paymentDetails = models.PaymentDetails{Balance: user.Balance, Card: (invoiceTotal - user.Balance)}
+			user.Balance = 0
+		}
+
+	case voucherAndBalanceAndCard:
+		if user.VoucherBalance >= invoiceTotal {
+			paymentDetails = models.PaymentDetails{Balance: invoiceTotal}
+			user.VoucherBalance -= invoiceTotal
+
+		} else if user.Balance+user.VoucherBalance >= invoiceTotal {
+			paymentDetails = models.PaymentDetails{VoucherBalance: user.VoucherBalance, Balance: (invoiceTotal - user.VoucherBalance)}
+			user.Balance = (invoiceTotal - user.VoucherBalance)
+			user.VoucherBalance = 0
+
+		} else {
+			_, err := createPaymentIntent(user.StripeCustomerID, cardPaymentID, a.config.Currency, invoiceTotal-user.VoucherBalance-user.Balance)
+			if err != nil {
+				log.Error().Err(err).Send()
+				return paymentDetails, errors.New("payment failed, please try again later or report the problem")
+			}
+
+			paymentDetails = models.PaymentDetails{
+				Balance: user.Balance, VoucherBalance: user.VoucherBalance,
+				Card: (invoiceTotal - user.Balance - user.VoucherBalance),
+			}
+			user.VoucherBalance = 0
+			user.Balance = 0
+		}
+
+	default:
+		return paymentDetails, fmt.Errorf("invalid payment method, only methods allowed %v", methods)
+	}
+
+	return paymentDetails, nil
+}
+
+func (a *App) payInvoice(user *models.User, cardPaymentID string, method method, invoiceTotal float64, invoiceID int) Response {
+	paymentDetails, err := a.pay(user, cardPaymentID, method, invoiceTotal)
+	if err != nil {
+		return BadRequest(errors.New(internalServerErrorMsg))
+	}
+
+	// invoice used voucher balance
+	if paymentDetails.VoucherBalance != 0 {
+		if err = a.db.UpdateUserVoucherBalance(user.ID.String(), user.VoucherBalance); err != nil {
+			log.Error().Err(err).Send()
+			return InternalServerError(errors.New(internalServerErrorMsg))
+		}
+	}
+
+	// invoice used balance
+	if paymentDetails.Balance != 0 {
+		if err = a.db.UpdateUserBalance(user.ID.String(), user.Balance); err != nil {
+			log.Error().Err(err).Send()
+			return InternalServerError(errors.New(internalServerErrorMsg))
+		}
+	}
+
+	paymentDetails.InvoiceID = invoiceID
+	err = a.db.PayInvoice(invoiceID, paymentDetails)
+	if err == gorm.ErrRecordNotFound {
+		return NotFound(errors.New("invoice is not found"))
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		return InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
 	return nil

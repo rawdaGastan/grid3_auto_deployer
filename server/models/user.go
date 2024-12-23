@@ -13,7 +13,7 @@ import (
 type User struct {
 	ID                     uuid.UUID `gorm:"primary_key; unique; type:uuid; column:id"`
 	StripeCustomerID       string    `json:"stripe_customer_id"`
-	StripeDefaultPaymentID string    `json:"stripe_payment_method_id"`
+	StripeDefaultPaymentID string    `json:"stripe_default_payment_id"`
 	FirstName              string    `json:"first_name" binding:"required"`
 	LastName               string    `json:"last_name" binding:"required"`
 	Email                  string    `json:"email" gorm:"unique" binding:"required"`
@@ -105,9 +105,32 @@ func (d *DB) UpdateAdminUserByID(id string, admin bool) error {
 	return d.db.Model(&User{}).Where("id = ?", id).Updates(map[string]interface{}{"admin": admin, "updated_at": time.Now()}).Error
 }
 
+// UpdateUserPaymentMethod updates user payment method ID
+func (d *DB) UpdateUserPaymentMethod(id string, paymentID string) error {
+	var res User
+	return d.db.Model(&res).Where("id = ?", id).Update("stripe_default_payment_id", paymentID).Error
+}
+
+// UpdateUserBalance updates user balance
+func (d *DB) UpdateUserBalance(id string, balance float64) error {
+	var res User
+	return d.db.Model(&res).Where("id = ?", id).Update("balance", balance).Error
+}
+
+// UpdateUserVoucherBalance updates user voucher balance
+func (d *DB) UpdateUserVoucherBalance(id string, balance float64) error {
+	var res User
+	return d.db.Model(&res).Where("id = ?", id).Update("voucher_balance", balance).Error
+}
+
 // UpdateUserVerification updates if user is verified or not
 func (d *DB) UpdateUserVerification(id string, verified bool) error {
 	var res User
-	result := d.db.Model(&res).Where("id=?", id).Update("verified", verified)
-	return result.Error
+	return d.db.Model(&res).Where("id = ?", id).Update("verified", verified).Error
+}
+
+// DeleteUser deletes user by its id
+func (d *DB) DeleteUser(id string) error {
+	var user User
+	return d.db.Where("id = ?", id).Delete(&user).Error
 }

@@ -32,19 +32,19 @@ type SignUpInput struct {
 
 // VerifyCodeInput struct takes verification code from user
 type VerifyCodeInput struct {
-	Email string `json:"email" binding:"required"`
-	Code  int    `json:"code" binding:"required"`
+	Email string `json:"email" binding:"required" validate:"mail"`
+	Code  int    `json:"code" binding:"required" validate:"nonzero"`
 }
 
 // SignInInput struct for data needed when user sign in
 type SignInInput struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Email    string `json:"email" binding:"required" validate:"mail"`
+	Password string `json:"password" binding:"required" validate:"password"`
 }
 
 // ChangePasswordInput struct for user to change password
 type ChangePasswordInput struct {
-	Email           string `json:"email" binding:"required"`
+	Email           string `json:"email" binding:"required" validate:"mail"`
 	Password        string `json:"password" binding:"required" validate:"password"`
 	ConfirmPassword string `json:"confirm_password" binding:"required" validate:"password"`
 }
@@ -60,7 +60,7 @@ type UpdateUserInput struct {
 
 // EmailInput struct for user when forgetting password
 type EmailInput struct {
-	Email string `json:"email" binding:"required"`
+	Email string `json:"email" binding:"required" validate:"mail"`
 }
 
 // ApplyForVoucherInput struct for user to apply for voucher
@@ -71,20 +71,26 @@ type ApplyForVoucherInput struct {
 
 // AddVoucherInput struct for voucher applied by user
 type AddVoucherInput struct {
-	Voucher string `json:"voucher" binding:"required"`
+	Voucher string `json:"voucher" binding:"required" validate:"nonzero"`
 }
 
 type CodeTimeout struct {
-	Timeout int `json:"timeout" binding:"required"`
+	Timeout int `json:"timeout" binding:"required" validate:"nonzero"`
 }
 
-type AccessToken struct {
-	Token string `json:"access_token" binding:"required"`
+type AccessTokenResponse struct {
+	Token   string `json:"access_token"`
+	Timeout int    `json:"timeout"`
 }
 
-type RefreshToken struct {
-	Access  string `json:"access_token" binding:"required"`
-	Refresh string `json:"refresh_token" binding:"required"`
+type RefreshTokenResponse struct {
+	Access  string `json:"access_token"`
+	Refresh string `json:"refresh_token"`
+	Timeout int    `json:"timeout"`
+}
+
+type clientSecretResponse struct {
+	ClientSecret string `json:"client_secret"`
 }
 
 // SignUpHandler creates account for user
@@ -258,7 +264,7 @@ func (a *App) VerifySignUpCodeHandler(req *http.Request) (interface{}, Response)
 // @Accept  json
 // @Produce  json
 // @Param login body SignInInput true "User login input"
-// @Success 201 {object} AccessToken
+// @Success 201 {object} AccessTokenResponse
 // @Failure 400 {object} Response
 // @Failure 401 {object} Response
 // @Failure 404 {object} Response
@@ -298,7 +304,7 @@ func (a *App) SignInHandler(req *http.Request) (interface{}, Response) {
 
 	return ResponseMsg{
 		Message: "You are signed in successfully",
-		Data:    AccessToken{Token: token},
+		Data:    AccessTokenResponse{Token: token, Timeout: a.config.Token.Timeout},
 	}, Created()
 }
 
@@ -310,7 +316,7 @@ func (a *App) SignInHandler(req *http.Request) (interface{}, Response) {
 // @Accept  json
 // @Produce  json
 // @Security BearerAuth
-// @Success 201 {object} RefreshToken
+// @Success 201 {object} RefreshTokenResponse
 // @Failure 400 {object} Response
 // @Failure 401 {object} Response
 // @Failure 404 {object} Response
@@ -357,7 +363,7 @@ func (a *App) RefreshJWTHandler(req *http.Request) (interface{}, Response) {
 
 	return ResponseMsg{
 		Message: "Token is refreshed successfully",
-		Data:    RefreshToken{Access: reqToken, Refresh: newToken},
+		Data:    RefreshTokenResponse{Access: reqToken, Refresh: newToken, Timeout: a.config.Token.Timeout},
 	}, Created()
 }
 
@@ -368,6 +374,7 @@ func (a *App) RefreshJWTHandler(req *http.Request) (interface{}, Response) {
 // @Tags User
 // @Accept  json
 // @Produce  json
+// @Param forgetPassword body EmailInput true "User forget password input"
 // @Success 201 {object} CodeTimeout
 // @Failure 400 {object} Response
 // @Failure 401 {object} Response
@@ -430,14 +437,15 @@ func (a *App) ForgotPasswordHandler(req *http.Request) (interface{}, Response) {
 // @Tags User
 // @Accept  json
 // @Produce  json
-// @Success 201 {object} AccessToken
+// @Param forgetPassword body VerifyCodeInput true "User Verify forget password input"
+// @Success 201 {object} AccessTokenResponse
 // @Failure 400 {object} Response
 // @Failure 401 {object} Response
 // @Failure 404 {object} Response
 // @Failure 500 {object} Response
-// @Router /user/forgot_password/verify_email [post]
+// @Router /user/forget_password/verify_email [post]
 func (a *App) VerifyForgetPasswordCodeHandler(req *http.Request) (interface{}, Response) {
-	data := VerifyCodeInput{}
+	var data VerifyCodeInput
 	err := json.NewDecoder(req.Body).Decode(&data)
 	if err != nil {
 		log.Error().Err(err).Send()
@@ -474,7 +482,7 @@ func (a *App) VerifyForgetPasswordCodeHandler(req *http.Request) (interface{}, R
 
 	return ResponseMsg{
 		Message: "Code is verified",
-		Data:    AccessToken{Token: token},
+		Data:    AccessTokenResponse{Token: token, Timeout: a.config.Token.Timeout},
 	}, Ok()
 }
 
@@ -783,16 +791,27 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 
 	user.VoucherBalance += float64(voucherBalance.Balance)
 
-	user.Balance, user.VoucherBalance, err = a.db.PayUserInvoices(userID, user.Balance, user.VoucherBalance)
+	// try to settle old invoices
+	invoices, err := a.db.ListUnpaidInvoices(user.ID.String())
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	err = a.db.UpdateUserByID(user)
-	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("user is not found"))
+	for _, invoice := range invoices {
+		response := a.payInvoice(&user, "", voucherAndBalance, invoice.Total, invoice.ID)
+		if response.Err() != nil {
+			log.Error().Err(response.Err()).Send()
+		}
 	}
+
+	err = a.db.UpdateUserVoucherBalance(user.ID.String(), user.VoucherBalance)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	err = a.db.UpdateUserBalance(user.ID.String(), user.Balance)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -821,6 +840,7 @@ func (a *App) ActivateVoucherHandler(req *http.Request) (interface{}, Response) 
 // @Failure 500 {object} Response
 // @Router /user/charge_balance [put]
 func (a *App) ChargeBalance(req *http.Request) (interface{}, Response) {
+
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 
 	var input ChargeBalance
@@ -845,7 +865,7 @@ func (a *App) ChargeBalance(req *http.Request) (interface{}, Response) {
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	_, err = createPaymentIntent(user.StripeCustomerID, input.PaymentMethodID, a.config.Currency, input.Amount)
+	intent, err := createPaymentIntent(user.StripeCustomerID, input.PaymentMethodID, a.config.Currency, input.Amount)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -853,13 +873,185 @@ func (a *App) ChargeBalance(req *http.Request) (interface{}, Response) {
 
 	user.Balance += float64(input.Amount)
 
-	user.Balance, user.VoucherBalance, err = a.db.PayUserInvoices(userID, user.Balance, user.VoucherBalance)
+	// try to settle old invoices
+	invoices, err := a.db.ListUnpaidInvoices(user.ID.String())
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
 	}
 
-	err = a.db.UpdateUserByID(user)
+	for _, invoice := range invoices {
+		response := a.payInvoice(&user, "", voucherAndBalance, invoice.Total, invoice.ID)
+		if response.Err() != nil {
+			log.Error().Err(response.Err()).Send()
+		}
+	}
+
+	err = a.db.UpdateUserBalance(user.ID.String(), user.Balance)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	err = a.db.UpdateUserVoucherBalance(user.ID.String(), user.VoucherBalance)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	return ResponseMsg{
+		Message: "Balance is charged successfully",
+		Data:    clientSecretResponse{ClientSecret: intent.ClientSecret},
+	}, Ok()
+}
+
+// DeleteUserHandler deletes account for user
+// Example endpoint: Deletes account for user
+// @Summary Deletes account for user
+// @Description Deletes account for user
+// @Tags User
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /user [delete]
+func (a *App) DeleteUserHandler(req *http.Request) (interface{}, Response) {
+	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
+	user, err := a.db.GetUserByID(userID)
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("user is not found"))
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	// 1. Create last invoice to pay if there were active deployments
+	if err := a.createInvoice(userID, time.Now()); err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	invoices, err := a.db.ListUnpaidInvoices(userID)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	// 2. Try to pay invoices
+	for _, invoice := range invoices {
+		cards, err := a.db.GetUserCards(user.ID.String())
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+
+		// No cards option
+		if len(cards) == 0 {
+			response := a.payInvoice(&user, "", voucherAndBalance, invoice.Total, invoice.ID)
+			if response.Err() != nil {
+				log.Error().Err(response.Err()).Send()
+				return nil, InternalServerError(errors.New(internalServerErrorMsg))
+			}
+			continue
+		}
+
+		// Use default card
+		response := a.payInvoice(&user, user.StripeDefaultPaymentID, voucherAndBalanceAndCard, invoice.Total, invoice.ID)
+		if response.Err() != nil {
+			log.Error().Err(response.Err()).Send()
+		} else {
+			continue
+		}
+
+		for _, card := range cards {
+			if card.PaymentMethodID == user.StripeDefaultPaymentID {
+				continue
+			}
+
+			response := a.payInvoice(&user, card.PaymentMethodID, voucherAndBalanceAndCard, invoice.Total, invoice.ID)
+			if response.Err() != nil {
+				log.Error().Err(response.Err()).Send()
+				continue
+			}
+			break
+		}
+
+		return nil, BadRequest(errors.New("failed to pay your invoices, please pay them first before deleting your account"))
+	}
+
+	// 3. Delete user vms
+	vms, err := a.db.GetAllVms(userID)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	for _, vm := range vms {
+		err = a.deployer.CancelDeployment(vm.ContractID, vm.NetworkContractID, "vm", vm.Name)
+		if err != nil && !strings.Contains(err.Error(), "ContractNotExists") {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+	}
+
+	err = a.db.DeleteAllVms(userID)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	// 4. Delete user k8s
+	clusters, err := a.db.GetAllK8s(userID)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	for _, cluster := range clusters {
+		err = a.deployer.CancelDeployment(uint64(cluster.ClusterContract), uint64(cluster.NetworkContract), "k8s", cluster.Master.Name)
+		if err != nil && !strings.Contains(err.Error(), "ContractNotExists") {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+	}
+
+	if len(clusters) > 0 {
+		err = a.db.DeleteAllK8s(userID)
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+	}
+
+	// 5. Remove cards
+	cards, err := a.db.GetUserCards(userID)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	for _, card := range cards {
+		err = detachPaymentMethod(card.PaymentMethodID)
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+	}
+
+	err = a.db.DeleteAllCards(userID)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	// 6. TODO: should invoices be deleted?
+
+	// 7. Remove cards
+	err = a.db.DeleteUser(userID)
 	if err == gorm.ErrRecordNotFound {
 		return nil, NotFound(errors.New("user is not found"))
 	}
@@ -869,8 +1061,6 @@ func (a *App) ChargeBalance(req *http.Request) (interface{}, Response) {
 	}
 
 	return ResponseMsg{
-		Message: "Balance is charged successfully",
-		// Data:    map[string]string{"client_secret": intent.ClientSecret},
-		Data: nil,
+		Message: "User is deleted successfully",
 	}, Ok()
 }

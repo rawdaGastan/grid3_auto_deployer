@@ -30,7 +30,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Creates a new administrator email and sends it to a specific user as an email and notification",
+                "description": "Creates a new administrator announcement and sends it to all users as an email and notification",
                 "consumes": [
                     "application/json"
                 ],
@@ -40,15 +40,15 @@ const docTemplate = `{
                 "tags": [
                     "Admin"
                 ],
-                "summary": "Creates a new administrator email and sends it to a specific user as an email and notification",
+                "summary": "Creates a new administrator announcement and sends it to all users as an email and notification",
                 "parameters": [
                     {
-                        "description": "email to be sent",
-                        "name": "email",
+                        "description": "announcement to be created",
+                        "name": "announcement",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/app.EmailUser"
+                            "$ref": "#/definitions/app.AdminAnnouncement"
                         }
                     }
                 ],
@@ -224,6 +224,59 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/models.DeploymentsCount"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            }
+        },
+        "/email": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new administrator email and sends it to a specific user as an email and notification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Creates a new administrator email and sends it to a specific user as an email and notification",
+                "parameters": [
+                    {
+                        "description": "email to be sent",
+                        "name": "email",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app.EmailUser"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {}
                     },
                     "400": {
                         "description": "Bad Request",
@@ -1234,6 +1287,42 @@ const docTemplate = `{
                         "schema": {}
                     }
                 }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes account for user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Deletes account for user",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {}
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
             }
         },
         "/user/activate_voucher": {
@@ -1697,9 +1786,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/user/forgot_password": {
+        "/user/forget_password/verify_email": {
             "post": {
-                "description": "Send code to forget password email for verification",
+                "description": "Verify user's email to reset password",
                 "consumes": [
                     "application/json"
                 ],
@@ -1709,12 +1798,23 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
-                "summary": "Send code to forget password email for verification",
+                "summary": "Verify user's email to reset password",
+                "parameters": [
+                    {
+                        "description": "User Verify forget password input",
+                        "name": "forgetPassword",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app.VerifyCodeInput"
+                        }
+                    }
+                ],
                 "responses": {
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/app.CodeTimeout"
+                            "$ref": "#/definitions/app.AccessTokenResponse"
                         }
                     },
                     "400": {
@@ -1736,9 +1836,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/user/forgot_password/verify_email": {
+        "/user/forgot_password": {
             "post": {
-                "description": "Verify user's email to reset password",
+                "description": "Send code to forget password email for verification",
                 "consumes": [
                     "application/json"
                 ],
@@ -1748,12 +1848,23 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
-                "summary": "Verify user's email to reset password",
+                "summary": "Send code to forget password email for verification",
+                "parameters": [
+                    {
+                        "description": "User forget password input",
+                        "name": "forgetPassword",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/app.EmailInput"
+                        }
+                    }
+                ],
                 "responses": {
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/app.AccessToken"
+                            "$ref": "#/definitions/app.CodeTimeout"
                         }
                     },
                     "400": {
@@ -1797,7 +1908,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/app.RefreshToken"
+                            "$ref": "#/definitions/app.RefreshTokenResponse"
                         }
                     },
                     "400": {
@@ -1847,7 +1958,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/app.AccessToken"
+                            "$ref": "#/definitions/app.AccessTokenResponse"
                         }
                     },
                     "400": {
@@ -2380,7 +2491,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/voucher/reset": {
+        "/voucher/all/reset": {
             "put": {
                 "security": [
                     {
@@ -2486,28 +2597,28 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "app.AccessToken": {
+        "app.AccessTokenResponse": {
             "type": "object",
-            "required": [
-                "access_token"
-            ],
             "properties": {
                 "access_token": {
                     "type": "string"
+                },
+                "timeout": {
+                    "type": "integer"
                 }
             }
         },
         "app.AddCardInput": {
             "type": "object",
             "required": [
-                "card_type",
-                "payment_method_id"
+                "token_id",
+                "token_type"
             ],
             "properties": {
-                "card_type": {
+                "token_id": {
                     "type": "string"
                 },
-                "payment_method_id": {
+                "token_type": {
                     "type": "string"
                 }
             }
@@ -2622,6 +2733,17 @@ const docTemplate = `{
                 }
             }
         },
+        "app.EmailInput": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
         "app.EmailUser": {
             "type": "object",
             "required": [
@@ -2714,18 +2836,17 @@ const docTemplate = `{
                 }
             }
         },
-        "app.RefreshToken": {
+        "app.RefreshTokenResponse": {
             "type": "object",
-            "required": [
-                "access_token",
-                "refresh_token"
-            ],
             "properties": {
                 "access_token": {
                     "type": "string"
                 },
                 "refresh_token": {
                     "type": "string"
+                },
+                "timeout": {
+                    "type": "integer"
                 }
             }
         },
@@ -3190,6 +3311,9 @@ const docTemplate = `{
                 "card": {
                     "type": "number"
                 },
+                "id": {
+                    "type": "integer"
+                },
                 "invoice_id": {
                     "type": "integer"
                 },
@@ -3241,7 +3365,7 @@ const docTemplate = `{
                 "stripe_customer_id": {
                     "type": "string"
                 },
-                "stripe_payment_method_id": {
+                "stripe_default_payment_id": {
                     "type": "string"
                 },
                 "updated_at": {

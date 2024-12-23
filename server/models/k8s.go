@@ -101,6 +101,22 @@ func (d *DB) GetAllK8s(userID string) ([]K8sCluster, error) {
 	return k8sClusters, nil
 }
 
+// GetAllSuccessfulK8s returns all K8s of user that have a state succeeded
+func (d *DB) GetAllSuccessfulK8s(userID string) ([]K8sCluster, error) {
+	var k8sClusters []K8sCluster
+	err := d.db.Find(&k8sClusters, "user_id = ? and state = 'CREATED'", userID).Error
+	if err != nil {
+		return nil, err
+	}
+	for i := range k8sClusters {
+		k8sClusters[i], err = d.GetK8s(k8sClusters[i].ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return k8sClusters, nil
+}
+
 // DeleteK8s deletes a k8s cluster
 func (d *DB) DeleteK8s(id int) error {
 	var k8s K8sCluster
@@ -118,6 +134,7 @@ func (d *DB) DeleteAllK8s(userID string) error {
 	if err != nil {
 		return err
 	}
+
 	return d.db.Select("Master", "Workers").Delete(&k8sClusters).Error
 }
 

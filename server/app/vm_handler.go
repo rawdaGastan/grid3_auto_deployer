@@ -23,7 +23,7 @@ import (
 // DeployVMInput struct takes input of vm from user
 type DeployVMInput struct {
 	Name      string `json:"name" binding:"required" validate:"min=3,max=20"`
-	Resources string `json:"resources" binding:"required"`
+	Resources string `json:"resources" binding:"required" validate:"nonzero"`
 	Public    bool   `json:"public"`
 	Region    string `json:"region"`
 }

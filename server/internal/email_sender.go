@@ -41,14 +41,14 @@ var (
 
 // SendMail sends verification mails
 func SendMail(sender, sendGridKey, receiver, subject, body string) error {
-	from := mail.NewEmail("Cloud4Students", sender)
+	from := mail.NewEmail("Cloud4All", sender)
 
 	err := validators.ValidMail(receiver)
 	if err != nil {
 		return fmt.Errorf("email %v is not valid", receiver)
 	}
 
-	to := mail.NewEmail("Cloud4Students User", receiver)
+	to := mail.NewEmail("Cloud4All User", receiver)
 
 	message := mail.NewSingleEmail(from, subject, to, "", body)
 	client := sendgrid.NewSendClient(sendGridKey)
@@ -59,7 +59,7 @@ func SendMail(sender, sendGridKey, receiver, subject, body string) error {
 
 // SignUpMailContent gets the email content for sign up
 func SignUpMailContent(code int, timeout int, username, host string) (string, string) {
-	subject := "Welcome to Cloud4Students 🎉"
+	subject := "Welcome to Cloud4All 🎉"
 	body := string(signUpMail)
 
 	body = strings.ReplaceAll(body, "-code-", fmt.Sprint(code))
@@ -72,7 +72,7 @@ func SignUpMailContent(code int, timeout int, username, host string) (string, st
 
 // WelcomeMailContent gets the email content for welcome messages
 func WelcomeMailContent(username, host string) (string, string) {
-	subject := "Welcome to Cloud4Students 🎉"
+	subject := "Welcome to Cloud4All 🎉"
 	body := string(welcomeMail)
 
 	body = strings.ReplaceAll(body, "-name-", cases.Title(language.Und).String(username))

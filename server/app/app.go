@@ -137,12 +137,14 @@ func (a *App) registerHandlers() {
 	unAuthUserRouter.HandleFunc("/signup/verify_email", WrapFunc(a.VerifySignUpCodeHandler)).Methods("POST", "OPTIONS")
 	unAuthUserRouter.HandleFunc("/signin", WrapFunc(a.SignInHandler)).Methods("POST", "OPTIONS")
 	unAuthUserRouter.HandleFunc("/refresh_token", WrapFunc(a.RefreshJWTHandler)).Methods("POST", "OPTIONS")
+	// TODO: rename it
 	unAuthUserRouter.HandleFunc("/forgot_password", WrapFunc(a.ForgotPasswordHandler)).Methods("POST", "OPTIONS")
 	unAuthUserRouter.HandleFunc("/forget_password/verify_email", WrapFunc(a.VerifyForgetPasswordCodeHandler)).Methods("POST", "OPTIONS")
 
 	userRouter.HandleFunc("/change_password", WrapFunc(a.ChangePasswordHandler)).Methods("PUT", "OPTIONS")
 	userRouter.HandleFunc("", WrapFunc(a.UpdateUserHandler)).Methods("PUT", "OPTIONS")
 	userRouter.HandleFunc("", WrapFunc(a.GetUserHandler)).Methods("GET", "OPTIONS")
+	userRouter.HandleFunc("", WrapFunc(a.DeleteUserHandler)).Methods("DELETE", "OPTIONS")
 	userRouter.HandleFunc("/apply_voucher", WrapFunc(a.ApplyForVoucherHandler)).Methods("POST", "OPTIONS")
 	userRouter.HandleFunc("/activate_voucher", WrapFunc(a.ActivateVoucherHandler)).Methods("PUT", "OPTIONS")
 	userRouter.HandleFunc("/charge_balance", WrapFunc(a.ChargeBalance)).Methods("PUT", "OPTIONS")
@@ -196,7 +198,7 @@ func (a *App) registerHandlers() {
 	voucherRouter.HandleFunc("", WrapFunc(a.ListVouchersHandler)).Methods("GET", "OPTIONS")
 	voucherRouter.HandleFunc("/{id}", WrapFunc(a.UpdateVoucherHandler)).Methods("PUT", "OPTIONS")
 	voucherRouter.HandleFunc("", WrapFunc(a.ApproveAllVouchersHandler)).Methods("PUT", "OPTIONS")
-	voucherRouter.HandleFunc("/reset", WrapFunc(a.ResetUsersVoucherBalanceHandler)).Methods("PUT", "OPTIONS")
+	voucherRouter.HandleFunc("/all/reset", WrapFunc(a.ResetUsersVoucherBalanceHandler)).Methods("PUT", "OPTIONS")
 
 	// middlewares
 	r.Use(middlewares.LoggingMW)

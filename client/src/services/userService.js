@@ -108,6 +108,11 @@ export default {
     return await authClient().get("/quota");
   },
 
+  async deleteAccount() {
+    await this.refresh_token();
+    return await authClient().delete("/user");
+  },
+
   // Invoices
   async getInvoices() {
     await this.refresh_token();

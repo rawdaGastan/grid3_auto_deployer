@@ -6,6 +6,7 @@
         text="Download All"
         prepend-icon="mdi-download"
         :disabled="invoices == 0"
+        color="secondary"
       />
     </v-row>
     <v-row>
@@ -16,14 +17,21 @@
           class="d-flex justify-center elevation-1"
           :hide-default-footer="invoices == 0"
         >
+          <template #[`item.created_at`]="{ item }">
+            {{ formatDate(item.created_at) }}
+          </template>
+
+          <template #[`item.invoice`]="{ item }">
+            {{ item.user_id }}
+          </template>
+
           <template #[`item.download`]="{ item }">
-            <v-icon
-              size="small"
-              class="secondary cursor-pointer"
-              @click="deleteVm(item)"
-            >
-              mdi-download
-            </v-icon>
+            <BaseButton
+              @click="downloadInvoice(item)"
+              text="Download"
+              prepend-icon="mdi-download"
+              variant="text"
+            />
           </template>
           <template #no-data>
             <p class="text-capitalize">{{ message }}</p>
@@ -45,7 +53,7 @@ const message = ref();
 const headers = ref([
   {
     title: "Date",
-    key: "date",
+    key: "created_at",
   },
   {
     title: "Invoice Number",
@@ -56,6 +64,18 @@ const headers = ref([
     key: "download",
   },
 ]);
+
+function formatDate(date) {
+  var d = new Date(date),
+    month = "" + (d.getMonth() + 1),
+    day = "" + d.getDate(),
+    year = d.getFullYear();
+
+  if (month.length < 2) month = "0" + month;
+  if (day.length < 2) day = "0" + day;
+
+  return [day, month, year].join("-");
+}
 
 // TODO handle invoices
 function getInvoices() {

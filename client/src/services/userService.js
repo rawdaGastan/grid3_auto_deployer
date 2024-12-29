@@ -85,6 +85,19 @@ export default {
     });
   },
 
+  async addCard(card_type, payment_method_id) {
+    await this.refresh_token();
+    return await authClient().post("/user/card", {
+      card_type,
+      payment_method_id,
+    });
+  },
+
+  async getCards() {
+    await this.refresh_token();
+    return await authClient().get("/user/card");
+  },
+
   async changePassword(email, password, confirm_password) {
     await this.refresh_token();
     return await authClient().put("/user/change_password", {

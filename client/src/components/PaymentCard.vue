@@ -1,178 +1,147 @@
 <template>
   <v-card class="pa-2">
-    <v-card-title>{{ title }}</v-card-title>
+    <v-card-title>Add a new payment method</v-card-title>
     <v-divider />
-    <v-form @submit.prevent="">
-      <v-card-text>
-        <v-row>
-          <v-col cols="12" md="6">
-            <label>Card Number</label>
-            <BaseInput
-              v-model="cardNumber"
-              placeholder="1234 1234 1234 1234"
-              class="mt-1"
-              :rules="validateCard"
-            />
-          </v-col>
+    <v-card-text>
+      <v-row>
+        <v-col cols="12" md="6">
+          <label>Card Number</label>
+          <div id="card-number" class="card-input mt-1"></div>
+        </v-col>
 
-          <v-col cols="12" md="3">
-            <label>Expiration Date</label>
-            <BaseInput
-              v-model="expirationDate"
-              class="mt-1"
-              @keyup="formatExpiryDate"
-              placeholder="MM/YY"
-              maxlength="5"
-              :rules="validateExpirationDate"
-            />
-          </v-col>
+        <v-col cols="12" md="3">
+          <label>Expiration Date</label>
+          <div id="card-expiry" class="card-input mt-1"></div>
+        </v-col>
 
-          <v-col cols="12" md="3">
-            <label>Security Code</label>
-            <BaseInput
-              type="password"
-              v-model="cvv"
-              class="mt-1"
-              placeholder="cvv"
-              :rules="validateCVV"
-            />
-          </v-col>
-        </v-row>
-        <p class="text-caption my-2 text-medium-emphasis">
-          By providing your card information, you allow Cloud4All, LLC to charge
-          your card for future payments in accordance with their terms.
-        </p>
+        <v-col cols="12" md="3">
+          <label>Security Code</label>
+          <div id="card-cvc" class="card-input mt-1"></div>
+        </v-col>
+      </v-row>
+      <div id="card-error"></div>
+      <p class="text-caption my-2 text-medium-emphasis">
+        By providing your card information, you allow Cloud4All, LLC to charge
+        your card for future payments in accordance with their terms.
+      </p>
+    </v-card-text>
 
-        <v-row>
-          <v-col cols="12">
-            <label>Full Name</label>
-            <BaseInput v-model="fullName" class="mt-1" />
-          </v-col>
-        </v-row>
-      </v-card-text>
+    <v-divider></v-divider>
 
-      <v-divider></v-divider>
+    <v-card-actions class="justify-end">
+      <BaseButton
+        text="Cancel"
+        variant="outlined"
+        rounded="lg"
+        @click="$emit('onClose')"
+      />
 
-      <v-card-actions class="justify-end">
-        <BaseButton
-          text="Cancel"
-          variant="outlined"
-          rounded="lg"
-          @click="$emit('onClose')"
-        />
-
-        <BaseButton
-          type="submit"
-          text="Create"
-          color="secondary"
-          rounded="lg"
-          @click="AddCard"
-        />
-      </v-card-actions>
-    </v-form>
+      <BaseButton
+        text="Create"
+        color="secondary"
+        rounded="lg"
+        @click="generateToken"
+      />
+    </v-card-actions>
   </v-card>
+  <Toast ref="toast" />
 </template>
+
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
-import BaseInput from "@/components/Form/BaseInput.vue";
-const props = defineProps({
-  title: {
-    type: String,
-  },
-  cardNumber: {
-    type: String,
-  },
-  expirationDate: {
-    type: String,
-  },
-  cvv: {
-    type: String,
-  },
-  name: {
-    type: String,
-  },
-});
+import { loadStripe } from "@stripe/stripe-js";
+import userService from "@/services/userService";
+import Toast from "./Toast.vue";
 
-const cardNumber = ref(props.cardNumber || "");
-const expirationDate = ref(props.expirationDate || "");
-const cvv = ref(props.cvv || "");
+const stripe = ref();
 
-const validateCard = ref([
-  (value) => {
-    if (!value) return "Field is required";
-    const cleanedCardNumber = value.replace(/\D/g, "");
-    if (cleanedCardNumber.length < 13 || cleanedCardNumber.length > 19) {
-      return "Invalid credit card number length.";
-    }
-    if (!luhnCheck(cleanedCardNumber)) {
-      return "Invalid credit card number.";
-    }
-    return true;
-  },
-]);
+const toast = ref(null);
+let cardNumber, cardExpiry, cardCvc;
 
-const validateExpirationDate = ref([
-  (value) => {
-    if (!value) return "Field is required";
-    const [month, year] = value.split("/").map((num) => parseInt(num, 10));
-
-    if (isNaN(month) || isNaN(year) || month < 1 || month > 12) {
-      return "Invalid month. Must be between 01 and 12.";
-    }
-
-    const currentYear = new Date().getFullYear() % 100;
-    const currentMonth = new Date().getMonth() + 1;
-
-    if (year < currentYear || (year === currentYear && month < currentMonth)) {
-      return "Expiry date cannot be in the past.";
-    }
-    return true;
-  },
-]);
-
-const validateCVV = ref([
-  (value) => {
-    if (!value) return "CVV is required";
-    const cvvPattern = /^\d{3,4}$/;
-    if (!cvvPattern.test(value)) {
-      return "CVV must be 3 or 4 digits";
-    }
-    return true;
-  },
-]);
-
-// Luhn algorithm for credit card validation
-function luhnCheck(cardNumber) {
-  let sum = 0;
-  let shouldDouble = false;
-
-  for (let i = cardNumber.length - 1; i >= 0; i--) {
-    let digit = parseInt(cardNumber.charAt(i), 10);
-
-    if (shouldDouble) {
-      digit *= 2;
-      if (digit > 9) {
-        digit -= 9;
-      }
-    }
-
-    sum += digit;
-    shouldDouble = !shouldDouble;
+async function generateToken() {
+  const { token, error } = await stripe.value.createToken(cardNumber);
+  if (error) {
+    document.getElementById("card-error").innerHTML = error.message;
+    return;
   }
-
-  return sum % 10 === 0;
+  addCard(token.type, token.id);
 }
 
-function formatExpiryDate() {
-  if (expirationDate.value.length === 2)
-    expirationDate.value = expirationDate.value + "/";
-  else if (
-    expirationDate.value.length === 3 &&
-    expirationDate.value.charAt(2) === "/"
-  )
-    expirationDate.value = expirationDate.value.replace("/", "");
+async function addCard(type, id) {
+  userService
+    .addCard(type, id)
+    .then((response) => {
+      toast.value.toast(response.data.msg, "#4caf50");
+    })
+    .catch((response) => {
+      const { err } = response.response.data;
+      toast.value.toast(err, "#FF5252");
+    });
 }
 
-function AddCard() {}
+async function getStripe() {
+  stripe.value = await loadStripe(process.env.STRIPE_PUBLISHABLE_KEY);
+}
+
+onMounted(async () => {
+  await getStripe();
+  const elements = stripe.value.elements();
+
+  const style = {
+    base: {
+      color: "#fff",
+      fontSmoothing: "antialiased",
+      "::placeholder": {
+        color: "#aab7c4",
+      },
+    },
+    invalid: {
+      color: "#fa755a",
+      iconColor: "#fa755a",
+    },
+  };
+
+  cardNumber = elements.create("cardNumber", { style });
+  cardNumber.mount("#card-number");
+
+  cardExpiry = elements.create("cardExpiry", { style });
+  cardExpiry.mount("#card-expiry");
+
+  cardCvc = elements.create("cardCvc", { style });
+  cardCvc.mount("#card-cvc");
+});
 </script>
+
+<style scoped>
+.card-input {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 8px 12px;
+  background-color: #474747;
+  transition: border-color 0.3s;
+}
+
+.card-input input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 16px;
+  color: #212121;
+}
+
+.card-input input::placeholder {
+  color: #9e9e9e;
+}
+
+.card-number:focus-within {
+  border-color: #fff;
+}
+
+#card-error {
+  color: red;
+}
+</style>

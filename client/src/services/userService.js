@@ -107,12 +107,19 @@ export default {
     });
   },
 
-  async newVoucher(vms, public_ips, reason) {
+  async newVoucher(balance, reason) {
     await this.refresh_token();
     return await authClient().post("/user/apply_voucher", {
-      vms,
-      public_ips,
+      balance,
       reason,
+    });
+  },
+
+  async chargeBalance(amount, payment_method_id) {
+    await this.refresh_token();
+    return await authClient().put("/user/charge_balance", {
+      amount,
+      payment_method_id,
     });
   },
 

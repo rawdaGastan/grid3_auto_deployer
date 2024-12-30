@@ -1,109 +1,123 @@
 <template>
   <v-app-bar>
-    <v-container class="d-flex align-center">
-      <v-app-bar-title>
-        <router-link to="/" @click="setActive(0, '/')">
-          <v-img src="@/assets/logo_c4all.png" width="70" />
-        </router-link>
-      </v-app-bar-title>
-
-      <v-menu v-if="user.length != 0">
-        <template v-slot:activator="{ props }">
-          <v-btn
-            class="primary ml-1 mt-2 pt-0 mt-md-3 text-capitalize"
-            v-bind="props"
-            @click="setActive(index, props.title)"
-          >
-            <font-awesome-icon icon="fa-user" class="mr-3 fa-l" />
-            {{ username }}
-          </v-btn>
-        </template>
+    <v-container class="d-flex">
+      <!-- <v-navigation-drawer v-model="drawer">
         <v-list>
-          <v-list-item>
-            <v-list-item-title>
-              <router-link
-                v-for="item in user"
-                :key="item.title"
-                :to="item.path"
-                class="d-flex my-3 text-white text-decoration-none"
-              >
-                <span @click="checkTitle(item.title)">{{ item.title }}</span>
-              </router-link>
-            </v-list-item-title>
-          </v-list-item>
-        </v-list>
-      </v-menu>
-
-      <v-menu id="notifications" v-if="user.length != 0">
-        <template v-slot:activator="{ props }">
-          <v-btn
-            class="primary ml-1 mt-2 pt-0 mt-md-3 text-capitalize"
-            v-bind="props"
-          >
-            <v-badge
-              v-if="notifications.length > 0"
-              color="secondary"
-              :content="notifications.length"
+          <v-list-tile v-for="item in items" :key="item.title">
+            <v-list-tile-content
+              ><router-link :to="item.path">{{
+                item.title
+              }}</router-link></v-list-tile-content
             >
-              <font-awesome-icon icon="fa-bell" class="fa-xl" />
-            </v-badge>
-            <font-awesome-icon
-              v-if="notifications.length == 0"
-              icon="fa-bell"
-              class="fa-xl"
-            />
-          </v-btn>
-        </template>
+          </v-list-tile>
+        </v-list>
+      </v-navigation-drawer> -->
 
-        <v-list
-          max-height="400px"
-          v-if="notifications.length > 0"
-          density="compact"
-        >
-          <v-list-subheader>Unseen</v-list-subheader>
-          <v-list-item
-            v-for="item in notifications"
-            :key="item.id"
-            class="tile text-white"
+      <v-toolbar v-if="user.length > 0">
+        <span class="hidden-sm-and-up">
+          <v-toolbar-side-icon @click="drawer = !drawer"> </v-toolbar-side-icon>
+        </span>
+        <v-toolbar-title>
+          <router-link to="/" @click="setActive(0, '/')">
+            <v-img src="@/assets/logo_c4all.png" width="70" />
+          </router-link>
+        </v-toolbar-title>
+        <v-toolbar-items class="hidden-xs-only d-flex align-center">
+          <v-btn
+            variant="text"
+            class="text-capitalize"
+            v-for="item in items"
+            :key="item.title"
+            :to="item.path"
           >
-            <template v-slot:prepend>
-              <font-awesome-icon
-                :icon="
-                  item.type == 'vms'
-                    ? ['fas', 'cube']
-                    : item.type == 'k8s'
-                    ? ['fasr', 'dharmachakra']
-                    : ['fasr', 'bullhorn']
-                "
-              />
+            {{ item.title }}
+          </v-btn>
+          <v-menu>
+            <template v-slot:activator="{ props }">
+              <v-btn v-bind="props" @click="setActive(index, props.title)">
+                <v-icon size="25">mdi-account</v-icon>
+              </v-btn>
+            </template>
+            <v-list>
+              <v-list-item>
+                <v-list-item-title>
+                  <router-link
+                    v-for="item in user"
+                    :key="item.title"
+                    :to="item.path"
+                    class="d-flex my-3 text-white text-decoration-none"
+                  >
+                    <span @click="checkTitle(item.title)">{{
+                      item.title
+                    }}</span>
+                  </router-link>
+                </v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+          <v-menu id="notifications">
+            <template v-slot:activator="{ props }">
+              <v-btn class="mr-1 text-capitalize" v-bind="props">
+                <v-badge
+                  v-if="notifications.length > 0"
+                  color="secondary"
+                  :content="notifications.length"
+                >
+                  <v-icon size="25">mdi-bell</v-icon>
+                </v-badge>
+                <v-icon v-else size="25">mdi-bell</v-icon>
+              </v-btn>
             </template>
 
-            <v-list-item-title>
-              <router-link
-                style="padding: 15px"
-                :to="
-                  item.type == 'vms' ? '/vm' : item.type == 'k8s' ? '/k8s' : '/'
-                "
-                class="d-flex text-white text-decoration-none"
-                @click="
-                  seen(item.id);
-                  setActive(item.type == 'vms' ? 2 : 3, item.type);
-                "
+            <v-list
+              max-height="400px"
+              v-if="notifications.length > 0"
+              density="compact"
+            >
+              <v-list-subheader>Unseen</v-list-subheader>
+              <v-list-item
+                v-for="item in notifications"
+                :key="item.id"
+                class="tile text-white"
               >
-                <span @click="seen(item.id)">{{ item.msg }}</span>
-              </router-link>
-            </v-list-item-title>
-          </v-list-item>
-        </v-list>
+                <template v-slot:prepend>
+                  <v-icon
+                    :icon="item.type == 'vms' ? 'mdi-cube-outline' : ''"
+                  ></v-icon>
+                </template>
 
-        <v-list v-if="notifications.length == 0">
-          <v-list-item>
-            <v-list-item-title>
-              <span>You don't have any notifications yet</span>
-            </v-list-item-title>
-          </v-list-item>
-        </v-list>
-      </v-menu>
+                <v-list-item-title>
+                  <router-link
+                    style="padding: 15px"
+                    :to="
+                      item.type == 'vms'
+                        ? '/vm'
+                        : item.type == 'k8s'
+                        ? '/k8s'
+                        : '/'
+                    "
+                    class="d-flex text-white text-decoration-none"
+                    @click="
+                      seen(item.id);
+                      setActive(item.type == 'vms' ? 2 : 3, item.type);
+                    "
+                  >
+                    <span @click="seen(item.id)">{{ item.msg }}</span>
+                  </router-link>
+                </v-list-item-title>
+              </v-list-item>
+            </v-list>
+
+            <v-list v-if="notifications.length == 0">
+              <v-list-item>
+                <v-list-item-title>
+                  <span>You don't have any notifications yet</span>
+                </v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </v-toolbar-items>
+      </v-toolbar>
 
       <v-app-bar-nav-icon
         class="primary hidden-md-and-up"
@@ -112,7 +126,7 @@
     </v-container>
   </v-app-bar>
 
-  <v-navigation-drawer v-model="drawer" location="top" temporary>
+  <!-- <v-navigation-drawer v-model="drawer" location="top" temporary>
     <v-list>
       <v-list-item>
         <router-link
@@ -125,7 +139,7 @@
         </router-link>
       </v-list-item>
     </v-list>
-  </v-navigation-drawer>
+  </v-navigation-drawer> -->
 </template>
 
 <script>
@@ -172,7 +186,7 @@ export default {
         path: "/changePassword",
       },
       {
-        title: "Logout",
+        title: "Sign Out",
         path: "/logout",
       },
     ]);
@@ -199,12 +213,12 @@ export default {
         .then((response) => {
           const { user } = response.data.data;
           username.value = user.name;
-          if (user.admin) {
-            items.value.push({
-              path: "admin",
-              title: "Admin",
-            });
-          }
+          // if (user.admin) {
+          //   items.value.push({
+          //     path: "admin",
+          //     title: "Admin",
+          //   });
+          // }
         })
         .catch((response) => {
           const { err } = response.response.data;
@@ -308,8 +322,7 @@ export default {
 </script>
 
 <style>
-.tile {
-  padding: 15px;
-  border-bottom: 1px solid rgb(53, 52, 52) !important;
+.v-toolbar {
+  background: none !important;
 }
 </style>

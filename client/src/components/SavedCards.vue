@@ -68,20 +68,26 @@
         </template>
       </v-list-item>
     </v-card-actions>
-    <v-card-text v-else class="text-capitalize font-weight-bold text-center">
+    <v-card-text
+      v-else
+      class="text-capitalize text-h6 pa-12 text-disabled text-center"
+    >
       {{ message }}
     </v-card-text>
   </v-card>
+  <Toast ref="toast" />
 </template>
 <script setup>
 import { ref, onMounted } from "vue";
 import PaymentCard from "./PaymentCard.vue";
 import BaseButton from "./Form/BaseButton.vue";
 import userService from "@/services/userService";
+import Toast from "./Toast.vue";
 
 const dialog = ref(false);
 const cards = ref([]);
 const message = ref();
+const toast = ref(null);
 
 function getCards() {
   userService
@@ -92,7 +98,8 @@ function getCards() {
       message.value = msg;
     })
     .catch((response) => {
-      console.log(response);
+      const { err } = response.response.data;
+      toast.value.toast(err, "#FF5252");
     });
 }
 

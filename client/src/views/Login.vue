@@ -119,8 +119,6 @@ const onSubmit = () => {
   userService
     .signIn(email.value, password.value)
     .then((response) => {
-      const { access_token } = response.data.data;
-      localStorage.setItem("token", access_token);
       toast.value.toast(response.data.msg, "#4caf50");
       adminCheck();
       router.push({

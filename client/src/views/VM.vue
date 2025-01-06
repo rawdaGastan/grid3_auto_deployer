@@ -47,6 +47,7 @@
           :items="results"
           class="d-flex justify-center elevation-1"
           :hide-default-footer="results == 0"
+          :loading="loading"
         >
           <template #[`item.id`]="{ item }">
             {{ results.indexOf(item) + 1 }}
@@ -145,7 +146,7 @@ const results = ref([]);
 const deLoading = ref(false);
 const message = ref(null);
 const itemToDelete = ref(null);
-
+const loading = ref(false);
 const headers = ref([
   {
     title: "ID",
@@ -199,6 +200,10 @@ const getVMS = () => {
         item.deleting = false;
         item.public_ip = item.public_ip.split("/")[0];
       });
+      loading.value = data.some((vm) => vm.state == "INPROGRESS");
+      if (loading.value) {
+        setTimeout(getVMS, 5000);
+      }
       results.value = data;
       message.value = msg;
     })
@@ -279,7 +284,7 @@ const copyIP = (ip) => {
 
 if (localStorage.getItem("token")) {
   setInterval(() => {
-    getVMS();
+    // getVMS();
     emitQuota();
   }, 30 * 1000);
 }

@@ -12,43 +12,75 @@
             >
               <p><strong>Name: </strong>{{ user.name }}</p>
               <p><strong>College: </strong>{{ user.college }}</p>
-              <p><strong>Project description: </strong>{{ user.project_desc }}</p>
+              <p>
+                <strong>Project description: </strong>{{ user.project_desc }}
+              </p>
 
-							<div>
-								<v-dialog v-model="emailDialog" width="40%">
-									<template v-slot:activator="{ props }">
-										<BaseButton
-											class="bg-primary text-lowercase my-5"
-											:icon="'fa-envelope'"
-											:text="user.email"
-											v-bind="props"
-										>
-										</BaseButton>
-									</template>
+              <div>
+                <v-dialog v-model="emailDialog" width="40%">
+                  <template v-slot:activator="{ props }">
+                    <BaseButton
+                      class="bg-primary text-lowercase my-5"
+                      :icon="'fa-envelope'"
+                      :text="user.email"
+                      v-bind="props"
+                    >
+                    </BaseButton>
+                  </template>
 
-									<v-card class="pa-5">
-										<v-form @submit.prevent="sendEmail(user.email)" ref="form">
-											<v-card-text>
-												<v-text-field label="Email" :value="user.email" bg-color="accent"
-													variant="outlined" density="compact"
-													class="my-3" disabled focused></v-text-field>
+                  <v-card class="pa-5">
+                    <v-form @submit.prevent="sendEmail(user.email)" ref="form">
+                      <v-card-text>
+                        <v-text-field
+                          label="Email"
+                          :value="user.email"
+                          bg-color="accent"
+                          variant="outlined"
+                          density="compact"
+                          class="my-3"
+                          disabled
+                          focused
+                        ></v-text-field>
 
-												<v-text-field label="Subject" v-model="subject" :rules="requiredRules"
-													oninput="validity.valid||(value='')" bg-color="accent" variant="outlined" density="compact"
-													class="my-3"></v-text-field>
+                        <v-text-field
+                          label="Subject"
+                          v-model="subject"
+                          :rules="requiredRules"
+                          oninput="validity.valid||(value='')"
+                          bg-color="accent"
+                          variant="outlined"
+                          density="compact"
+                          class="my-3"
+                        ></v-text-field>
 
-												<v-textarea clearable label="Body" v-model="emailBody" :rules="requiredRules"
-													oninput="validity.valid||(value='')" bg-color="accent" variant="outlined" density="compact"
-													class="my-3"></v-textarea>
-											</v-card-text>
-											<v-card-actions class="justify-center">
-												<BaseButton class="bg-primary mr-5" text="Cancel" @click="emailDialog = false" />
-												<BaseButton type="submit" class="bg-primary" text="Send" />
-											</v-card-actions>
-										</v-form>
-									</v-card>
-								</v-dialog>
-							</div>
+                        <v-textarea
+                          clearable
+                          label="Body"
+                          v-model="emailBody"
+                          :rules="requiredRules"
+                          oninput="validity.valid||(value='')"
+                          bg-color="accent"
+                          variant="outlined"
+                          density="compact"
+                          class="my-3"
+                        ></v-textarea>
+                      </v-card-text>
+                      <v-card-actions class="justify-center">
+                        <BaseButton
+                          class="bg-primary mr-5"
+                          text="Cancel"
+                          @click="emailDialog = false"
+                        />
+                        <BaseButton
+                          type="submit"
+                          class="bg-primary"
+                          text="Send"
+                        />
+                      </v-card-actions>
+                    </v-form>
+                  </v-card>
+                </v-dialog>
+              </div>
             </div>
           </v-card>
         </v-col>
@@ -59,14 +91,14 @@
               <div>
                 <v-card-title class="text-body-1">
                   <div class="my-1">
-                    <font-awesome-icon icon="fa-cube" />
+                    <v-icon>mdi-cube</v-icon>
                     <span class="pa-2">
                       Available VMs: {{ user.vms - user.used_vms }}</span
                     >
                   </div>
                   <hr />
                   <div class="mt-2">
-                    <font-awesome-icon icon="fa-diagram-project" />
+                    <v-icon>mdi-share-variant</v-icon>
                     <span class="pa-2"
                       >Available IPs:
                       {{ user.public_ips - user.used_public_ips }}</span
@@ -74,7 +106,7 @@
                   </div>
                   <hr />
                   <div class="mt-2">
-                    <font-awesome-icon icon="fa-people-group" />
+                    <v-icon>mdi-account-group</v-icon>
                     <span class="pa-2">Team size: {{ user.team_size }}</span>
                   </div>
                 </v-card-title>
@@ -83,13 +115,13 @@
           </v-card>
         </v-col>
       </v-row>
-		<Toast ref="toast" />
+      <Toast ref="toast" />
     </v-container>
   </v-card>
 </template>
 
 <script>
-import {ref, watch } from "vue";
+import { ref, watch } from "vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import userService from "@/services/userService.js";
 import Toast from "@/components/Toast.vue";
@@ -97,67 +129,67 @@ import Toast from "@/components/Toast.vue";
 export default {
   components: {
     BaseButton,
-		Toast,
+    Toast,
   },
   props: {
     user: {
       type: Object,
     },
   },
-	setup() {
-		const form = ref(null);
+  setup() {
+    const form = ref(null);
     const toast = ref(null);
-		const emailDialog = ref(false);
+    const emailDialog = ref(false);
     const emailBody = ref(null);
     const subject = ref(null);
 
-		const requiredRules = ref([
-			(value) => {
-				if (value === '') return "Field is required";
-				return true;
-			},
-		]);
+    const requiredRules = ref([
+      (value) => {
+        if (value === "") return "Field is required";
+        return true;
+      },
+    ]);
 
-		const sendEmail = async (userEmail) => {
-			var { valid } = await form.value.validate();
-			if (!valid) return;
+    const sendEmail = async (userEmail) => {
+      var { valid } = await form.value.validate();
+      if (!valid) return;
 
-			userService
-				.sendEmail(subject.value, emailBody.value, userEmail)
-				.then((response) => {
-					const { msg } = response.data;
-					toast.value.toast(msg, "#388E3C");
-				})
-				.catch((response) => {
-					toast.value.toast(response.response.data.err, "#FF5252");
-				})
-				.finally(() => {
-					emailDialog.value = false;
-				});
-		};
+      userService
+        .sendEmail(subject.value, emailBody.value, userEmail)
+        .then((response) => {
+          const { msg } = response.data;
+          toast.value.toast(msg, "#388E3C");
+        })
+        .catch((response) => {
+          toast.value.toast(response.response.data.err, "#FF5252");
+        })
+        .finally(() => {
+          emailDialog.value = false;
+        });
+    };
 
-		watch(emailDialog, (val) => {
-			if (val) {
-				emailBody.value = "";
-				subject.value = "";
-			}
-		});
+    watch(emailDialog, (val) => {
+      if (val) {
+        emailBody.value = "";
+        subject.value = "";
+      }
+    });
 
-		return {
-			form,
-			toast,
-			subject,
-			emailDialog,
-			emailBody,
-			requiredRules,
-			sendEmail
-		}
-	},
+    return {
+      form,
+      toast,
+      subject,
+      emailDialog,
+      emailBody,
+      requiredRules,
+      sendEmail,
+    };
+  },
 };
 </script>
 
 <style scoped>
 [class*="--disabled "] * {
-	opacity: 1;
+  opacity: 1;
 }
 </style>

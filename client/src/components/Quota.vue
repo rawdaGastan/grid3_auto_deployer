@@ -10,12 +10,12 @@
           <div>Available Quota <span class="d-sm-flex d-md-none">:</span></div>
         </div>
         <div class="ma-md-1 mr-3">
-          <font-awesome-icon icon="fa-cube" />
+          <v-icon>mdi-cube-outline</v-icon>
           <span class="pa-md-2"> VMs: {{ vm }}</span>
         </div>
         <hr />
         <div class="mt-md-2">
-          <font-awesome-icon icon="fa-diagram-project" />
+          <v-icon>mdi-share-variant</v-icon>
           <span class="pa-md-2">IPs: {{ ips }}</span>
         </div>
       </v-card-title>

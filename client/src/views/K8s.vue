@@ -7,9 +7,7 @@
     <h5 class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary">
       Kubernetes Clusters
     </h5>
-    <p class="text-center mb-10">
-      Deploy a new Kubernetes cluster
-    </p>
+    <p class="text-center mb-10">Deploy a new Kubernetes cluster</p>
     <v-row justify="center">
       <v-col cols="12" sm="6" xl="4">
         <v-form v-model="verify" ref="form" @submit.prevent="deployK8s">
@@ -27,7 +25,7 @@
             placeholder="Resources"
             :modelValue="selectedResources"
             :items="resources"
-						:rules="[() => !!selectedResources || 'This field is required']"
+            :rules="[() => !!selectedResources || 'This field is required']"
             class="mt-3"
             @update:modelValue="selectedResources = $event"
           />
@@ -81,7 +79,10 @@
                         placeholder="Resources"
                         :modelValue="workerSelResources"
                         :items="workerResources"
-                        :rules="[() => !!workerSelResources || 'This field is required']"
+                        :rules="[
+                          () =>
+                            !!workerSelResources || 'This field is required',
+                        ]"
                         class="my-3"
                         @update:modelValue="workerSelResources = $event"
                       />
@@ -107,11 +108,11 @@
                           worker.resources
                         }}</v-list-item-subtitle>
                         <template v-slot:append>
-                          <font-awesome-icon
+                          <v-icon
                             class="primary pointer"
-                            icon="fa-solid fa-xmark"
                             @click="deleteWorker(worker.name)"
-                          />
+                            >mdi-close</v-icon
+                          >
                         </template>
                         <v-list-item-action></v-list-item-action>
                       </v-list-item>
@@ -122,7 +123,7 @@
                       @click="showInputs = true"
                       class="d-flex ml-auto text-capitalize text-primary"
                     >
-                      <font-awesome-icon icon="fa-solid fa-plus" class="mr-2" />
+                      <v-icon class="mr-2">mdi-plus</v-icon>
                       Add new worker
                     </v-btn>
                   </v-card-text>
@@ -166,13 +167,10 @@
               <td>{{ item.master.sru }}GB</td>
               <td>{{ item.master.mru }}GB</td>
               <td>{{ item.master.cru }}</td>
-              <td
-                class="cursor-pointer"
-                @click="copyIP(item.master.ygg_ip)"
-              >
+              <td class="cursor-pointer" @click="copyIP(item.master.ygg_ip)">
                 {{ item.master.ygg_ip }}
               </td>
-							<td
+              <td
                 class="cursor-pointer"
                 @click="copyIP(item.master.mycelium_ip)"
               >
@@ -187,25 +185,27 @@
               </td>
               <td v-else>-</td>
               <td>
-                <font-awesome-icon
+                <v-icon
                   v-if="!item.deleting"
                   class="text-red-accent-2 mr-5 cursor-pointer"
                   @click="deleteK8s(item)"
-                  icon="fa-solid fa-trash"
-                />
+                >
+                  mdi-delete
+                </v-icon>
+
                 <v-progress-circular
                   v-else
                   indeterminate
                   color="red"
                   size="20"
-                  style="margin-right: 5px;"
+                  style="margin-right: 5px"
                 ></v-progress-circular>
-                <font-awesome-icon
+                <v-icon
                   v-if="item.workers.length > 0"
                   class="text-primary cursor-pointer"
-                  icon="fa-solid fa-eye"
                   @click="displayWorkers(item.workers)"
-                />
+                  >mdi-eye</v-icon
+                >
               </td>
             </tr>
           </template>
@@ -356,7 +356,7 @@ export default {
         title: "Mycelium IP",
         key: "mycelium_ip",
         sortable: false,
-      }
+      },
     ]);
     const resources = ref([
       { title: "Small K8s (1 CPU, 2GB, 25GB)", value: "small" },
@@ -402,8 +402,8 @@ export default {
       checked.value = false;
       selectedResources.value = "";
       workerSelResources.value = "";
-			workerName.value = "";
-			savedWorkers.value = [];
+      workerName.value = "";
+      savedWorkers.value = [];
     };
 
     const deployK8s = () => {

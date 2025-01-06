@@ -8,7 +8,7 @@
     v-bind="$attrs"
     class="text-capitalize"
   >
-    <font-awesome-icon v-if="icon" :icon="icon" class="mr-2" />
+    <v-icon v-if="icon" class="mr-2">{{ icon }}</v-icon>
     {{ text }}</v-btn
   >
 </template>

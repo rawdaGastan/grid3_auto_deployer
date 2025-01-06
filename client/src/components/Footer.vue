@@ -12,14 +12,14 @@
         >
         <div class="d-inline-flex ml-5 social">
           <a href="mailto:info@codescalers.com" class="mr-md-5 rounded-circle"
-            ><font-awesome-icon :icon="['fas', 'envelope']" color="white"
-          /></a>
+            ><v-icon>mdi-email</v-icon></a
+          >
           <a
-            href="https://www.linkedin.com/company/codescalers-egypt/mycompany/"
+            href="https://www.linkedin.com/company/codescalers-egypt/"
             target="_blank"
             class="rounded-circle"
-            ><font-awesome-icon :icon="['fab', 'linkedin-in']" color="white"
-          /></a>
+            ><v-icon>mdi-linkedin</v-icon></a
+          >
         </div>
       </v-col>
     </v-row>
@@ -29,10 +29,9 @@
 <style>
 .social a {
   padding: 10px;
-  border: 1px solid #fff;
-  height: 40px;
-  width: 40px;
-  line-height: 20px;
+  border: 1px solid #474747;
+  line-height: 0px;
+  color: #fff;
 }
 
 @media only screen and (max-width: 960px) {

@@ -13,16 +13,19 @@
         </v-list>
       </v-navigation-drawer> -->
 
-      <v-toolbar v-if="user.length > 0">
+      <v-toolbar>
         <span class="hidden-sm-and-up">
           <v-toolbar-side-icon @click="drawer = !drawer"> </v-toolbar-side-icon>
         </span>
         <v-toolbar-title>
-          <router-link to="/" @click="setActive(0, '/')">
+          <router-link to="/">
             <v-img src="@/assets/logo_c4all.png" width="70" />
           </router-link>
         </v-toolbar-title>
-        <v-toolbar-items class="hidden-xs-only d-flex align-center">
+        <v-toolbar-items
+          v-if="user.length > 0"
+          class="hidden-xs-only d-flex align-center"
+        >
           <v-btn
             variant="text"
             class="text-capitalize"
@@ -152,7 +155,6 @@ export default {
     const route = useRoute();
     const router = useRouter();
     const drawer = ref(false);
-    const username = ref("");
     const isActive = ref(0);
     const token = ref(localStorage.getItem("token"));
     const nextlaunch = ref(localStorage.getItem("nextlaunch"));
@@ -197,29 +199,9 @@ export default {
 
     const checkTitle = (title) => {
       if (title == "Sign Out") {
-        localStorage.removeItem("token");
-        localStorage.removeItem("username");
+        userService.logout();
         user.value = [];
       }
-    };
-
-    const getUserName = () => {
-      userService
-        .getUser()
-        .then((response) => {
-          const { user } = response.data.data;
-          username.value = user.name;
-          // if (user.admin) {
-          //   items.value.push({
-          //     path: "admin",
-          //     title: "Admin",
-          //   });
-          // }
-        })
-        .catch((response) => {
-          const { err } = response.response.data;
-          console.log(err);
-        });
     };
 
     const checkExcludedFromNavBar = (path) => {
@@ -285,7 +267,6 @@ export default {
 
       if (token.value) {
         getNotifications();
-        getUserName();
       }
 
       var pathIndex = items.value.findIndex(
@@ -302,12 +283,10 @@ export default {
       drawer,
       items,
       user,
-      username,
       isActive,
       token,
       setActive,
       checkTitle,
-      getUserName,
       checkExcludedFromNavBar,
       notifications,
       getNotifications,

@@ -108,18 +108,15 @@ const nameValidation = ref([
   (value) => validateVMName(value),
 ]);
 
-const validateVMName = async (name) => {
-  var msg = "";
-  await userService.validateVMName(name).catch((response) => {
+function validateVMName(name) {
+  let msg = "";
+  userService.validateVMName(name).catch((response) => {
     const { err } = response.response.data;
     msg = err;
+    toast.value.toast(err, "#FF5252");
   });
-
-  if (!msg) {
-    return true;
-  }
   return msg;
-};
+}
 
 const selectRules = ref([
   (value) => {

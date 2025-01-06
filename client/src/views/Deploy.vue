@@ -115,7 +115,9 @@ function validateVMName(name) {
     msg = err;
     toast.value.toast(err, "#FF5252");
   });
-  return msg;
+  if (msg) {
+    return false;
+  }
 }
 
 const selectRules = ref([

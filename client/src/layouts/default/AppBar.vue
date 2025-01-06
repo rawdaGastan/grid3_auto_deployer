@@ -182,10 +182,6 @@ export default {
         path: "/account",
       },
       {
-        title: "Change password",
-        path: "/changePassword",
-      },
-      {
         title: "Sign Out",
         path: "/logout",
       },
@@ -200,7 +196,7 @@ export default {
     };
 
     const checkTitle = (title) => {
-      if (title == "Logout") {
+      if (title == "Sign Out") {
         localStorage.removeItem("token");
         localStorage.removeItem("username");
         user.value = [];

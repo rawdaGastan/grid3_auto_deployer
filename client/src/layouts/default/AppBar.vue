@@ -173,8 +173,8 @@ export default {
     ]);
     const items = ref([
       {
-        path: "vm",
         title: "Virtual Machines",
+        path: "/vm",
       },
     ]);
 

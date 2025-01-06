@@ -53,7 +53,7 @@ export default {
     return await baseClient().post("/user/forgot_password", { email });
   },
 
-  async signUpVerifyEmail(email, code) {
+  async signUpVerification(email, code) {
     return await baseClient().post("/user/signup/verify_email", {
       email,
       code,
@@ -70,7 +70,7 @@ export default {
     return await authClient().put("/user/activate_voucher", { voucher });
   },
 
-  async forgotPasswordVerifyEmail(email, code) {
+  async forgetPasswordVerification(email, code) {
     return await baseClient().post("/user/forget_password/verify_email", {
       email,
       code,

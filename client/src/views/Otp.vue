@@ -9,7 +9,7 @@
       <v-col cols="12" sm="6">
         <v-form @submit.prevent="onSubmit">
           <v-otp-input v-model="otp" length="4" />
-          <p class="my-5 text-center">00:{{ countDown || "00" }}</p>
+          <p class="my-5 text-center">00:{{ formattedCountDown }}</p>
 
           <BaseButton
             type="submit"
@@ -33,7 +33,7 @@
 </template>
 
 <script setup>
-import { ref, watchEffect } from "vue";
+import { computed, ref, watchEffect } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import Toast from "@/components/Toast.vue";
 import OTPImg from "@/assets/otp.png";
@@ -46,6 +46,9 @@ const countDown = ref(route.query.timeout);
 const loading = ref(false);
 const otp = ref("");
 const toast = ref(null);
+const formattedCountDown = computed(() =>
+  countDown.value < 10 ? `0${countDown.value}` : countDown.value
+);
 
 watchEffect(() => {
   if (countDown.value > 0) {
@@ -55,7 +58,7 @@ watchEffect(() => {
   }
 });
 
-const resetHandler = async () => {
+const resetHandler = () => {
   if (route.query.isForgetPassword) {
     userService
       .forgotPassword(route.query.email)
@@ -63,8 +66,9 @@ const resetHandler = async () => {
         toast.value.toast(response.data.msg, "#4caf50");
         countDown.value = route.query.timeout;
       })
-      .catch((error) => {
-        toast.value.toast(error.response.data.err, "#FF5252");
+      .catch((response) => {
+        const { message } = response;
+        toast.value.toast(message, "#FF5252");
       })
       .finally(() => {
         otp.value = "";
@@ -82,61 +86,43 @@ const resetHandler = async () => {
         toast.value.toast(response.data.msg, "#4caf50");
         countDown.value = route.query.timeout;
       })
-      .catch((error) => {
-        toast.value.toast(error.response.data.err, "#FF5252");
+      .catch((response) => {
+        const { message } = response;
+        toast.value.toast(message, "#FF5252");
       })
       .finally(() => {
         otp.value = "";
-      });
-  }
-};
-
-const onSubmit = async () => {
-  loading.value = true;
-
-  if (route.query.isSignup) {
-    userService
-      .signUpVerifyEmail(route.query.email, Number(otp.value))
-      .then(async (response) => {
-        // TODO Voucher
-        // await axios
-        //   .post(
-        //     window.configs.vite_app_endpoint + "/user/apply_voucher",
-        //     {
-        //       vms: Number(localStorage.getItem("vms")),
-        //       public_ips: Number(localStorage.getItem("ips")),
-        //       reason: localStorage.getItem("projectDescription"),
-        //     },
-        //     {
-        //       headers: {
-        //         Authorization: "Bearer " + response.data.data.access_token,
-        //       },
-        //     }
-        //   )
-        //   .catch((error) => {
-        //     toast.value.toast(error.response.data.err, "#FF5252");
-        //   });
-        toast.value.toast(response.data.msg, "#4caf50");
         localStorage.removeItem("firstName");
         localStorage.removeItem("lastName");
         localStorage.removeItem("password");
         localStorage.removeItem("confirm_password");
-        localStorage.removeItem("vms");
-        localStorage.removeItem("ips");
+      });
+  }
+};
+
+const onSubmit = () => {
+  loading.value = true;
+
+  if (route.query.isSignup) {
+    userService
+      .signUpVerification(route.query.email, Number(otp.value))
+      .then((response) => {
+        toast.value.toast(response.data.msg, "#4caf50");
         router.push({
           name: "Login",
         });
       })
-      .catch((error) => {
-        toast.value.toast(error.response.data.err, "#FF5252");
-        loading.value = false;
+      .catch((response) => {
+        const { message } = response;
+        toast.value.toast(message, "#FF5252");
       })
       .finally(() => {
+        loading.value = false;
         otp.value = "";
       });
   } else {
     userService
-      .forgotPasswordVerifyEmail(route.query.email, Number(otp.value))
+      .forgetPasswordVerification(route.query.email, Number(otp.value))
       .then((response) => {
         const { access_token } = response.data.data;
         localStorage.setItem("token", access_token);
@@ -146,11 +132,12 @@ const onSubmit = async () => {
           query: { email: route.query.email },
         });
       })
-      .catch((error) => {
-        toast.value.toast(error.response.data.err, "#FF5252");
-        loading.value = false;
+      .catch((response) => {
+        const { message } = response;
+        toast.value.toast(message, "#FF5252");
       })
       .finally(() => {
+        loading.value = false;
         otp.value = "";
       });
   }

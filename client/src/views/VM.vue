@@ -284,7 +284,6 @@ const copyIP = (ip) => {
 
 if (localStorage.getItem("token")) {
   setInterval(() => {
-    // getVMS();
     emitQuota();
   }, 30 * 1000);
 }
@@ -296,11 +295,8 @@ function createVM() {
 }
 
 onMounted(() => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    getUser();
-    getVMS();
-  }
+  getUser();
+  getVMS();
 });
 </script>
 

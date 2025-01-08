@@ -156,6 +156,7 @@ func (a *App) registerHandlers() {
 
 	invoiceRouter.HandleFunc("", WrapFunc(a.ListInvoicesHandler)).Methods("GET", "OPTIONS")
 	invoiceRouter.HandleFunc("/{id}", WrapFunc(a.GetInvoiceHandler)).Methods("GET", "OPTIONS")
+	invoiceRouter.HandleFunc("/download/{id}", WrapFunc(a.DownloadInvoiceHandler)).Methods("GET", "OPTIONS")
 	invoiceRouter.HandleFunc("/pay/{id}", WrapFunc(a.PayInvoiceHandler)).Methods("PUT", "OPTIONS")
 
 	notificationRouter.HandleFunc("", WrapFunc(a.ListNotificationsHandler)).Methods("GET", "OPTIONS")

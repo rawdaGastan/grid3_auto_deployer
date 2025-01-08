@@ -523,7 +523,7 @@ func (a *App) CreateNewAnnouncementHandler(req *http.Request) (interface{}, Resp
 	for _, user := range users {
 		subject, body := internal.AdminAnnouncementMailContent(adminAnnouncement.Subject, adminAnnouncement.Body, a.config.Server.Host, user.Name())
 
-		err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
+		err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body, "")
 		if err != nil {
 			log.Error().Err(err).Send()
 			return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -585,7 +585,7 @@ func (a *App) SendEmailHandler(req *http.Request) (interface{}, Response) {
 
 	subject, body := internal.AdminMailContent(fmt.Sprintf("Hey! 📢 %s", emailUser.Subject), emailUser.Body, a.config.Server.Host, user.Name())
 
-	err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
+	err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body, "")
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -663,7 +663,7 @@ func (a *App) notifyAdmins() {
 			subject, body := internal.NotifyAdminsMailContent(len(pending), a.config.Server.Host)
 
 			for _, admin := range admins {
-				err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, admin.Email, subject, body)
+				err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, admin.Email, subject, body, "")
 				if err != nil {
 					log.Error().Err(err).Send()
 				}
@@ -680,7 +680,7 @@ func (a *App) notifyAdmins() {
 			subject, body := internal.NotifyAdminsMailLowBalanceContent(balance, a.config.Server.Host)
 
 			for _, admin := range admins {
-				err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, admin.Email, subject, body)
+				err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, admin.Email, subject, body, "")
 				if err != nil {
 					log.Error().Err(err).Send()
 				}

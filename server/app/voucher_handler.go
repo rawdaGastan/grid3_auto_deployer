@@ -176,7 +176,7 @@ func (a *App) UpdateVoucherHandler(req *http.Request) (interface{}, Response) {
 		subject, body = internal.RejectedVoucherMailContent(user.Name(), a.config.Server.Host)
 	}
 
-	err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
+	err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body, "")
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -228,7 +228,7 @@ func (a *App) ApproveAllVouchersHandler(req *http.Request) (interface{}, Respons
 		}
 
 		subject, body := internal.ApprovedVoucherMailContent(v.Voucher, user.Name(), a.config.Server.Host)
-		err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
+		err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body, "")
 		if err != nil {
 			log.Error().Err(err).Send()
 			return nil, InternalServerError(errors.New(internalServerErrorMsg))

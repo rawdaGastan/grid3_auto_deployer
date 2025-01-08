@@ -8,27 +8,30 @@ import (
 
 type Invoice struct {
 	ID          int              `json:"id" gorm:"primaryKey"`
-	UserID      string           `json:"user_id"  binding:"required"`
+	UserID      string           `json:"user_id" binding:"required"`
 	Total       float64          `json:"total"`
 	Deployments []DeploymentItem `json:"deployments" gorm:"foreignKey:invoice_id"`
 	// TODO:
 	Tax            float64        `json:"tax"`
 	Paid           bool           `json:"paid"`
 	PaymentDetails PaymentDetails `json:"payment_details" gorm:"foreignKey:invoice_id"`
-	LastReminderAt time.Time      `json:"last_remainder_at"`
+	LastReminderAt time.Time      `json:"last_reminder_at"`
 	CreatedAt      time.Time      `json:"created_at"`
 	PaidAt         time.Time      `json:"paid_at"`
+	FileData       []byte         `json:"file_data" gorm:"type:blob"`
 }
 
 type DeploymentItem struct {
-	ID                  int     `json:"id" gorm:"primaryKey"`
-	InvoiceID           int     `json:"invoice_id"`
-	DeploymentID        int     `json:"deployment_id"`
-	DeploymentType      string  `json:"type"`
-	DeploymentResources string  `json:"resources"`
-	HasPublicIP         bool    `json:"has_public_ip"`
-	PeriodInHours       float64 `json:"period"`
-	Cost                float64 `json:"cost"`
+	ID                  int       `json:"id" gorm:"primaryKey"`
+	InvoiceID           int       `json:"invoice_id"`
+	DeploymentID        int       `json:"deployment_id"`
+	DeploymentName      string    `json:"deployment_name"`
+	DeploymentCreatedAt time.Time `json:"deployment_created_at"`
+	DeploymentType      string    `json:"type"`
+	DeploymentResources string    `json:"resources"`
+	HasPublicIP         bool      `json:"has_public_ip"`
+	PeriodInHours       float64   `json:"period"`
+	Cost                float64   `json:"cost"`
 }
 
 type PaymentDetails struct {
@@ -69,7 +72,7 @@ func (d *DB) ListUnpaidInvoices(userID string) ([]Invoice, error) {
 }
 
 func (d *DB) UpdateInvoiceLastRemainderDate(id int) error {
-	return d.db.Model(&Invoice{}).Where("id = ?", id).Updates(map[string]interface{}{"last_remainder_at": time.Now()}).Error
+	return d.db.Model(&Invoice{}).Where("id = ?", id).Updates(map[string]interface{}{"last_reminder_at": time.Now()}).Error
 }
 
 // PayInvoice updates paid with true and paid at field with current time in the invoice

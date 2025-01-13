@@ -79,3 +79,31 @@ func (a *App) UpdateNotificationsHandler(req *http.Request) (interface{}, Respon
 		Data:    nil,
 	}, Ok()
 }
+
+// SeenNotificationsHandler updates notifications for a user to be seen
+// Example endpoint: Set user's notifications as seen
+// @Summary Set user's notifications as seen
+// @Description Set user's notifications as seen
+// @Tags Notification
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 500 {object} Response
+// @Router /notification [put]
+func (a *App) SeenNotificationsHandler(req *http.Request) (interface{}, Response) {
+	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
+
+	err := a.db.UpdateUserNotification(userID, true)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	return ResponseMsg{
+		Message: "Notifications are seen",
+		Data:    nil,
+	}, Ok()
+}

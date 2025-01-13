@@ -1296,6 +1296,30 @@ paths:
       summary: Lists user's notifications
       tags:
       - Notification
+    put:
+      consumes:
+      - application/json
+      description: Set user's notifications as seen
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema: {}
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - BearerAuth: []
+      summary: Set user's notifications as seen
+      tags:
+      - Notification
   /notification/{id}:
     put:
       consumes:

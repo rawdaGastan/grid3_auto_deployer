@@ -24,7 +24,7 @@ import (
 type DeployVMInput struct {
 	Name      string `json:"name" binding:"required" validate:"min=3,max=20"`
 	Resources string `json:"resources" binding:"required" validate:"nonzero"`
-	Public    bool   `json:"public" validate:"nonzero"`
+	Public    bool   `json:"public"`
 	Region    string `json:"region"`
 }
 

@@ -974,7 +974,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Lists user's notifications",
+                "description": "Stream user's notifications",
                 "consumes": [
                     "application/json"
                 ],
@@ -984,7 +984,7 @@ const docTemplate = `{
                 "tags": [
                     "Notification"
                 ],
-                "summary": "Lists user's notifications",
+                "summary": "Stream user's notifications",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -997,10 +997,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {}
-                    },
-                    "404": {
-                        "description": "Not Found",
                         "schema": {}
                     },
                     "500": {
@@ -3315,6 +3311,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "msg",
+                "notified",
                 "seen",
                 "type",
                 "user_id"
@@ -3325,6 +3322,9 @@ const docTemplate = `{
                 },
                 "msg": {
                     "type": "string"
+                },
+                "notified": {
+                    "type": "boolean"
                 },
                 "seen": {
                     "type": "boolean"

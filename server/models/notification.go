@@ -10,10 +10,11 @@ const (
 
 // Notification struct holds data of notifications
 type Notification struct {
-	ID     int    `json:"id" gorm:"primaryKey"`
-	UserID string `json:"user_id"  binding:"required"`
-	Msg    string `json:"msg" binding:"required"`
-	Seen   bool   `json:"seen" binding:"required"`
+	ID       int    `json:"id" gorm:"primaryKey"`
+	UserID   string `json:"user_id"  binding:"required"`
+	Msg      string `json:"msg" binding:"required"`
+	Seen     bool   `json:"seen" binding:"required"`
+	Notified bool   `json:"notified" binding:"required"`
 	// to allow redirecting from notifications to the right pages
 	Type string `json:"type" binding:"required"`
 }
@@ -23,6 +24,17 @@ func (d *DB) ListNotifications(userID string) ([]Notification, error) {
 	var res []Notification
 	query := d.db.Where("user_id = ?", userID).Find(&res)
 	return res, query.Error
+}
+
+// GetNewNotifications returns a list of new notifications for a user.
+func (d *DB) GetNewNotifications(userID string) ([]Notification, error) {
+	var res []Notification
+	query := d.db.Where("user_id = ?", userID).Where("notified = ?", false).Find(&res)
+	if query.Error != nil {
+		return nil, query.Error
+	}
+
+	return res, d.db.Model(&Notification{}).Where("user_id = ?", userID).Updates(map[string]interface{}{"notified": true}).Error
 }
 
 // UpdateNotification updates seen field for notification

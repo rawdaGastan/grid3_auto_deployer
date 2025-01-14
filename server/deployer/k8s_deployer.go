@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/codescalers/cloud4students/middlewares"
 	"github.com/codescalers/cloud4students/models"
@@ -14,10 +15,9 @@ import (
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/deployer"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-client/workloads"
 	"github.com/threefoldtech/tfgrid-sdk-go/grid-proxy/pkg/types"
-	"gorm.io/gorm"
 )
 
-func buildK8sCluster(node uint32, sshKey, network string, k models.K8sDeployInput) (workloads.K8sCluster, error) {
+func buildK8sCluster(node uint32, sshKey, network string, k models.K8sCluster) (workloads.K8sCluster, error) {
 	myceliumIPSeed, err := workloads.RandomMyceliumIPSeed()
 	if err != nil {
 		return workloads.K8sCluster{}, err
@@ -25,7 +25,7 @@ func buildK8sCluster(node uint32, sshKey, network string, k models.K8sDeployInpu
 
 	master := workloads.K8sNode{
 		VM: &workloads.VM{
-			Name:           k.MasterName,
+			Name:           k.Master.Name,
 			Flist:          k8sFlist,
 			Planetary:      true,
 			MyceliumIPSeed: myceliumIPSeed,
@@ -34,7 +34,7 @@ func buildK8sCluster(node uint32, sshKey, network string, k models.K8sDeployInpu
 		},
 	}
 
-	cru, mru, sru, ips, err := calcNodeResources(k.Resources, k.Public)
+	cru, mru, sru, ips, err := CalcNodeResources(k.Master.Resources, k.Master.Public)
 	if err != nil {
 		return workloads.K8sCluster{}, err
 	}
@@ -64,7 +64,7 @@ func buildK8sCluster(node uint32, sshKey, network string, k models.K8sDeployInpu
 			},
 		}
 
-		cru, mru, sru, _, err := calcNodeResources(k.Resources, false)
+		cru, mru, sru, _, err := CalcNodeResources(worker.Resources, false)
 		if err != nil {
 			return workloads.K8sCluster{}, err
 		}
@@ -81,13 +81,13 @@ func buildK8sCluster(node uint32, sshKey, network string, k models.K8sDeployInpu
 		NetworkName:  network,
 		Token:        token,
 		SSHKey:       sshKey,
-		SolutionType: k.MasterName,
+		SolutionType: k.Master.Name,
 	}
 
 	return k8sCluster, nil
 }
 
-func (d *Deployer) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInput models.K8sDeployInput, sshKey string, adminSSHKey string) (uint32, uint64, uint64, error) {
+func (d *Deployer) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInput models.K8sCluster, sshKey string, adminSSHKey string) (uint32, uint64, uint64, error) {
 	// get available nodes
 	node, err := d.getK8sAvailableNode(ctx, k8sDeployInput)
 	if err != nil {
@@ -95,7 +95,7 @@ func (d *Deployer) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInp
 	}
 
 	// build network
-	network, err := buildNetwork(node, fmt.Sprintf("%sk8sNet", k8sDeployInput.MasterName))
+	network, err := buildNetwork(node, fmt.Sprintf("%sk8sNet", k8sDeployInput.Master.Name))
 	if err != nil {
 		return 0, 0, 0, err
 	}
@@ -124,12 +124,12 @@ func (d *Deployer) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInp
 	}
 
 	// checks that network and k8s are deployed successfully
-	loadedNet, err := d.tfPluginClient.State.LoadNetworkFromGrid(ctx, cluster.NetworkName)
+	loadedNet, err := d.TFPluginClient.State.LoadNetworkFromGrid(ctx, cluster.NetworkName)
 	if err != nil {
 		return 0, 0, 0, errors.Wrapf(err, "failed to load network '%s' on nodes %v", cluster.NetworkName, network.Nodes)
 	}
 
-	loadedCluster, err := d.tfPluginClient.State.LoadK8sFromGrid(ctx, []uint32{node}, cluster.Master.Name)
+	loadedCluster, err := d.TFPluginClient.State.LoadK8sFromGrid(ctx, []uint32{node}, cluster.Master.Name)
 	if err != nil {
 		return 0, 0, 0, errors.Wrapf(err, "failed to load kubernetes cluster '%s' on nodes %v", cluster.Master.Name, network.Nodes)
 	}
@@ -137,72 +137,52 @@ func (d *Deployer) deployK8sClusterWithNetwork(ctx context.Context, k8sDeployInp
 	return node, loadedNet.NodeDeploymentID[node], loadedCluster.NodeDeploymentID[node], nil
 }
 
-func (d *Deployer) loadK8s(ctx context.Context, k8sDeployInput models.K8sDeployInput, userID string, node uint32, networkContractID uint64, k8sContractID uint64) (models.K8sCluster, error) {
+func (d *Deployer) loadK8s(
+	ctx context.Context,
+	k8s models.K8sCluster,
+	node uint32,
+	networkContractID uint64, k8sContractID uint64,
+) (models.K8sCluster, error) {
 	// load cluster
-	resCluster, err := d.tfPluginClient.State.LoadK8sFromGrid(ctx, []uint32{node}, k8sDeployInput.MasterName)
+	resCluster, err := d.TFPluginClient.State.LoadK8sFromGrid(ctx, []uint32{node}, k8s.Master.Name)
 	if err != nil {
 		return models.K8sCluster{}, err
 	}
 
-	// save to db
-	cru, mru, sru, _, err := calcNodeResources(k8sDeployInput.Resources, k8sDeployInput.Public)
+	// Updates after deployment
+	k8s.Master.PublicIP = resCluster.Master.ComputedIP
+	k8s.Master.YggIP = resCluster.Master.PlanetaryIP
+	k8s.Master.MyceliumIP = resCluster.Master.MyceliumIP
+
+	for i := range k8s.Workers {
+		k8s.Workers[i].PublicIP = resCluster.Workers[i].ComputedIP
+		k8s.Workers[i].YggIP = resCluster.Workers[i].PlanetaryIP
+		k8s.Workers[i].MyceliumIP = resCluster.Workers[i].MyceliumIP
+	}
+
+	k8s.NetworkContract = int(networkContractID)
+	k8s.ClusterContract = int(k8sContractID)
+	k8s.State = models.StateCreated
+
+	err = d.db.UpdateK8s(k8s)
 	if err != nil {
+		log.Error().Err(err).Send()
 		return models.K8sCluster{}, err
 	}
 
-	master := models.Master{
-		CRU:        cru,
-		MRU:        mru,
-		SRU:        sru,
-		Public:     k8sDeployInput.Public,
-		PublicIP:   resCluster.Master.ComputedIP,
-		Name:       k8sDeployInput.MasterName,
-		YggIP:      resCluster.Master.PlanetaryIP,
-		MyceliumIP: resCluster.Master.MyceliumIP,
-		Resources:  k8sDeployInput.Resources,
-	}
-
-	workers := []models.Worker{}
-	for i, worker := range k8sDeployInput.Workers {
-		cru, mru, sru, _, err := calcNodeResources(worker.Resources, false)
-		if err != nil {
-			return models.K8sCluster{}, err
-		}
-
-		workerModel := models.Worker{
-			Name:       worker.Name,
-			CRU:        cru,
-			MRU:        mru,
-			SRU:        sru,
-			Public:     k8sDeployInput.Public,
-			PublicIP:   resCluster.Workers[i].ComputedIP,
-			YggIP:      resCluster.Workers[i].PlanetaryIP,
-			MyceliumIP: resCluster.Workers[i].MyceliumIP,
-			Resources:  worker.Resources,
-		}
-		workers = append(workers, workerModel)
-	}
-	k8sCluster := models.K8sCluster{
-		UserID:          userID,
-		NetworkContract: int(networkContractID),
-		ClusterContract: int(k8sContractID),
-		Master:          master,
-		Workers:         workers,
-	}
-
-	return k8sCluster, nil
+	return k8s, nil
 }
 
-func (d *Deployer) getK8sAvailableNode(ctx context.Context, k models.K8sDeployInput) (uint32, error) {
+func (d *Deployer) getK8sAvailableNode(ctx context.Context, k models.K8sCluster) (uint32, error) {
 	rootfs := make([]uint64, len(k.Workers)+1)
 
-	_, mru, sru, ips, err := calcNodeResources(k.Resources, k.Public)
+	_, mru, sru, ips, err := CalcNodeResources(k.Master.Resources, k.Master.Public)
 	if err != nil {
 		return 0, err
 	}
 
 	for _, worker := range k.Workers {
-		_, m, s, _, err := calcNodeResources(worker.Resources, false)
+		_, m, s, _, err := CalcNodeResources(worker.Resources, false)
 		if err != nil {
 			return 0, err
 		}
@@ -220,10 +200,14 @@ func (d *Deployer) getK8sAvailableNode(ctx context.Context, k models.K8sDeployIn
 		FreeSRU: freeSRU,
 		FreeIPs: &ips,
 		FarmIDs: []uint64{1},
-		IPv6:    &trueVal,
+		IPv4:    &k.Master.Public,
 	}
 
-	nodes, err := deployer.FilterNodes(ctx, d.tfPluginClient, filter, []uint64{*freeSRU}, nil, rootfs, 1)
+	if len(strings.TrimSpace(k.Master.Region)) != 0 {
+		filter.Region = &k.Master.Region
+	}
+
+	nodes, err := deployer.FilterNodes(ctx, d.TFPluginClient, filter, []uint64{*freeSRU}, nil, rootfs, 1)
 	if err != nil {
 		return 0, err
 	}
@@ -231,91 +215,55 @@ func (d *Deployer) getK8sAvailableNode(ctx context.Context, k models.K8sDeployIn
 	return uint32(nodes[0].NodeID), nil
 }
 
-// ValidateK8sQuota validates the quota a k8s deployment need
-func ValidateK8sQuota(k models.K8sDeployInput, availableResourcesQuota, availablePublicIPsQuota int) (int, error) {
-	neededQuota, err := calcNeededQuota(k.Resources)
-	if err != nil {
-		return 0, err
-	}
-
-	for _, worker := range k.Workers {
-		workerQuota, err := calcNeededQuota(worker.Resources)
-		if err != nil {
-			return 0, err
-		}
-		neededQuota += workerQuota
-	}
-
-	if availableResourcesQuota < neededQuota {
-		return 0, fmt.Errorf("no available quota %d for kubernetes deployment, you can request a new voucher", availableResourcesQuota)
-	}
-	if k.Public && availablePublicIPsQuota < publicQuota {
-		return 0, fmt.Errorf("no available quota %d for public ips", availablePublicIPsQuota)
-	}
-
-	return neededQuota, nil
-}
-
-func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDeployInput models.K8sDeployInput, adminSSHKey string) (int, error) {
-	// quota verification
-	quota, err := d.db.GetUserQuota(user.ID.String())
-	if err == gorm.ErrRecordNotFound {
-		log.Error().Err(err).Send()
-		return http.StatusNotFound, errors.New("user quota is not found")
+func (d *Deployer) deployK8sRequest(ctx context.Context, user models.User, k8sDeployInput models.K8sCluster, adminSSHKey string) (int, error, error) {
+	_, err := d.CanDeployK8s(user.ID.String(), k8sDeployInput)
+	if errors.Is(err, ErrCannotDeploy) {
+		return http.StatusBadRequest, err, err
 	}
 	if err != nil {
-		log.Error().Err(err).Send()
-		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
-	}
-
-	neededQuota, err := ValidateK8sQuota(k8sDeployInput, quota.Vms, quota.PublicIPs)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return http.StatusBadRequest, err
+		return http.StatusInternalServerError, err, errors.New(internalServerErrorMsg)
 	}
 
 	// deploy network and cluster
 	node, networkContractID, k8sContractID, err := d.deployK8sClusterWithNetwork(ctx, k8sDeployInput, user.SSHKey, adminSSHKey)
 	if err != nil {
-		log.Error().Err(err).Send()
-		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
+		return http.StatusInternalServerError, err, errors.New(internalServerErrorMsg)
 	}
 
-	k8sCluster, err := d.loadK8s(ctx, k8sDeployInput, user.ID.String(), node, networkContractID, k8sContractID)
+	k8sCluster, err := d.loadK8s(ctx, k8sDeployInput, node, networkContractID, k8sContractID)
 	if err != nil {
-		log.Error().Err(err).Send()
-		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
-	}
-	publicIPsQuota := quota.PublicIPs
-	if k8sDeployInput.Public {
-		publicIPsQuota -= publicQuota
-	}
-	// update quota
-	err = d.db.UpdateUserQuota(user.ID.String(), quota.Vms-neededQuota, publicIPsQuota)
-	if err == gorm.ErrRecordNotFound {
-		return http.StatusNotFound, errors.New("user quota is not found")
-	}
-	if err != nil {
-		log.Error().Err(err).Send()
-		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
+		return http.StatusInternalServerError, err, errors.New(internalServerErrorMsg)
 	}
 
-	err = d.db.CreateK8s(&k8sCluster)
+	err = d.db.UpdateK8s(k8sCluster)
 	if err != nil {
-		log.Error().Err(err).Send()
-		return http.StatusInternalServerError, errors.New(internalServerErrorMsg)
+		return http.StatusInternalServerError, err, errors.New(internalServerErrorMsg)
 	}
 
 	// metrics
-	middlewares.Deployments.WithLabelValues(user.ID.String(), k8sDeployInput.Resources, "master").Inc()
+	middlewares.Deployments.WithLabelValues(user.ID.String(), k8sDeployInput.Master.Resources, "master").Inc()
 	for _, worker := range k8sDeployInput.Workers {
 		middlewares.Deployments.WithLabelValues(user.ID.String(), worker.Resources, "worker").Inc()
 	}
 
-	return 0, nil
+	return 0, nil, nil
 }
 
-func convertGBToBytes(gb uint64) *uint64 {
-	bytes := gb * 1024 * 1024 * 1024
-	return &bytes
+// CanDeployK8s checks if user can deploy kubernetes
+func (d *Deployer) CanDeployK8s(userID string, k8s models.K8sCluster) (float64, error) {
+	k8sPrice, err := calcPrice(d.prices, k8s.Master.Resources, k8s.Master.Public)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to calculate kubernetes master price")
+	}
+
+	for _, worker := range k8s.Workers {
+		workerPrice, err := calcPrice(d.prices, worker.Resources, worker.Public)
+		if err != nil {
+			return 0, errors.Wrap(err, "failed to calculate kubernetes worker price")
+		}
+
+		k8sPrice += workerPrice
+	}
+
+	return k8sPrice, d.canDeploy(userID, k8sPrice)
 }

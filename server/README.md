@@ -69,3 +69,20 @@ make run
 ```bash
 docker run cloud4students
 ```
+
+### Swagger
+
+- Install swag binary
+
+```bash
+go install github.com/swaggo/swag/cmd/swag@latest
+```
+
+- Generate swagger docs
+
+```bash
+swag init
+```
+
+- You can access swagger through `/swagger/index.html`.
+- Example: if your port is `3000` and host is `localhost`, then you can access swagger using `http://localhost:3000/swagger/index.html`

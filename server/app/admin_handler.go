@@ -18,34 +18,60 @@ import (
 
 // AdminAnnouncement struct for data needed when admin sends new announcement
 type AdminAnnouncement struct {
-	Subject string `json:"subject"  binding:"required"`
-	Body    string `json:"announcement" binding:"required"`
+	Subject string `json:"subject" validate:"nonzero" binding:"required"`
+	Body    string `json:"announcement" validate:"nonzero" binding:"required"`
 }
 
 // EmailUser struct for data needed when admin sends new email to a user
 type EmailUser struct {
-	Subject string `json:"subject"  binding:"required"`
-	Body    string `json:"body" binding:"required"`
+	Subject string `json:"subject" validate:"nonzero" binding:"required"`
+	Body    string `json:"body" validate:"nonzero" binding:"required"`
 	Email   string `json:"email" binding:"required" validate:"mail"`
 }
 
 // UpdateMaintenanceInput struct for data needed when user update maintenance
 type UpdateMaintenanceInput struct {
-	ON bool `json:"on" binding:"required"`
+	ON bool `json:"on" validate:"nonzero" binding:"required"`
 }
 
 // SetAdminInput struct for setting users as admins
 type SetAdminInput struct {
-	Email string `json:"email" binding:"required"`
-	Admin bool   `json:"admin" binding:"required"`
+	Email string `json:"email" binding:"required" validate:"mail"`
+	Admin bool   `json:"admin" validate:"nonzero" binding:"required"`
 }
 
 // UpdateNextLaunchInput struct for data needed when updating next launch state
 type UpdateNextLaunchInput struct {
-	Launched bool `json:"launched" binding:"required"`
+	Launched bool `json:"launched" validate:"nonzero" binding:"required"`
+}
+
+// SetPricesInput struct for setting prices as admins
+type SetPricesInput struct {
+	Small    float64 `json:"small"`
+	Medium   float64 `json:"medium"`
+	Large    float64 `json:"large"`
+	PublicIP float64 `json:"public_ip"`
+}
+
+type ListDeploymentsResponse struct {
+	VMs []models.VM         `json:"vms"`
+	K8S []models.K8sCluster `json:"k8s"`
 }
 
 // GetAllUsersHandler returns all users
+// Example endpoint: List all users
+// @Summary List all users
+// @Description List all users in the system
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} []models.User
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /user/all [get]
 func (a *App) GetAllUsersHandler(req *http.Request) (interface{}, Response) {
 	users, err := a.db.ListAllUsers()
 	if err == gorm.ErrRecordNotFound || len(users) == 0 {
@@ -66,7 +92,103 @@ func (a *App) GetAllUsersHandler(req *http.Request) (interface{}, Response) {
 	}, Ok()
 }
 
+// GetAllInvoicesHandler returns all invoices
+// Example endpoint: List all invoices
+// @Summary List all invoices
+// @Description List all invoices in the system
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} []models.Invoice
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /invoice/all [get]
+func (a *App) GetAllInvoicesHandler(req *http.Request) (interface{}, Response) {
+	invoices, err := a.db.ListInvoices()
+	if err == gorm.ErrRecordNotFound || len(invoices) == 0 {
+		return ResponseMsg{
+			Message: "Invoices are not found",
+			Data:    invoices,
+		}, Ok()
+	}
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	return ResponseMsg{
+		Message: "Invoices are found",
+		Data:    invoices,
+	}, Ok()
+}
+
+// SetPricesHandler set prices for vms and public ip
+// Example endpoint: Set prices
+// @Summary Set prices
+// @Description Set vms and public ips prices prices
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param prices body SetPricesInput true "Prices to be set"
+// @Success 200 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Router /set_prices [put]
+func (a *App) SetPricesHandler(req *http.Request) (interface{}, Response) {
+	var input SetPricesInput
+	err := json.NewDecoder(req.Body).Decode(&input)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("failed to read input data"))
+	}
+
+	err = validator.Validate(input)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("invalid input data"))
+	}
+
+	if input.Small != 0 {
+		a.config.PricesPerMonth.SmallVM = input.Small
+	}
+
+	if input.Medium != 0 {
+		a.config.PricesPerMonth.MediumVM = input.Medium
+	}
+
+	if input.Large != 0 {
+		a.config.PricesPerMonth.LargeVM = input.Large
+	}
+
+	if input.PublicIP != 0 {
+		a.config.PricesPerMonth.PublicIP = input.PublicIP
+	}
+
+	return ResponseMsg{
+		Message: "New prices are set",
+		Data:    nil,
+	}, Ok()
+}
+
 // GetDlsCountHandler returns deployments count
+// Example endpoint: Get users' deployments count
+// @Summary Get users' deployments count
+// @Description Get users' deployments count in the system
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} models.DeploymentsCount
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /deployments/count [get]
 func (a *App) GetDlsCountHandler(req *http.Request) (interface{}, Response) {
 	count, err := a.db.CountAllDeployments()
 	if err == gorm.ErrRecordNotFound {
@@ -88,6 +210,18 @@ func (a *App) GetDlsCountHandler(req *http.Request) (interface{}, Response) {
 }
 
 // GetBalanceHandler return account balance information
+// Example endpoint: Get main TF account balance
+// @Summary Get main TF account balance
+// @Description Get main TF account balance
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} float64
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 500 {object} Response
+// @Router /balance [get]
 func (a *App) GetBalanceHandler(req *http.Request) (interface{}, Response) {
 	balance, err := a.deployer.GetBalance()
 	if err != nil {
@@ -101,29 +235,21 @@ func (a *App) GetBalanceHandler(req *http.Request) (interface{}, Response) {
 	}, Ok()
 }
 
-func (a *App) ResetUsersQuota(req *http.Request) (interface{}, Response) {
-	users, err := a.db.ListAllUsers()
-	if err == gorm.ErrRecordNotFound || len(users) == 0 {
-		return ResponseMsg{
-			Message: "Users are not found",
-		}, Ok()
-	}
-
-	for _, user := range users {
-		err = a.db.UpdateUserQuota(user.UserID, 0, 0)
-		if err != nil {
-			log.Error().Err(err).Send()
-			return nil, InternalServerError(errors.New(internalServerErrorMsg))
-		}
-	}
-
-	return ResponseMsg{
-		Message: "Quota is reset successfully",
-	}, Ok()
-}
-
-// DeleteAllDeployments deletes all deployments
-func (a *App) DeleteAllDeployments(req *http.Request) (interface{}, Response) {
+// DeleteAllDeploymentsHandler deletes all users' deployments
+// Example endpoint: Deletes all users' deployments
+// @Summary Deletes all users' deployments
+// @Description Deletes all users' deployments
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /deployments [delete]
+func (a *App) DeleteAllDeploymentsHandler(req *http.Request) (interface{}, Response) {
 	users, err := a.db.ListAllUsers()
 	if err == gorm.ErrRecordNotFound || len(users) == 0 {
 		return ResponseMsg{
@@ -138,9 +264,9 @@ func (a *App) DeleteAllDeployments(req *http.Request) (interface{}, Response) {
 
 	for _, user := range users {
 		// vms
-		vms, err := a.db.GetAllVms(user.UserID)
+		vms, err := a.db.GetAllVms(user.ID.String())
 		if err == gorm.ErrRecordNotFound || len(vms) == 0 {
-			log.Error().Err(err).Str("userID", user.UserID).Msg("Virtual machines are not found")
+			log.Error().Err(err).Str("userID", user.ID.String()).Msg("Virtual machines are not found")
 			continue
 		}
 		if err != nil {
@@ -156,16 +282,16 @@ func (a *App) DeleteAllDeployments(req *http.Request) (interface{}, Response) {
 			}
 		}
 
-		err = a.db.DeleteAllVms(user.UserID)
+		err = a.db.DeleteAllVms(user.ID.String())
 		if err != nil {
 			log.Error().Err(err).Send()
 			return nil, InternalServerError(errors.New(internalServerErrorMsg))
 		}
 
 		// k8s clusters
-		clusters, err := a.db.GetAllK8s(user.UserID)
+		clusters, err := a.db.GetAllK8s(user.ID.String())
 		if err == gorm.ErrRecordNotFound || len(clusters) == 0 {
-			log.Error().Err(err).Str("userID", user.UserID).Msg("Kubernetes clusters are not found")
+			log.Error().Err(err).Str("userID", user.ID.String()).Msg("Kubernetes clusters are not found")
 			continue
 		}
 		if err != nil {
@@ -181,7 +307,7 @@ func (a *App) DeleteAllDeployments(req *http.Request) (interface{}, Response) {
 			}
 		}
 
-		err = a.db.DeleteAllK8s(user.UserID)
+		err = a.db.DeleteAllK8s(user.ID.String())
 		if err != nil {
 			log.Error().Err(err).Send()
 			return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -193,8 +319,21 @@ func (a *App) DeleteAllDeployments(req *http.Request) (interface{}, Response) {
 	}, Ok()
 }
 
-// ListDeployments lists all deployments
-func (a *App) ListDeployments(req *http.Request) (interface{}, Response) {
+// ListDeploymentsHandler lists all users' deployments
+// Example endpoint: List all users' deployments
+// @Summary List all users' deployments
+// @Description List all users' deployments
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} ListDeploymentsResponse
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /deployments [get]
+func (a *App) ListDeploymentsHandler(req *http.Request) (interface{}, Response) {
 	users, err := a.db.ListAllUsers()
 	if err == gorm.ErrRecordNotFound || len(users) == 0 {
 		return ResponseMsg{
@@ -212,9 +351,9 @@ func (a *App) ListDeployments(req *http.Request) (interface{}, Response) {
 
 	for _, user := range users {
 		// vms
-		vms, err := a.db.GetAllVms(user.UserID)
+		vms, err := a.db.GetAllVms(user.ID.String())
 		if err == gorm.ErrRecordNotFound || len(vms) == 0 {
-			log.Error().Err(err).Str("userID", user.UserID).Msg("Virtual machines are not found")
+			log.Error().Err(err).Str("userID", user.ID.String()).Msg("Virtual machines are not found")
 			continue
 		}
 		if err != nil {
@@ -225,9 +364,9 @@ func (a *App) ListDeployments(req *http.Request) (interface{}, Response) {
 		allVMs = append(allVMs, vms...)
 
 		// k8s clusters
-		clusters, err := a.db.GetAllK8s(user.UserID)
+		clusters, err := a.db.GetAllK8s(user.ID.String())
 		if err == gorm.ErrRecordNotFound || len(clusters) == 0 {
-			log.Error().Err(err).Str("userID", user.UserID).Msg("Kubernetes clusters are not found")
+			log.Error().Err(err).Str("userID", user.ID.String()).Msg("Kubernetes clusters are not found")
 			continue
 		}
 		if err != nil {
@@ -240,11 +379,25 @@ func (a *App) ListDeployments(req *http.Request) (interface{}, Response) {
 
 	return ResponseMsg{
 		Message: "Deployments are listed successfully",
-		Data:    map[string]interface{}{"vms": allVMs, "k8s": allClusters},
+		Data:    ListDeploymentsResponse{VMs: allVMs, K8S: allClusters},
 	}, Ok()
 }
 
 // UpdateMaintenanceHandler updates maintenance flag
+// Example endpoint: Updates maintenance flag
+// @Summary Updates maintenance flag
+// @Description Updates maintenance flag
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param maintenance body UpdateMaintenanceInput true "Maintenance value to be set"
+// @Success 200 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /maintenance [put]
 func (a *App) UpdateMaintenanceHandler(req *http.Request) (interface{}, Response) {
 	var input UpdateMaintenanceInput
 	err := json.NewDecoder(req.Body).Decode(&input)
@@ -269,26 +422,22 @@ func (a *App) UpdateMaintenanceHandler(req *http.Request) (interface{}, Response
 	}, Ok()
 }
 
-// GetMaintenanceHandler updates maintenance flag
-func (a *App) GetMaintenanceHandler(req *http.Request) (interface{}, Response) {
-	maintenance, err := a.db.GetMaintenance()
-	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("maintenance is not found"))
-	}
-
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
-	}
-
-	return ResponseMsg{
-		Message: fmt.Sprintf("Maintenance is set with %v", maintenance.Active),
-		Data:    maintenance,
-	}, Ok()
-}
-
-// SetAdmin sets a user as an admin
-func (a *App) SetAdmin(req *http.Request) (interface{}, Response) {
+// SetAdminHandler sets a user as an admin
+// Example endpoint: Sets a user as an admin
+// @Summary Sets a user as an admin
+// @Description Sets a user as an admin
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param setAdmin body SetAdminInput true "User to be set as admin"
+// @Success 200 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /set_admin [put]
+func (a *App) SetAdminHandler(req *http.Request) (interface{}, Response) {
 	input := SetAdminInput{}
 	err := json.NewDecoder(req.Body).Decode(&input)
 	if err != nil {
@@ -330,6 +479,166 @@ func (a *App) SetAdmin(req *http.Request) (interface{}, Response) {
 
 	return ResponseMsg{
 		Message: "User is updated successfully",
+	}, Ok()
+}
+
+// CreateNewAnnouncementHandler creates a new administrator announcement and sends it to all users as an email and notification
+// Example endpoint: Creates a new administrator announcement and sends it to all users as an email and notification
+// @Summary Creates a new administrator announcement and sends it to all users as an email and notification
+// @Description Creates a new administrator announcement and sends it to all users as an email and notification
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param announcement body AdminAnnouncement true "announcement to be created"
+// @Success 201 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /announcement [post]
+func (a *App) CreateNewAnnouncementHandler(req *http.Request) (interface{}, Response) {
+	var adminAnnouncement AdminAnnouncement
+	err := json.NewDecoder(req.Body).Decode(&adminAnnouncement)
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("failed to read announcement data"))
+	}
+
+	err = validator.Validate(adminAnnouncement)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("invalid announcement data"))
+	}
+
+	users, err := a.db.ListAllUsers()
+	if err == gorm.ErrRecordNotFound || len(users) == 0 {
+		return ResponseMsg{
+			Message: "Users are not found",
+			Data:    users,
+		}, Ok()
+	}
+
+	for _, user := range users {
+		subject, body := internal.AdminAnnouncementMailContent(adminAnnouncement.Subject, adminAnnouncement.Body, a.config.Server.Host, user.Name())
+
+		err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+
+		notification := models.Notification{UserID: user.ID.String(), Msg: fmt.Sprintf("Announcement: %s", adminAnnouncement.Body)}
+		err = a.db.CreateNotification(&notification)
+		if err != nil {
+			log.Error().Err(err).Send()
+			return nil, InternalServerError(errors.New(internalServerErrorMsg))
+		}
+	}
+
+	return ResponseMsg{
+		Message: "new announcement is sent successfully",
+	}, Created()
+}
+
+// SendEmailHandler creates a new administrator email and sends it to a specific user as an email and notification
+// Example endpoint: Creates a new administrator email and sends it to a specific user as an email and notification
+// @Summary Creates a new administrator email and sends it to a specific user as an email and notification
+// @Description Creates a new administrator email and sends it to a specific user as an email and notification
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param email body EmailUser true "email to be sent"
+// @Success 201 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /email [post]
+func (a *App) SendEmailHandler(req *http.Request) (interface{}, Response) {
+	var emailUser EmailUser
+	err := json.NewDecoder(req.Body).Decode(&emailUser)
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("failed to read email data"))
+	}
+
+	err = validator.Validate(emailUser)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("invalid email data"))
+	}
+
+	user, err := a.db.GetUserByEmail(emailUser.Email)
+	if err == gorm.ErrRecordNotFound {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("user is not found"))
+	}
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("failed to get user"))
+	}
+
+	subject, body := internal.AdminMailContent(fmt.Sprintf("Hey! 📢 %s", emailUser.Subject), emailUser.Body, a.config.Server.Host, user.Name())
+
+	err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	notification := models.Notification{UserID: user.ID.String(), Msg: fmt.Sprintf("Email: %s", emailUser.Body)}
+	err = a.db.CreateNotification(&notification)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	return ResponseMsg{
+		Message: "new email is sent successfully",
+	}, Created()
+}
+
+// UpdateNextLaunchHandler updates next launch flag
+// Example endpoint: Updates next launch flag
+// @Summary Updates next launch flag
+// @Description Updates next launch flag
+// @Tags Admin
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param nextlaunch body UpdateNextLaunchInput true "Next launch value to be set"
+// @Success 200 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /nextlaunch [put]
+func (a *App) UpdateNextLaunchHandler(req *http.Request) (interface{}, Response) {
+	var input UpdateNextLaunchInput
+	err := json.NewDecoder(req.Body).Decode(&input)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("failed to read NextLaunch update data"))
+	}
+
+	err = a.db.UpdateNextLaunch(input.Launched)
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("next launch is not found"))
+	}
+
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	return ResponseMsg{
+		Message: "Next Launch is updated successfully",
+		Data:    nil,
 	}, Ok()
 }
 
@@ -378,141 +687,4 @@ func (a *App) notifyAdmins() {
 			}
 		}
 	}
-}
-
-// CreateNewAnnouncement creates a new administrator announcement and sends it to all users as an email and notification
-func (a *App) CreateNewAnnouncement(req *http.Request) (interface{}, Response) {
-	var adminAnnouncement AdminAnnouncement
-	err := json.NewDecoder(req.Body).Decode(&adminAnnouncement)
-
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, BadRequest(errors.New("failed to read announcement data"))
-	}
-
-	err = validator.Validate(adminAnnouncement)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, BadRequest(errors.New("invalid announcement data"))
-	}
-
-	users, err := a.db.ListAllUsers()
-	if err == gorm.ErrRecordNotFound || len(users) == 0 {
-		return ResponseMsg{
-			Message: "Users are not found",
-			Data:    users,
-		}, Ok()
-	}
-
-	for _, user := range users {
-		subject, body := internal.AdminAnnouncementMailContent(adminAnnouncement.Subject, adminAnnouncement.Body, a.config.Server.Host, user.Name)
-
-		err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
-		if err != nil {
-			log.Error().Err(err).Send()
-			return nil, InternalServerError(errors.New(internalServerErrorMsg))
-		}
-
-		notification := models.Notification{UserID: user.UserID, Msg: fmt.Sprintf("Announcement: %s", adminAnnouncement.Body)}
-		err = a.db.CreateNotification(&notification)
-		if err != nil {
-			log.Error().Err(err).Send()
-			return nil, InternalServerError(errors.New(internalServerErrorMsg))
-		}
-	}
-
-	return ResponseMsg{
-		Message: "new announcement is sent successfully",
-	}, Created()
-}
-
-// SendEmail creates a new administrator email and sends it to a specific user as an email and notification
-func (a *App) SendEmail(req *http.Request) (interface{}, Response) {
-	var emailUser EmailUser
-	err := json.NewDecoder(req.Body).Decode(&emailUser)
-
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, BadRequest(errors.New("failed to read email data"))
-	}
-
-	err = validator.Validate(emailUser)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, BadRequest(errors.New("invalid email data"))
-	}
-
-	user, err := a.db.GetUserByEmail(emailUser.Email)
-	if err == gorm.ErrRecordNotFound {
-		log.Error().Err(err).Send()
-		return nil, BadRequest(errors.New("user is not found"))
-	}
-
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, BadRequest(errors.New("failed to get user"))
-	}
-
-	subject, body := internal.AdminMailContent(emailUser.Subject, emailUser.Body, a.config.Server.Host, user.Name)
-
-	err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
-	}
-
-	notification := models.Notification{UserID: user.ID.String(), Msg: fmt.Sprintf("Email: %s", emailUser.Body)}
-	err = a.db.CreateNotification(&notification)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
-	}
-
-	return ResponseMsg{
-		Message: "new email is sent successfully",
-	}, Created()
-}
-
-// UpdateNextLaunchHandler updates next launch flag
-func (a *App) UpdateNextLaunchHandler(req *http.Request) (interface{}, Response) {
-	var input UpdateNextLaunchInput
-	err := json.NewDecoder(req.Body).Decode(&input)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, BadRequest(errors.New("failed to read NextLaunch update data"))
-	}
-
-	err = a.db.UpdateNextLaunch(input.Launched)
-	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("next launch is not found"))
-	}
-
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
-	}
-
-	return ResponseMsg{
-		Message: "Next Launch is updated successfully",
-		Data:    nil,
-	}, Ok()
-}
-
-// GetNextLaunchHandler returns next launch state
-func (a *App) GetNextLaunchHandler(req *http.Request) (interface{}, Response) {
-	nextlaunch, err := a.db.GetNextLaunch()
-
-	if err == gorm.ErrRecordNotFound {
-		return nil, NotFound(errors.New("next launch is not found"))
-	}
-
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
-	}
-
-	return ResponseMsg{
-		Message: fmt.Sprintf("Next Launch is Launched with state: %v", nextlaunch.Launched),
-		Data:    nextlaunch,
-	}, Ok()
 }

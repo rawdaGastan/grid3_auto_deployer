@@ -72,13 +72,12 @@
 
 ## Scenario 8
 
-    - As a user I expect to get all information about the voucher, used resources, and remaining quota 
+    - As a user I expect to get all information about the voucher, used resources, and remaining balance 
 
 ### Acceptance Criteria
 
-    - User should get all information about the voucher and its available resources (vms)
-    - Each user will have certain numbers of vms based on the voucher 
-    - Each user should know how quota is calculated
+    - User should get all information about the voucher and its available balance
+    - Each user will have certain amount of money based on the voucher 
 ---
 
 ## Scenario 9

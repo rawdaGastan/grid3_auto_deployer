@@ -7,7 +7,12 @@ build:
 	@echo "Running $@"
 	@go build -ldflags="-X 'github.com/codescalers/cloud4students/cmd.Commit=$(shell git rev-parse HEAD)'" -o bin/cloud4students main.go
 
-run: build
+swag:
+	@echo "Installing swag" && go install github.com/swaggo/swag/cmd/swag@latest
+	export PATH=${PATH}:${HOME}/go/bin
+	@swag init
+
+run: build swag
 	@echo "Running $@"
 	bin/cloud4students 
 

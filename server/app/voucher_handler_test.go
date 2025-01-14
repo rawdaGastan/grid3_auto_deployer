@@ -25,8 +25,7 @@ func TestGenerateVoucherHandler(t *testing.T) {
 
 	voucherBody := []byte(`{
 		"length": 5,
-		"vms": 10,
-		"public_ips": 1
+		"balance": 10
 	}`)
 
 	t.Run("Generate voucher: success", func(t *testing.T) {
@@ -49,8 +48,7 @@ func TestGenerateVoucherHandler(t *testing.T) {
 	t.Run("Generate voucher: invalid data", func(t *testing.T) {
 		body := []byte(`{
 			"length": 2,
-			"vms": 10,
-			"public_ips": 1
+			"balance": 1
 		}`)
 
 		req := authHandlerConfig{

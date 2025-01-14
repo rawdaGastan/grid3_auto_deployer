@@ -13,6 +13,18 @@ import (
 )
 
 // ListNotificationsHandler lists notifications for a user
+// Example endpoint: Lists user's notifications
+// @Summary Lists user's notifications
+// @Description Lists user's notifications
+// @Tags Notification
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Success 200 {object} []models.Notification
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /notification [get]
 func (a *App) ListNotificationsHandler(req *http.Request) (interface{}, Response) {
 	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
 
@@ -36,6 +48,19 @@ func (a *App) ListNotificationsHandler(req *http.Request) (interface{}, Response
 }
 
 // UpdateNotificationsHandler updates notifications for a user
+// Example endpoint: Set user's notifications as seen
+// @Summary Set user's notifications as seen
+// @Description Set user's notifications as seen
+// @Tags Notification
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param id path string true "Notification ID"
+// @Success 200 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 500 {object} Response
+// @Router /notification/{id} [put]
 func (a *App) UpdateNotificationsHandler(req *http.Request) (interface{}, Response) {
 	id, err := strconv.Atoi(mux.Vars(req)["id"])
 	if err != nil {

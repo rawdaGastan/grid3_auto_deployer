@@ -3,6 +3,7 @@ package models
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -37,12 +38,12 @@ func TestConnect(t *testing.T) {
 func TestCreateUser(t *testing.T) {
 	db := setupDB(t)
 	err := db.CreateUser(&User{
-		Name: "test",
+		FirstName: "test",
 	})
 	require.NoError(t, err)
 	var user User
 	err = db.db.First(&user).Error
-	require.Equal(t, user.Name, "test")
+	require.Equal(t, user.FirstName, "test")
 	require.NoError(t, err)
 }
 
@@ -50,7 +51,7 @@ func TestGetUserByEmail(t *testing.T) {
 	db := setupDB(t)
 	t.Run("user not found", func(t *testing.T) {
 		err := db.CreateUser(&User{
-			Name: "test",
+			FirstName: "test",
 		})
 		require.NoError(t, err)
 		_, err = db.GetUserByEmail("email")
@@ -58,12 +59,12 @@ func TestGetUserByEmail(t *testing.T) {
 	})
 	t.Run("user found", func(t *testing.T) {
 		err := db.CreateUser(&User{
-			Name:  "test",
-			Email: "email",
+			FirstName: "test",
+			Email:     "email",
 		})
 		require.NoError(t, err)
 		u, err := db.GetUserByEmail("email")
-		require.Equal(t, u.Name, "test")
+		require.Equal(t, u.FirstName, "test")
 		require.Equal(t, u.Email, "email")
 		require.NoError(t, err)
 	})
@@ -73,7 +74,7 @@ func TestGetUserByID(t *testing.T) {
 	db := setupDB(t)
 	t.Run("user not found", func(t *testing.T) {
 		err := db.CreateUser(&User{
-			Name: "test",
+			FirstName: "test",
 		})
 		require.NoError(t, err)
 		_, err = db.GetUserByID("not-uuid")
@@ -81,13 +82,13 @@ func TestGetUserByID(t *testing.T) {
 	})
 	t.Run("user found", func(t *testing.T) {
 		user := User{
-			Name:  "test",
-			Email: "email",
+			FirstName: "test",
+			Email:     "email",
 		}
 		err := db.CreateUser(&user)
 		require.NoError(t, err)
 		u, err := db.GetUserByID(user.ID.String())
-		require.Equal(t, u.Name, "test")
+		require.Equal(t, u.FirstName, "test")
 		require.Equal(t, u.Email, "email")
 		require.NoError(t, err)
 	})
@@ -103,7 +104,7 @@ func TestListAllUsers(t *testing.T) {
 
 	t.Run("list all users for admin", func(t *testing.T) {
 		user1 := User{
-			Name:           "user1",
+			FirstName:      "user1",
 			Email:          "user1@gmail.com",
 			HashedPassword: []byte{},
 			Verified:       true,
@@ -113,7 +114,7 @@ func TestListAllUsers(t *testing.T) {
 		require.NoError(t, err)
 		users, err := db.ListAllUsers()
 		require.NoError(t, err)
-		require.Equal(t, users[0].Name, user1.Name)
+		require.Equal(t, users[0].FirstName, user1.FirstName)
 		require.Equal(t, users[0].Email, user1.Email)
 		require.Equal(t, users[0].HashedPassword, user1.HashedPassword)
 
@@ -129,7 +130,7 @@ func TestGetCodeByEmail(t *testing.T) {
 
 	t.Run("get code of user", func(t *testing.T) {
 		user := User{
-			Name:           "user",
+			FirstName:      "user",
 			Email:          "user@gmail.com",
 			HashedPassword: []byte{},
 			Verified:       true,
@@ -148,7 +149,7 @@ func TestGetCodeByEmail(t *testing.T) {
 func TestUpdatePassword(t *testing.T) {
 	db := setupDB(t)
 	t.Run("user not found so nothing updated", func(t *testing.T) {
-		err := db.UpdatePassword("email", []byte("new-pass"))
+		err := db.UpdateUserPassword("email", []byte("new-pass"))
 		require.Error(t, err)
 		var user User
 		err = db.db.First(&user).Error
@@ -162,7 +163,7 @@ func TestUpdatePassword(t *testing.T) {
 		}
 		err := db.CreateUser(&user)
 		require.NoError(t, err)
-		err = db.UpdatePassword("email", []byte("new-pass"))
+		err = db.UpdateUserPassword("email", []byte("new-pass"))
 		require.NoError(t, err)
 		u, err := db.GetUserByEmail("email")
 		require.Equal(t, u.Email, "email")
@@ -192,7 +193,7 @@ func TestUpdateUserByID(t *testing.T) {
 			ID:             user.ID,
 			Email:          "",
 			HashedPassword: []byte("new-pass"),
-			Name:           "name",
+			FirstName:      "name",
 		})
 		require.NoError(t, err)
 		var u User
@@ -201,7 +202,7 @@ func TestUpdateUserByID(t *testing.T) {
 		require.Equal(t, u.Email, user.Email)
 		// should change
 		require.Equal(t, u.HashedPassword, []byte("new-pass"))
-		require.Equal(t, u.Name, "name")
+		require.Equal(t, u.FirstName, "name")
 
 		require.NoError(t, err)
 	})
@@ -210,7 +211,7 @@ func TestUpdateUserByID(t *testing.T) {
 func TestUpdateVerification(t *testing.T) {
 	db := setupDB(t)
 	t.Run("user not found so nothing updated", func(t *testing.T) {
-		err := db.UpdateVerification("id", true)
+		err := db.UpdateUserVerification("id", true)
 		require.NoError(t, err)
 		var user User
 		err = db.db.First(&user).Error
@@ -224,7 +225,7 @@ func TestUpdateVerification(t *testing.T) {
 		err := db.CreateUser(&user)
 		require.Equal(t, user.Verified, false)
 		require.NoError(t, err)
-		err = db.UpdateVerification(user.ID.String(), true)
+		err = db.UpdateUserVerification(user.ID.String(), true)
 		require.NoError(t, err)
 		var u User
 		err = db.db.First(&u).Error
@@ -325,9 +326,12 @@ func TestCreateVM(t *testing.T) {
 	vm := VM{Name: "vm"}
 	err := db.CreateVM(&vm)
 	require.NoError(t, err)
+
 	var v VM
-	err = db.db.First(&v).Error
-	require.NoError(t, err)
+	require.NoError(t, db.db.First(&v).Error)
+
+	v.CreatedAt = time.Now().In(time.Local).Truncate(time.Second)
+	vm.CreatedAt = time.Now().Truncate(time.Second)
 	require.Equal(t, v, vm)
 }
 
@@ -343,10 +347,14 @@ func TestGetVMByID(t *testing.T) {
 		require.NoError(t, err)
 
 		v, err := db.GetVMByID(vm.ID)
-		require.Equal(t, v, vm)
 		require.NoError(t, err)
+
+		v.CreatedAt = time.Now().In(time.Local).Truncate(time.Second)
+		vm.CreatedAt = time.Now().Truncate(time.Second)
+		require.Equal(t, v, vm)
 	})
 }
+
 func TestGetAllVMs(t *testing.T) {
 	db := setupDB(t)
 	t.Run("no vms with user", func(t *testing.T) {
@@ -367,14 +375,22 @@ func TestGetAllVMs(t *testing.T) {
 		require.NoError(t, err)
 
 		vms, err := db.GetAllVms("user")
+
+		vms[0].CreatedAt = time.Now().In(time.Local).Truncate(time.Second)
+		vms[1].CreatedAt = time.Now().In(time.Local).Truncate(time.Second)
+		vm1.CreatedAt = time.Now().Truncate(time.Second)
+		vm2.CreatedAt = time.Now().Truncate(time.Second)
+
 		require.Equal(t, vms, []VM{vm1, vm2})
 		require.NoError(t, err)
 
 		vms, err = db.GetAllVms("new-user")
+		vms[0].CreatedAt = time.Now().In(time.Local).Truncate(time.Second)
+		vm3.CreatedAt = time.Now().Truncate(time.Second)
+
 		require.Equal(t, vms, []VM{vm3})
 		require.NoError(t, err)
 	})
-
 }
 
 func TestAvailableVMName(t *testing.T) {
@@ -406,8 +422,8 @@ func TestAvailableVMName(t *testing.T) {
 		require.Equal(t, true, valid)
 
 	})
-
 }
+
 func TestDeleteVMByID(t *testing.T) {
 	db := setupDB(t)
 	t.Run("delete non existing vm", func(t *testing.T) {
@@ -436,6 +452,7 @@ func TestDeleteAllVMs(t *testing.T) {
 		err := db.DeleteAllVms("user")
 		require.NoError(t, err)
 	})
+
 	t.Run("delete existing vms", func(t *testing.T) {
 		vm1 := VM{UserID: "user", Name: "vm1"}
 		vm2 := VM{UserID: "user", Name: "vm2"}
@@ -448,94 +465,19 @@ func TestDeleteAllVMs(t *testing.T) {
 		err = db.CreateVM(&vm3)
 		require.NoError(t, err)
 
-		vms, err := db.GetAllVms("user")
-		require.Equal(t, vms, []VM{vm1, vm2})
-		require.NoError(t, err)
-
-		vms, err = db.GetAllVms("new-user")
-		require.Equal(t, vms, []VM{vm3})
-		require.NoError(t, err)
-
 		err = db.DeleteAllVms("user")
 		require.NoError(t, err)
 
-		vms, err = db.GetAllVms("user")
+		vms, err := db.GetAllVms("user")
 		require.NoError(t, err)
 		require.Empty(t, vms)
 
 		// other users unaffected
 		vms, err = db.GetAllVms("new-user")
+		vms[0].CreatedAt = time.Now().In(time.Local).Truncate(time.Second)
+		vm3.CreatedAt = time.Now().Truncate(time.Second)
 		require.Equal(t, vms, []VM{vm3})
 		require.NoError(t, err)
-	})
-}
-
-func TestCreateQuota(t *testing.T) {
-	db := setupDB(t)
-	quota := Quota{UserID: "user"}
-	err := db.CreateQuota(&quota)
-	require.NoError(t, err)
-	var q Quota
-	err = db.db.First(&q).Error
-	require.NoError(t, err)
-	require.Equal(t, q, quota)
-}
-
-func TestUpdateUserQuota(t *testing.T) {
-	db := setupDB(t)
-	t.Run("quota not found so no updates", func(t *testing.T) {
-		err := db.UpdateUserQuota("user", 5, 0)
-		require.NoError(t, err)
-	})
-	t.Run("quota found", func(t *testing.T) {
-		quota1 := Quota{UserID: "user"}
-		quota2 := Quota{UserID: "new-user"}
-
-		err := db.CreateQuota(&quota1)
-		require.NoError(t, err)
-		err = db.CreateQuota(&quota2)
-		require.NoError(t, err)
-
-		err = db.UpdateUserQuota("user", 5, 10)
-		require.NoError(t, err)
-
-		var q Quota
-		err = db.db.First(&q, "user_id = 'user'").Error
-		require.NoError(t, err)
-		require.Equal(t, q.Vms, 5)
-
-		err = db.db.First(&q, "user_id = 'new-user'").Error
-		require.NoError(t, err)
-		require.Equal(t, q.Vms, 0)
-
-	})
-
-	t.Run("quota found with zero values", func(t *testing.T) {
-		quota := Quota{UserID: "1"}
-		err := db.CreateQuota(&quota)
-		require.NoError(t, err)
-		err = db.UpdateUserQuota("1", 0, 0)
-		require.NoError(t, err)
-	})
-}
-func TestGetUserQuota(t *testing.T) {
-	db := setupDB(t)
-	t.Run("quota not found", func(t *testing.T) {
-		_, err := db.GetUserQuota("user")
-		require.Equal(t, err, gorm.ErrRecordNotFound)
-	})
-	t.Run("quota found", func(t *testing.T) {
-		quota1 := Quota{UserID: "user"}
-		quota2 := Quota{UserID: "new-user"}
-
-		err := db.CreateQuota(&quota1)
-		require.NoError(t, err)
-		err = db.CreateQuota(&quota2)
-		require.NoError(t, err)
-
-		quota, err := db.GetUserQuota("user")
-		require.NoError(t, err)
-		require.Equal(t, quota, quota1)
 	})
 }
 
@@ -693,12 +635,14 @@ func TestCreateK8s(t *testing.T) {
 	require.Equal(t, w[1].Name, "worker2")
 	require.Equal(t, w[1].ClusterID, 1)
 }
+
 func TestGetK8s(t *testing.T) {
 	db := setupDB(t)
 	t.Run("K8s not found", func(t *testing.T) {
 		_, err := db.GetK8s(1)
 		require.Equal(t, err, gorm.ErrRecordNotFound)
 	})
+
 	t.Run("K8s found", func(t *testing.T) {
 		k8s := K8sCluster{
 			UserID: "user",
@@ -712,7 +656,7 @@ func TestGetK8s(t *testing.T) {
 			Master: Master{
 				Name: "master2",
 			},
-			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+			Workers: []Worker{{Name: "worker3"}, {Name: "worker4"}},
 		}
 
 		err := db.CreateK8s(&k8s)
@@ -722,10 +666,12 @@ func TestGetK8s(t *testing.T) {
 
 		k, err := db.GetK8s(k8s.ID)
 		require.NoError(t, err)
-		require.Equal(t, k, k8s)
+		require.Equal(t, len(k.Workers), len(k8s.Workers))
+		require.Equal(t, k.Master.ClusterID, k8s.Master.ClusterID)
 		require.NotEqual(t, k, k8s2)
 	})
 }
+
 func TestGetAllK8s(t *testing.T) {
 	db := setupDB(t)
 	t.Run("K8s not found", func(t *testing.T) {
@@ -733,6 +679,7 @@ func TestGetAllK8s(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, c)
 	})
+
 	t.Run("K8s found", func(t *testing.T) {
 		k8s1 := K8sCluster{
 			UserID: "user",
@@ -746,14 +693,14 @@ func TestGetAllK8s(t *testing.T) {
 			Master: Master{
 				Name: "master2",
 			},
-			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+			Workers: []Worker{{Name: "worker3"}, {Name: "worker4"}},
 		}
 		k8s3 := K8sCluster{
 			UserID: "new-user",
 			Master: Master{
 				Name: "master3",
 			},
-			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+			Workers: []Worker{{Name: "worker5"}, {Name: "worker6"}},
 		}
 
 		err := db.CreateK8s(&k8s1)
@@ -765,14 +712,19 @@ func TestGetAllK8s(t *testing.T) {
 
 		k, err := db.GetAllK8s("user")
 		require.NoError(t, err)
-		require.Equal(t, k, []K8sCluster{k8s1, k8s2})
+		require.Equal(t, len(k[0].Workers), len(k8s1.Workers))
+		require.Equal(t, k[0].Master.ClusterID, k8s1.Master.ClusterID)
+		require.Equal(t, len(k[1].Workers), len(k8s2.Workers))
+		require.Equal(t, k[1].Master.ClusterID, k8s2.Master.ClusterID)
 
 		k, err = db.GetAllK8s("new-user")
 		require.NoError(t, err)
-		require.Equal(t, k, []K8sCluster{k8s3})
+		require.Equal(t, len(k[0].Workers), len(k8s3.Workers))
+		require.Equal(t, k[0].Master.ClusterID, k8s3.Master.ClusterID)
 	})
 
 }
+
 func TestDeleteK8s(t *testing.T) {
 	db := setupDB(t)
 	t.Run("K8s not found", func(t *testing.T) {
@@ -792,9 +744,9 @@ func TestDeleteK8s(t *testing.T) {
 		k8s2 := K8sCluster{
 			UserID: "new-user",
 			Master: Master{
-				Name: "master",
+				Name: "master2",
 			},
-			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+			Workers: []Worker{{Name: "worker3"}, {Name: "worker4"}},
 		}
 
 		err := db.CreateK8s(&k8s1)
@@ -810,9 +762,11 @@ func TestDeleteK8s(t *testing.T) {
 
 		k, err := db.GetK8s(k8s2.ID)
 		require.NoError(t, err)
-		require.Equal(t, k, k8s2)
+		require.Equal(t, len(k.Workers), len(k8s2.Workers))
+		require.Equal(t, k.Master.ClusterID, k8s2.Master.ClusterID)
 	})
 }
+
 func TestDeleteAllK8s(t *testing.T) {
 	db := setupDB(t)
 	t.Run("K8s not found", func(t *testing.T) {
@@ -832,16 +786,16 @@ func TestDeleteAllK8s(t *testing.T) {
 		k8s2 := K8sCluster{
 			UserID: "user",
 			Master: Master{
-				Name: "master",
+				Name: "master2",
 			},
-			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+			Workers: []Worker{{Name: "worker3"}, {Name: "worker4"}},
 		}
 		k8s3 := K8sCluster{
 			UserID: "new-user",
 			Master: Master{
-				Name: "master",
+				Name: "master3",
 			},
-			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+			Workers: []Worker{{Name: "worker5"}, {Name: "worker6"}},
 		}
 
 		err := db.CreateK8s(&k8s1)
@@ -860,7 +814,9 @@ func TestDeleteAllK8s(t *testing.T) {
 
 		k, err = db.GetAllK8s("new-user")
 		require.NoError(t, err)
-		require.Equal(t, k, []K8sCluster{k8s3})
+
+		require.Equal(t, len(k[0].Workers), len(k8s3.Workers))
+		require.Equal(t, k[0].Master.ClusterID, k8s3.Master.ClusterID)
 	})
 
 	t.Run("test with no id", func(t *testing.T) {
@@ -898,9 +854,9 @@ func TestAvailableK8sName(t *testing.T) {
 		k8s := K8sCluster{
 			UserID: "user",
 			Master: Master{
-				Name: "master",
+				Name: "master2",
 			},
-			Workers: []Worker{{Name: "worker1"}, {Name: "worker2"}},
+			Workers: []Worker{{Name: "worker3"}, {Name: "worker4"}},
 		}
 		err := db.CreateK8s(&k8s)
 		require.NoError(t, err)

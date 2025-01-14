@@ -37,7 +37,7 @@ func (d *Deployer) ConsumeVMRequest(ctx context.Context, pending bool) {
 				defer vmWG.Done()
 
 				var codeErr int
-				var resErr error
+				var resErr, backendErr error
 				var req streams.VMDeployRequest
 
 				for _, v := range message.Values {
@@ -47,9 +47,14 @@ func (d *Deployer) ConsumeVMRequest(ctx context.Context, pending bool) {
 						continue
 					}
 
-					codeErr, resErr = d.deployVMRequest(ctx, req.User, req.Input, req.AdminSSHKey)
+					codeErr, backendErr, resErr = d.deployVMRequest(ctx, req.User, req.VM, req.AdminSSHKey)
 					if resErr != nil {
-						log.Error().Err(resErr).Msg("failed to deploy vm request")
+						log.Error().Err(backendErr).Msg("failed to deploy vm request")
+
+						updateErr := d.db.UpdateVMState(req.VM.ID, backendErr.Error(), models.StateFailed)
+						if updateErr != nil {
+							log.Error().Err(updateErr).Msg("failed to update vm state")
+						}
 						continue
 					}
 				}
@@ -60,9 +65,9 @@ func (d *Deployer) ConsumeVMRequest(ctx context.Context, pending bool) {
 					codeErr = http.StatusInternalServerError
 				}
 
-				msg := fmt.Sprintf("Your virtual machine '%s' failed to be deployed with error: %s", req.Input.Name, resErr)
+				msg := fmt.Sprintf("Your virtual machine '%s' failed to be deployed with error: %s", req.VM.Name, resErr)
 				if codeErr == 0 {
-					msg = fmt.Sprintf("Your virtual machine '%s' is deployed successfully 🎆", req.Input.Name)
+					msg = fmt.Sprintf("Your virtual machine '%s' is deployed successfully 🎆", req.VM.Name)
 				}
 
 				notification := models.Notification{
@@ -101,7 +106,7 @@ func (d *Deployer) ConsumeK8sRequest(ctx context.Context, pending bool) {
 				defer k8sWG.Done()
 
 				var codeErr int
-				var resErr error
+				var resErr, backendErr error
 				var req streams.K8sDeployRequest
 
 				for _, v := range message.Values {
@@ -111,9 +116,14 @@ func (d *Deployer) ConsumeK8sRequest(ctx context.Context, pending bool) {
 						continue
 					}
 
-					codeErr, resErr = d.deployK8sRequest(ctx, req.User, req.Input, req.AdminSSHKey)
+					codeErr, backendErr, resErr = d.deployK8sRequest(ctx, req.User, req.Cluster, req.AdminSSHKey)
 					if resErr != nil {
 						log.Error().Err(resErr).Msg("failed to deploy k8s request")
+
+						updateErr := d.db.UpdateK8sState(req.Cluster.ID, backendErr.Error(), models.StateFailed)
+						if updateErr != nil {
+							log.Error().Err(updateErr).Msg("failed to update kubernetes state")
+						}
 						continue
 					}
 				}
@@ -124,9 +134,9 @@ func (d *Deployer) ConsumeK8sRequest(ctx context.Context, pending bool) {
 					codeErr = http.StatusInternalServerError
 				}
 
-				msg := fmt.Sprintf("Your kubernetes cluster '%s' failed to be deployed with error: %s", req.Input.MasterName, resErr)
+				msg := fmt.Sprintf("Your kubernetes cluster '%s' failed to be deployed with error: %s", req.Cluster.Master.Name, resErr)
 				if codeErr == 0 {
-					msg = fmt.Sprintf("Your kubernetes cluster '%s' is deployed successfully 🎆", req.Input.MasterName)
+					msg = fmt.Sprintf("Your kubernetes cluster '%s' is deployed successfully 🎆", req.Cluster.Master.Name)
 				}
 
 				notification := models.Notification{

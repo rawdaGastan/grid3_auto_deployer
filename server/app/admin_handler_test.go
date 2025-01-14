@@ -16,10 +16,10 @@ func TestGetAllUsersHandler(t *testing.T) {
 	app := SetUp(t)
 
 	admin := models.User{
-		Name:     "admin",
-		Email:    "admin@gmail.com",
-		Verified: true,
-		Admin:    true,
+		FirstName: "admin",
+		Email:     "admin@gmail.com",
+		Verified:  true,
+		Admin:     true,
 	}
 	err := app.db.CreateUser(&admin)
 	assert.NoError(t, err)
@@ -49,9 +49,10 @@ func TestGetAllUsersHandler(t *testing.T) {
 
 	t.Run("Get all users: not admin", func(t *testing.T) {
 		u := models.User{
-			Name:     "name",
-			Email:    "name@gmail.com",
-			Verified: true,
+			FirstName: "name",
+			LastName:  "last",
+			Email:     "name@gmail.com",
+			Verified:  true,
 		}
 		err := app.db.CreateUser(&u)
 		assert.NoError(t, err)
@@ -75,7 +76,7 @@ func TestGetAllUsersHandler(t *testing.T) {
 		}
 
 		response := adminHandler(req)
-		want := `{"err":"user 'name' doesn't have an admin access"}` + "\n"
+		want := fmt.Sprintf(`{"err":"user '%s %s' doesn't have an admin access"}`, u.FirstName, u.LastName) + "\n"
 		assert.Equal(t, response.Body.String(), want)
 		assert.Equal(t, response.Code, http.StatusUnauthorized)
 	})
@@ -209,10 +210,10 @@ func TestGetAllUsersHandler(t *testing.T) {
 func TestCreateNewAnnouncement(t *testing.T) {
 	app := SetUp(t)
 	admin := models.User{
-		Name:     "admin",
-		Email:    "admin@gmail.com",
-		Verified: true,
-		Admin:    true,
+		FirstName: "admin",
+		Email:     "admin@gmail.com",
+		Verified:  true,
+		Admin:     true,
 	}
 	err := app.db.CreateUser(&admin)
 	assert.NoError(t, err)
@@ -230,7 +231,7 @@ func TestCreateNewAnnouncement(t *testing.T) {
 		req := authHandlerConfig{
 			unAuthHandlerConfig: unAuthHandlerConfig{
 				body:        bytes.NewBuffer(adminAnnouncement),
-				handlerFunc: app.CreateNewAnnouncement,
+				handlerFunc: app.CreateNewAnnouncementHandler,
 				api:         fmt.Sprintf("/%s/announcement", app.config.Version),
 			},
 			userID: user.ID.String(),

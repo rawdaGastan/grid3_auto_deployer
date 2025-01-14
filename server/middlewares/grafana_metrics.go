@@ -18,7 +18,7 @@ var UserCreations = prometheus.NewCounterVec(
 		Name: "http_request_create_user", // metric name
 		Help: "Count of users registered.",
 	},
-	[]string{"user", "email", "college", "team"}, // labels
+	[]string{"user", "email"}, // labels
 )
 
 // VoucherActivated metrics
@@ -27,7 +27,7 @@ var VoucherActivated = prometheus.NewCounterVec(
 		Name: "http_request_activate_voucher", // metric name
 		Help: "Count of activated voucher.",
 	},
-	[]string{"user", "voucher", "vms", "public_ips"}, // labels
+	[]string{"user", "voucher", "balance"}, // labels
 )
 
 // VoucherApplied metrics
@@ -36,7 +36,7 @@ var VoucherApplied = prometheus.NewCounterVec(
 		Name: "http_request_apply_voucher", // metric name
 		Help: "Count of applied voucher.",
 	},
-	[]string{"user", "voucher", "vms", "public_ips"}, // labels
+	[]string{"user", "voucher", "balance"}, // labels
 )
 
 // Deployments metrics

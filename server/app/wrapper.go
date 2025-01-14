@@ -137,7 +137,7 @@ func BadRequest(err error) Response {
 
 // InternalServerError result
 func InternalServerError(err error) Response {
-	return Error(err, 0)
+	return Error(err)
 }
 
 // NotFound response

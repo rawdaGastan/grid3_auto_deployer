@@ -35,7 +35,14 @@ var rightConfig = `
         "file": "testing.db"
     },
 	"version": "v1",
-	"salt": "salt"
+	"currency": "eur",
+	"prices": {
+		"public_ip": 2,
+		"small_vm": 10,
+		"medium_vm": 20,
+		"large_vm": 30
+	},
+	"stripe_secret": "sk_test"
 }
 	`
 
@@ -331,7 +338,7 @@ func TestParseConf(t *testing.T) {
 
 	})
 
-	t.Run("no salt configuration", func(t *testing.T) {
+	t.Run("no currency configuration", func(t *testing.T) {
 		config :=
 			`
 {
@@ -356,7 +363,6 @@ func TestParseConf(t *testing.T) {
         "timeout": 10
     },	
 	"version": "v1",	
-	"salt": ""
 }
 	`
 		dir := t.TempDir()
@@ -366,7 +372,89 @@ func TestParseConf(t *testing.T) {
 		assert.NoError(t, err)
 
 		_, err = ReadConfFile(configPath)
-		assert.Error(t, err, "salt is required")
+		assert.Error(t, err, "currency is required")
+	})
+
+	t.Run("no prices configuration", func(t *testing.T) {
+		config :=
+			`
+{
+	"server": {
+		"host": "localhost",
+		"port": ":3000"
+	},
+	"mailSender": {
+        "email": "email",
+        "sendgrid_key": "my sendgrid_key",
+        "timeout": 60 
+    },
+    "account": {
+        "mnemonics": "my mnemonics",
+		"network": "my network"
+    },
+	"database": {
+        "file": "testing.db"
+    },
+	"token": {
+        "secret": "secret",
+        "timeout": 10
+    },	
+	"version": "v1",	
+	"currency": "eur",
+}
+	`
+		dir := t.TempDir()
+		configPath := filepath.Join(dir, "/config.json")
+
+		err := os.WriteFile(configPath, []byte(config), 0644)
+		assert.NoError(t, err)
+
+		_, err = ReadConfFile(configPath)
+		assert.Error(t, err, "prices is required")
+	})
+
+	t.Run("no stripe secret configuration", func(t *testing.T) {
+		config :=
+			`
+{
+	"server": {
+		"host": "localhost",
+		"port": ":3000"
+	},
+	"mailSender": {
+        "email": "email",
+        "sendgrid_key": "my sendgrid_key",
+        "timeout": 60 
+    },
+    "account": {
+        "mnemonics": "my mnemonics",
+		"network": "my network"
+    },
+	"database": {
+        "file": "testing.db"
+    },
+	"token": {
+        "secret": "secret",
+        "timeout": 10
+    },	
+	"version": "v1",	
+	"currency": "eur",
+	"prices": {
+		"public_ip": 2,
+		"small_vm": 10,
+		"medium_vm": 20,
+		"large_vm": 30
+	},
+}
+	`
+		dir := t.TempDir()
+		configPath := filepath.Join(dir, "/config.json")
+
+		err := os.WriteFile(configPath, []byte(config), 0644)
+		assert.NoError(t, err)
+
+		_, err = ReadConfFile(configPath)
+		assert.Error(t, err, "stripe_secret is required")
 
 	})
 }

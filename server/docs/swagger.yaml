@@ -461,6 +461,8 @@ definitions:
         type: integer
       msg:
         type: string
+      notified:
+        type: boolean
       seen:
         type: boolean
       type:
@@ -470,6 +472,7 @@ definitions:
         type: string
     required:
     - msg
+    - notified
     - seen
     - type
     - user_id
@@ -1272,7 +1275,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Lists user's notifications
+      description: Stream user's notifications
       produces:
       - application/json
       responses:
@@ -1285,15 +1288,36 @@ paths:
         "401":
           description: Unauthorized
           schema: {}
-        "404":
-          description: Not Found
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - BearerAuth: []
+      summary: Stream user's notifications
+      tags:
+      - Notification
+    put:
+      consumes:
+      - application/json
+      description: Set user's notifications as seen
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema: {}
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
           schema: {}
         "500":
           description: Internal Server Error
           schema: {}
       security:
       - BearerAuth: []
-      summary: Lists user's notifications
+      summary: Set user's notifications as seen
       tags:
       - Notification
   /notification/{id}:

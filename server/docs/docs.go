@@ -974,7 +974,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Lists user's notifications",
+                "description": "Stream user's notifications",
                 "consumes": [
                     "application/json"
                 ],
@@ -984,7 +984,7 @@ const docTemplate = `{
                 "tags": [
                     "Notification"
                 ],
-                "summary": "Lists user's notifications",
+                "summary": "Stream user's notifications",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -999,8 +999,40 @@ const docTemplate = `{
                         "description": "Unauthorized",
                         "schema": {}
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Set user's notifications as seen",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notification"
+                ],
+                "summary": "Set user's notifications as seen",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {}
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {}
                     },
                     "500": {
@@ -3279,6 +3311,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "msg",
+                "notified",
                 "seen",
                 "type",
                 "user_id"
@@ -3289,6 +3322,9 @@ const docTemplate = `{
                 },
                 "msg": {
                     "type": "string"
+                },
+                "notified": {
+                    "type": "boolean"
                 },
                 "seen": {
                     "type": "boolean"

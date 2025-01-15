@@ -52,7 +52,6 @@ const routes = [
     name: "OTP",
     component: () => import("@/views/Otp.vue"),
     meta: {
-      requiredAuth: false,
       layout: "NoNavbar",
     },
   },
@@ -61,7 +60,6 @@ const routes = [
     name: "NewPassword",
     component: NewPassword,
     meta: {
-      requiredAuth: false,
       layout: "NoNavbar",
     },
   },
@@ -70,7 +68,6 @@ const routes = [
     name: "Maintenance",
     component: () => import("@/views/Maintenance.vue"),
     meta: {
-      requiredAuth: false,
       layout: "NoNavbar",
     },
   },

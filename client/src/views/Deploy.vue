@@ -25,7 +25,8 @@
             :rules="selectRules"
           />
         </v-col>
-        <p class="text-capitalize px-4">
+        <p class="text-capitalize d-flex justify-center">
+          <v-icon class="mr-2">mdi-information</v-icon>
           Machine Name and Region are required to deploy the VM. Please fill in
           both fields.
         </p>
@@ -70,7 +71,7 @@ const resources = ref([
     cpu: 1,
     memory: 2,
     disk: 25,
-    publicIP: true,
+    publicIP: false,
     details:
       "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Tempore sit voluptatem suscipit illum dicta, sint explicabo quis culpa aliquam, consequuntur nulla blanditiis ipsa. Iusto exercitationem hic veritatis impedit nobis quas.",
   },
@@ -80,7 +81,7 @@ const resources = ref([
     cpu: 2,
     memory: 4,
     disk: 50,
-    publicIP: true,
+    publicIP: false,
     details:
       "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Tempore sit voluptatem suscipit illum dicta, sint explicabo quis culpa aliquam, consequuntur nulla blanditiis ipsa. Iusto exercitationem hic veritatis impedit nobis quas.",
   },
@@ -90,7 +91,7 @@ const resources = ref([
     cpu: 4,
     memory: 8,
     disk: 100,
-    publicIP: true,
+    publicIP: false,
     details:
       "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Tempore sit voluptatem suscipit illum dicta, sint explicabo quis culpa aliquam, consequuntur nulla blanditiis ipsa. Iusto exercitationem hic veritatis impedit nobis quas.",
   },

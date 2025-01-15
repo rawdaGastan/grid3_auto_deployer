@@ -122,7 +122,7 @@ const onSubmit = () => {
       toast.value.toast(response.data.msg, "#4caf50");
       adminCheck();
       router.push({
-        name: "VM",
+        path: "/",
       });
     })
     .catch((error) => {

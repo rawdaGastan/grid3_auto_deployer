@@ -16,6 +16,7 @@ type Notification struct {
 	Seen     bool   `json:"seen" binding:"required"`
 	Notified bool   `json:"notified" binding:"required"`
 	// to allow redirecting from notifications to the right pages
+	// for example if the type is `vm` it will be redirected to the vm page
 	Type string `json:"type" binding:"required"`
 }
 

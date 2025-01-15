@@ -16,7 +16,7 @@ const (
 	startX float64 = 25
 	startY float64 = 30
 
-	logoPath       = "internal/img/codescalers.png"
+	logoPath       = "internal/img/logo.png"
 	fontPath       = "internal/fonts/Arial.ttf"
 	boldFontPath   = "internal/fonts/Arial-Bold.ttf"
 	italicFontPath = "internal/fonts/Arial-Italic.ttf"

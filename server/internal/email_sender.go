@@ -40,8 +40,23 @@ var (
 	adminAnnouncement []byte
 )
 
+type Mailer struct {
+	client *sendgrid.Client
+}
+
+type Attachment struct {
+	FileName string
+	Data     []byte
+}
+
+func NewMailer(sendGridKey string) Mailer {
+	return Mailer{
+		client: sendgrid.NewSendClient(sendGridKey),
+	}
+}
+
 // SendMail sends verification mails
-func SendMail(sender, sendGridKey, receiver, subject, body, attachmentName string, attachmentBytes ...[]byte) error {
+func (m *Mailer) SendMail(sender, receiver, subject, body string, attachments ...Attachment) error {
 	from := mail.NewEmail("Cloud4All", sender)
 
 	err := validators.ValidMail(receiver)
@@ -53,18 +68,16 @@ func SendMail(sender, sendGridKey, receiver, subject, body, attachmentName strin
 
 	message := mail.NewSingleEmail(from, subject, to, "", body)
 
-	if len(attachmentBytes) > 0 {
+	if len(attachments) > 0 {
 		attachment := mail.NewAttachment()
-		attachment = attachment.SetContent(base64.StdEncoding.EncodeToString(attachmentBytes[0]))
+		attachment = attachment.SetContent(base64.StdEncoding.EncodeToString(attachments[0].Data))
 		attachment = attachment.SetType("application/pdf")
-		attachment = attachment.SetFilename(attachmentName)
+		attachment = attachment.SetFilename(attachments[0].FileName)
 		attachment = attachment.SetDisposition("attachment")
 		message = message.AddAttachment(attachment)
 	}
 
-	client := sendgrid.NewSendClient(sendGridKey)
-	_, err = client.Send(message)
-
+	_, err = m.client.Send(message)
 	return err
 }
 

@@ -26,6 +26,7 @@ type App struct {
 	db       models.DB
 	redis    streams.RedisClient
 	deployer c4sDeployer.Deployer
+	mailer   internal.Mailer
 }
 
 // NewApp creates new server app all configurations
@@ -73,6 +74,7 @@ func NewApp(ctx context.Context, configFile string) (app *App, err error) {
 		db:       db,
 		redis:    redis,
 		deployer: newDeployer,
+		mailer:   internal.NewMailer(config.MailSender.SendGridKey),
 	}, nil
 }
 

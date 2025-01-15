@@ -145,7 +145,7 @@ func (a *App) SignUpHandler(req *http.Request) (interface{}, Response) {
 	// send verification code if user is not verified or not exist
 	code := internal.GenerateRandomCode()
 	subject, body := internal.SignUpMailContent(code, a.config.MailSender.Timeout, fmt.Sprintf("%s %s", signUp.FirstName, signUp.LastName), a.config.Server.Host)
-	err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, signUp.Email, subject, body, "")
+	err = a.mailer.SendMail(a.config.MailSender.Email, signUp.Email, subject, body)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -245,7 +245,7 @@ func (a *App) VerifySignUpCodeHandler(req *http.Request) (interface{}, Response)
 	middlewares.UserCreations.WithLabelValues(user.ID.String(), user.Email).Inc()
 
 	subject, body := internal.WelcomeMailContent(user.Name(), a.config.Server.Host)
-	err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, user.Email, subject, body, "")
+	err = a.mailer.SendMail(a.config.MailSender.Email, user.Email, subject, body)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, InternalServerError(errors.New(internalServerErrorMsg))
@@ -405,7 +405,7 @@ func (a *App) ForgotPasswordHandler(req *http.Request) (interface{}, Response) {
 	// send verification code
 	code := internal.GenerateRandomCode()
 	subject, body := internal.ResetPasswordMailContent(code, a.config.MailSender.Timeout, user.Name(), a.config.Server.Host)
-	err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, email.Email, subject, body, "")
+	err = a.mailer.SendMail(a.config.MailSender.Email, email.Email, subject, body)
 
 	if err != nil {
 		log.Error().Err(err).Send()

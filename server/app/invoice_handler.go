@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -158,25 +156,9 @@ func (a *App) DownloadInvoiceHandler(req *http.Request) (interface{}, Response) 
 		return nil, NotFound(errors.New("invoice is not found"))
 	}
 
-	// Get downloads dir
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
-	}
-
-	downloadsDir := filepath.Join(homeDir, "Downloads")
-	pdfPath := filepath.Join(downloadsDir, fmt.Sprintf("invoice-%s-%d.pdf", invoice.UserID, invoice.ID))
-
-	err = os.WriteFile(pdfPath, invoice.FileData, 0644)
-	if err != nil {
-		log.Error().Err(err).Send()
-		return nil, InternalServerError(errors.New(internalServerErrorMsg))
-	}
-
-	return ResponseMsg{
-		Message: fmt.Sprintf("Invoice is downloaded successfully at %s", pdfPath),
-	}, Ok()
+	return invoice.FileData, Ok().
+		WithHeader("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fmt.Sprintf("invoice-%s-%d.pdf", invoice.UserID, invoice.ID))).
+		WithHeader("Content-Type", "application/pdf")
 }
 
 // PayInvoiceHandler pay user's invoice
@@ -524,9 +506,11 @@ func (a *App) sendInvoiceReminderToUser(userID, userEmail, userName string, now 
 			subject := "Unpaid Invoice Notification – Action Required"
 			subject, body := internal.AdminMailContent(subject, mailBody, a.config.Server.Host, userName)
 
-			if err = internal.SendMail(
-				a.config.MailSender.Email, a.config.MailSender.SendGridKey, userEmail, subject, body,
-				fmt.Sprintf("invoice-%s-%d.pdf", invoice.UserID, invoice.ID), invoice.FileData,
+			if err = a.mailer.SendMail(
+				a.config.MailSender.Email, userEmail, subject, body, internal.Attachment{
+					FileName: fmt.Sprintf("invoice-%s-%d.pdf", invoice.UserID, invoice.ID),
+					Data:     invoice.FileData,
+				},
 			); err != nil {
 				log.Error().Err(err).Send()
 			}

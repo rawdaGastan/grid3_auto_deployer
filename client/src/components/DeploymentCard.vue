@@ -28,7 +28,7 @@
 
       <v-divider class="mx-4 mb-1"></v-divider>
 
-      <v-card-text class="pa-5">
+      <v-card-text>
         <p class="text-subtitle-1">
           <v-icon color="success" icon="mdi-check"></v-icon>
           {{ resource.cpu }} CPU
@@ -54,6 +54,11 @@
         <div class="my-5">
           {{ resource.details }}
         </div>
+
+        <v-checkbox v-model="resource.publicIP" label="Public IP" hide-details/>
+        <p>
+          Adding a Public IP will increase the total monthly cost by <b>$5</b>.
+        </p>
       </v-card-text>
 
       <v-card-actions>

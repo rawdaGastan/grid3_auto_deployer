@@ -133,16 +133,27 @@ function getSelectedVM(vm) {
 }
 
 function getRegions() {
-  userService.getRegions().then((response) => {
-    const { data } = response.data;
-    regions.value = data;
-  });
+  userService
+    .getRegions()
+    .then((response) => {
+      const { data } = response.data;
+      regions.value = data;
+    })
+    .catch((response) => {
+      const { message } = response;
+      toast.value.toast(message, "#FF5252");
+    });
 }
-// TODO public IP
+
 function deployVm() {
   loading.value = true;
   userService
-    .deployVm(vmName.value, selectedRegion.value, selectedVM.value.capacity)
+    .deployVm(
+      vmName.value,
+      selectedRegion.value,
+      selectedVM.value.capacity,
+      selectedVM.value.publicIP
+    )
     .then((response) => {
       toast.value.toast(response.data.msg, "#4caf50");
     })

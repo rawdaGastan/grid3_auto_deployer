@@ -164,13 +164,13 @@ export default {
     return await authClient().get("/region");
   },
 
-  async deployVm(name, region, resources) {
+  async deployVm(name, region, resources, publicIP) {
     return await authClient().post("/vm", {
       name,
       region,
       resources,
-      public: true,
-    }); // FIXME
+      publicIP,
+    });
   },
 
   async deleteVm(id) {

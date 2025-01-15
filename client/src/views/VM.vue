@@ -127,7 +127,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, inject } from "vue";
+import { ref, onMounted, inject, computed } from "vue";
 import userService from "@/services/userService";
 import BaseButton from "@/components/Form/BaseButton.vue";
 import Toast from "@/components/Toast.vue";
@@ -137,7 +137,6 @@ import Confirm from "@/components/Confirm.vue";
 import { useRouter } from "vue-router";
 
 const emitter = inject("emitter");
-const alert = ref(false);
 const deleteAllDialog = ref(null);
 const deleteDialog = ref(null);
 const router = useRouter();
@@ -147,6 +146,10 @@ const deLoading = ref(false);
 const message = ref(null);
 const itemToDelete = ref(null);
 const loading = ref(false);
+const user = inject("user");
+const sshKey = computed(() => user.value.ssh_key);
+const alert = ref(sshKey.value == "");
+
 const headers = ref([
   {
     title: "ID",
@@ -249,19 +252,6 @@ const deleteVm = (item) => {
     .finally(() => (item.deleting = false));
 };
 
-const getUser = () => {
-  userService
-    .getUser()
-    .then((response) => {
-      const { user } = response.data.data;
-      alert.value = user.ssh_key == "";
-    })
-    .catch((response) => {
-      const { err } = response.response.data;
-      toast.value.toast(err, "#FF5252");
-    });
-};
-
 const getStateColor = (state) => {
   if (state == "CREATED") return "success";
   if (state == "FAILED") return "error";
@@ -295,7 +285,6 @@ function createVM() {
 }
 
 onMounted(() => {
-  getUser();
   getVMS();
 });
 </script>

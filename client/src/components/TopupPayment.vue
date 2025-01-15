@@ -30,7 +30,7 @@
         </v-card-title>
 
         <!-- TODO reason for user -->
-        <v-form v-model="verifyVoucher" @submit.prevent="applyVoucher">
+        <v-form v-model="verifyVoucher">
           <div class="d-flex w-75">
             <BaseInput
               v-model="voucher"
@@ -112,18 +112,7 @@ const balance = computed(() => user.value.balance);
 const voucher = ref();
 const amount = ref();
 const paymentId = ref();
-//TODO
-function applyVoucher() {
-  userService
-    .applyVoucher(balance.value, voucher.value)
-    .then((response) => {
-      console.log(response);
-    })
-    .catch((response) => {
-      const { err } = response.response.data;
-      toast.value.toast(err, "#FF5252");
-    });
-}
+
 // FIXME payment_method_id?
 function chargeBalance() {
   userService

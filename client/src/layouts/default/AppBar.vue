@@ -143,14 +143,17 @@
       </v-list-item>
     </v-list>
   </v-navigation-drawer> -->
+  <Toast ref="toast" />
 </template>
 
 <script>
 import { ref, onMounted } from "vue";
 import userService from "@/services/userService";
 import { useRoute, useRouter } from "vue-router";
+import Toast from "@/components/Toast.vue";
 
 export default {
+  components: { Toast },
   setup() {
     const route = useRoute();
     const router = useRouter();
@@ -160,6 +163,7 @@ export default {
     const nextlaunch = ref(localStorage.getItem("nextlaunch"));
     const maintenance = ref(localStorage.getItem("maintenance"));
     const notifications = ref([]);
+    const toast = ref(null);
     const excludedRoutes = ref([
       "/",
       "/login",
@@ -237,8 +241,9 @@ export default {
           const { data } = response.data;
           notifications.value = data.filter((item) => !item.seen);
         })
-        .catch((err) => {
-          console.log(err);
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
         });
     };
 
@@ -248,8 +253,9 @@ export default {
         .then(() => {
           getNotifications();
         })
-        .catch((err) => {
-          console.log(err);
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
         });
     };
 
@@ -291,6 +297,7 @@ export default {
       notifications,
       getNotifications,
       seen,
+      toast,
     };
   },
 };
@@ -298,6 +305,6 @@ export default {
 
 <style>
 .v-toolbar {
-  background: none !important;
+  background: #212121 !important;
 }
 </style>

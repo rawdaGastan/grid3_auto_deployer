@@ -12,15 +12,15 @@ import ChangePassword from "@/views/tabs/ChangePassword.vue";
 import AuditLogs from "@/views/tabs/AuditLogs.vue";
 import DeleteAccount from "@/views/tabs/DeleteAccount.vue";
 import Deploy from "@/views/Deploy.vue";
+import Home from "@/views/Home.vue";
 
 const routes = [
   {
-    path: "/",
+    path: "/home",
     name: "Landing",
     component: () => import("@/views/LandingPage.vue"),
     meta: {
-      requiredAuth: false,
-      layout: "Default",
+      layout: "NoNavbar",
     },
   },
   {
@@ -28,7 +28,6 @@ const routes = [
     name: "Login",
     component: () => import("@/views/Login.vue"),
     meta: {
-      requiredAuth: false,
       layout: "NoNavbar",
     },
   },
@@ -37,7 +36,6 @@ const routes = [
     name: "Signup",
     component: () => import("@/views/Signup.vue"),
     meta: {
-      requiredAuth: false,
       layout: "NoNavbar",
     },
   },
@@ -46,8 +44,7 @@ const routes = [
     name: "ForgetPassword",
     component: () => import("@/views/Forgetpassword.vue"),
     meta: {
-      requiredAuth: false,
-      layout: "Default",
+      layout: "NoNavbar",
     },
   },
   {
@@ -56,16 +53,16 @@ const routes = [
     component: () => import("@/views/Otp.vue"),
     meta: {
       requiredAuth: false,
-      layout: "Default",
+      layout: "NoNavbar",
     },
   },
   {
     path: "/newPassword",
     name: "NewPassword",
-    component: () => import("@/views/Newpassword.vue"),
+    component: NewPassword,
     meta: {
       requiredAuth: false,
-      layout: "Default",
+      layout: "NoNavbar",
     },
   },
   {
@@ -74,7 +71,7 @@ const routes = [
     component: () => import("@/views/Maintenance.vue"),
     meta: {
       requiredAuth: false,
-      layout: "Default",
+      layout: "NoNavbar",
     },
   },
   {
@@ -83,94 +80,98 @@ const routes = [
     component: () => import("@/views/NextLaunch.vue"),
     meta: {
       requiredAuth: true,
-      layout: "Default",
+      layout: "NoNavbar",
     },
   },
   {
     path: "/",
-    component: () => import("@/layouts/default/Default.vue"),
+    name: "Home",
+    component: Home,
     meta: {
+      layout: "Default",
+      requiredAuth: true,
+    },
+  },
+  {
+    path: "/changePassword",
+    name: "ChangePassword",
+    component: NewPassword,
+    meta: {
+      layout: "Default",
+      requiredAuth: true,
+    },
+  },
+  {
+    path: "/vm",
+    name: "VM",
+    component: VM,
+    meta: {
+      requiredAuth: true,
+      layout: "Default",
+    },
+  },
+  {
+    path: "/account",
+    component: Account,
+    meta: {
+      layout: "Default",
       requiredAuth: true,
     },
     children: [
       {
-        path: "/changePassword",
-        name: "ChangePassword",
-        component: NewPassword,
-        meta: {
-          requiredAuth: true,
-        },
+        path: "",
+        component: ProfileTab,
       },
       {
-        path: "/vm",
-        name: "VM",
-        component: VM,
-        meta: {
-          requiredAuth: true,
-        },
+        path: "payments",
+        component: PaymentsTab,
       },
       {
-        path: "/account",
-        component: Account,
-        meta: {
-          requiredAuth: true,
-        },
-        children: [
-          {
-            path: "",
-            component: ProfileTab,
-          },
-          {
-            path: "/account/payments",
-            component: PaymentsTab,
-          },
-          {
-            path: "/account/change-password",
-            component: ChangePassword,
-          },
-          {
-            path: "/account/delete-account",
-            component: DeleteAccount,
-          },
-          {
-            path: "/account/invoices",
-            component: Invoices,
-          },
-          {
-            path: "/account/audit-logs",
-            component: AuditLogs,
-          },
-        ],
+        path: "change-password",
+        component: ChangePassword,
       },
       {
-        path: "/deploy",
-        name: "Deploy",
-        component: Deploy,
-        meta: {
-          requiredAuth: true,
-        },
+        path: "delete-account",
+        component: DeleteAccount,
       },
       {
-        path: "admin",
-        name: "Admin",
-        component: Admin,
-        meta: {
-          requiredAuth: true,
-        },
+        path: "invoices",
+        component: Invoices,
       },
       {
-        path: "/logout",
-        name: "Logout",
-        redirect: "/login",
+        path: "audit-logs",
+        component: AuditLogs,
       },
     ],
+  },
+  {
+    path: "/deploy",
+    name: "Deploy",
+    component: Deploy,
+    meta: {
+      layout: "Default",
+      requiredAuth: true,
+    },
+  },
+  {
+    path: "/admin",
+    name: "Admin",
+    component: Admin,
+    meta: {
+      layout: "Default",
+      requiredAuth: true,
+    },
+  },
+  {
+    path: "/logout",
+    name: "Logout",
+    redirect: "/login",
   },
   {
     path: "/:pathMatch(.*)*",
     name: "PageNotFound",
     component: () => import("@/views/PageNotFound.vue"),
     meta: {
-      requiredAuth: false,
       layout: "NoNavbar",
     },
   },
@@ -182,23 +183,21 @@ const router = createRouter({
 });
 
 router.beforeEach(async (to, from, next) => {
-  let token = localStorage.getItem("token");
-  userService.maintenance();
+  const requiredAuth = to.matched.some((record) => record.meta.requiredAuth);
+  const token = localStorage.getItem("token");
 
-  if (to.meta.requiredAuth && !token) {
-    next("/");
-  } else if (to.path == "/" && token) {
-    await userService.nextlaunch();
-    await userService.handleNextLaunch();
-    next("/vm");
-  } else if (to.meta.requiredAuth) {
-    await userService.nextlaunch();
-    await userService.handleNextLaunch();
-    next();
+  await userService.refresh_token();
+  await userService.maintenance();
+  await userService.nextlaunch();
+  await userService.handleNextLaunch();
+
+  if (requiredAuth && !token) {
+    next("/home");
+  } else if (to.path === "/login" && token) {
+    next({ path: "/" });
   } else {
-    await userService.nextlaunch();
-    await userService.handleNextLaunch();
     next();
   }
 });
+
 export default router;

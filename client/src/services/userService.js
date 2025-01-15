@@ -13,40 +13,110 @@ const authClient = () =>
     },
   });
 
+let refreshInterval;
+
+const startTokenRefreshInterval = function (timeout) {
+  clearInterval(refreshInterval);
+
+  refreshInterval = setInterval(() => {
+    this.refresh_token();
+  }, (timeout - 5) * 1000);
+};
+
 export default {
   async refresh_token() {
     await authClient()
       .post("/user/refresh_token")
       .then((response) => {
-        let token = response.data.data.refresh_token;
-        localStorage.setItem("token", token);
+        const { refresh_token } = response.data.data;
+        localStorage.setItem("token", refresh_token);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("Failed to refresh token", error);
         localStorage.removeItem("token");
+        clearInterval(refreshInterval);
       });
   },
 
   // user
   async getUser() {
-    await this.refresh_token();
     return await authClient().get("/user");
   },
 
+  async signUp(first_name, last_name, email, password, confirm_password) {
+    return await baseClient().post("/user/signup", {
+      first_name,
+      last_name,
+      email,
+      password,
+      confirm_password,
+    });
+  },
+
+  async signIn(email, password) {
+    return await baseClient()
+      .post("/user/signin", {
+        email,
+        password,
+      })
+      .then((res) => {
+        const { access_token, timeout } = res.data.data;
+        localStorage.setItem("token", access_token);
+        startTokenRefreshInterval.call(this, timeout);
+        return res;
+      });
+  },
+
+  logout() {
+    clearInterval(refreshInterval);
+    localStorage.removeItem("token");
+  },
+
+  async forgotPassword(email) {
+    return await baseClient().post("/user/forgot_password", { email });
+  },
+
+  async signUpVerification(email, code) {
+    return await baseClient().post("/user/signup/verify_email", {
+      email,
+      code,
+    });
+  },
+
+  async applyVoucher(balance, reason) {
+    return await authClient().post("/user/apply_voucher", { balance, reason });
+  },
+
   async activateVoucher(voucher) {
-    await this.refresh_token();
     return await authClient().put("/user/activate_voucher", { voucher });
   },
 
-  async updateUser(name, ssh_key) {
-    await this.refresh_token();
+  async forgetPasswordVerification(email, code) {
+    return await baseClient().post("/user/forget_password/verify_email", {
+      email,
+      code,
+    });
+  },
+
+  async updateUser(first_name, ssh_key) {
     return await authClient().put("/user", {
-      name,
+      first_name,
       ssh_key,
     });
   },
 
+  async addCard(card_type, payment_method_id) {
+    return await authClient().post("/user/card", {
+      card_type,
+      payment_method_id,
+    });
+  },
+
+  async getCards() {
+    return await authClient().get("/user/card");
+  },
+
   async changePassword(email, password, confirm_password) {
-    await this.refresh_token();
     return await authClient().put("/user/change_password", {
       email,
       password,
@@ -54,59 +124,73 @@ export default {
     });
   },
 
-  async newVoucher(vms, public_ips, reason) {
-    await this.refresh_token();
+  async newVoucher(balance, reason) {
     return await authClient().post("/user/apply_voucher", {
-      vms,
-      public_ips,
+      balance,
       reason,
     });
   },
 
+  async chargeBalance(amount, payment_method_id) {
+    return await authClient().put("/user/charge_balance", {
+      amount,
+      payment_method_id,
+    });
+  },
+
   async getQuota() {
-    await this.refresh_token();
     return await authClient().get("/quota");
+  },
+
+  async deleteAccount() {
+    return await authClient().delete("/user");
+  },
+
+  // Invoices
+  async getInvoices() {
+    return await authClient().get("/invoice");
   },
 
   // VM
   async getVms() {
-    await this.refresh_token();
     return await authClient().get("/vm");
   },
 
   async validateVMName(name) {
-    await this.refresh_token();
     return await authClient().get(`/vm/validate/${name}`);
   },
 
-  async deployVm(name, resources, checked) {
-    await this.refresh_token();
-    return await authClient().post("/vm", { name, resources, public: checked });
+  async getRegions() {
+    return await authClient().get("/region");
+  },
+
+  async deployVm(name, region, resources, publicIP) {
+    return await authClient().post("/vm", {
+      name,
+      region,
+      resources,
+      publicIP,
+    });
   },
 
   async deleteVm(id) {
-    await this.refresh_token();
     return await authClient().delete(`/vm/${id}`);
   },
 
   async deleteAllVms() {
-    await this.refresh_token();
     return await authClient().delete("/vm");
   },
 
   // K8s
   async getK8s() {
-    await this.refresh_token();
     return await authClient().get("/k8s");
   },
 
   async validateK8sName(name) {
-    await this.refresh_token();
     return await authClient().get(`/k8s/validate/${name}`);
   },
 
   async deployK8s(master_name, resources, workers, checked) {
-    await this.refresh_token();
     return await authClient().post("/k8s", {
       master_name,
       resources,
@@ -116,79 +200,65 @@ export default {
   },
 
   async deleteK8s(id) {
-    await this.refresh_token();
     return await authClient().delete(`/k8s/${id}`);
   },
 
   async deleteAllK8s() {
-    await this.refresh_token();
     return await authClient().delete("/k8s");
   },
 
   // Users
   async getUsers() {
-    await this.refresh_token();
     return await authClient().get("/user/all");
   },
 
   // Deployments
   async getDeploymentsCount() {
-    await this.refresh_token();
     return await authClient().get("/deployment/count");
   },
 
   // Vouchers
   async getVouchers() {
-    await this.refresh_token();
     return await authClient().get("/voucher");
   },
 
   async approveVoucher(id, approved) {
-    await this.refresh_token();
     return await authClient().put(`/voucher/${id}`, { approved });
   },
 
   async approveAllVouchers() {
-    await this.refresh_token();
     return await authClient().put("/voucher");
   },
 
   async generateVoucher(length, vms, public_ips) {
-    await this.refresh_token();
     return await authClient().post("/voucher", { length, vms, public_ips });
   },
 
   // balance
   async getBalance() {
-    await this.refresh_token();
     return await authClient().get("/balance");
   },
 
   // announcement
   async sendAnnouncement(subject, announcement) {
-    await this.refresh_token();
     return await authClient().post("/announcement", { subject, announcement });
   },
 
   // email
   async sendEmail(subject, body, email) {
-    await this.refresh_token();
     return await authClient().post("/email", { subject, body, email });
   },
 
   async setAdmin(email, admin) {
-    await this.refresh_token();
     return await authClient().put("/set_admin", { email, admin });
   },
 
   // notifications
   async getNotifications() {
-    await this.refresh_token();
     return await authClient().get("/notification");
   },
 
   async seenNotification(id) {
-    await this.refresh_token();
     return await authClient().put(`/notification/${id}`);
   },
 
@@ -222,7 +292,7 @@ export default {
   },
 
   // handler function of nextlaunch
-  async handleNextLaunch(){
+  async handleNextLaunch() {
     await this.getUser()
       .then((response) => {
         const { user } = response.data.data;
@@ -231,7 +301,7 @@ export default {
           localStorage.setItem("nextlaunch", "true");
         }
       })
-			.catch((response) => {
+      .catch((response) => {
         const { err } = response.response.data;
         console.log(err);
       });
@@ -239,7 +309,6 @@ export default {
 
   // setting next launch value
   async setNextLaunch(value) {
-    await this.refresh_token();
     return await authClient().put("/nextlaunch", {
       launched: value,
     });

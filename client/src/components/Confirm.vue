@@ -1,57 +1,44 @@
 <template>
-  <v-dialog
-    v-model="dialog"
-    :max-width="options.width"
-    :style="{ zIndex: options.zIndex }"
-    @keydown.esc="cancel"
-  >
-    <v-card>
-      <v-toolbar dark :color="options.color" dense flat>
-        <v-toolbar-title class="white--text">{{ title }}</v-toolbar-title>
-      </v-toolbar>
-      <v-card-text v-show="!!message" class="pa-4">{{ message }}</v-card-text>
-      <v-card-actions class="pt-0">
-        <v-spacer></v-spacer>
-        <v-btn color="danger darken-1" text @click="agree">Yes</v-btn>
-        <v-btn color="grey" text @click="cancel">Cancel</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+  <v-card class="pa-2">
+    <v-card-title>{{ title }}</v-card-title>
+    <v-divider />
+    <v-card-text> {{ text }} </v-card-text>
+
+    <v-card-actions>
+      <v-spacer></v-spacer>
+
+      <BaseButton text="Cancel" @click="$emit('onClose')" variant="outlined" />
+
+      <BaseButton
+        :text="confirmText"
+        :color="color"
+        @click="$emit('confirm')"
+        :loading="loading"
+      />
+    </v-card-actions>
+  </v-card>
 </template>
 
-<script>
-export default {
-  data: () => ({
-    dialog: false,
-    resolve: null,
-    reject: null,
-    message: null,
-    title: null,
-    options: {
-      color: "primary",
-      width: 290,
-      zIndex: 999,
-    },
-  }),
-  methods: {
-    open(title, message, options) {
-      this.dialog = true;
-      this.title = title;
-      this.message = message;
-      this.options = Object.assign(this.options, options);
-      return new Promise((resolve, reject) => {
-        this.resolve = resolve;
-        this.reject = reject;
-      });
-    },
-    agree() {
-      this.resolve(true);
-      this.dialog = false;
-    },
-    cancel() {
-      this.resolve(false);
-      this.dialog = false;
-    },
+<script setup>
+import BaseButton from "@/components/Form/BaseButton.vue";
+
+defineProps({
+  title: { type: String, default: "Title here.." },
+  text: {
+    type: String,
+    default: "Text here..",
   },
-};
+  confirmText: {
+    type: String,
+    default: "Confirm",
+  },
+  color: {
+    type: String,
+    default: "secondary",
+  },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+});
 </script>

@@ -1,6 +1,14 @@
 <template>
-  <v-btn :color="color" v-bind="$attrs">
-    <font-awesome-icon v-if="icon" :icon="icon" class="mr-2" />
+  <v-btn
+    :variant="variant"
+    :color="color"
+    :rounded="rounded"
+    :width="width"
+    :block="block"
+    v-bind="$attrs"
+    class="text-capitalize"
+  >
+    <v-icon v-if="icon" class="mr-2">{{ icon }}</v-icon>
     {{ text }}</v-btn
   >
 </template>
@@ -10,15 +18,28 @@ export default {
   props: {
     color: {
       type: String,
-      default: "",
     },
     icon: {
       type: String,
-      default: "",
     },
     text: {
       type: [String, Number],
-      default: "",
+    },
+    rounded: {
+      type: String,
+      default: "lg",
+    },
+    variant: {
+      type: String,
+      default: "flat",
+    },
+    block: {
+      type: Boolean,
+      default: false,
+    },
+    width: {
+      type: String,
+      default: "auto",
     },
   },
 };

@@ -13,7 +13,7 @@
   color: #217dbb;
 }
 .bg-primary {
-  background-color: #217dbb;
+  background-color: #212121;
 }
 
 .text-subtitle-1 {

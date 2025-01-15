@@ -1,367 +1,292 @@
 <template>
   <v-container>
-    <v-alert v-model="alert" outlined type="warning" prominent>
-      You will not be able to deploy. Please add your public SSH key in your
-      profile settings.
-    </v-alert>
-    <h5 class="text-h5 text-md-h4 font-weight-bold text-center mt-10 secondary">
-      Virtual Machines
-    </h5>
-    <p class="text-center mb-10">
-      Deploy a new virtual machine
-    </p>
-    <v-row justify="center">
-      <v-col cols="12" sm="6" xl="4">
-        <v-form v-model="verify" ref="form" @submit.prevent="deployVm">
-          <v-text-field
-            label="Name"
-            :rules="nameValidation"
-            class="my-2"
-            v-model="name"
-            bg-color="accent"
-            variant="outlined"
-            density="compact"
-          ></v-text-field>
-          <BaseSelect
-            :modelValue="selectedResource"
-            :items="resources"
-            :reduce="(sel) => sel.value"
-            placeholder="Resources"
-						:rules="[() => !!selectedResource || 'This field is required']"
-            @update:modelValue="selectedResource = $event"
-          />
-          <v-checkbox v-model="checked" label="Public IP"></v-checkbox>
+    <h5 class="text-h5 text-md-h4 font-weight-bold my-5">Virtual Machines</h5>
+    <v-divider />
+    <Alerts
+      v-model="alert"
+      text="You will not be able to deploy. Please add your public SSH key in your
+      profile settings."
+      type="warning"
+    />
+    <v-row class="d-flex justify-end my-5">
+      <v-dialog v-model="deleteAllDialog" max-width="500">
+        <template v-slot:activator="{ props: activatorProps }">
           <BaseButton
-            type="submit"
-            block
-            class="bg-primary"
-            :loading="loading"
-            :disabled="!verify || alert"
-            text="Deploy"
+            v-bind="activatorProps"
+            color="error"
+            :loading="deLoading"
+            class="mr-3"
+            :disabled="results.length == 0"
+            text="Delete All"
           />
-        </v-form>
-      </v-col>
+        </template>
+
+        <template v-slot:default="{ isActive }">
+          <Confirm
+            title="Delete All VMs"
+            text="Are you sure you need to delete all VMs?"
+            confirm-text="Delete"
+            color="error"
+            @onClose="isActive.value = false"
+            :loading="deLoading"
+            @confirm="deleteVms"
+          />
+        </template>
+      </v-dialog>
+
+      <BaseButton
+        color="secondary"
+        @click="createVM"
+        text="+ Create a new VM"
+      />
     </v-row>
-    <v-row v-if="results.length > 0">
-      <v-col class="d-flex justify-end">
-        <BaseButton
-          color="red-accent-2"
-          :loading="deLoading"
-          @click="deleteVms"
-          text="Delete All"
-        />
-      </v-col>
-    </v-row>
-    <v-row v-if="results.length > 0">
-      <v-col>
-        <v-row>
-          <v-col>
-            <v-data-table
-              :headers="headers"
-              :items="results"
-              class="elevation-1"
+    <v-row
+      ><v-col cols="12">
+        <v-data-table
+          :headers="headers"
+          :items="results"
+          class="d-flex justify-center elevation-1"
+          :hide-default-footer="results == 0"
+          :loading="loading"
+        >
+          <template #[`item.id`]="{ item }">
+            {{ results.indexOf(item) + 1 }}
+          </template>
+          <template #[`item.ygg_ip`]="{ item }">
+            {{ item.ygg_ip || "-" }}
+            <v-icon
+              size="small"
+              v-if="!item.deleting && item.state == 'CREATED'"
+              class="secondary cursor-pointer mx-2"
+              @click="copyIP(item.ygg_ip)"
             >
-              <template v-slot:item="{ item }">
-                <tr>
-                  <td>{{ item.id }}</td>
-                  <td>{{ item.name }}</td>
-                  <td>{{ item.sru }}GB</td>
-                  <td>{{ item.mru }}GB</td>
-                  <td>{{ item.cru }}</td>
-                  <td class="cursor-pointer" @click="copyIP(item.ygg_ip)">
-                    {{ item.ygg_ip }}
-                  </td>
-                  <td class="cursor-pointer" @click="copyIP(item.mycelium_ip)">
-                    {{ item.mycelium_ip }}
-                  </td>
-                  <td
-                    v-if="item.public_ip"
-                    class="cursor-pointer"
-                    @click="copyIP(item.public_ip)"
-                  >
-                    {{ item.public_ip }}
-                  </td>
-                  <td v-else>-</td>
-                  <td>
-                    <font-awesome-icon
-                      v-if="!item.deleting"
-                      class="text-red-accent-2 cursor-pointer"
-                      @click="deleteVm(item)"
-                      icon="fa-solid fa-trash"
-                    />
-                    <v-progress-circular
-                      v-else
-                      indeterminate
-                      color="red"
-                      size="20"
-                    ></v-progress-circular>
-                  </td>
-                </tr>
+              mdi-content-copy
+            </v-icon>
+          </template>
+
+          <template #[`item.public_ip`]="{ item }">
+            {{ item.public_ip || "-" }}
+          </template>
+
+          <template #[`item.state`]="{ item }">
+            <v-chip
+              variant="flat"
+              label
+              size="small"
+              density="compact"
+              :color="getStateColor(item.state)"
+            >
+              {{ item.state }}
+            </v-chip>
+          </template>
+
+          <template #[`item.actions`]="{ item }">
+            <v-dialog v-model="deleteDialog" max-width="500">
+              <template v-slot:activator="{ props: activatorProps }">
+                <v-icon
+                  v-bind="activatorProps"
+                  size="small"
+                  v-if="!item.deleting"
+                  class="secondary cursor-pointer"
+                  @click="setItemToDelete(item)"
+                >
+                  mdi-delete
+                </v-icon>
+
+                <v-progress-circular
+                  v-else
+                  indeterminate
+                  color="error"
+                  size="25"
+                />
               </template>
-            </v-data-table>
-          </v-col>
-        </v-row>
+              <template v-slot:default="{ isActive }">
+                <Confirm
+                  title="Delete VM"
+                  :text="`Are you sure you need to delete ${itemToDelete.name}?`"
+                  confirm-text="Delete"
+                  color="error"
+                  @onClose="isActive.value = false"
+                  @confirm="deleteVm(itemToDelete)"
+                />
+              </template>
+            </v-dialog>
+          </template>
+
+          <template #no-data>
+            <p class="text-capitalize text-h6 pa-16 text-disabled">
+              <v-icon>mdi-vector-arrange-below</v-icon>
+              Create a new virtual machine
+            </p>
+          </template>
+        </v-data-table>
       </v-col>
     </v-row>
-    <v-row v-else>
-      <v-col>
-        <p class="my-5 text-center">
-          You don't have any Virtual machines deployed yet
-        </p>
-      </v-col>
-    </v-row>
-    <Confirm ref="confirm" />
     <Toast ref="toast" />
   </v-container>
 </template>
 
-<script>
-import { ref, onMounted, inject } from "vue";
+<script setup>
+import { ref, onMounted, inject, computed } from "vue";
 import userService from "@/services/userService";
-import BaseSelect from "@/components/Form/BaseSelect.vue";
 import BaseButton from "@/components/Form/BaseButton.vue";
-import Confirm from "@/components/Confirm.vue";
 import Toast from "@/components/Toast.vue";
+import Alerts from "@/components/Alerts.vue";
+import Confirm from "@/components/Confirm.vue";
 
-export default {
-  components: {
-    BaseSelect,
-    BaseButton,
-    Confirm,
-    Toast,
+import { useRouter } from "vue-router";
+
+const emitter = inject("emitter");
+const deleteAllDialog = ref(null);
+const deleteDialog = ref(null);
+const router = useRouter();
+const toast = ref(null);
+const results = ref([]);
+const deLoading = ref(false);
+const message = ref(null);
+const itemToDelete = ref(null);
+const loading = ref(false);
+const user = inject("user");
+const sshKey = computed(() => user.value.ssh_key);
+const alert = ref(sshKey.value == "");
+
+const headers = ref([
+  {
+    title: "ID",
+    key: "id",
+    sortable: false,
   },
-  setup() {
-    const emitter = inject("emitter");
-    const verify = ref(false);
-    const checked = ref(false);
-    const alert = ref(false);
-    const itemsPerPage = ref(null);
-    const name = ref("");
-    const confirm = ref(null);
-    const selectedResource = ref("");
-    const resources = ref([
-      { title: "Small VM (1 CPU, 2GB, 25GB)", value: "small" },
-      { title: "Medium VM (2 CPU, 4GB, 50GB)", value: "medium" },
-      { title: "Large VM (4 CPU, 8GB, 100GB)", value: "large" },
-    ]);
-    const headers = ref([
-      {
-        title: "ID",
-        key: "id",
-        sortable: false,
-      },
-      {
-        title: "Name",
-        key: "name",
-        sortable: false,
-      },
-      {
-        title: "Disk (GB)",
-        key: "sru",
-        sortable: false,
-      },
-      {
-        title: "RAM (GB)",
-        key: "mru",
-        sortable: false,
-      },
-      {
-        title: "CPU",
-        key: "cru",
-        sortable: false,
-      },
-      {
-        title: "Yggdrasil IP",
-        key: "ygg_ip",
-        sortable: false,
-      },
-      {
-        title: "Mycelium IP",
-        key: "mycelium_ip",
-        sortable: false,
-      },
-      {
-        title: "Public IP",
-        key: "public_ip",
-        sortable: false,
-      },
-      { title: "Actions", key: "actions", sortable: false },
-    ]);
+  {
+    title: "Name",
+    key: "name",
+    sortable: false,
+  },
+  {
+    title: "Disk (GB)",
+    key: "sru",
+    sortable: false,
+  },
+  {
+    title: "RAM (GB)",
+    key: "mru",
+    sortable: false,
+  },
+  {
+    title: "CPU",
+    key: "cru",
+    sortable: false,
+  },
+  {
+    title: "Yggdrasil IP",
+    key: "ygg_ip",
+    sortable: false,
+  },
+  {
+    title: "Public IP",
+    key: "public_ip",
+    sortable: false,
+  },
+  {
+    title: "State",
+    key: "state",
+    sortable: false,
+  },
+  { title: "Actions", key: "actions", sortable: false },
+]);
 
-    const toast = ref(null);
-    const loading = ref(false);
-    const results = ref([]);
-    const deLoading = ref(false);
-    const message = ref(null);
-    const form = ref(null);
-    const nameValidation = ref([
-      (value) => {
-        if (value && (value.length < 3 || value.length > 20))
-          return "Name needs to be more than 2 characters and less than 20";
-        if (!/^[a-z]+$/.test(value))
-          return "Name can only include lowercase alphabetic characters";
-        return true;
-      },
-      (value) => validateVMName(value),
-    ]);
-    
-    const getVMS = () => {
-      userService
-        .getVms()
-        .then((response) => {
-          const { data } = response.data;
-          data.map((item) => {
-            item.deleting = false;
-            item.public_ip = item.public_ip.split("/")[0];
-          });
-          results.value = data;
-        })
-        .catch((response) => {
-          const { err } = response.response.data;
-          toast.value.toast(err, "#FF5252");
-        });
-    };
-
-    const deployVm = () => {
-      loading.value = true;
-      userService
-        .deployVm(name.value, selectedResource.value, checked.value)
-        .then((response) => {
-          toast.value.toast(response.data.msg, "#388E3C");
-          emitQuota();
-          getVMS();
-        })
-        .catch((response) => {
-          const { err } = response.response.data;
-          toast.value.toast(err, "#FF5252");
-        })
-        .finally(() => {
-          reset();
-          loading.value = false;
-        });
-    };
-
-    const validateVMName = async (name) => {
-      var msg = "";
-      await userService.validateVMName(name).catch((response) => {
-        const { err } = response.response.data;
-        msg = err;
+const getVMS = () => {
+  userService
+    .getVms()
+    .then((response) => {
+      const { data, msg } = response.data;
+      data.map((item) => {
+        item.deleting = false;
+        item.public_ip = item.public_ip.split("/")[0];
       });
-
-      if (!msg) {
-        return true;
+      loading.value = data.some((vm) => vm.state == "INPROGRESS");
+      if (loading.value) {
+        setTimeout(getVMS, 5000);
       }
-      return msg;
-    };
-
-    const deleteVms = () => {
-      confirm.value
-        .open("Delete All VMs", "Are you sure?", { color: "red-accent-2" })
-        .then((confirm) => {
-          if (confirm) {
-            deLoading.value = true;
-            toast.value.toast(`Delete VMs..`, "#FF5252");
-            userService
-              .deleteAllVms()
-              .then((response) => {
-                toast.value.toast(response.data.msg, "#388E3C");
-                getVMS();
-              })
-              .catch((response) => {
-                const { err } = response.response.data;
-                toast.value.toast(err, "#FF5252");
-              })
-              .finally(() => {
-                deLoading.value = false;
-              });
-          }
-        });
-    };
-    const reset = () => {
-      form.value.reset();
-    };
-
-    const deleteVm = (item) => {
-      confirm.value
-        .open(`Delete ${item.name}`, "Are you sure?", { color: "red-accent-2" })
-        .then((confirm) => {
-          if (confirm) {
-            item.deleting = true;
-            toast.value.toast(`Deleting ${item.name}..`, "#FF5252");
-            userService
-              .deleteVm(item.id)
-              .then((response) => {
-                toast.value.toast(response.data.msg, "#388E3C");
-                getVMS();
-              })
-              .catch((response) => {
-                const { err } = response.response.data;
-                toast.value.toast(err, "#FF5252");
-              })
-              .finally(() => (item.deleting = false));
-          }
-        });
-    };
-
-    userService
-      .getUser()
-      .then((response) => {
-        const { user } = response.data.data;
-        alert.value = user.ssh_key == "";
-      })
-      .catch((response) => {
-        const { err } = response.response.data;
-        toast.value.toast(err, "#FF5252");
-      });
-
-    const emitQuota = () => {
-      emitter.emit("userUpdateQuota", true);
-    };
-    const copyIP = (ip) => {
-      navigator.clipboard.writeText(ip);
-      toast.value.toast("IP Copied", "#388E3C");
-    };
-
-    if (localStorage.getItem("token")) {
-      setInterval(() => {
-        getVMS();
-        emitQuota();
-      }, 30 * 1000);
-    }
-
-    onMounted(() => {
-      let token = localStorage.getItem("token");
-      if (token) getVMS();
+      results.value = data;
+      message.value = msg;
+    })
+    .catch((response) => {
+      const { err } = response.response.data;
+      toast.value.toast(err, "#FF5252");
     });
-
-    return {
-      verify,
-      name,
-      alert,
-      selectedResource,
-      resources,
-      loading,
-      deLoading,
-      results,
-      headers,
-      confirm,
-      toast,
-      message,
-      form,
-      checked,
-      nameValidation,
-      itemsPerPage,
-      reset,
-      getVMS,
-      validateVMName,
-      deployVm,
-      deleteVms,
-      deleteVm,
-      emitQuota,
-      copyIP,
-    };
-  },
 };
+
+const deleteVms = () => {
+  deleteAllDialog.value = false;
+  deLoading.value = true;
+  toast.value.toast(`Deleting All VMs..`, "#19647E");
+  userService
+    .deleteAllVms()
+    .then((response) => {
+      toast.value.toast(response.data.msg, "#388E3C");
+      getVMS();
+    })
+    .catch((response) => {
+      const { err } = response.response.data;
+      toast.value.toast(err, "#FF5252");
+    })
+    .finally(() => {
+      deLoading.value = false;
+    });
+};
+
+const deleteVm = (item) => {
+  deleteDialog.value = false;
+  item.deleting = true;
+  toast.value.toast(`Deleting ${item.name}..`, "#19647E");
+  userService
+    .deleteVm(item.id)
+    .then((response) => {
+      toast.value.toast(response.data.msg, "#388E3C");
+      getVMS();
+    })
+    .catch((response) => {
+      const { err } = response.response.data;
+      toast.value.toast(err, "#FF5252");
+    })
+    .finally(() => (item.deleting = false));
+};
+
+const getStateColor = (state) => {
+  if (state == "CREATED") return "success";
+  if (state == "FAILED") return "error";
+  if (state == "INPROGRESS") return "warning";
+};
+
+const setItemToDelete = (item) => {
+  itemToDelete.value = item;
+  deleteDialog.value = true;
+};
+
+const emitQuota = () => {
+  emitter.emit("userUpdateQuota", true);
+};
+
+const copyIP = (ip) => {
+  navigator.clipboard.writeText(ip);
+  toast.value.toast("IP Copied", "#388E3C");
+};
+
+if (localStorage.getItem("token")) {
+  setInterval(() => {
+    emitQuota();
+  }, 30 * 1000);
+}
+
+function createVM() {
+  router.push({
+    name: "Deploy",
+  });
+}
+
+onMounted(() => {
+  getVMS();
+});
 </script>
 
 <style>
@@ -370,7 +295,12 @@ export default {
 }
 
 thead th {
-  background-color: #217dbb !important;
-  color: white !important;
+  background-color: #19647e !important;
+}
+tbody tr {
+  background-color: #474747;
+}
+.v-btn--disabled.bg-error {
+  background-color: transparent !important;
 }
 </style>

@@ -1,291 +1,148 @@
 <template>
-  <v-container>
-    <Toast ref="toast" />
-    <h5 class="text-h5 text-md-h4 font-weight-bold text-center my-10 secondary">
-      Create a new account
-    </h5>
-    <v-row justify="center">
-      <v-col cols="12" sm="6" xl="4">
-        <v-form v-model="verify" @submit.prevent="onSubmit">
-          <v-text-field
-            v-model="fullName"
-            :rules="nameValidation"
-            label="Full Name"
-            placeholder="Enter your full name"
-            bg-color="accent"
-            variant="outlined"
-            class="my-2"
-            density="compact"
-          >
-          </v-text-field>
-
-          <v-text-field
-            v-model="email"
-            :rules="emailRules"
-            type="email"
-            label="Email"
-            placeholder="Enter your email"
-            bg-color="accent"
-            variant="outlined"
-            class="my-2"
-            density="compact"
-          >
-          </v-text-field>
-
-          <v-text-field
-            v-model="faculty"
-            :rules="facultyRules"
-            label="Faculty"
-            placeholder="Enter your faculty"
-            bg-color="accent"
-            variant="outlined"
-            class="my-2"
-            density="compact"
-          >
-          </v-text-field>
-
-          <v-text-field
-            v-model="teamSize"
-            :rules="teamSizeRules"
-            type="number"
-            label="Team Size"
-            min="1"
-            oninput="validity.valid||(value='')"
-            placeholder="Enter your team size"
-            bg-color="accent"
-            variant="outlined"
-            class="my-2"
-            density="compact"
-          >
-          </v-text-field>
-
-          <v-textarea
-            v-model="projectDescription"
-            :rules="descRules"
-            label="Project Description"
-            placeholder="Enter your project description"
-            bg-color="accent"
-            variant="outlined"
-            class="my-2"
-          >
-          </v-textarea>
-
-          <v-row>
-            <v-col>
-              <v-text-field
-                v-model="vms"
-                :rules="vmRules"
-                label="VMs"
-                type="number"
-                min="1"
-                bg-color="accent"
-                variant="outlined"
-                density="compact"
-              ></v-text-field>
-            </v-col>
-            <v-col>
-              <v-text-field
-                v-model="ips"
-                :rules="ipsRules"
-                label="public IPs"
-                type="number"
-                min="0"
-                bg-color="accent"
-                variant="outlined"
-                density="compact"
-              ></v-text-field>
-            </v-col>
-          </v-row>
-
-          <v-row class="my-2 mr-1">
-            <v-tooltip
-              block
-              text="You can generate SSH key using 'ssh-keygen' command. Once generated, your public key will be stored in ~/.ssh/id_rsa.pub"
-              left
-            >
-              <template v-slot:activator="{ props }">
-                <v-icon
-                  v-bind="props"
-                  color="primary"
-                  dark
-                  class="d-block ml-auto"
-                >
-                  mdi-information
-                </v-icon>
-              </template>
-            </v-tooltip>
-            <a
-              href="https://cloud.google.com/compute/docs/connect/create-ssh-keys#:~:text=Open%20a%20terminal%20and%20use,a%20new%20SSH%20key%20pair.&text=Replace%20the%20following%3A,named%20my%2Dssh%2Dkey."
-              target="_blank"
-            >
-              <v-icon color="primary" dark class="d-block ml-auto">
-                mdi-account-question
-              </v-icon>
-            </a>
-          </v-row>
-
-          <v-textarea
-            clearable
-            label="SSH Key"
-            v-model="sshKey"
-            variant="outlined"
-            bg-color="accent"
-            class="my-2"
-            :rules="sshValidation"
-            auto-grow
-          >
-          </v-textarea>
-
-          <v-text-field
-            v-model="password"
-            :rules="passwordRules"
-            clearable
-            label="Password"
-            placeholder="Enter your password"
-            bg-color="accent"
-            variant="outlined"
-            :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-            :type="showPassword ? 'text' : 'password'"
-            @click:append-inner="showPassword = !showPassword"
-            style="grid-area: unset;"
-            class="my-2"
-            density="compact"
-          >
-          </v-text-field>
-
-          <v-text-field
-            v-model="cPassword"
-            :rules="cPasswordRules"
-            clearable
-            label="Confirm Password"
-            placeholder="Enter your password"
-            bg-color="accent"
-            variant="outlined"
-            :append-inner-icon="cShowPassword ? 'mdi-eye' : 'mdi-eye-off'"
-            :type="cShowPassword ? 'text' : 'password'"
-            @click:append-inner="cShowPassword = !cShowPassword"
-            style="grid-area: unset;"
-            class="my-2"
-            density="compact"
-          >
-          </v-text-field>
-
-          <v-row>
-            <TermsAndConditions v-model="checked" />
-          </v-row>
-
-          <v-btn
-            type="submit"
-            block
-            :loading="loading"
-            variant="flat"
-            color="primary"
-            class="text-capitalize mx-auto my-5 bg-primary"
-          >
-            Create Account
-          </v-btn>
-          <p class="my-2 text-center">
-            Already have an account?
-            <router-link
-              class="text-body-2 text-decoration-none primary"
-              to="/login"
-              >Back to login</router-link
-            >
+  <v-container fluid class="pa-0 overflow-hidden">
+    <v-row>
+      <v-col cols="12" md="6" class="d-none d-md-block">
+        <v-card height="100vh">
+          <v-img :src="signUpLogo" height="100%" cover />
+        </v-card>
+      </v-col>
+      <v-col cols="12" md="6" class="d-flex flex-column justify-center">
+        <div class="d-flex flex-column justify-center pa-8 px-md-16">
+          <v-img :src="logo" width="100" />
+          <h5 class="text-h5 font-weight-bold pt-5">Welcome to Cloud4All</h5>
+          <p class="text-medium-emphasis text-capitalize pb-5">
+            cloud computing system
           </p>
-        </v-form>
+
+          <h5 class="text-h5 font-weight-bold my-5 text-capitalize">
+            create account
+          </h5>
+
+          <v-form v-model="verify" ref="form" @submit.prevent="signUp">
+            <v-container class="px-0">
+              <v-row>
+                <v-col cols="12" md="6">
+                  <BaseInput
+                    type="text"
+                    v-model="firstName"
+                    :rules="nameValidation"
+                    label="First Name"
+                    required
+                  />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <BaseInput
+                    type="text"
+                    v-model="lastName"
+                    :rules="nameValidation"
+                    label="Last Name"
+                    required
+                  />
+                </v-col>
+                <v-col cols="12">
+                  <BaseInput
+                    type="email"
+                    v-model="email"
+                    :rules="emailRules"
+                    label="Email"
+                    required
+                  />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <BaseInput
+                    :append-inner-icon="visible ? 'mdi-eye' : 'mdi-eye-off'"
+                    :type="visible ? 'text' : 'password'"
+                    v-model="password"
+                    label="Password"
+                    :rules="passwordRules"
+                    @click:append-inner="visible = !visible"
+                  />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <BaseInput
+                    :append-inner-icon="
+                      cShowPassword ? 'mdi-eye' : 'mdi-eye-off'
+                    "
+                    :type="cShowPassword ? 'text' : 'password'"
+                    v-model="cPassword"
+                    label="Confirm Password"
+                    :rules="cPasswordRules"
+                    @click:append-inner="cShowPassword = !cShowPassword"
+                  />
+                </v-col>
+              </v-row>
+            </v-container>
+
+            <v-row>
+              <TermsAndConditions v-model="checked" />
+            </v-row>
+
+            <BaseButton
+              block
+              class="my-3"
+              type="submit"
+              color="secondary"
+              text="Create Your Account"
+              :loading="loading"
+              :disabled="!verify"
+            />
+
+            <p class="my-5 text-center secondary text-medium-emphasis">
+              Back to
+              <router-link class="text-decoration-none text-white" to="/login">
+                Sign In</router-link
+              >
+            </p>
+          </v-form>
+        </div>
       </v-col>
     </v-row>
+    <Toast ref="toast" />
   </v-container>
 </template>
-
 <script>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import axios from "axios";
-import Toast from "@/components/Toast.vue";
+import BaseInput from "@/components/Form/BaseInput.vue";
+import BaseButton from "@/components/Form/BaseButton.vue";
 import TermsAndConditions from "@/components/TermsAndConditions.vue";
+import logo from "@/assets/logo_c4all.png";
+import signUpLogo from "@/assets/sign-up.png";
+import userService from "@/services/userService";
+import Toast from "@/components/Toast.vue";
+
 export default {
   components: {
-    Toast,
+    BaseInput,
+    BaseButton,
     TermsAndConditions,
+    Toast,
   },
 
   setup() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const router = useRouter();
     const verify = ref(false);
-    const showPassword = ref(false);
-    const cShowPassword = ref(false);
-    const fullName = ref(null);
-    const email = ref(null);
-    const faculty = ref(null);
-    const projectDescription = ref(null);
-    const teamSize = ref(null);
+    const firstName = ref();
+    const lastName = ref();
+    const email = ref();
     const password = ref(null);
     const cPassword = ref(null);
+    const visible = ref(false);
+    const cShowPassword = ref(false);
     const isSignup = ref(true);
     const loading = ref(false);
     const toast = ref(null);
     const checked = ref(false);
-    const sshKey = ref(null);
-    const vms = ref(1);
-    const ips = ref(0);
     const nameRegex = /^(\w+\s){0,3}\w*$/;
+    const form = ref(null);
+
     const nameValidation = ref([
       (value) => {
         if (!value) return "Name is required";
         if (!value.match(nameRegex)) return "Must be at most four names";
         if (value.length < 3) return "Name should be at least 3 characters";
         if (value.length > 20) return "Name should be at most 20 characters";
-        return true;
-      },
-    ]);
-
-    const sshValidation = ref([
-      (value) => {
-        if (!value) return "SSH key is required";
-        return true;
-      },
-    ]);
-
-    const facultyRules = ref([
-      (value) => {
-        if (!value) return "Faculty is required";
-        if (value.length < 3) return "Faculty should be at least 3 characters";
-        return true;
-      },
-    ]);
-
-    const descRules = ref([
-      (value) => {
-        if (!value) return "Project description is required";
-        if (value.length < 3)
-          return "Project description should be at least 3 characters";
-        return true;
-      },
-    ]);
-
-    const vmRules = ref([
-      (value) => {
-        if (!value) return "VMs is required";
-        if (value < 1) return "VMs should at least 1";
-        return true;
-      },
-    ]);
-
-    const ipsRules = ref([
-      (value) => {
-        if (ips.value >= 0) return true;
-        if (!value) return "Public IPs is required";
-        return true;
-      },
-    ]);
-
-    const teamSizeRules = ref([
-      (value) => {
-        if (!value) return "Team size is required";
-        if (value < 1) return "Team Size should at least be 1";
-        if (value > 20) return "Team Size should be max 20";
         return true;
       },
     ]);
@@ -310,38 +167,29 @@ export default {
     const cPasswordRules = ref([
       (value) => {
         if (!value) return "Confirm password is required";
-        if (value.length < 7) return "Password must be at least 7 characters";
-        if (value.length > 12) return "Password must be at most 12 characters";
         if (value !== password.value) return "Passwords don't match";
         return true;
       },
     ]);
 
-    const onSubmit = () => {
+    const signUp = () => {
       if (!checked.value) return;
       loading.value = true;
-      axios
-        .post(window.configs.vite_app_endpoint + "/user/signup", {
-          name: fullName.value,
-          email: email.value,
-          password: password.value,
-          confirm_password: cPassword.value,
-          team_size: Number(teamSize.value),
-          project_desc: projectDescription.value,
-          college: faculty.value,
-          ssh_key: sshKey.value,
-        })
+      userService
+        .signUp(
+          firstName.value,
+          lastName.value,
+          email.value,
+          password.value,
+          cPassword.value
+        )
         .then((response) => {
-          localStorage.setItem("fullName", fullName.value);
+          const { msg } = response.data;
+          localStorage.setItem("firstName", firstName.value);
+          localStorage.setItem("lastName", lastName.value);
           localStorage.setItem("password", password.value);
           localStorage.setItem("confirm_password", cPassword.value);
-          localStorage.setItem("teamSize", Number(teamSize.value));
-          localStorage.setItem("projectDescription", projectDescription.value);
-          localStorage.setItem("faculty", faculty.value);
-          localStorage.setItem("sshKey", sshKey.value);
-          localStorage.setItem("vms", vms.value);
-          localStorage.setItem("ips", ips.value);
-          toast.value.toast(response.data.msg);
+          toast.value.toast(msg, "#4caf50");
           router.push({
             name: "OTP",
             query: {
@@ -351,40 +199,36 @@ export default {
             },
           });
         })
-        .catch((error) => {
-          toast.value.toast(error.response.data.err, "#FF5252", "top-right");
+        .catch((response) => {
+          const { err } = response.response.data;
+          toast.value.toast(err, "#FF5252");
+        })
+        .finally(() => {
+          form.value.reset();
           loading.value = false;
         });
     };
     return {
-      onSubmit,
+      signUp,
       loading,
       verify,
-      showPassword,
       cPassword,
       password,
+      visible,
       email,
-      sshKey,
-      vms,
-      ips,
       toast,
-      fullName,
+      firstName,
+      lastName,
       emailRules,
       nameValidation,
       passwordRules,
       cPasswordRules,
       isSignup,
-      cShowPassword,
-      faculty,
-      projectDescription,
-      teamSize,
-      teamSizeRules,
-      sshValidation,
-      descRules,
-      vmRules,
-      ipsRules,
-      facultyRules,
       checked,
+      logo,
+      signUpLogo,
+      cShowPassword,
+      form,
     };
   },
 };

@@ -1,7 +1,7 @@
 <template>
   <v-app class="overflow-hidden">
     <default-bar :key="$route.fullPath" v-if="!maintenance && nextlaunch" />
-    <Quota class="quota" v-if="!isAdmin && !maintenance && !noQuota && nextlaunch" />
+    <!-- <Quota class="quota" v-if="!isAdmin && !maintenance && !noQuota && nextlaunch" /> -->
     <default-view />
     <FooterComponent />
   </v-app>
@@ -10,7 +10,7 @@
 <script>
 import DefaultBar from "./AppBar.vue";
 import DefaultView from "./View.vue";
-import Quota from "@/components/Quota.vue";
+// import Quota from "@/components/Quota.vue";
 import { useRoute, useRouter } from "vue-router";
 import { computed, ref } from "vue";
 import userService from "@/services/userService.js";
@@ -20,7 +20,7 @@ export default {
   components: {
     DefaultBar,
     DefaultView,
-    Quota,
+    // Quota,
     FooterComponent,
   },
 
@@ -64,7 +64,7 @@ export default {
     if (!nextlaunch.value) {
       router.push({ name: "NextLaunch" });
     }
-    return { isAdmin, maintenance, noQuota, nextlaunch};
+    return { isAdmin, maintenance, noQuota, nextlaunch };
   },
 };
 </script>

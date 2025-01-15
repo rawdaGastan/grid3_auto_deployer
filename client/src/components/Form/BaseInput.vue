@@ -1,12 +1,12 @@
 <template>
   <v-text-field
-    :label="modelValue"
     v-bind="$attrs"
-    bg-color="accent"
+    bg-color="primary"
     variant="outlined"
     :value="modelValue"
     @input="$emit('update:modelValue', $event.target.value)"
     density="compact"
+    :required="required"
   ></v-text-field>
 </template>
 
@@ -17,14 +17,10 @@ export default {
       type: String,
       default: "",
     },
+    required: {
+      type: Boolean,
+      default: false,
+    },
   },
 };
 </script>
-
-<style>
-.v-text-field .v-input__control .v-input__slot {
-  min-height: auto !important;
-  display: flex !important;
-  align-items: center !important;
-}
-</style>

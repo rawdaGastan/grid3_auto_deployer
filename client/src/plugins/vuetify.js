@@ -1,19 +1,13 @@
-/**
- * plugins/vuetify.js
- *
- * Framework documentation: https://vuetifyjs.com`
- */
-
-// Styles
 import "@mdi/font/css/materialdesignicons.css";
 import "vuetify/styles";
-
 import { createVuetify } from "vuetify";
-import { VDataTable } from "vuetify/components/VDataTable";
-
-// https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
+import * as components from "vuetify/components";
+import * as directives from "vuetify/directives";
 export default createVuetify({
+  components,
+  directives,
   theme: {
+    defaultTheme: "dark",
     themes: {
       light: {
         colors: {
@@ -25,20 +19,20 @@ export default createVuetify({
       },
       dark: {
         colors: {
-          primary: "#217dbb",
-          secondary: "#5CBBF6",
-          background: "#333",
+          primary: "#474747",
+          secondary: "#19647E",
+          background: "#212121",
         },
       },
     },
-  },
-  components: {
-    VDataTable,
   },
   defaults: {
     VDataTable: {
       fixedHeader: true,
       noDataText: "Results not found",
+    },
+    VContainer: {
+      maxWidth: "1200px",
     },
   },
 });

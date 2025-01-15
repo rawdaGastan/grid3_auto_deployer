@@ -1,80 +1,134 @@
 <template>
-	<v-container>
-		<v-row>
-			<v-col cols="12" sm="6" class="order-last order-md-first">
-				<div class="py-5 my-5 py-md-12 my-md-12">
-					<h5 class="text-h5 text-md-h2 font-weight-medium my-6 secondary">
-						<span class="primary">Welcome To </span><br /><span>Cloud for Students</span>
-					</h5>
+  <v-container fluid>
+    <v-row>
+      <v-col>
+        <div class="banner d-flex align-center justify-center">
+          <h2 class="text-h5 text-md-h2 font-weight-bold">
+            Welcome To Cloud4All
+          </h2>
+        </div>
+      </v-col>
+    </v-row>
 
-					<p class="px-15 pl-0 text-subtitle-1 mb-5 font-weight-regular secondary">
-						<a href="https://codescalers-egypt.com/" class="primary text-decoration-none font-weight-bold">CodeScalers</a>
-						is an international software development house specializing in Cloud
-						Computing, working with startups to help them achieve their goals.
-					</p>
+    <v-row justify="center">
+      <v-col cols="12" md="6">
+        <v-card class="text-center py-5" flat>
+          <v-card-title
+            class="text-h6 text-md-h4 text-capitalize font-weight-bold py-5"
+            >The Cloud That Grows With You</v-card-title
+          >
+          <v-card-text>
+            <p class="text-medium-emphasis">
+              Lorem ipsum dolor sit amet consectetur adipisicing elit.
+              Consequuntur architecto in, inventore vero voluptatibus commodi.
+              Corporis modi at totam minima voluptatum aliquam in ipsum officia,
+              aut reprehenderit quasi quas unde?
+            </p>
+          </v-card-text>
 
-					<p class="px-15 pl-0 text-subtitle-1 mb-5 font-weight-regular secondary">
-						<strong>Cloud for Students</strong> provides
-						fast, flexible, and affordable computing capacity to fit any
-						workload need, from high performance bare metal servers and flexible
-						Virtual Machines to lightweight containers and serverless computing.
-					</p>
+          <v-card-actions class="d-flex align-center justify-center">
+            <BaseButton
+              color="secondary"
+              text="Sign Up"
+              width="150"
+              @click="register"
+            />
+            <BaseButton
+              variant="outlined"
+              text="Sign In"
+              width="150"
+              @click="login"
+            />
+          </v-card-actions>
+        </v-card>
+      </v-col>
+    </v-row>
 
-					<p class="px-15 pl-0 text-subtitle-1 mb-5 font-weight-regular secondary">
-						<strong class="primary text-decoration-none font-weight-bold">Want to get free vouchers?</strong> Create a new account and tell us about your project now!
-					</p>
+    <v-container>
+      <v-row justify="center" class="py-5">
+        <v-col cols="12" md="4">
+          <v-card class="text-center" flat>
+            <v-card-title>
+              <v-icon icon="$vuetify" size="x-large" class="my-5"></v-icon>
+              <h6 class="text-h6 text-capitalize font-weight-bold">title</h6>
+            </v-card-title>
+            <v-card-text>
+              <p class="text-medium-emphasis">
+                Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                Consequuntur architecto in, inventore vero voluptatibus commodi.
+                Corporis modi at totam minima voluptatum aliquam in ipsum
+                officia, aut reprehenderit quasi quas unde?
+              </p>
+            </v-card-text>
+          </v-card>
+        </v-col>
 
-					<v-btn :onclick="register" color="primary" rel="noopener noreferrer" class="w-100 d-block my-5" variant="flat">
-							Create a new account
-					</v-btn>
-				</div>
-			</v-col>
-			<v-col cols="12" sm="6">
-				<div class="py-5 my-5 py-md-10 my-md-10">
-					<v-hover v-slot="{ isHovering, props }" open-delay="200">
-						<v-img :style="isHovering
-							? 'transform:scale(1.1);transition: transform .5s;'
-							: 'transition: transform .5s;'
-							" transition="transform .2s" src="@/assets/welcome.png" class="mx-auto" width="100%"
-							:class="{ 'on-hover': isHovering }" v-bind="props" />
-					</v-hover>
-				</div>
-			</v-col>
-		</v-row>
-	</v-container>
+        <v-col cols="12" md="4">
+          <v-card class="text-center" flat>
+            <v-card-title>
+              <v-icon icon="$vuetify" size="x-large" class="my-5"></v-icon>
+              <h6 class="text-h6 text-capitalize font-weight-bold">title</h6>
+            </v-card-title>
+            <v-card-text>
+              <p class="text-medium-emphasis">
+                Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                Consequuntur architecto in, inventore vero voluptatibus commodi.
+                Corporis modi at totam minima voluptatum aliquam in ipsum
+                officia, aut reprehenderit quasi quas unde?
+              </p>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12" md="4">
+          <v-card class="text-center" flat>
+            <v-card-title>
+              <v-icon icon="$vuetify" size="x-large" class="my-5"></v-icon>
+              <h6 class="text-h6 text-capitalize font-weight-bold">title</h6>
+            </v-card-title>
+            <v-card-text>
+              <p class="text-medium-emphasis">
+                Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                Consequuntur architecto in, inventore vero voluptatibus commodi.
+                Corporis modi at totam minima voluptatum aliquam in ipsum
+                officia, aut reprehenderit quasi quas unde?
+              </p>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
+  </v-container>
 </template>
 <script>
-import { onMounted } from "vue";
 import { useRouter } from "vue-router";
-
+import BaseButton from "@/components/Form/BaseButton.vue";
 export default {
-	components: {
-	},
-	setup() {
-		const router = useRouter();
+  components: {
+    BaseButton,
+  },
+  setup() {
+    const router = useRouter();
 
-		const register = () => {
-			router.push({
-				name: "Signup",
-			});
-		}
+    const register = () => {
+      router.push({
+        name: "Signup",
+      });
+    };
 
-		onMounted(() => {
-		});
-		return { register };
-	},
+    const login = () => {
+      router.push({
+        name: "Login",
+      });
+    };
+    return { register, login };
+  },
 };
 </script>
 
 <style>
-.v-expansion-panel__shadow,
-.v-expansion-panel-title__overlay,
-.v-expansion-panel-title .v-expansion-panel-title__icon,
-.v-expansion-panel-title--active .v-expansion-panel-title__icon {
-	display: none;
-}
-
-.v-list-item__overlay:hover {
-	background-color: transparent;
+.banner {
+  background-image: url("../assets/home_header.png");
+  height: 235px;
 }
 </style>

@@ -11,13 +11,15 @@ import (
 )
 
 func TestSendMail(t *testing.T) {
+	m := NewMailer("1234")
+
 	t.Run("send valid mail", func(t *testing.T) {
-		err := SendMail("sender@gmail.com", "1234", "receiver@gmail.com", "subject", "body")
+		err := m.SendMail("sender@gmail.com", "receiver@gmail.com", "subject", "body")
 		assert.NoError(t, err)
 	})
 
 	t.Run("send invalid mail", func(t *testing.T) {
-		err := SendMail("sender@gmail.com", "1234", "receiver", "subject", "body")
+		err := m.SendMail("sender@gmail.com", "receiver", "subject", "body")
 		assert.Error(t, err)
 	})
 }

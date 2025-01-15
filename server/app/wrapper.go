@@ -69,6 +69,12 @@ func WrapFunc(a Handler) http.HandlerFunc {
 			status = result.Status()
 		}
 
+		if bytes, ok := object.([]byte); ok {
+			if _, err := w.Write(bytes); err != nil {
+				log.Error().Err(err).Msg("failed to write return object")
+			}
+		}
+
 		if err := json.NewEncoder(w).Encode(object); err != nil {
 			log.Error().Err(err).Msg("failed to encode return object")
 		}

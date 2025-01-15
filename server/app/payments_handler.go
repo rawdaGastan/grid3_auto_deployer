@@ -349,6 +349,8 @@ func (a *App) DeleteCardHandler(req *http.Request) (interface{}, Response) {
 		return nil, BadRequest(errors.New("you have active deployment and cannot delete the card"))
 	}
 
+	// TODO: deleting vms before the end of the month then deleting all cards case
+
 	// Update the default payment method for future payments (if deleted card is the default)
 	if card.PaymentMethodID == user.StripeDefaultPaymentID {
 		var newPaymentMethod string

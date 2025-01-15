@@ -119,6 +119,48 @@ func (a *App) GetInvoiceHandler(req *http.Request) (interface{}, Response) {
 	}, Ok()
 }
 
+// DownloadInvoiceHandler downloads user's invoice by ID
+// Example endpoint: Downloads user's invoice by ID
+// @Summary Downloads user's invoice by ID
+// @Description Downloads user's invoice by ID
+// @Tags Invoice
+// @Accept  json
+// @Produce  json
+// @Security BearerAuth
+// @Param id path string true "Invoice ID"
+// @Success 200 {object} Response
+// @Failure 400 {object} Response
+// @Failure 401 {object} Response
+// @Failure 404 {object} Response
+// @Failure 500 {object} Response
+// @Router /invoice/download/{id} [get]
+func (a *App) DownloadInvoiceHandler(req *http.Request) (interface{}, Response) {
+	userID := req.Context().Value(middlewares.UserIDKey("UserID")).(string)
+
+	id, err := strconv.Atoi(mux.Vars(req)["id"])
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, BadRequest(errors.New("failed to read invoice id"))
+	}
+
+	invoice, err := a.db.GetInvoice(id)
+	if err == gorm.ErrRecordNotFound {
+		return nil, NotFound(errors.New("invoice is not found"))
+	}
+	if err != nil {
+		log.Error().Err(err).Send()
+		return nil, InternalServerError(errors.New(internalServerErrorMsg))
+	}
+
+	if userID != invoice.UserID {
+		return nil, NotFound(errors.New("invoice is not found"))
+	}
+
+	return invoice.FileData, Ok().
+		WithHeader("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fmt.Sprintf("invoice-%s-%d.pdf", invoice.UserID, invoice.ID))).
+		WithHeader("Content-Type", "application/pdf")
+}
+
 // PayInvoiceHandler pay user's invoice
 // Example endpoint: Pay user's invoice
 // @Summary Pay user's invoice
@@ -213,7 +255,7 @@ func (a *App) monthlyInvoices() {
 		// Create invoices for all system users
 		for _, user := range users {
 			// 1. Create new monthly invoice
-			if err = a.createInvoice(user.ID.String(), now); err != nil {
+			if err = a.createInvoice(user, now); err != nil {
 				log.Error().Err(err).Send()
 			}
 
@@ -275,15 +317,15 @@ func (a *App) monthlyInvoices() {
 	}
 }
 
-func (a *App) createInvoice(userID string, now time.Time) error {
+func (a *App) createInvoice(user models.User, now time.Time) error {
 	monthStart := time.Date(now.Year(), now.Month(), 0, 0, 0, 0, 0, time.Local)
 
-	vms, err := a.db.GetAllSuccessfulVms(userID)
+	vms, err := a.db.GetAllSuccessfulVms(user.ID.String())
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
 
-	k8s, err := a.db.GetAllSuccessfulK8s(userID)
+	k8s, err := a.db.GetAllSuccessfulK8s(user.ID.String())
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return err
 	}
@@ -308,6 +350,8 @@ func (a *App) createInvoice(userID string, now time.Time) error {
 			DeploymentResources: vm.Resources,
 			DeploymentType:      "vm",
 			DeploymentID:        vm.ID,
+			DeploymentName:      vm.Name,
+			DeploymentCreatedAt: vm.CreatedAt,
 			HasPublicIP:         vm.Public,
 			PeriodInHours:       time.Since(usageStart).Hours(),
 			Cost:                cost,
@@ -333,6 +377,8 @@ func (a *App) createInvoice(userID string, now time.Time) error {
 			DeploymentResources: cluster.Master.Resources,
 			DeploymentType:      "k8s",
 			DeploymentID:        cluster.ID,
+			DeploymentName:      cluster.Master.Name,
+			DeploymentCreatedAt: cluster.CreatedAt,
 			HasPublicIP:         cluster.Master.Public,
 			PeriodInHours:       time.Since(usageStart).Hours(),
 			Cost:                cost,
@@ -342,11 +388,22 @@ func (a *App) createInvoice(userID string, now time.Time) error {
 	}
 
 	if len(items) > 0 {
-		if err = a.db.CreateInvoice(&models.Invoice{
-			UserID:      userID,
+		in := models.Invoice{
+			UserID:      user.ID.String(),
 			Total:       total,
 			Deployments: items,
-		}); err != nil {
+		}
+
+		// Creating pdf for invoice
+		pdfContent, err := internal.CreateInvoicePDF(in, user)
+		if err != nil {
+			return err
+		}
+
+		in.FileData = pdfContent
+
+		// Creating invoice in db
+		if err = a.db.CreateInvoice(&in); err != nil {
 			return err
 		}
 	}
@@ -415,14 +472,14 @@ func (a *App) sendInvoiceReminderToUser(userID, userEmail, userName string, now 
 	}
 
 	for _, invoice := range invoices {
-		oneMonthsAgo := now.AddDate(0, -1, 0)
+		// oneMonthsAgo := now.AddDate(0, -1, 0)
 		oneWeekAgo := now.AddDate(0, 0, -7)
 
 		// check if the invoice created 1 months ago (not after it) and
-		// last remainder sent for this invoice was 7 days ago and
+		// last remainder sent for this invoice was before 7 days ago and
 		// invoice is not paid
-		if invoice.CreatedAt.Before(oneMonthsAgo) &&
-			invoice.LastReminderAt.Before(oneWeekAgo) &&
+		// invoice.CreatedAt.Before(oneMonthsAgo) &&
+		if invoice.LastReminderAt.Before(oneWeekAgo) &&
 			!invoice.Paid {
 			// overdue date starts after one month since invoice creation
 			overDueStart := invoice.CreatedAt.AddDate(0, 1, 0)
@@ -434,7 +491,9 @@ func (a *App) sendInvoiceReminderToUser(userID, userEmail, userName string, now 
 
 			mailBody := "We hope this message finds you well.\n"
 			mailBody += fmt.Sprintf("Our records show that there is an outstanding invoice for %v %s associated with your account (%d). ", invoice.Total, currencyName, invoice.ID)
-			mailBody += fmt.Sprintf("As of today, the payment for this invoice is %d days overdue.", overDueDays)
+			if overDueDays > 0 {
+				mailBody += fmt.Sprintf("As of today, the payment for this invoice is %d days overdue.", overDueDays)
+			}
 			mailBody += "To avoid any interruptions to your services and the potential deletion of your deployments, "
 			mailBody += fmt.Sprintf("we kindly ask that you make the payment within the next %d days. If the invoice remains unpaid after this period, ", gracePeriod)
 			mailBody += "please be advised that the associated deployments will be deleted from our system.\n\n"
@@ -442,12 +501,17 @@ func (a *App) sendInvoiceReminderToUser(userID, userEmail, userName string, now 
 			mailBody += "You can easily pay your invoice by charging balance, activating voucher or using cards.\n\n"
 			mailBody += "If you have already made the payment or need any assistance, "
 			mailBody += "please don't hesitate to reach out to us.\n\n"
-			mailBody += "We appreciate your prompt attention to this matter and thank you fosr being a valued customer."
+			mailBody += "We appreciate your prompt attention to this matter and thank you for being a valued customer."
 
 			subject := "Unpaid Invoice Notification – Action Required"
 			subject, body := internal.AdminMailContent(subject, mailBody, a.config.Server.Host, userName)
 
-			if err = internal.SendMail(a.config.MailSender.Email, a.config.MailSender.SendGridKey, userEmail, subject, body); err != nil {
+			if err = a.mailer.SendMail(
+				a.config.MailSender.Email, userEmail, subject, body, internal.Attachment{
+					FileName: fmt.Sprintf("invoice-%s-%d.pdf", invoice.UserID, invoice.ID),
+					Data:     invoice.FileData,
+				},
+			); err != nil {
 				log.Error().Err(err).Send()
 			}
 
